@@ -2,235 +2,817 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Báo cáo kết quả ngày</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;min-height:100vh}
-.app{max-width:860px;margin:0 auto;padding:10px}
-.hdr{background:#1a237e;border-radius:12px;padding:13px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.hdr-l h2{font-size:16px;font-weight:700;letter-spacing:.5px}
-.hdr-l p{font-size:11px;opacity:.65;margin-top:2px}
-.star-box{background:rgba(255,200,0,.15);border:1px solid rgba(255,200,0,.35);border-radius:8px;padding:5px 13px;text-align:center}
-.star-box .sv{font-size:20px;font-weight:700;color:#FFD700;line-height:1.1}
-.star-box .sl{font-size:10px;opacity:.65}
-.sync-wrap{display:flex;align-items:center;gap:5px;font-size:11px;opacity:.75}
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap');
+
+:root{
+  --blue-dark:#0d1b6e;
+  --blue:#1a237e;
+  --blue-mid:#2d3a9e;
+  --blue-light:#e8ecff;
+  --gold:#FFD700;
+  --gold-dim:rgba(255,215,0,.15);
+  --gold-border:rgba(255,215,0,.45);
+  --green:#1e7e34;
+  --green-bg:#e8f5e9;
+  --red:#c62828;
+  --red-bg:#ffebee;
+  --orange:#e65100;
+  --orange-bg:#fff3e0;
+  --gray-bg:#f0f2f8;
+  --gray-line:#e4e7f0;
+  --text:#111827;
+  --text-mid:#4b5563;
+  --text-light:#9ca3af;
+  --white:#fff;
+  --row-done:rgba(30,126,52,.07);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:14px}
+body{font-family:'Barlow',system-ui,sans-serif;background:var(--gray-bg);min-height:100vh;color:var(--text)}
+
+/* ═══ LAYOUT ═══ */
+.app{max-width:640px;margin:0 auto;padding-bottom:30px}
+
+/* ═══ HEADER ═══ */
+.hdr{
+  background:linear-gradient(160deg,var(--blue-dark) 0%,var(--blue) 50%,var(--blue-mid) 100%);
+  padding:16px 20px 14px;color:#fff;position:relative;overflow:hidden
+}
+.hdr::before{content:'';position:absolute;top:-40px;right:-30px;width:160px;height:160px;background:rgba(255,255,255,.04);border-radius:50%;pointer-events:none}
+.hdr::after{content:'';position:absolute;bottom:-20px;left:-10px;width:100px;height:100px;background:rgba(255,255,255,.03);border-radius:50%;pointer-events:none}
+.hdr-top-row{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}
+.hdr-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;line-height:1}
+.hdr-meta{font-size:11px;opacity:.6;margin-top:4px;letter-spacing:.3px}
+.hdr-star-badge{
+  background:var(--gold-dim);border:2px solid var(--gold-border);
+  border-radius:12px;padding:8px 16px;text-align:center;min-width:100px;
+  backdrop-filter:blur(4px)
+}
+.hdr-star-badge .num{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:32px;font-weight:900;color:var(--gold);line-height:1;
+  display:flex;align-items:center;justify-content:center;gap:5px
+}
+.hdr-star-badge .num i{font-size:22px}
+.hdr-star-badge .lbl{font-size:9px;opacity:.65;letter-spacing:.8px;text-transform:uppercase;margin-top:2px;font-weight:700}
+.hdr-info-row{display:flex;gap:24px;margin-top:12px;position:relative;z-index:1}
+.hdr-field{display:flex;flex-direction:column;gap:2px}
+.hdr-field .f-lbl{font-size:9px;opacity:.55;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.hdr-field .f-val{font-size:14px;font-weight:800;line-height:1.2}
+.hdr-field .f-val.gold{color:var(--gold)}
+.sync-row{display:flex;align-items:center;gap:5px;font-size:10px;opacity:.6;margin-top:8px;position:relative;z-index:1}
 .dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
-.dot.ok{background:#69f0ae}.dot.err{background:#ff5252}.dot.busy{background:#ffab40;animation:blink .7s ease-in-out infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.tabs{display:flex;gap:6px;margin-bottom:10px}
-.tab{flex:1;padding:9px 4px;border:1px solid #dde1e7;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;font-weight:500;color:#666;text-align:center;transition:.15s}
-.tab.on{background:#1a237e;color:#fff;border-color:#1a237e}
+.dot.ok{background:#4caf50}.dot.err{background:#ef5350}.dot.busy{background:#ffb74d;animation:blink .7s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ═══ TABS ═══ */
+.tabs{display:flex;background:#fff;border-bottom:2px solid var(--gray-line);position:sticky;top:0;z-index:20;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.tab{
+  flex:1;padding:12px 6px;cursor:pointer;font-size:11px;font-weight:700;
+  color:var(--text-light);text-align:center;transition:.2s;
+  border-bottom:3px solid transparent;letter-spacing:.5px;text-transform:uppercase;
+  position:relative;bottom:-2px
+}
+.tab i{display:block;font-size:18px;margin-bottom:3px}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);background:#f4f6ff}
 .pnl{display:none}.pnl.on{display:block}
-.card{background:#fff;border-radius:12px;border:1px solid #e8eaed;padding:13px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.lbl{font-size:12px;color:#666;white-space:nowrap}
-select,input[type=date]{padding:6px 9px;border:1px solid #dde1e7;border-radius:7px;font-size:13px;background:#fff;color:#333}
-.badge-dept{display:inline-block;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:600;letter-spacing:.3px}
-.tgdd{background:#E6F1FB;color:#0C447C}
-.topzone{background:#EAF3DE;color:#27500A}
-.stk-box{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
-.stk{padding:3px 10px;border-radius:5px;font-size:11px;font-weight:500}
-.stk-w{background:#FAEEDA;color:#854F0B}
-.stk-d{background:#FCEBEB;color:#A32D2D}
-.emp-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-.emp-name{font-size:14px;font-weight:600;color:#333}
-.emp-sub{font-size:11px;color:#888;margin-top:3px}
-.emp-star{font-size:13px;font-weight:500;color:#BA7517}
-.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:#888;padding:7px 10px;background:#f9fafb;border-radius:7px;margin-bottom:10px}
-.leg{display:flex;align-items:center;gap:3px}
-.leg-d{width:7px;height:7px;border-radius:2px;flex-shrink:0}
-.tbl-w{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{padding:6px 4px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #e8eaed;text-align:center;white-space:nowrap}
-th.left,td.left{text-align:left}
-td{padding:5px 4px;border-bottom:1px solid #f0f2f5;text-align:center;vertical-align:middle}
+
+/* ═══ SELECTOR CARD ═══ */
+.sel-card{background:#fff;padding:16px 20px;border-bottom:1px solid var(--gray-line)}
+.sel-grid{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}
+.sel-group{display:flex;flex-direction:column;gap:6px}
+.sel-label{font-size:10px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.8px}
+.sel-control{
+  padding:10px 14px;border:2px solid var(--gray-line);border-radius:10px;
+  font-size:14px;font-weight:600;background:#fff;color:var(--text);
+  font-family:'Barlow',sans-serif;transition:.2s;width:100%
+}
+.sel-control:focus{outline:none;border-color:var(--blue);background:#f4f6ff}
+.stk-box{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.stk{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px}
+.stk-w{background:var(--orange-bg);color:var(--orange)}
+.stk-d{background:var(--red-bg);color:var(--red)}
+
+/* ═══ LEGEND ═══ */
+.legend-bar{
+  display:flex;gap:0;background:#f7f8ff;
+  border-bottom:1px solid var(--gray-line);overflow:hidden
+}
+.leg-item{flex:1;padding:8px 6px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.2px;border-right:1px solid var(--gray-line)}
+.leg-item:last-child{border-right:none}
+.leg-item span{display:block;font-size:16px;margin-bottom:2px}
+.leg-done{color:var(--green)}.leg-miss{color:var(--text-light)}.leg-use{color:var(--red)}
+
+/* ═══ TABLE ═══ */
+.tbl-outer{border-top:1px solid var(--gray-line)}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;table-layout:auto;min-width:320px}
+
+thead tr th{
+  padding:5px 4px;
+  font-size:8.5px;font-weight:900;
+  text-transform:uppercase;letter-spacing:.3px;
+  white-space:nowrap;text-align:center;
+  background:linear-gradient(135deg,#e6a800,#f5c400);
+  color:#1a1200;
+  border-bottom:2.5px solid #b07d00;
+  border-right:1px solid rgba(0,0,0,.1)
+}
+thead tr th:last-child{border-right:none}
+th.tl{text-align:left;padding-left:6px}
+
+td{
+  padding:1px 2px;
+  border-bottom:1.5px solid #d1d5db;
+  text-align:center;vertical-align:middle;
+  font-size:11px
+}
 tr:last-child td{border-bottom:none}
-tr.done td{background:rgba(99,153,34,.05)}
-.cn{font-size:12px;font-weight:500;color:#333}
-.ni{width:52px;padding:3px 5px;border:1px solid #dde1e7;border-radius:5px;font-size:12px;text-align:center;background:#fff;color:#333}
-.ni:focus{outline:none;border-color:#1a237e}
-.pg{font-weight:700;color:#3B6D11}.po{font-weight:700;color:#BA7517}.pr{font-weight:700;color:#E24B4A}.pz{color:#bbb}
-.bar{height:3px;background:#f0f2f5;border-radius:2px;margin-top:3px}
-.barf{height:100%;border-radius:2px}
-.sp{color:#3B6D11;font-weight:700;font-size:12px}
-.sz{color:#bbb;font-size:11px}
-.sm2{color:#E24B4A;font-weight:700;font-size:12px}
-/* ngày chưa HT badge — tự động */
-.zd-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
-.zd1{background:#FFF3CD;color:#856404}
-.zd2{background:#FAEEDA;color:#854F0B}
-.zd3{background:#FCEBEB;color:#A32D2D}
-.zd0{color:#bbb;font-size:11px}
-.hb{padding:3px 8px;border-radius:5px;font-size:11px;font-weight:500;border:1px solid #dde1e7;cursor:pointer;background:#fff;color:#666;white-space:nowrap}
-.hb:hover{background:#f0f2f5}
-.hb.hon{background:#FAEEDA;color:#854F0B;border-color:#EF9F27}
-.hb:disabled{opacity:.35;cursor:default}
-.sg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}
-.sc{background:#f9fafb;border-radius:7px;padding:9px;text-align:center}
-.sc-l{font-size:10px;color:#888;margin-bottom:2px}
-.sc-v{font-size:18px;font-weight:500}
-.cbl{color:#185FA5}.cgr{color:#3B6D11}.crd{color:#E24B4A}.cgo{color:#BA7517}
-.sub-btn{width:100%;padding:10px;background:#1a237e;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
-.sub-btn:hover:not(:disabled){background:#283593}
-.sub-btn:disabled{opacity:.55;cursor:default}
-.mg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
-.lb-wrap{background:#fff;border-radius:12px;border:1px solid #e8eaed;overflow:hidden;margin-bottom:10px}
-.lb-hdr{padding:9px 13px;background:#f9fafb;border-bottom:1px solid #e8eaed;display:flex;justify-content:space-between;align-items:center}
-.lb-hdr span{font-size:13px;font-weight:500;color:#666}
-.lb-row{display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid #f0f2f5}
+tr.row-done td{border-bottom:1.5px solid #b6d9bc}
+tr.row-done{background:var(--row-done)}
+tr.row-done .cat-name{color:var(--green);font-weight:900}
+tr:active td{background:rgba(26,35,126,.04)}
+
+/* category name — 30% nhỏ hơn (12→8.4px) */
+.cat-name{
+  font-size:8.5px;font-weight:800;color:var(--text);
+  white-space:normal;word-break:break-word;
+  text-align:left;display:block;line-height:1.3;
+  padding-left:2px
+}
+tr.row-done .cat-name{color:var(--green)}
+
+/* row-num */
+.row-num{font-size:9px;font-weight:700;color:var(--text-light)}
+
+/* reset button — QL only */
+.reset-btn{
+  padding:2px 5px;border-radius:5px;font-size:9px;font-weight:900;
+  border:1.5px solid #818cf8;cursor:pointer;
+  background:#eef2ff;color:#4338ca;
+  white-space:nowrap;transition:.15s;
+  font-family:'Barlow',sans-serif;
+  display:inline-flex;align-items:center;gap:1px;justify-content:center
+}
+.reset-btn:hover:not(:disabled){background:#c7d2fe;border-color:#6366f1}
+.reset-btn:disabled{opacity:.2;cursor:not-allowed}
+.row-num{font-size:11px;font-weight:700;color:var(--text-light)}
+
+/* INPUT — nhỏ lại 20% */
+.num-input{
+  width:40px;padding:1px 2px;
+  border:1.5px solid var(--gray-line);border-radius:5px;
+  font-size:13px;font-weight:900;text-align:center;
+  color:var(--text);background:#fff;
+  font-family:'Barlow Condensed','Barlow',sans-serif;
+  transition:.15s;-webkit-appearance:none;appearance:none;
+  display:block;margin:0 auto
+}
+.num-input:focus{outline:none;border-color:var(--blue);background:#f4f6ff;box-shadow:0 0 0 2px rgba(26,35,126,.1)}
+.num-input::-webkit-inner-spin-button,.num-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+/* percent — nhỏ lại 20% */
+.pct-wrap{display:inline-block;min-width:34px}
+.pct-val{font-size:12px;font-weight:900;font-family:'Barlow Condensed',sans-serif}
+.pct-bar{height:3px;background:var(--gray-line);border-radius:2px;margin-top:2px}
+.pct-fill{height:100%;border-radius:2px;transition:width .4s}
+.pg{color:var(--green)}.po{color:var(--orange)}.pr{color:var(--red)}.pz{color:var(--text-light)}
+
+/* star display — nhỏ lại 20% */
+.star-plus{font-size:12px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--green)}
+.star-minus{font-size:12px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--red)}
+.star-na{font-size:11px;color:var(--text-light)}
+
+/* kq — nhỏ lại 20% */
+.kq-val{font-size:14px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--text)}
+
+/* Số Ngày — 4 pills */
+.zd-pills{display:flex;gap:2px;justify-content:center;align-items:center}
+.zd-pill{
+  width:14px;height:14px;border-radius:3px;
+  font-size:9px;font-weight:900;font-family:'Barlow Condensed',sans-serif;
+  display:flex;align-items:center;justify-content:center;line-height:1
+}
+.zd-off{background:#f3f4f6;color:#9ca3af}
+.zd-past{background:#fecaca;color:#991b1b}
+.zd-on{background:#dc2626;color:#fff;box-shadow:0 0 0 1.5px #991b1b}
+
+/* Dùng sao button — compact */
+.use-btn{
+  padding:1px 4px;border-radius:5px;font-size:9px;font-weight:800;
+  border:1.5px solid var(--gray-line);cursor:pointer;background:#fff;
+  color:var(--text-mid);white-space:nowrap;transition:.15s;
+  font-family:'Barlow',sans-serif;display:inline-flex;align-items:center;gap:1px;
+  justify-content:center;width:100%
+}
+.use-btn:hover:not(:disabled){background:var(--orange-bg);border-color:#f97316;color:var(--orange)}
+.use-btn.active{background:var(--orange-bg);color:var(--orange);border-color:#f97316;font-weight:900;box-shadow:0 0 0 2px rgba(249,115,22,.2)}
+.use-btn:disabled{opacity:.25;cursor:not-allowed}
+.use-btn.ql-locked{background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb;cursor:not-allowed;opacity:.7}
+.use-btn.ql-locked:hover{background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb}
+
+/* ═══ SUMMARY STRIP ═══ */
+.summary-strip{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  background:#fff;border-top:2px solid var(--gray-line)
+}
+.sum-cell{padding:12px 8px;text-align:center;border-right:1px solid var(--gray-line)}
+.sum-cell:last-child{border-right:none}
+.sum-lbl{font-size:9px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.sum-val{font-size:22px;font-weight:900;font-family:'Barlow Condensed',sans-serif;line-height:1}
+.c-blue{color:#1a69c4}.c-green{color:var(--green)}.c-red{color:var(--red)}.c-gold{color:#c87f00}
+
+/* ═══ BOTTOM RESULT BAR ═══ */
+.result-bar{
+  background:linear-gradient(160deg,var(--blue-dark),var(--blue-mid));
+  padding:16px 20px;display:flex;justify-content:space-between;align-items:center
+}
+.rb-left .rb-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:700;color:rgba(255,255,255,.6);
+  text-transform:uppercase;letter-spacing:.8px
+}
+.rb-left .rb-val{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:28px;font-weight:900;color:#fff;line-height:1;margin-top:2px
+}
+.rb-left .rb-val em{font-size:42px;font-style:normal}
+.rb-left .rb-sub{font-size:11px;color:rgba(255,255,255,.55);margin-top:3px}
+.rb-left .rb-sub .plus{color:#69f0ae}.rb-left .rb-sub .minus{color:#ff6b6b}
+.rb-right{
+  background:rgba(255,215,0,.12);border:2px solid rgba(255,215,0,.4);
+  border-radius:14px;padding:10px 18px;text-align:center;min-width:110px
+}
+.rb-right .sv{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:36px;font-weight:900;color:var(--gold);line-height:1;
+  display:flex;align-items:center;gap:5px;justify-content:center
+}
+.rb-right .sv i{font-size:26px}
+.rb-right .sl{font-size:9px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.7px;margin-top:2px;font-weight:700}
+
+/* ═══ HISTORY SECTION ═══ */
+.hist-wrap{background:#131c55;padding:14px 20px 18px}
+.hist-title{
+  font-size:9px;font-weight:800;color:rgba(255,255,255,.35);
+  letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;
+  padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.08)
+}
+.hist-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.hist-cell{background:rgba(255,255,255,.06);border-radius:10px;padding:10px 6px;text-align:center}
+.hist-cell .h-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.hist-cell .h-val{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:#fff;line-height:1}
+.hist-cell .h-val.hg{color:#69f0ae}.hist-cell .h-val.hr{color:#ff6b6b}.hist-cell .h-val.hy{color:var(--gold)}
+
+/* ═══ SUBMIT BUTTON ═══ */
+.submit-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:calc(100% - 40px);margin:14px 20px;padding:14px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-mid));
+  color:#fff;border:none;border-radius:12px;
+  font-family:'Barlow',sans-serif;font-size:15px;font-weight:800;
+  cursor:pointer;letter-spacing:.3px;
+  box-shadow:0 4px 16px rgba(26,35,126,.35);transition:.2s
+}
+.submit-btn:hover:not(:disabled){background:linear-gradient(135deg,var(--blue-mid),#4355c7);transform:translateY(-2px);box-shadow:0 8px 24px rgba(26,35,126,.4)}
+.submit-btn:active{transform:translateY(0)}
+.submit-btn:disabled{opacity:.5;cursor:default;transform:none}
+
+/* ═══ BADGE ═══ */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.3px}
+.b-tgdd{background:var(--blue-light);color:var(--blue)}
+.b-top{background:var(--green-bg);color:var(--green)}
+
+/* ═══ LEADERBOARD ═══ */
+.dept-tabs{display:flex;gap:6px;padding:12px 20px 0;flex-wrap:wrap}
+.dept-tab{padding:6px 16px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid var(--gray-line);cursor:pointer;background:#fff;color:var(--text-light);transition:.15s;letter-spacing:.3px}
+.dept-tab.on{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.lb-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 20px}
+.lb-stat{background:#fff;border-radius:12px;border:1px solid var(--gray-line);padding:12px 14px;text-align:center}
+.lb-stat .s-lbl{font-size:9px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.lb-stat .s-val{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900}
+.lb-wrap{background:#fff;border-radius:12px;border:1px solid var(--gray-line);overflow:hidden;margin:0 20px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.lb-hdr{padding:12px 16px;background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));display:flex;justify-content:space-between;align-items:center}
+.lb-hdr .lh-title{font-size:13px;font-weight:800;color:#fff;display:flex;align-items:center;gap:6px}
+.lb-hdr .lh-date{font-size:10px;color:rgba(255,255,255,.5)}
+.lb-row{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--gray-line);transition:.1s}
+.lb-row:hover{background:var(--gray-bg)}
 .lb-row:last-child{border-bottom:none}
-.rk{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.r1{background:#FFD700;color:#5c3d00}.r2{background:#C0C0C0;color:#333}.r3{background:#CD7F32;color:#fff}.rn{background:#f0f2f5;color:#666}
-.lb-ei{flex:1;min-width:0}
-.lb-ei .nm{font-weight:500;font-size:13px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lb-ei .dt{font-size:11px;color:#888;margin-top:1px}
-.lb-sv{font-size:16px;font-weight:700;color:#BA7517;white-space:nowrap}
-.toast{color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;text-align:center;display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999;min-width:240px;box-shadow:0 4px 16px rgba(0,0,0,.2);pointer-events:none}
-.toast.ok{background:#1a237e}.toast.err{background:#C62828}
-.loading{text-align:center;padding:50px 20px;color:#666;font-size:14px}
-.loading i{font-size:28px;display:block;margin-bottom:10px;color:#1a237e;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.dept-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-.dept-tab{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid #dde1e7;cursor:pointer;background:#fff;color:#666;transition:.15s}
-.dept-tab.on{border-color:#1a237e;color:#1a237e;background:#EEF1FA}
-/* ── ADMIN ── */
-.section-title{font-size:13px;font-weight:500;color:#555;margin-bottom:9px;display:flex;align-items:center;gap:5px}
-.act-btn{padding:5px 11px;border:1px solid #dde1e7;border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:#333}
-.act-btn:hover{background:#f0f2f5}
-.act-btn.primary{background:#1a237e;color:#fff;border-color:#1a237e}
-.act-btn.primary:hover{background:#283593}
-.act-btn.danger{border-color:#E24B4A;color:#E24B4A}
-.act-btn.danger:hover{background:#FCEBEB}
-.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:20px}
+.rk{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0;font-family:'Barlow Condensed',sans-serif}
+.r1{background:linear-gradient(135deg,#FFD700,#FFA000);color:#4a2e00;box-shadow:0 2px 8px rgba(255,160,0,.4)}
+.r2{background:linear-gradient(135deg,#e8e8e8,#c0c0c0);color:#333}
+.r3{background:linear-gradient(135deg,#d4a574,#a0685a);color:#fff}
+.rn{background:var(--gray-bg);color:var(--text-mid)}
+.lb-info{flex:1;min-width:0}
+.lb-info .lnm{font-size:14px;font-weight:800;color:var(--text)}
+.lb-info .ldt{font-size:11px;color:var(--text-light);margin-top:2px}
+.lb-stars{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:#c87f00;display:flex;align-items:center;gap:3px}
+.lb-stars i{color:var(--gold);font-size:18px}
+
+/* ═══ ADMIN ═══ */
+.admin-section{padding:14px 20px}
+.sec-title{font-size:11px;font-weight:800;color:var(--text-mid);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.adm-card{background:#fff;border-radius:12px;border:1px solid var(--gray-line);overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.act-btn{padding:7px 14px;border:2px solid var(--gray-line);border-radius:8px;font-size:12px;cursor:pointer;background:#fff;color:var(--text);font-family:'Barlow',sans-serif;font-weight:700;transition:.15s}
+.act-btn.primary{background:linear-gradient(135deg,var(--blue),var(--blue-mid));color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(26,35,126,.25)}
+.act-btn:hover{opacity:.85}
+
+/* ═══ TOGGLE SWITCH ═══ */
+.toggle-card{
+  background:#fff;border-radius:12px;border:1px solid var(--gray-line);
+  padding:14px 16px;margin-bottom:12px;
+  box-shadow:0 1px 6px rgba(0,0,0,.04)
+}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.toggle-info .t-title{font-size:13px;font-weight:800;color:var(--text);margin-bottom:2px}
+.toggle-info .t-sub{font-size:10px;color:var(--text-light);line-height:1.4}
+.toggle-info .t-badge{
+  display:inline-block;margin-top:5px;padding:2px 10px;border-radius:20px;
+  font-size:10px;font-weight:800;letter-spacing:.3px
+}
+.t-badge-on{background:#dcfce7;color:#16a34a}
+.t-badge-off{background:#fee2e2;color:#dc2626}
+.sw{position:relative;display:inline-block;width:52px;height:28px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0}
+.sw-slider{
+  position:absolute;inset:0;cursor:pointer;
+  background:#d1d5db;border-radius:28px;transition:.3s
+}
+.sw-slider:before{
+  position:absolute;content:'';width:22px;height:22px;
+  left:3px;bottom:3px;background:#fff;border-radius:50%;
+  transition:.3s;box-shadow:0 2px 4px rgba(0,0,0,.2)
+}
+.sw input:checked + .sw-slider{background:linear-gradient(135deg,#16a34a,#22c55e);box-shadow:0 0 0 3px rgba(22,163,74,.2)}
+.sw input:checked + .sw-slider:before{transform:translateX(24px)}
+.toggle-sync-txt{font-size:9px;margin-top:6px;color:var(--text-light);display:flex;align-items:center;gap:4px}
+
+/* ═══ PASSWORD LOCK ═══ */
+.pwd-overlay{
+  display:none;position:fixed;inset:0;
+  background:linear-gradient(160deg,var(--blue-dark) 0%,#0a1245 100%);
+  z-index:200;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px
+}
+.pwd-overlay.open{display:flex}
+.pwd-icon{font-size:52px;color:var(--gold);margin-bottom:16px;filter:drop-shadow(0 4px 12px rgba(255,215,0,.4))}
+.pwd-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#fff;margin-bottom:6px;letter-spacing:.5px}
+.pwd-sub{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:28px;text-align:center}
+.pwd-inp{
+  padding:14px 20px;border:2px solid rgba(255,255,255,.2);border-radius:12px;
+  font-size:22px;font-weight:900;background:rgba(255,255,255,.08);color:#fff;
+  text-align:center;letter-spacing:8px;width:220px;font-family:'Barlow Condensed',sans-serif;
+  transition:.2s
+}
+.pwd-inp::placeholder{letter-spacing:0;font-size:14px;font-weight:500;color:rgba(255,255,255,.3)}
+.pwd-inp:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.12)}
+.pwd-btn{
+  margin-top:16px;padding:13px 40px;background:var(--gold);color:var(--blue-dark);
+  border:none;border-radius:12px;font-family:'Barlow',sans-serif;font-size:15px;
+  font-weight:900;cursor:pointer;letter-spacing:.5px;transition:.2s;
+  box-shadow:0 4px 16px rgba(255,215,0,.35)
+}
+.pwd-btn:hover{background:#ffe033;transform:translateY(-1px)}
+.pwd-err{color:#ff6b6b;font-size:12px;font-weight:700;margin-top:10px;min-height:18px}
+.pwd-cancel{margin-top:16px;background:none;border:none;color:rgba(255,255,255,.35);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif}
+
+/* ═══ MODAL ═══ */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
 .modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:12px;padding:18px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto}
-.modal h3{font-size:15px;font-weight:600;margin-bottom:13px;color:#333}
-.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
-.form-row label{font-size:12px;color:#666}
-.form-row input,.form-row select{padding:7px 10px;border:1px solid #dde1e7;border-radius:7px;font-size:13px;background:#fff;color:#333;width:100%}
-.form-row input:focus,.form-row select:focus{outline:none;border-color:#1a237e}
+.modal{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:380px;box-shadow:0 16px 48px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:800;margin-bottom:14px}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-row label{font-size:10px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px}
+.form-row input,.form-row select{padding:9px 12px;border:2px solid var(--gray-line);border-radius:8px;font-size:14px;font-family:'Barlow',sans-serif;font-weight:600;color:var(--text)}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:var(--blue)}
 .modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+
+/* ═══ TOAST ═══ */
+.toast{
+  color:#fff;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:700;
+  text-align:center;display:none;position:fixed;bottom:28px;
+  left:50%;transform:translateX(-50%);z-index:999;min-width:280px;
+  box-shadow:0 6px 24px rgba(0,0,0,.3);pointer-events:none
+}
+.toast.ok{background:linear-gradient(135deg,#0d1b6e,#1a237e)}
+.toast.err{background:linear-gradient(135deg,#b71c1c,#c62828)}
+
+/* ═══ ANALYSIS TAB ═══ */
+.ana-store-card{background:#fff;border-radius:12px;border:1px solid var(--gray-line);padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.ana-store-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.ana-store-name{font-size:13px;font-weight:800;color:var(--blue)}
+.ana-cat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-line);font-size:12px}
+.ana-cat-row:last-child{border-bottom:none}
+.ana-cat-name{font-weight:700;color:var(--text);flex:1}
+.ana-pct-badge{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;padding:2px 8px;border-radius:6px}
+.ana-pct-high{background:var(--green-bg);color:var(--green)}
+.ana-pct-mid{background:var(--orange-bg);color:var(--orange)}
+.ana-pct-low{background:var(--red-bg);color:var(--red)}
+.ana-emp-card{background:#fff;border-radius:12px;border:1px solid var(--gray-line);overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.ana-emp-hdr{padding:10px 14px;background:linear-gradient(135deg,#f7f8ff,#eef0fb);border-bottom:1px solid var(--gray-line);display:flex;justify-content:space-between;align-items:center}
+.ana-emp-name{font-size:13px;font-weight:800;color:var(--text)}
+.ana-rank-badge{display:flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900}
+.ana-emp-body{padding:10px 14px}
+.ana-insight{font-size:11px;color:var(--text-mid);margin-bottom:6px;padding:6px 10px;background:var(--gray-bg);border-radius:8px;border-left:3px solid var(--blue-mid)}
+.reco-card{background:#fff;border-radius:12px;border:1px solid var(--gray-line);overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.reco-hdr{padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;border-bottom:1px solid var(--gray-line)}
+.reco-hdr.reco-inc{background:var(--red-bg);color:var(--red)}
+.reco-hdr.reco-dec{background:var(--green-bg);color:var(--green)}
+.reco-hdr.reco-warn{background:var(--orange-bg);color:var(--orange)}
+.reco-body{padding:10px 14px}
+.reco-item{font-size:11px;color:var(--text);padding:5px 0;border-bottom:1px solid var(--gray-line);display:flex;gap:8px;align-items:flex-start}
+.reco-item:last-child{border-bottom:none}
+.reco-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.reco-dot-red{background:var(--red)}
+.reco-dot-green{background:var(--green)}
+.reco-dot-orange{background:var(--orange)}
+
+.loading{text-align:center;padding:80px 20px}
+.loading i{font-size:36px;display:block;margin-bottom:14px;color:var(--blue);animation:spin 1s linear infinite}
+.loading p{font-size:14px;font-weight:600;color:var(--text-mid)}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div class="app">
   <div id="toast" class="toast"></div>
-  <div id="loadingMsg" class="loading" style="display:none"><i class="ti ti-loader"></i>Đang tải từ Google Sheets...</div>
+  <div id="loadingMsg" class="loading" style="display:none">
+    <i class="ti ti-loader-2"></i>
+    <p>Đang tải từ Google Sheets...</p>
+  </div>
 
   <div id="appContent" style="display:none">
-    <div class="hdr">
-      <div class="hdr-l"><h2>BÁO CÁO KẾT QUẢ NGÀY</h2><p><span id="hdrDate"></span></p></div>
-      <div class="hdr-r" style="display:flex;gap:10px;align-items:center">
-        <div class="sync-wrap"><span class="dot" id="syncDot"></span><span id="syncTxt">—</span></div>
-        <div class="star-box"><div class="sv" id="hdrStar">—</div><div class="sl">Sao lũy kế</div></div>
+
+    <!-- ══ HEADER ══ -->
+    <div class="hdr" id="rptHeader">
+      <div class="hdr-top-row">
+        <div>
+          <div class="hdr-title">BÁO CÁO KẾT QUẢ NGÀY</div>
+          <div class="hdr-meta" id="hdrMeta">—</div>
+        </div>
+        <div class="hdr-star-badge">
+          <div class="num"><i class="ti ti-star-filled"></i><span id="hdrStar">—</span></div>
+          <div class="lbl">Tổng sao hôm nay</div>
+        </div>
+      </div>
+      <div class="hdr-info-row">
+        <div class="hdr-field">
+          <div class="f-lbl">Siêu thị</div>
+          <div class="f-val" id="hdrDept">—</div>
+        </div>
+        <div class="hdr-field">
+          <div class="f-lbl">Nhân viên</div>
+          <div class="f-val" id="hdrName">—</div>
+        </div>
+        <div class="hdr-field">
+          <div class="f-lbl">Ngày báo cáo</div>
+          <div class="f-val" id="hdrDateR">—</div>
+        </div>
+        <div class="hdr-field">
+          <div class="f-lbl">Sao lũy kế</div>
+          <div class="f-val gold" id="hdrStarLK">★ —</div>
+        </div>
+      </div>
+      <div class="sync-row"><span class="dot" id="syncDot"></span><span id="syncTxt">—</span></div>
+    </div>
+
+    <!-- ══ TABS ══ -->
+    <div class="tabs">
+      <div class="tab on" onclick="goTab('report',this)">
+        <i class="ti ti-clipboard-check"></i>Báo cáo
+      </div>
+      <div class="tab" onclick="goTab('rank',this)">
+        <i class="ti ti-trophy"></i>Xếp hạng
+      </div>
+      <div class="tab" id="adminTab" onclick="tryAdminTab(this)">
+        <i class="ti ti-shield-lock"></i>QL
+      </div>
+      <div class="tab" id="analysisTab" onclick="tryAnalysisTab(this)" style="display:none">
+        <i class="ti ti-chart-bar"></i>Phân tích
       </div>
     </div>
 
-    <div class="tabs">
-      <div class="tab on" onclick="goTab('report',this)"><i class="ti ti-clipboard-check" style="font-size:13px;margin-right:3px"></i>Báo cáo</div>
-      <div class="tab" onclick="goTab('rank',this)"><i class="ti ti-trophy" style="font-size:13px;margin-right:3px"></i>Xếp hạng</div>
-      <div class="tab" onclick="goTab('admin',this)"><i class="ti ti-settings" style="font-size:13px;margin-right:3px"></i>Quản lý</div>
-    </div>
-
-    <!-- TAB BÁO CÁO -->
+    <!-- ══ TAB BÁO CÁO ══ -->
     <div id="tab-report" class="pnl on">
-      <div class="card">
-        <div class="row2">
-          <span class="lbl">Nhân viên:</span>
-          <select id="empSel" onchange="onEmpChange()" style="flex:1;min-width:160px"></select>
-          <span class="lbl">Ngày:</span>
-          <input type="date" id="dateIn" onchange="onDateChange()" style="width:145px">
+      <!-- Selector -->
+      <div class="sel-card">
+        <div class="sel-grid">
+          <div class="sel-group">
+            <div class="sel-label">Nhân viên</div>
+            <select id="empSel" class="sel-control" onchange="onEmpChange()">
+              <option value="">— Chọn nhân viên —</option>
+            </select>
+          </div>
+          <div class="sel-group">
+            <div class="sel-label">Ngày báo cáo</div>
+            <input type="date" id="dateIn" class="sel-control" onchange="onDateChange()" style="width:150px">
+          </div>
         </div>
         <div class="stk-box" id="stkBox"></div>
       </div>
 
+      <!-- Report card -->
       <div id="repCard" style="display:none">
-        <div class="card">
-          <div class="emp-row">
-            <div>
-              <div class="emp-name" id="empNameD"></div>
-              <div class="emp-sub">
-                <span id="empDeptBadge" class="badge-dept"></span>
-                &nbsp;Hy vọng còn: <span id="hopeLeftD" style="font-weight:600;color:#BA7517"></span>
-              </div>
-            </div>
-            <div class="emp-star">Sao lũy kế: <span id="empStarD">0</span> <i class="ti ti-star" style="color:#FFD700"></i></div>
-          </div>
-          <div class="legend">
-            <span class="leg"><span class="leg-d" style="background:#3B6D11"></span>Đạt ≥100% → +sao, reset ngày</span>
-            <span class="leg"><span class="leg-d" style="background:#888"></span>Chưa đạt → đếm ngày liên tiếp</span>
-            <span class="leg"><span class="leg-d" style="background:#E24B4A"></span>Dùng hy vọng → −sao, reset ngày</span>
-          </div>
-          <div class="tbl-w">
-            <table>
-              <colgroup>
-                <col style="width:20px"><col style="width:140px"><col style="width:38px">
-                <col style="width:54px"><col style="width:66px"><col style="width:58px">
-                <col style="width:72px"><col style="width:58px">
-              </colgroup>
-              <thead><tr>
-                <th>#</th><th class="left">Môn thi đua</th><th>CT</th>
-                <th>Thực tế</th><th>% Đạt</th><th>Sao</th>
-                <th>Ngày chưa HT</th><th>Hy vọng</th>
-              </tr></thead>
-              <tbody id="repBody"></tbody>
-            </table>
-          </div>
-          <div class="sg">
-            <div class="sc"><div class="sc-l">Môn đạt</div><div class="sc-v cbl" id="sDone">0/0</div></div>
-            <div class="sc"><div class="sc-l">Sao nhận</div><div class="sc-v cgr" id="sPlus">+0</div></div>
-            <div class="sc"><div class="sc-l">Sao trừ</div><div class="sc-v crd" id="sMinus">-0</div></div>
-            <div class="sc"><div class="sc-l">Tổng hôm nay</div><div class="sc-v cgo" id="sNet">0</div></div>
-          </div>
-          <button class="sub-btn" id="subBtn" onclick="submitReport()">
-            <i class="ti ti-send"></i>Gửi báo cáo
-          </button>
+        <!-- Legend -->
+        <div class="legend-bar">
+          <div class="leg-item leg-done"><span>✅</span>Đạt ≥100% → +Sao</div>
+          <div class="leg-item leg-miss"><span>⏳</span>Chưa đạt → đếm ngày</div>
+          <div class="leg-item leg-use"><span>⭐</span>Dùng sao → −Sao</div>
         </div>
-      </div>
-    </div>
 
-    <!-- TAB XẾP HẠNG -->
+        <!-- Table -->
+        <div class="tbl-outer">
+        <div class="tbl-wrap" id="tblWrap">
+          <table id="repTable">
+            <thead id="repThead">
+              <tr>
+                <th style="width:20px">#</th>
+                <th class="tl" style="width:18%">Môn thi đua</th>
+                <th style="width:36px">Target</th>
+                <th style="width:44px">Thực tế</th>
+                <th style="width:46px">% Đạt</th>
+                <th style="width:32px">Sao+</th>
+                <th style="width:38px;cursor:pointer" id="zdModeTh" onclick="toggleZdMode()" title="Bấm để đổi chế độ">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
+                    <span>Số Ngày</span>
+                    <span id="zdModeLabel" style="font-size:7px;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.15);letter-spacing:.3px">AUTO</span>
+                  </div>
+                </th>
+                <th class="reset-th" style="width:34px;display:none">Reset</th>
+                <th style="width:52px">Dùng sao</th>
+              </tr>
+            </thead>
+            <tbody id="repBody"></tbody>
+          </table>
+        </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-strip">
+          <div class="sum-cell">
+            <div class="sum-lbl">Môn đạt</div>
+            <div class="sum-val c-blue" id="sDone">0/0</div>
+          </div>
+          <div class="sum-cell">
+            <div class="sum-lbl">Nhận</div>
+            <div class="sum-val c-green" id="sPlus">+0</div>
+          </div>
+          <div class="sum-cell">
+            <div class="sum-lbl">Trừ</div>
+            <div class="sum-val c-red" id="sMinus">-0</div>
+          </div>
+          <div class="sum-cell">
+            <div class="sum-lbl">Hôm nay</div>
+            <div class="sum-val c-gold" id="sNet">0</div>
+          </div>
+        </div>
+
+        <!-- Submit button -->
+        <button class="submit-btn" id="subBtn" onclick="submitReport()">
+          <i class="ti ti-device-floppy" style="font-size:18px"></i>
+          Lưu &amp; Xuất ảnh báo cáo
+        </button>
+
+        <!-- Result bar -->
+        <div class="result-bar" id="resultBar">
+          <div class="rb-left">
+            <div class="rb-title">Kết quả hôm nay</div>
+            <div class="rb-val">ĐẠT <em id="botDat">0</em> / <span id="botTotal">0</span> ngành</div>
+            <div class="rb-sub">
+              <span class="plus" id="botPlus">+0 thưởng</span>
+              &nbsp;&nbsp;
+              <span class="minus" id="botMinus">-0 trừ</span>
+            </div>
+          </div>
+          <div class="rb-right">
+            <div class="sv"><i class="ti ti-star-filled"></i><span id="botStar">—</span></div>
+            <div class="sl">Tổng sao sau hôm nay</div>
+          </div>
+        </div>
+
+        <!-- History -->
+        <div class="hist-wrap" id="histWrap">
+          <div class="hist-title">Tóm tắt lịch sử sao — Tháng này</div>
+          <div class="hist-grid">
+            <div class="hist-cell"><div class="h-lbl">Ngày báo cáo</div><div class="h-val c-blue" id="histDays">—</div></div>
+            <div class="hist-cell"><div class="h-lbl">Kiếm tháng</div><div class="h-val hg" id="histPlus">—</div></div>
+            <div class="hist-cell"><div class="h-lbl">Bị trừ tháng</div><div class="h-val hr" id="histMinus">—</div></div>
+            <div class="hist-cell"><div class="h-lbl">Ngày xuất sắc</div><div class="h-val hy" id="histBest">—</div></div>
+          </div>
+        </div>
+      </div><!-- /repCard -->
+    </div><!-- /tab-report -->
+
+    <!-- ══ TAB XẾP HẠNG ══ -->
     <div id="tab-rank" class="pnl">
       <div class="dept-tabs" id="deptTabs"></div>
-      <div class="mg">
-        <div class="sc"><div class="sc-l">Ngày đã báo cáo</div><div class="sc-v cbl" id="lbDays">—</div></div>
-        <div class="sc"><div class="sc-l">Ngày xuất sắc nhất</div><div class="sc-v cgo" id="lbBest">—</div></div>
+      <div class="lb-stats">
+        <div class="lb-stat"><div class="s-lbl">Ngày đã báo cáo</div><div class="s-val c-blue" id="lbDays">—</div></div>
+        <div class="lb-stat"><div class="s-lbl">Ngày xuất sắc nhất</div><div class="s-val c-gold" id="lbBest">—</div></div>
       </div>
       <div class="lb-wrap">
         <div class="lb-hdr">
-          <span><i class="ti ti-trophy" style="font-size:13px;margin-right:4px"></i>Bảng xếp hạng sao</span>
-          <span id="lbDateD" style="font-size:11px;color:#aaa"></span>
+          <div class="lh-title"><i class="ti ti-trophy" style="color:var(--gold)"></i>Bảng xếp hạng sao</div>
+          <div class="lh-date" id="lbDateD"></div>
         </div>
         <div id="lbBody"></div>
       </div>
     </div>
 
-    <!-- TAB QUẢN LÝ -->
+    <!-- ══ TAB QUẢN LÝ ══ -->
     <div id="tab-admin" class="pnl">
-      <div class="card">
-        <div class="section-title"><i class="ti ti-users" style="font-size:13px"></i>Sao lũy kế nhân viên</div>
-        <p style="font-size:11px;color:#888;margin-bottom:10px">Chỉnh sao trực tiếp tại đây. Nhấn <strong>Lưu</strong> để đồng bộ lên Sheets.</p>
-        <div class="tbl-w">
-          <table>
-            <colgroup><col style="width:130px"><col style="width:80px"><col style="width:80px"><col style="width:80px"><col style="width:80px"></colgroup>
-            <thead><tr>
-              <th class="left">Tên</th><th>Siêu thị</th><th>Sao lũy kế</th><th>Hy vọng</th><th>Thao tác</th>
-            </tr></thead>
-            <tbody id="adminEmpBody"></tbody>
-          </table>
+      <div class="admin-section">
+        <!-- Logout bar -->
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+          <button class="act-btn" onclick="adminLogout()" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c62828;border-color:#fca5a5;background:#fff5f5">
+            <i class="ti ti-logout" style="font-size:15px"></i>Đăng xuất QL
+          </button>
+        </div>
+
+        <!-- ══ TOGGLE DÙNG SAO ══ -->
+        <div class="sec-title"><i class="ti ti-toggle-right"></i>Điều khiển tính năng</div>
+        <div class="toggle-card">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="t-title">⭐ Nút "Dùng Sao" (Sao Hy Vọng)</div>
+              <div class="t-sub">Bật → Nhân viên được phép nhấn dùng sao hy vọng<br>Tắt → Toàn bộ NV không thể dùng sao (khóa nút)</div>
+              <span class="t-badge" id="hopeBadge">—</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="hopeToggle" onchange="onHopeToggle(this.checked)">
+              <span class="sw-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-sync-txt" id="hopeToggleSyncTxt">
+            <span class="dot" id="hopeToggleDot"></span>
+            <span id="hopeToggleTxt">—</span>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text-light);padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:14px;line-height:1.5">
+          <i class="ti ti-info-circle" style="color:#d97706;margin-right:4px"></i>
+          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
+        </div>
+
+        <div class="sec-title"><i class="ti ti-users"></i>Sao lũy kế nhân viên</div>
+        <p style="font-size:11px;color:var(--text-light);margin-bottom:12px">Chỉnh sao trực tiếp. Nhấn <strong>Lưu</strong> để đồng bộ Sheets.</p>
+        <div class="adm-card">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th class="tl">Tên nhân viên</th>
+                <th>Siêu thị</th>
+                <th style="width:80px">Sao lũy kế</th>
+                <th style="width:70px">Hy vọng</th>
+                <th style="width:60px">Lưu</th>
+              </tr></thead>
+              <tbody id="adminEmpBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-light);padding:10px;text-align:center;background:#fff;border-radius:10px;border:1px solid var(--gray-line)">
+          <i class="ti ti-info-circle" style="margin-right:4px;color:var(--blue)"></i>
+          Môn thi đua & target → chỉnh trong sheet <strong>CauHinh</strong> trên Google Sheets, sau đó tải lại trang.
         </div>
       </div>
-      <div class="card" style="font-size:12px;color:#888;text-align:center;padding:10px">
-        <i class="ti ti-info-circle" style="margin-right:4px"></i>
-        Môn thi đua & target → chỉnh trực tiếp trong sheet <strong>CauHinh</strong> trên Google Sheets, rồi tải lại trang.
+    </div>
+
+    <!-- ══ TAB PHÂN TÍCH ══ -->
+    <div id="tab-analysis" class="pnl">
+      <div class="admin-section">
+        <!-- Header bar -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div style="font-size:12px;font-weight:800;color:var(--blue);display:flex;align-items:center;gap:5px">
+            <i class="ti ti-chart-bar"></i>PHÂN TÍCH REALTIME
+          </div>
+          <button class="act-btn" onclick="adminLogout()" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c62828;border-color:#fca5a5;background:#fff5f5">
+            <i class="ti ti-logout" style="font-size:15px"></i>Đăng xuất
+          </button>
+        </div>
+
+        <!-- ── SOURCE: Google Sheets ── -->
+        <div class="adm-card" style="margin-bottom:14px;overflow:hidden">
+          <div style="padding:12px 14px 10px;background:linear-gradient(135deg,#0d652d,#1e7e34);border-radius:10px 10px 0 0;display:flex;align-items:center;gap:8px">
+            <i class="ti ti-brand-google" style="font-size:18px;color:#fff"></i>
+            <div>
+              <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.9);letter-spacing:.5px">KẾT NỐI GOOGLE SHEETS — Sheet: Realtime</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">Đồng bộ qua GAS (ưu tiên) · fallback CSV công khai</div>
+            </div>
+          </div>
+          <div style="padding:12px 14px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="act-btn primary" onclick="anaFetchSheet()" id="anaFetchBtn"
+                style="flex:1;font-size:12px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px">
+                <i class="ti ti-refresh" style="font-size:15px"></i>Đồng bộ Realtime
+              </button>
+              <button class="act-btn" id="anaAutoBtn" onclick="anaToggleAutoRefresh(this)"
+                style="font-size:11px;padding:9px 12px;white-space:nowrap;display:flex;align-items:center;gap:4px">
+                ⏱ Tự động làm mới
+              </button>
+              <button class="act-btn" onclick="anaClearAll()" style="font-size:11px;padding:9px 12px;color:var(--red);border-color:#fca5a5;white-space:nowrap">
+                <i class="ti ti-trash"></i>
+              </button>
+            </div>
+            <div id="anaFetchStatus" style="margin-top:8px;font-size:11px;display:none;padding:8px 10px;border-radius:8px;font-weight:700"></div>
+          </div>
+        </div>
+
+        <!-- ══ BẢNG XẾP HẠNG NHANH ══ -->
+        <div id="anaRankWrap" style="display:none;margin-bottom:14px">
+          <div class="sec-title" style="margin-bottom:8px">
+            <i class="ti ti-trophy"></i>XẾP HẠNG REALTIME — % ĐẠT TRUNG BÌNH
+          </div>
+          <div id="anaRankInner"></div>
+        </div>
+
+        <!-- ── OR: Paste manually ── -->
+        <details style="margin-bottom:14px">
+          <summary style="font-size:11px;font-weight:700;color:var(--text-mid);cursor:pointer;padding:10px 14px;background:#fff;border-radius:10px;border:1px solid var(--gray-line);list-style:none;display:flex;align-items:center;gap:6px">
+            <i class="ti ti-clipboard-text" style="font-size:14px;color:var(--blue)"></i>
+            📋 Hoặc dán thủ công từ Sheets...
+          </summary>
+          <div style="background:#fff;border:1px solid var(--gray-line);border-top:none;border-radius:0 0 10px 10px;padding:12px 14px">
+            <div style="font-size:10px;color:var(--text-light);margin-bottom:6px">Copy bôi đen từ Sheets rồi dán vào đây (Tab-separated)</div>
+            <textarea id="anaPaste"
+              placeholder="TGD_DNA / Nguyễn Thị Thy / Vivo / 13 / 722.2%&#10;TGD_DNA / Nguyễn Thị Thy / SIM / 6 / 333.3%&#10;..."
+              style="width:100%;padding:8px;border:1.5px solid var(--gray-line);border-radius:8px;font-size:11px;font-family:'Barlow',sans-serif;height:100px;resize:vertical;color:var(--text)"></textarea>
+            <button class="act-btn primary" onclick="anaParsePaste()" style="margin-top:7px;font-size:11px;padding:8px 14px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px">
+              <i class="ti ti-table-import"></i> Nhập từ văn bản
+            </button>
+          </div>
+        </details>
+
+        <!-- Data preview -->
+        <div class="adm-card" id="anaDataCard" style="display:none;margin-bottom:14px">
+          <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--gray-line)">
+            <span style="font-size:11px;font-weight:800;color:var(--text-mid)" id="anaDataCount">0 dòng dữ liệu</span>
+            <div style="display:flex;gap:6px;align-items:center">
+              <!-- Filter by employee -->
+              <select id="anaFilterEmp" class="sel-control" style="font-size:11px;padding:4px 8px;width:auto"
+                onchange="anaRenderDataTable()">
+                <option value="">Tất cả NV</option>
+              </select>
+            </div>
+          </div>
+          <div class="tbl-wrap" style="max-height:240px;overflow-y:auto">
+            <table>
+              <thead><tr>
+                <th class="tl" style="min-width:100px">Siêu thị</th>
+                <th class="tl" style="min-width:90px">Nhân viên</th>
+                <th class="tl" style="min-width:80px">Môn</th>
+                <th style="width:52px">Thực đạt</th>
+                <th style="width:52px">%HT</th>
+              </tr></thead>
+              <tbody id="anaDataBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Analysis button -->
+        <button class="submit-btn" onclick="anaAnalyze()" id="anaBtn" style="display:none;margin:0 0 14px">
+          <i class="ti ti-brain" style="font-size:18px"></i>
+          Phân tích & Đề xuất điều chỉnh sao
+        </button>
+
+        <!-- Results section -->
+        <div id="anaResults" style="display:none">
+          <!-- Store-level summary -->
+          <div class="sec-title" style="margin-bottom:10px"><i class="ti ti-building-store"></i>Kết quả theo siêu thị</div>
+          <div id="anaStoreSummary" style="margin-bottom:16px"></div>
+
+          <!-- Employee cross-analysis -->
+          <div class="sec-title" style="margin-bottom:10px"><i class="ti ti-user-check"></i>Tương quan: BXH Sao ↔ Kết quả thực tế</div>
+          <div id="anaEmpMatrix" style="margin-bottom:16px"></div>
+
+          <!-- Recommendations -->
+          <div class="sec-title" style="margin-bottom:10px"><i class="ti ti-adjustments"></i>Đề xuất điều chỉnh sao</div>
+          <div id="anaReco" style="margin-bottom:20px"></div>
+        </div>
       </div>
     </div>
-  </div>
+
+  </div><!-- /appContent -->
+</div><!-- /app -->
+
+<!-- ══ PASSWORD OVERLAY ══ -->
+<div class="pwd-overlay" id="pwdOverlay">
+  <div class="pwd-icon"><i class="ti ti-lock"></i></div>
+  <div class="pwd-title">Khu vực quản lý</div>
+  <div class="pwd-sub">Nhập mật khẩu để tiếp tục</div>
+  <input class="pwd-inp" type="password" id="pwdInput" placeholder="Mật khẩu" maxlength="10"
+    onkeydown="if(event.key==='Enter')checkPwd()">
+  <button class="pwd-btn" onclick="checkPwd()">
+    <i class="ti ti-key" style="margin-right:6px"></i>Xác nhận
+  </button>
+  <div class="pwd-err" id="pwdErr"></div>
+  <button class="pwd-cancel" onclick="closePwd()">Huỷ bỏ</button>
 </div>
 
-<!-- MODAL -->
+<!-- ══ MODAL ══ -->
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h3 id="modalTitle"></h3>
@@ -240,335 +822,1259 @@ tr.done td{background:rgba(99,153,34,.05)}
 </div>
 
 <script>
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyYleEwB9ywtQ8PeRJQftZ7-mWWP7C-J8DcUx_DvmTLZtaBnjMralaswuLz5fRo8wvXsA/exec';
+// ════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbxJRLMQ39Bp6Uqyc24MT77OEZoqE_DczYniP0ATd0Km7OM7zaN6W6ZLwLDGcuuJ0jDJfQ/exec';
+const ADMIN_PW      = '2026';
+
 const pad = n => String(n).padStart(2,'0');
 const nw  = new Date();
 const todayStr = `${nw.getFullYear()}-${pad(nw.getMonth()+1)}-${pad(nw.getDate())}`;
-document.getElementById('hdrDate').textContent = todayStr;
 
-let GAS_URL = FIXED_GAS_URL;
-let EMPS    = [];
-let CATS    = {};
-let STORED  = { reports:{}, empStars:{} };
-let curEmpId = null;
-let inputs   = {};
-let lbDeptFilter = 'all';
+let GAS_URL       = FIXED_GAS_URL;
+let EMPS          = [];
+let CATS          = {};
+let STORED        = { reports:{}, empStars:{} };
+let curEmpId      = null;
+let inputs        = {};        // { catId: number, 'h_catId': bool }
+let lbDeptFilter  = 'all';
+let adminUnlocked = false;
+let pendingAdminEl = null;
+let allowHope     = true;      // QL toggle: bật/tắt nút Dùng sao cho tất cả NV
 
-// ─── SYNC ────────────────────────────────────────────
-function setSync(s,txt){ const d=document.getElementById('syncDot'),t=document.getElementById('syncTxt'); d.className='dot '+s; if(t)t.textContent=txt; }
+// ══ ANA DATA ══
+let ANA_ROWS = []; // {store, empId, empName, cat, actual, pct}
 
+// ══ ZD MODE ══
+let zdAutoMode = true;   // true = tự động, false = NV tự chọn
+
+// ════════════════════════════════════════════
+//  SYNC INDICATOR
+// ════════════════════════════════════════════
+function setSync(s, txt){
+  document.getElementById('syncDot').className = 'dot ' + s;
+  document.getElementById('syncTxt').textContent = txt;
+}
+
+// ════════════════════════════════════════════
+//  GAS CALL
+// ════════════════════════════════════════════
 async function gasCall(payload){
-  setSync('busy','Đang sync...');
-  const res = await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
-  if(!res.ok) throw new Error('HTTP '+res.status);
+  setSync('busy','Đang sync…');
+  const res = await fetch(GAS_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain'},
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
   if(data.error) throw new Error(data.error);
   setSync('ok','Đã đồng bộ');
   return data;
 }
 
-// ─── LOAD ────────────────────────────────────────────
+// ════════════════════════════════════════════
+//  LOAD ALL
+// ════════════════════════════════════════════
 async function loadAll(){
-  document.getElementById('loadingMsg').style.display='block';
-  try{
-    const data = await gasCall({action:'load'});
+  document.getElementById('loadingMsg').style.display = 'block';
+  updateHdrMeta();
+  try {
+    const data = await gasCall({ action:'load' });
     EMPS   = data.emps   || [];
     CATS   = data.cats   || {};
-    STORED = data.stored || {reports:{},empStars:{}};
-    EMPS.forEach(e=>{
-      const s = STORED.empStars[e.id];
-      if(s){ if(s.stars!==undefined)e.stars=s.stars; if(s.hope!==undefined)e.hope=s.hope; e.reportDays=s.reportDays||0; e.bestDay=s.bestDay||'—'; }
-      else{ e.reportDays=0; e.bestDay='—'; }
-    });
-    document.getElementById('loadingMsg').style.display='none';
-    document.getElementById('appContent').style.display='block';
-    document.getElementById('dateIn').value=todayStr;
-    buildEmpSelect(); renderLeaderboard(); renderAdminTab();
-  }catch(err){
-    document.getElementById('loadingMsg').style.display='none';
-    toast('❌ Không tải được: '+err.message,'err'); setSync('err','Lỗi kết nối');
-  }
-}
-
-// ─── EMP ─────────────────────────────────────────────
-function buildEmpSelect(){
-  const s=document.getElementById('empSel'); const prev=s.value;
-  s.innerHTML='<option value="">-- Chọn nhân viên --</option>';
-  const depts=[...new Set(EMPS.map(e=>e.dept))];
-  depts.forEach(dept=>{
-    const grp=document.createElement('optgroup'); grp.label=dept;
-    EMPS.filter(e=>e.dept===dept).forEach(e=>{ const o=document.createElement('option'); o.value=e.id; o.textContent=e.name; grp.appendChild(o); });
-    s.appendChild(grp);
-  });
-  if(prev)s.value=prev;
-}
-function getCurEmp(){ return EMPS.find(e=>e.id===curEmpId)||null; }
-function getCats(dept){ return CATS[dept]||[]; }
-
-function onEmpChange(){
-  curEmpId=document.getElementById('empSel').value||null; inputs={};
-  const emp=getCurEmp();
-  if(!emp){ document.getElementById('repCard').style.display='none'; document.getElementById('hdrStar').textContent='—'; return; }
-  document.getElementById('repCard').style.display='block';
-  updateEmpHeader(); computeStreak(); renderTable();
-}
-function onDateChange(){ if(!curEmpId)return; inputs={}; computeStreak(); renderTable(); }
-
-function updateEmpHeader(){
-  const emp=getCurEmp(); if(!emp)return;
-  document.getElementById('empNameD').textContent=emp.name;
-  document.getElementById('empStarD').textContent=emp.stars;
-  document.getElementById('hopeLeftD').textContent=emp.hope;
-  document.getElementById('hdrStar').textContent=emp.stars;
-  const b=document.getElementById('empDeptBadge');
-  b.textContent=emp.dept; b.className='badge-dept '+(emp.dept.toLowerCase().includes('top')?'topzone':'tgdd');
-}
-
-// ─── STREAK ──────────────────────────────────────────
-function daysBefore(dateStr,n){ const d=new Date(dateStr); d.setDate(d.getDate()-n); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-
-function computeStreak(){
-  const emp=getCurEmp(); const box=document.getElementById('stkBox');
-  if(!emp){ box.innerHTML=''; return; }
-  const dateKey=document.getElementById('dateIn').value;
-  let streak=0;
-  for(let i=1;i<=60;i++){
-    const k=daysBefore(dateKey,i);
-    const rep=(STORED.reports[emp.id]||{})[k];
-    if(!rep)break; if((rep._pct||0)>=100)break; streak++;
-  }
-  if(!streak){ box.innerHTML=''; return; }
-  const cls=streak>=3?'stk stk-d':'stk stk-w';
-  box.innerHTML=`<span class="${cls}"><i class="ti ti-alert-triangle" style="font-size:12px;margin-right:3px"></i>${streak>=3?'Nguy hiểm':'Cảnh báo'}: ${streak} ngày liên tiếp chưa đạt 100%!</span>`;
-}
-
-// ─── SỐ NGÀY CHƯA HT (tự động đếm chuỗi ngày <100% cho từng môn) ──
-// Trả về số ngày liên tiếp (kể cả hôm nay là ngày 1) mà môn catId chưa đạt
-// Reset về 0 nếu: đạt >=100% hoặc đã dùng hy vọng
-function getZeroDays(empId, catId, dateKey){
-  const reps = STORED.reports[empId] || {};
-  let count = 0;
-  // đếm ngược từ ngày hôm qua
-  for(let i=1; i<=90; i++){
-    const k = daysBefore(dateKey, i);
-    const rep = reps[k];
-    if(!rep) break;                         // không có báo cáo → dừng
-    const actual = rep[catId] || 0;
-    const hope   = rep['h_'+catId] || false;
-    // nếu đạt >=100% hoặc dùng hy vọng → reset (dừng đếm)
-    if(hope) break;
-    // cần biết target để tính % — lấy từ CATS
-    // tìm dept của emp
-    const emp2 = EMPS.find(e=>e.id===empId);
-    const cat2 = emp2 ? (getCats(emp2.dept).find(c=>c.id===catId)) : null;
-    const target = cat2 ? cat2.target : 1;
-    const pct = target>0 ? Math.round(actual/target*100) : 0;
-    if(pct>=100) break;                     // đạt → reset
-    count++;
-  }
-  return count; // số ngày trước hôm nay chưa đạt; hôm nay là ngày count+1 nếu chưa đạt
-}
-
-// ─── TABLE ───────────────────────────────────────────
-function getPct(a,t){ return t>0?Math.round(a/t*100):0; }
-
-function renderTable(){
-  const emp=getCurEmp(); if(!emp)return;
-  const cats=getCats(emp.dept);
-  const dateKey=document.getElementById('dateIn').value;
-  const saved=(STORED.reports[emp.id]||{})[dateKey]||{};
-  const tbody=document.getElementById('repBody'); tbody.innerHTML='';
-  let totPlus=0,totMinus=0,done=0;
-
-  cats.forEach((cat,i)=>{
-    const actual = inputs[cat.id]!==undefined ? inputs[cat.id] : (saved[cat.id]||0);
-    const hk = 'h_'+cat.id;
-    const hope = inputs[hk]!==undefined ? inputs[hk] : (saved[hk]||false);
-    const pct    = getPct(actual,cat.target);
-    const isDone = pct>=100;
-    if(isDone)done++;
-
-    let starH='',sp=0,sm=0;
-    if(isDone){ sp=cat.sp; totPlus+=sp; starH=`<span class="sp">+${sp}</span>`; }
-    else if(hope){ sm=cat.sm; totMinus+=sm; starH=`<span class="sm2">-${sm}</span>`; }
-    else{ starH=`<span class="sz">—</span>`; }
-
-    // Ngày chưa HT: tự động đếm
-    let zdH;
-    if(isDone || hope){
-      // đạt hoặc dùng hy vọng → hiển thị 0 (reset)
-      zdH='<span class="zd0">0</span>';
-    } else {
-      const pastDays = getZeroDays(emp.id, cat.id, dateKey);
-      const todayDay = pastDays + 1; // hôm nay là ngày thứ...
-      const cls = todayDay>=3?'zd3':todayDay>=2?'zd2':'zd1';
-      zdH=`<span class="zd-badge ${cls}">${todayDay} ngày</span>`;
+    STORED = data.stored || { reports:{}, empStars:{} };
+    // Đọc trạng thái toggle Dùng sao từ server (do QL thiết lập)
+    if(data.settings && data.settings.allowHope !== undefined){
+      allowHope = data.settings.allowHope;
     }
 
-    let pC='pz',pD='—';
-    if(actual>0||isDone){ pD=pct+'%'; pC=isDone?'pg':pct>=50?'po':'pr'; }
-    const bc=isDone?'#639922':pct>=50?'#EF9F27':'#E24B4A';
-    const bw=Math.min(pct,100);
-    const hDis=(isDone||(emp.hope<=0&&!hope))?'disabled':'';
-    const hCls='hb'+(hope?' hon':'');
+    EMPS.forEach(e => {
+      const s = STORED.empStars[e.id];
+      if(s){
+        if(s.stars !== undefined) e.stars = s.stars;
+        if(s.hope  !== undefined) e.hope  = s.hope;
+        e.reportDays = s.reportDays || 0;
+        e.bestDay    = s.bestDay    || '—';
+      } else {
+        e.reportDays = 0;
+        e.bestDay    = '—';
+      }
+    });
 
-    const tr=document.createElement('tr');
-    if(isDone)tr.className='done';
-    tr.innerHTML=`
-<td style="color:#bbb;font-size:11px">${i+1}</td>
-<td class="left cn">${cat.name}</td>
-<td style="color:#888">${cat.target}</td>
-<td><input class="ni" type="number" min="0" value="${actual}" oninput="onInput('${cat.id}',this.value)"></td>
-<td><span class="${pC}">${pD}</span><div class="bar"><div class="barf" style="width:${bw}%;background:${bc}"></div></div></td>
-<td>${starH}</td>
-<td>${zdH}</td>
-<td><button class="${hCls}" onclick="toggleHope('${cat.id}')" ${hDis}>${hope?'★ Đang dùng':'Dùng'}</button></td>`;
-    tbody.appendChild(tr);
-  });
-
-  const net=totPlus-totMinus;
-  document.getElementById('sDone').textContent=`${done}/${cats.length}`;
-  document.getElementById('sPlus').textContent=`+${totPlus}`;
-  document.getElementById('sMinus').textContent=`-${totMinus}`;
-  document.getElementById('sNet').textContent=(net>=0?'+':'')+net;
-  document.getElementById('sNet').className='sc-v '+(net>0?'cgr':net<0?'crd':'cgo');
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('dateIn').value = todayStr;
+    buildEmpSelect();
+    renderLeaderboard();
+    renderAdminTab();
+  } catch(err){
+    document.getElementById('loadingMsg').style.display = 'none';
+    toast('❌ Không tải được: ' + err.message, 'err');
+    setSync('err','Lỗi kết nối');
+  }
 }
 
-function onInput(catId,val){ inputs[catId]=parseInt(val)||0; renderTable(); }
+function updateHdrMeta(){
+  const n = new Date();
+  document.getElementById('hdrMeta').textContent =
+    `TGĐD · ${todayStr} · Xuất lúc ${pad(n.getHours())}:${pad(n.getMinutes())}`;
+}
 
-function toggleHope(catId){
-  const emp=getCurEmp(); if(!emp)return;
-  const hk='h_'+catId;
-  const dateKey=document.getElementById('dateIn').value;
-  const saved=(STORED.reports[emp.id]||{})[dateKey]||{};
-  const cat=getCats(emp.dept).find(c=>c.id===catId);
-  const actual=inputs[catId]!==undefined?inputs[catId]:(saved[catId]||0);
-  const pct=getPct(actual,cat.target);
-  if(pct>=100)return;
-  const cur=inputs[hk]!==undefined?inputs[hk]:(saved[hk]||false);
-  if(!cur&&emp.hope<=0){ toast('Không còn sao hy vọng!','err'); return; }
-  inputs[hk]=!cur;
+// ════════════════════════════════════════════
+//  EMP SELECT
+// ════════════════════════════════════════════
+function buildEmpSelect(){
+  const sel = document.getElementById('empSel');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Chọn nhân viên —</option>';
+  const depts = [...new Set(EMPS.map(e => e.dept))];
+  depts.forEach(dept => {
+    const grp = document.createElement('optgroup');
+    grp.label = dept;
+    EMPS.filter(e => e.dept === dept).forEach(e => {
+      const o = document.createElement('option');
+      o.value = e.id;
+      o.textContent = e.name;
+      grp.appendChild(o);
+    });
+    sel.appendChild(grp);
+  });
+  if(prev) sel.value = prev;
+}
+
+function getCurEmp(){ return EMPS.find(e => e.id === curEmpId) || null; }
+function getCats(dept){ return CATS[dept] || []; }
+
+function onEmpChange(){
+  curEmpId = document.getElementById('empSel').value || null;
+  inputs   = {};
+  const emp = getCurEmp();
+  if(!emp){
+    document.getElementById('repCard').style.display = 'none';
+    clearHeader();
+    return;
+  }
+  document.getElementById('repCard').style.display = 'block';
+  updateEmpHeader();
+  computeStreak();
   renderTable();
 }
 
-// ─── SUBMIT ──────────────────────────────────────────
-async function submitReport(){
-  const emp=getCurEmp(); if(!emp)return;
-  const cats=getCats(emp.dept);
-  const dateKey=document.getElementById('dateIn').value;
-  const saved=(STORED.reports[emp.id]||{})[dateKey]||{};
-
-  const rep={};
-  let pctSum=0,totPlus=0,totMinus=0,hopeUsed=0;
-  const lines=[];
-
-  cats.forEach(cat=>{
-    const actual=inputs[cat.id]!==undefined?inputs[cat.id]:(saved[cat.id]||0);
-    const hk='h_'+cat.id;
-    const hope=inputs[hk]!==undefined?inputs[hk]:(saved[hk]||false);
-    rep[cat.id]=actual; rep[hk]=hope;
-    const pct=getPct(actual,cat.target); pctSum+=pct;
-    let star=0;
-    if(pct>=100){ totPlus+=cat.sp; star=cat.sp; }
-    else if(hope){ totMinus+=cat.sm; hopeUsed++; star=-cat.sm; }
-    lines.push({name:cat.name,target:cat.target,actual,pct,star});
-  });
-
-  rep._pct=Math.round(pctSum/cats.length);
-  const net=totPlus-totMinus;
-  const starsNew=Math.max(0,emp.stars+net);
-  const hopeNew=Math.max(0,emp.hope-hopeUsed);
-
-  if(!STORED.reports[emp.id])STORED.reports[emp.id]={};
-  STORED.reports[emp.id][dateKey]=rep;
-  const idx=EMPS.findIndex(e=>e.id===emp.id);
-  EMPS[idx].stars=starsNew; EMPS[idx].hope=hopeNew;
-  EMPS[idx].reportDays=(emp.reportDays||0)+1;
-  if(net>0)EMPS[idx].bestDay=dateKey.slice(5).replace('-','/')+' (+'+net+')';
-  STORED.empStars[emp.id]={stars:starsNew,hope:hopeNew,reportDays:EMPS[idx].reportDays,bestDay:EMPS[idx].bestDay};
-
-  inputs={};
-  const btn=document.getElementById('subBtn'); btn.disabled=true;
-  try{
-    await gasCall({action:'saveReport',empId:emp.id,empName:emp.name,dept:emp.dept,date:dateKey,rep,lines,starsBase:emp.stars,hopeBase:emp.hope,starsNew,hopeNew,net});
-    toast(`✓ Đã gửi! +${totPlus} sao − ${totMinus} sao = ${net>=0?'+':''}${net} hôm nay`,'ok');
-  }catch(err){ toast('⚠️ Gửi thất bại: '+err.message,'err'); }
-  btn.disabled=false;
-  updateEmpHeader(); computeStreak(); renderTable(); renderLeaderboard(); renderAdminTab();
+function onDateChange(){
+  if(!curEmpId) return;
+  inputs = {};
+  updateEmpHeader();
+  computeStreak();
+  renderTable();
 }
 
-// ─── LEADERBOARD ─────────────────────────────────────
+function clearHeader(){
+  ['hdrStar','hdrName','hdrDept','hdrDateR'].forEach(id =>
+    document.getElementById(id).textContent = '—');
+  document.getElementById('hdrStarLK').textContent = '★ —';
+}
+
+function updateEmpHeader(){
+  const emp = getCurEmp();
+  if(!emp) return;
+  const dateKey = document.getElementById('dateIn').value;
+  document.getElementById('hdrName').textContent   = emp.name;
+  document.getElementById('hdrDept').textContent   = emp.dept;
+  document.getElementById('hdrDateR').textContent  = dateKey;
+  document.getElementById('hdrStarLK').textContent = '★ ' + emp.stars;
+  // update history section
+  document.getElementById('histDays').textContent  = (emp.reportDays || 0) + ' ngày';
+  document.getElementById('histBest').textContent  = emp.bestDay || '—';
+  // month stats
+  const monthKey = dateKey.substring(0,7);
+  const cats = getCats(emp.dept);
+  let mPlus = 0, mMinus = 0;
+  Object.entries(STORED.reports[emp.id] || {}).forEach(([dk, rep]) => {
+    if(!dk.startsWith(monthKey)) return;
+    cats.forEach(cat => {
+      const actual = rep[cat.id] || 0;
+      const hope   = rep['h_' + cat.id] || false;
+      const pct    = cat.target > 0 ? Math.round(actual / cat.target * 100) : 0;
+      if(pct >= 100)    mPlus  += cat.sp;
+      else if(hope)     mMinus += cat.sm;
+    });
+  });
+  document.getElementById('histPlus').textContent  = '+' + mPlus  + '⭐';
+  document.getElementById('histMinus').textContent = '-' + mMinus + '⭐';
+}
+
+// ════════════════════════════════════════════
+//  STREAK
+// ════════════════════════════════════════════
+function daysBefore(dateStr, n){
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() - n);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function computeStreak(){
+  const emp = getCurEmp();
+  const box = document.getElementById('stkBox');
+  if(!emp){ box.innerHTML = ''; return; }
+  const dateKey = document.getElementById('dateIn').value;
+  let streak = 0;
+  for(let i = 1; i <= 60; i++){
+    const k   = daysBefore(dateKey, i);
+    const rep = (STORED.reports[emp.id] || {})[k];
+    if(!rep) break;
+    if((rep._pct || 0) >= 100) break;
+    streak++;
+  }
+  box.innerHTML = streak
+    ? `<span class="stk ${streak >= 3 ? 'stk-d' : 'stk-w'}">
+        <i class="ti ti-alert-triangle" style="font-size:12px;margin-right:3px"></i>
+        ${streak >= 3 ? 'Nguy hiểm' : 'Cảnh báo'}: ${streak} ngày liên tiếp chưa đạt 100%!
+       </span>`
+    : '';
+}
+
+// ════════════════════════════════════════════
+//  ZD MODE TOGGLE
+// ════════════════════════════════════════════
+function toggleZdMode(){
+  zdAutoMode = !zdAutoMode;
+  const lbl = document.getElementById('zdModeLabel');
+  const th  = document.getElementById('zdModeTh');
+  if(lbl){
+    lbl.textContent = zdAutoMode ? 'AUTO' : 'TỰ CHỌN';
+    lbl.style.background = zdAutoMode ? 'rgba(0,0,0,.15)' : 'rgba(255,215,0,.5)';
+    lbl.style.color = zdAutoMode ? '' : '#4a2e00';
+  }
+  if(th){
+    th.style.background = zdAutoMode
+      ? '' // default gold header bg
+      : 'linear-gradient(135deg,#e6a800,#f5c400)'; // same but with indicator
+  }
+  // Clear manual zd overrides when switching back to auto
+  if(zdAutoMode){
+    Object.keys(inputs).forEach(k => { if(k.startsWith('zd_')) delete inputs[k]; });
+  }
+  renderTable();
+  toast(zdAutoMode ? '🔄 Số Ngày: Chạy tự động' : '✋ Số Ngày: Nhân viên tự chọn', 'ok');
+}
+
+
+function getZeroDays(empId, catId, dateKey){
+  const reps = STORED.reports[empId] || {};
+  const emp2 = EMPS.find(e => e.id === empId);
+  // Nếu hôm nay có cờ reset → 0
+  if((reps[dateKey] || {})['_reset_' + catId]) return 0;
+  let count = 0;
+  for(let i = 1; i <= 90; i++){
+    const k   = daysBefore(dateKey, i);
+    const rep = reps[k];
+    if(!rep) break;
+    if(rep['_reset_' + catId]) break;   // gặp ngày reset → dừng
+    const actual = rep[catId]           || 0;
+    const hope   = rep['h_' + catId]   || false;
+    if(hope) break;
+    const cat2   = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
+    const target = cat2 ? cat2.target : 1;
+    if(target > 0 && Math.round(actual / target * 100) >= 100) break;
+    count++;
+  }
+  return count;
+}
+
+// ════════════════════════════════════════════
+//  RENDER TABLE  ← KEY FIX: event delegation
+// ════════════════════════════════════════════
+function getPct(a, t){ return t > 0 ? Math.round(a / t * 100) : 0; }
+
+function renderTable(){
+  const emp = getCurEmp();
+  if(!emp) return;
+  const cats    = getCats(emp.dept);
+  const dateKey = document.getElementById('dateIn').value;
+  const saved   = (STORED.reports[emp.id] || {})[dateKey] || {};
+  const tbody   = document.getElementById('repBody');
+
+  // Hiện/ẩn cột Reset theo quyền QL
+  document.querySelectorAll('.reset-th,.reset-td').forEach(el => {
+    el.style.display = adminUnlocked ? '' : 'none';
+  });
+
+  // Sticky top = chiều cao thực của tabs + sel-card
+  const tabsEl = document.querySelector('.tabs');
+  const selEl  = document.querySelector('.sel-card');
+  const tabsH  = (tabsEl ? tabsEl.offsetHeight : 56);
+  const thead  = document.getElementById('repThead');
+  if(thead) thead.style.top = tabsH + 'px';
+  tbody.innerHTML = '';
+
+  let totPlus = 0, totMinus = 0, done = 0;
+
+  cats.forEach((cat, i) => {
+    const actual = inputs[cat.id] !== undefined ? inputs[cat.id] : (saved[cat.id] || 0);
+    const hk     = 'h_' + cat.id;
+    const hope   = inputs[hk]     !== undefined ? inputs[hk]     : (saved[hk]     || false);
+    const pct    = getPct(actual, cat.target);
+    const isDone = pct >= 100;
+    if(isDone) done++;
+
+    /* percent cell */
+    let pCls = 'pz', pTxt = '—';
+    if(actual > 0 || isDone){
+      pTxt = pct + '%';
+      pCls = isDone ? 'pg' : pct >= 50 ? 'po' : 'pr';
+    }
+    const bw  = Math.min(pct, 100);
+    const bCol = isDone ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+
+    /* star cells */
+    let spH = '<span class="star-na">—</span>';
+    if(isDone) spH = `<span class="star-plus">+${cat.sp}</span>`;
+
+    let kqH = '<span class="star-na">—</span>';
+    if(isDone)       { totPlus  += cat.sp; kqH = `<span class="star-plus">+${cat.sp}</span>`; }
+    else if(hope)    { totMinus += cat.sm; kqH = `<span class="star-minus">-${cat.sm}</span>`; }
+
+    /* kq actual value */
+    const actualH = actual > 0
+      ? `<span class="kq-val">${actual}</span>`
+      : '<span class="star-na">—</span>';
+
+    /* zero-days — auto or manual */
+    let zdH;
+    if(isDone || hope){
+      zdH = `<div class="zd-pills">${[1,2,3,4].map(n=>`<span class="zd-pill zd-off">${n}</span>`).join('')}</div>`;
+    } else if(zdAutoMode){
+      // AUTO: tính từ lịch sử
+      const past   = getZeroDays(emp.id, cat.id, dateKey);
+      const today1 = past + 1;
+      zdH = `<div class="zd-pills">${[1,2,3,4].map(n=>`<span class="zd-pill ${n===today1?'zd-on':n<today1?'zd-past':'zd-off'}">${n}</span>`).join('')}</div>`;
+    } else {
+      // MANUAL: NV tự chọn bằng 4 ô bấm
+      const manVal = inputs['zd_' + cat.id] !== undefined
+        ? inputs['zd_' + cat.id]
+        : (saved['zd_' + cat.id] || 0);
+      zdH = `<div class="zd-pills">${[1,2,3,4].map(n=>`<span class="zd-pill ${n===manVal?'zd-on':n<manVal?'zd-past':'zd-off'}" style="cursor:pointer" data-zdcat="${cat.id}" data-zdval="${n}">${n}</span>`).join('')}</div>`;
+    }
+
+    /* use-star button */
+    // canToggle: QL đã bật allowHope VÀ môn chưa đạt VÀ (đã bật hoặc còn sao hy vọng)
+    const canToggle = allowHope && !isDone && (hope || emp.hope > 0);
+    const btnCls    = 'use-btn' + (hope ? ' active' : '') + (!allowHope ? ' ql-locked' : '');
+    const btnDis    = canToggle ? '' : 'disabled';
+    const btnTxt    = !allowHope
+      ? `🔒`
+      : hope ? `★ −${cat.sm}` : `⭐−${cat.sm}`;
+
+    /* reset col — chỉ hiện khi admin đã mở khoá */
+    const resetTd = adminUnlocked
+      ? `<td class="reset-td"><button class="reset-btn" data-reset="${cat.id}" title="Reset">↺0</button></td>`
+      : `<td class="reset-td" style="display:none"></td>`;
+
+    /* build row */
+    const tr = document.createElement('tr');
+    if(isDone) tr.className = 'row-done';
+
+    tr.innerHTML = `
+      <td><span class="row-num">${i+1}</span></td>
+      <td class="tl" style="padding-left:4px"><span class="cat-name">${cat.name}</span></td>
+      <td style="font-size:11px;font-weight:800;color:var(--text-mid)">${cat.target}</td>
+      <td>
+        <input class="num-input" type="number" min="0" inputmode="numeric"
+          value="${actual}" data-catid="${cat.id}">
+      </td>
+      <td>
+        <div class="pct-wrap">
+          <span class="pct-val ${pCls}">${pTxt}</span>
+          <div class="pct-bar"><div class="pct-fill" style="width:${bw}%;background:${bCol}"></div></div>
+        </div>
+      </td>
+      <td>${spH}</td>
+      <td>${zdH}</td>
+      ${resetTd}
+      <td>
+        <button class="${btnCls}" data-catid="${cat.id}" ${btnDis}>${btnTxt}</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  /* totals */
+  const starsAfter = Math.max(0, (getCurEmp() || {stars:0}).stars + (totPlus - totMinus));
+  document.getElementById('sDone').textContent = `${done}/${cats.length}`;
+  document.getElementById('sPlus').textContent = `+${totPlus}`;
+  document.getElementById('sMinus').textContent= `-${totMinus}`;
+  const net = totPlus - totMinus;
+  document.getElementById('sNet').textContent  = (net >= 0 ? '+' : '') + net;
+  document.getElementById('sNet').className    = 'sum-val ' + (net > 0 ? 'c-green' : net < 0 ? 'c-red' : 'c-gold');
+
+  document.getElementById('botDat').textContent   = done;
+  document.getElementById('botTotal').textContent = cats.length;
+  document.getElementById('botPlus').textContent  = '+' + totPlus  + ' thưởng';
+  document.getElementById('botMinus').textContent = '-' + totMinus + ' trừ';
+  document.getElementById('botStar').textContent  = starsAfter;
+  document.getElementById('hdrStar').textContent  = starsAfter;
+}
+
+/* ── Event delegation for table inputs & buttons ── */
+document.addEventListener('input', e => {
+  if(e.target.classList.contains('num-input')){
+    const catId = e.target.dataset.catid;
+    if(!catId) return;
+    inputs[catId] = parseInt(e.target.value) || 0;
+    renderTable();
+  }
+});
+
+document.addEventListener('click', e => {
+  // Dùng sao
+  const useBtn = e.target.closest('.use-btn');
+  if(useBtn && !useBtn.hasAttribute('disabled') && useBtn.dataset.catid){
+    toggleHope(useBtn.dataset.catid);
+    return;
+  }
+  // Reset (chỉ QL)
+  const rstBtn = e.target.closest('.reset-btn');
+  if(rstBtn && !rstBtn.hasAttribute('disabled') && rstBtn.dataset.reset){
+    resetZeroDays(rstBtn.dataset.reset);
+    return;
+  }
+  // Số Ngày manual pill
+  if(!zdAutoMode && e.target.dataset.zdcat){
+    const catId = e.target.dataset.zdcat;
+    const val   = parseInt(e.target.dataset.zdval);
+    // Toggle: bấm lại ô đang chọn → về 0
+    inputs['zd_' + catId] = (inputs['zd_' + catId] === val) ? 0 : val;
+    renderTable();
+    return;
+  }
+});
+
+// ════════════════════════════════════════════
+//  TOGGLE HOPE (QL only — sync all users)
+// ════════════════════════════════════════════
+function renderHopeToggle(){
+  const chk   = document.getElementById('hopeToggle');
+  const badge = document.getElementById('hopeBadge');
+  if(!chk || !badge) return;
+  chk.checked = allowHope;
+  badge.textContent = allowHope ? '✅ Đang BẬT — NV có thể dùng sao' : '🔴 Đang TẮT — NV không thể dùng sao';
+  badge.className = 't-badge ' + (allowHope ? 't-badge-on' : 't-badge-off');
+}
+
+async function onHopeToggle(val){
+  allowHope = val;
+  renderHopeToggle();
+  renderTable();
+  // Sync lên server
+  const dot = document.getElementById('hopeToggleDot');
+  const txt = document.getElementById('hopeToggleTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'allowHope', value: val });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'BẬT' : 'TẮT'} cho tất cả nhân viên`;
+    toast(val ? '✅ Đã BẬT nút Dùng Sao cho tất cả NV' : '🔒 Đã TẮT nút Dùng Sao cho tất cả NV', 'ok');
+  } catch(err){
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message, 'err');
+  }
+}
+
+// ════════════════════════════════════════════
+//  TOGGLE HOPE
+// ════════════════════════════════════════════
+function toggleHope(catId){
+  const emp = getCurEmp(); if(!emp) return;
+  const hk      = 'h_' + catId;
+  const dateKey = document.getElementById('dateIn').value;
+  const saved   = (STORED.reports[emp.id] || {})[dateKey] || {};
+  const cat     = getCats(emp.dept).find(c => c.id === catId);
+  if(!cat) return;
+
+  const actual = inputs[catId] !== undefined ? inputs[catId] : (saved[catId] || 0);
+  if(getPct(actual, cat.target) >= 100){ toast('Môn này đã đạt rồi!','err'); return; }
+
+  const cur = inputs[hk] !== undefined ? inputs[hk] : (saved[hk] || false);
+  // Nếu đang tắt và hết sao hy vọng → không cho bật thêm
+  if(!cur && emp.hope <= 0){ toast(`Không còn sao hy vọng! (Hy vọng: ${emp.hope})`, 'err'); return; }
+  inputs[hk] = !cur;
+  renderTable();
+}
+
+// ════════════════════════════════════════════
+//  RESET ZERO DAYS (chỉ QL)
+// ════════════════════════════════════════════
+function resetZeroDays(catId){
+  if(!adminUnlocked){ toast('⚠️ Chỉ quản lý mới dùng được!','err'); return; }
+  const emp = getCurEmp(); if(!emp) return;
+  const dateKey = document.getElementById('dateIn').value;
+  if(!STORED.reports[emp.id]) STORED.reports[emp.id] = {};
+  if(!STORED.reports[emp.id][dateKey]) STORED.reports[emp.id][dateKey] = {};
+  STORED.reports[emp.id][dateKey]['_reset_' + catId] = true;
+  toast('✓ Đã reset số ngày về 0 cho môn này', 'ok');
+  renderTable();
+}
+
+// ════════════════════════════════════════════
+//  SUBMIT
+// ════════════════════════════════════════════
+async function submitReport(){
+  const emp = getCurEmp(); if(!emp) return;
+  const cats    = getCats(emp.dept);
+  const dateKey = document.getElementById('dateIn').value;
+  const saved   = (STORED.reports[emp.id] || {})[dateKey] || {};
+
+  const rep  = {};
+  let pctSum = 0, totPlus = 0, totMinus = 0, hopeUsed = 0;
+  const lines = [];
+
+  cats.forEach(cat => {
+    const actual = inputs[cat.id] !== undefined ? inputs[cat.id] : (saved[cat.id] || 0);
+    const hk     = 'h_' + cat.id;
+    const hope   = inputs[hk]     !== undefined ? inputs[hk]     : (saved[hk]     || false);
+    rep[cat.id]  = actual;
+    rep[hk]      = hope;
+    // Save manual zd override if mode is manual
+    if(!zdAutoMode && inputs['zd_' + cat.id] !== undefined){
+      rep['zd_' + cat.id] = inputs['zd_' + cat.id];
+    } else if(saved['zd_' + cat.id] !== undefined){
+      rep['zd_' + cat.id] = saved['zd_' + cat.id]; // preserve existing
+    }
+    const pct    = getPct(actual, cat.target);
+    pctSum      += pct;
+    let star = 0;
+    if(pct >= 100)    { totPlus  += cat.sp; star =  cat.sp; }
+    else if(hope)     { totMinus += cat.sm; star = -cat.sm; hopeUsed++; }
+    lines.push({ name:cat.name, target:cat.target, actual, pct, star });
+  });
+
+  rep._pct   = Math.round(pctSum / cats.length);
+  const net  = totPlus - totMinus;
+  const starsNew = Math.max(0, emp.stars + net);
+  const hopeNew  = Math.max(0, emp.hope  - hopeUsed);
+
+  // Giữ lại cờ reset của QL
+  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_')) rep[k] = saved[k]; });
+
+  if(!STORED.reports[emp.id]) STORED.reports[emp.id] = {};
+  STORED.reports[emp.id][dateKey] = rep;
+
+  const idx = EMPS.findIndex(e => e.id === emp.id);
+  EMPS[idx].stars       = starsNew;
+  EMPS[idx].hope        = hopeNew;
+  EMPS[idx].reportDays  = (emp.reportDays || 0) + 1;
+  if(net > 0) EMPS[idx].bestDay = dateKey.slice(5).replace('-','/') + ' (+' + net + ')';
+  STORED.empStars[emp.id] = {
+    stars: starsNew, hope: hopeNew,
+    reportDays: EMPS[idx].reportDays, bestDay: EMPS[idx].bestDay
+  };
+
+  inputs = {};
+  const btn = document.getElementById('subBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:18px"></i> Đang lưu…';
+
+  try {
+    await gasCall({
+      action:'saveReport', empId:emp.id, empName:emp.name, dept:emp.dept,
+      date:dateKey, rep, lines,
+      starsBase:emp.stars, hopeBase:emp.hope, starsNew, hopeNew, net
+    });
+    toast(`✓ Đã lưu! ${net >= 0 ? '+' : ''}${net} sao hôm nay`, 'ok');
+    updateEmpHeader();
+    computeStreak();
+    renderTable();
+    renderLeaderboard();
+    renderAdminTab();
+    // auto screenshot after render settles
+    setTimeout(captureReport, 700);
+  } catch(err){
+    toast('⚠️ Lỗi: ' + err.message, 'err');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-device-floppy" style="font-size:18px"></i> Lưu &amp; Xuất ảnh báo cáo';
+}
+
+// ════════════════════════════════════════════
+//  SCREENSHOT
+// ════════════════════════════════════════════
+async function captureReport(){
+  try {
+    const target = document.getElementById('appContent');
+    const canvas = await html2canvas(target, {
+      scale:2, useCORS:true, backgroundColor:'#f0f2f8', logging:false,
+      width:target.offsetWidth, windowWidth:target.offsetWidth
+    });
+    const a    = document.createElement('a');
+    const emp  = getCurEmp();
+    const date = document.getElementById('dateIn').value;
+    a.download = `BaoCao_${emp ? emp.name.replace(/\s/g,'_') : 'report'}_${date}.png`;
+    a.href     = canvas.toDataURL('image/png');
+    a.click();
+    toast('📸 Đã lưu ảnh báo cáo!', 'ok');
+  } catch(err){
+    toast('Không xuất được ảnh: ' + err.message, 'err');
+  }
+}
+
+// ════════════════════════════════════════════
+//  LEADERBOARD
+// ════════════════════════════════════════════
 function renderLeaderboard(){
-  const depts=['all',...new Set(EMPS.map(e=>e.dept))];
-  const dtabs=document.getElementById('deptTabs'); dtabs.innerHTML='';
-  depts.forEach(d=>{
-    const el=document.createElement('div'); el.className='dept-tab'+(d===lbDeptFilter?' on':'');
-    el.textContent=d==='all'?'Tất cả':d; el.onclick=()=>{lbDeptFilter=d;renderLeaderboard();};
+  const depts = ['all', ...new Set(EMPS.map(e => e.dept))];
+  const dtabs = document.getElementById('deptTabs');
+  dtabs.innerHTML = '';
+  depts.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'dept-tab' + (d === lbDeptFilter ? ' on' : '');
+    el.textContent = d === 'all' ? 'Tất cả' : d;
+    el.onclick = () => { lbDeptFilter = d; renderLeaderboard(); };
     dtabs.appendChild(el);
   });
-  const list=lbDeptFilter==='all'?EMPS:EMPS.filter(e=>e.dept===lbDeptFilter);
-  const sorted=[...list].sort((a,b)=>b.stars-a.stars);
-  const emp=getCurEmp()||sorted[0];
-  if(emp){ document.getElementById('lbDays').textContent=(emp.reportDays||0)+' ngày'; document.getElementById('lbBest').textContent=emp.bestDay||'—'; }
-  document.getElementById('lbDateD').textContent=todayStr;
-  const body=document.getElementById('lbBody'); body.innerHTML='';
-  sorted.forEach((e,i)=>{
-    const rc=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
-    const db=`<span class="badge-dept ${e.dept.toLowerCase().includes('top')?'topzone':'tgdd'}" style="font-size:10px;padding:2px 7px;margin-left:6px">${e.dept}</span>`;
-    const row=document.createElement('div'); row.className='lb-row';
-    row.innerHTML=`<div class="rk ${rc}">${i+1}</div>
-<div class="lb-ei"><div class="nm">${e.name}${db}</div><div class="dt">Hy vọng: ${e.hope} · BC: ${e.reportDays||0} ngày</div></div>
-<div class="lb-sv"><i class="ti ti-star" style="font-size:13px;color:#FFD700;margin-right:3px"></i>${e.stars}</div>`;
+
+  const list   = lbDeptFilter === 'all' ? EMPS : EMPS.filter(e => e.dept === lbDeptFilter);
+  const sorted = [...list].sort((a,b) => b.stars - a.stars);
+  const emp    = getCurEmp() || sorted[0];
+  if(emp){
+    document.getElementById('lbDays').textContent = (emp.reportDays || 0) + ' ngày';
+    document.getElementById('lbBest').textContent = emp.bestDay || '—';
+  }
+  document.getElementById('lbDateD').textContent = todayStr;
+
+  const body = document.getElementById('lbBody');
+  body.innerHTML = '';
+  sorted.forEach((e, i) => {
+    const rc      = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    const deptCls = e.dept.toLowerCase().includes('top') ? 'b-top' : 'b-tgdd';
+    const row     = document.createElement('div');
+    row.className = 'lb-row';
+    row.innerHTML = `
+      <div class="rk ${rc}">${i+1}</div>
+      <div class="lb-info">
+        <div class="lnm">${e.name}
+          <span class="badge ${deptCls}" style="font-size:10px;padding:2px 8px;margin-left:6px">${e.dept}</span>
+        </div>
+        <div class="ldt">Hy vọng: ${e.hope} &nbsp;·&nbsp; BC: ${e.reportDays||0} ngày</div>
+      </div>
+      <div class="lb-stars"><i class="ti ti-star-filled"></i>${e.stars}</div>`;
     body.appendChild(row);
   });
 }
 
-// ─── ADMIN TAB ───────────────────────────────────────
+// ════════════════════════════════════════════
+//  ADMIN AUTH
+// ════════════════════════════════════════════
+function tryAdminTab(el){
+  if(adminUnlocked){ goTab('admin', el); return; }
+  pendingAdminEl = el;
+  document.getElementById('pwdInput').value = '';
+  document.getElementById('pwdErr').textContent = '';
+  document.getElementById('pwdOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('pwdInput').focus(), 150);
+}
+
+function checkPwd(){
+  const val = document.getElementById('pwdInput').value;
+  if(val === ADMIN_PW){
+    adminUnlocked = true;
+    document.getElementById('pwdOverlay').classList.remove('open');
+    // Show analysis tab
+    document.getElementById('analysisTab').style.display = '';
+    if(pendingAdminEl){
+      const isAnalysis = pendingAdminEl.id === 'analysisTab';
+      if(isAnalysis){ goTab('analysis', pendingAdminEl); }
+      else { goTab('admin', pendingAdminEl); }
+      pendingAdminEl = null;
+    }
+    renderTable(); // hiện nút Reset
+    renderHopeToggle();
+  } else {
+    document.getElementById('pwdErr').textContent = '❌ Sai mật khẩu, thử lại!';
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+    setTimeout(() => document.getElementById('pwdErr').textContent = '', 2200);
+  }
+}
+
+function closePwd(){
+  document.getElementById('pwdOverlay').classList.remove('open');
+  pendingAdminEl = null;
+}
+
+// ════════════════════════════════════════════
+//  ADMIN TAB
+// ════════════════════════════════════════════
 function renderAdminTab(){
-  const tbody=document.getElementById('adminEmpBody'); tbody.innerHTML='';
-  EMPS.forEach(e=>{
-    const deptCls=e.dept.toLowerCase().includes('top')?'topzone':'tgdd';
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-<td class="left cn">${e.name}</td>
-<td><span class="badge-dept ${deptCls}" style="font-size:10px">${e.dept}</span></td>
-<td><input class="ni" type="number" min="0" style="width:60px" id="adm_star_${e.id}" value="${e.stars}"></td>
-<td><input class="ni" type="number" min="0" style="width:50px" id="adm_hope_${e.id}" value="${e.hope}"></td>
-<td><button class="act-btn primary" style="font-size:11px;padding:3px 9px" onclick="saveEmpStars('${e.id}')">Lưu</button></td>`;
+  renderHopeToggle();
+  const tbody = document.getElementById('adminEmpBody');
+  tbody.innerHTML = '';
+  EMPS.forEach(e => {
+    const dCls = e.dept.toLowerCase().includes('top') ? 'b-top' : 'b-tgdd';
+    const tr   = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="tl" style="font-weight:700;font-size:13px">${e.name}</td>
+      <td><span class="badge ${dCls}" style="font-size:10px">${e.dept}</span></td>
+      <td><input class="num-input" type="number" min="0" style="width:70px;font-size:16px" id="adm_s_${e.id}" value="${e.stars}"></td>
+      <td><input class="num-input" type="number" min="0" style="width:60px;font-size:16px" id="adm_h_${e.id}" value="${e.hope}"></td>
+      <td><button class="act-btn primary" style="font-size:11px;padding:5px 10px" onclick="saveEmpStars('${e.id}')">Lưu</button></td>`;
     tbody.appendChild(tr);
   });
 }
 
 async function saveEmpStars(empId){
-  const emp=EMPS.find(e=>e.id===empId); if(!emp)return;
-  const starsNew=parseInt(document.getElementById('adm_star_'+empId).value)||0;
-  const hopeNew =parseInt(document.getElementById('adm_hope_'+empId).value)||0;
-  emp.stars=starsNew; emp.hope=hopeNew;
-  if(!STORED.empStars[empId])STORED.empStars[empId]={};
-  STORED.empStars[empId].stars=starsNew;
-  STORED.empStars[empId].hope=hopeNew;
-  try{
-    await gasCall({action:'saveReport',empId,empName:emp.name,dept:emp.dept,
-      date:todayStr,rep:{_manual:true},lines:[],
-      starsBase:starsNew,hopeBase:hopeNew,starsNew,hopeNew,net:0});
-    toast(`✓ Đã lưu sao cho ${emp.name}`,'ok');
-    updateEmpHeader(); renderLeaderboard();
-  }catch(err){ toast('⚠️ Lỗi lưu: '+err.message,'err'); }
+  const emp = EMPS.find(e => e.id === empId); if(!emp) return;
+  const starsNew = parseInt(document.getElementById('adm_s_' + empId).value) || 0;
+  const hopeNew  = parseInt(document.getElementById('adm_h_' + empId).value) || 0;
+  emp.stars = starsNew; emp.hope = hopeNew;
+  if(!STORED.empStars[empId]) STORED.empStars[empId] = {};
+  STORED.empStars[empId].stars = starsNew;
+  STORED.empStars[empId].hope  = hopeNew;
+  try {
+    await gasCall({
+      action:'saveReport', empId, empName:emp.name, dept:emp.dept,
+      date:todayStr, rep:{_manual:true}, lines:[],
+      starsBase:starsNew, hopeBase:hopeNew, starsNew, hopeNew, net:0
+    });
+    toast(`✓ Đã lưu sao cho ${emp.name}`, 'ok');
+    updateEmpHeader();
+    renderLeaderboard();
+  } catch(err){
+    toast('⚠️ Lỗi: ' + err.message, 'err');
+  }
 }
 
-// ─── TAB SWITCH ──────────────────────────────────────
-function goTab(name,el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on')); el.classList.add('on');
-  document.querySelectorAll('.pnl').forEach(p=>p.classList.remove('on'));
-  document.getElementById('tab-'+name).classList.add('on');
-  if(name==='rank')renderLeaderboard();
-  if(name==='admin')renderAdminTab();
+// ════════════════════════════════════════════
+//  TAB SWITCH
+// ════════════════════════════════════════════
+function goTab(name, el){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.pnl').forEach(p => p.classList.remove('on'));
+  document.getElementById('tab-' + name).classList.add('on');
+  if(name === 'rank')     renderLeaderboard();
+  if(name === 'admin')    renderAdminTab();
 }
 
-// ─── TOAST ───────────────────────────────────────────
-function toast(msg,type='ok'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+type; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',3500); }
+// ════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════
+function toast(msg, type='ok'){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = 'toast ' + type;
+  t.style.display = 'block';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.style.display = 'none', 3500);
+}
 
-// ─── BOOT ────────────────────────────────────────────
+// ════════════════════════════════════════════
+//  ADMIN LOGOUT
+// ════════════════════════════════════════════
+function adminLogout(){
+  adminUnlocked = false;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.pnl').forEach(p => p.classList.remove('on'));
+  document.getElementById('tab-report').classList.add('on');
+  document.querySelector('.tab:first-child').classList.add('on');
+  document.getElementById('analysisTab').style.display = 'none';
+  toast('✓ Đã đăng xuất khỏi khu vực QL', 'ok');
+}
+
+// ════════════════════════════════════════════
+//  ANALYSIS TAB
+// ════════════════════════════════════════════
+function tryAnalysisTab(el){
+  if(adminUnlocked){ goTab('analysis', el); return; }
+  pendingAdminEl = el;
+  document.getElementById('pwdInput').value = '';
+  document.getElementById('pwdErr').textContent = '';
+  document.getElementById('pwdOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('pwdInput').focus(), 150);
+}
+
+// ── Extract Sheet ID from any Google Sheets URL ──
+function extractSheetId(url){
+  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  return m ? m[1] : null;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FETCH REALTIME — ưu tiên GAS (không cần public), fallback CSV
+// ══════════════════════════════════════════════════════════════
+let ANA_SUMMARY = [];        // tổng hợp theo NV từ GAS
+let ANA_AUTO_INTERVAL = null;// setInterval handle cho auto-refresh
+
+async function anaFetchSheet(){
+  const btn      = document.getElementById('anaFetchBtn');
+  const statusEl = document.getElementById('anaFetchStatus');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:15px"></i> Đang đồng bộ qua GAS…';
+  statusEl.style.display = 'none';
+
+  // ── Thử GAS trước ──
+  try {
+    const data = await gasCall({ action: 'loadRealtime' });
+    if(!data.ok) throw new Error(data.error || 'GAS trả lỗi');
+
+    ANA_ROWS    = data.rows    || [];
+    ANA_SUMMARY = data.summary || [];
+
+    statusEl.style.cssText = 'display:block;background:var(--green-bg);color:var(--green);border:1px solid #a7f3d0;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;margin-top:8px';
+    statusEl.innerHTML = `<i class="ti ti-check"></i> ✅ Đã đồng bộ qua GAS — ${ANA_ROWS.length} dòng · ${ANA_SUMMARY.length} nhân viên · cập nhật lúc ${data.updatedAt || '—'}`;
+
+    anaRenderRanking();   // bảng xếp hạng nhanh
+    anaRenderDataTable();
+    toast(`✅ Realtime: ${ANA_ROWS.length} dòng · ${ANA_SUMMARY.length} NV`, 'ok');
+
+  } catch(gasErr){
+    // ── Fallback: CSV công khai ──
+    statusEl.style.cssText = 'display:block;background:var(--orange-bg);color:var(--orange);border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;margin-top:8px';
+    statusEl.innerHTML = `<i class="ti ti-alert-triangle"></i> GAS lỗi: ${gasErr.message} — đang thử CSV công khai…`;
+
+    try {
+      const sheetId = '1GyJkJgNlsdDvcR9nQqP_Ck2JzX8SDqcBriO2ovlsgC4';
+      const csvUrl  = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Realtime`;
+      const res     = await fetch(csvUrl);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const text    = await res.text();
+      const rows    = anaParseCsv(text);
+      if(!rows.length) throw new Error('Không có dữ liệu');
+
+      const startIdx = (rows[0][0]||'').toLowerCase().match(/si[eê]u/) ? 1 : 0;
+      ANA_ROWS = [];
+      rows.slice(startIdx).forEach(cols => {
+        if(cols.length < 4) return;
+        const store  = (cols[0]||'').trim();
+        const emp    = (cols[1]||'').trim();
+        const cat    = (cols[2]||'').trim();
+        const actual = parseFloat((cols[3]||'0').replace(/[^0-9.-]/g,'')) || 0;
+        const pct    = parseFloat((cols[4]||'0').replace(/[^0-9.-]/g,'')) || 0;
+        if(!store||!emp||!cat) return;
+        const empObj = EMPS.find(e => e.name===emp || e.name.includes(emp) || emp.includes(e.name));
+        ANA_ROWS.push({ store, empId: empObj?empObj.id:emp, empName:emp, cat, actual, pct });
+      });
+
+      // Tự build summary từ CSV data
+      ANA_SUMMARY = _buildSummary(ANA_ROWS);
+
+      statusEl.style.cssText = 'display:block;background:var(--green-bg);color:var(--green);border:1px solid #a7f3d0;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;margin-top:8px';
+      statusEl.innerHTML = `<i class="ti ti-check"></i> CSV — ${ANA_ROWS.length} dòng · ${ANA_SUMMARY.length} nhân viên (sheet cần chia sẻ công khai)`;
+
+      anaRenderRanking();
+      anaRenderDataTable();
+      toast(`✓ CSV: ${ANA_ROWS.length} dòng`, 'ok');
+
+    } catch(csvErr){
+      statusEl.style.cssText = 'display:block;background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;margin-top:8px';
+      statusEl.innerHTML = `<i class="ti ti-alert-triangle"></i> Không tải được: ${csvErr.message}<br><small style="font-weight:400;opacity:.7">GAS: cần thêm hàm <code>handleLoadRealtime</code> và deploy lại</small>`;
+      toast('⚠️ Không tải được dữ liệu Realtime', 'err');
+    }
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-refresh" style="font-size:15px"></i>Đồng bộ Realtime';
+}
+
+// Build summary từ raw rows (dùng khi GAS không có summary)
+function _buildSummary(rows){
+  const map = {};
+  rows.forEach(r => {
+    const key = r.store+'||'+r.empName;
+    if(!map[key]) map[key] = { store:r.store, name:r.empName, cats:[], totalPct:0, count:0, done:0 };
+    map[key].cats.push({ cat:r.cat, actual:r.actual, pct:r.pct });
+    map[key].totalPct += r.pct;
+    map[key].count++;
+    if(r.pct >= 100) map[key].done++;
+  });
+  return Object.values(map).map(e => ({
+    store:  e.store,
+    name:   e.name,
+    avgPct: e.count > 0 ? Math.round(e.totalPct/e.count*10)/10 : 0,
+    done:   e.done,
+    total:  e.count,
+    cats:   e.cats.sort((a,b)=>b.pct-a.pct)
+  })).sort((a,b)=>b.avgPct-a.avgPct);
+}
+
+// ── Bảng xếp hạng nhanh theo % đạt TB ──
+function anaRenderRanking(){
+  const wrap = document.getElementById('anaRankWrap');
+  if(!wrap || !ANA_SUMMARY.length){ if(wrap) wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+
+  // Group by store
+  const stores = [...new Set(ANA_SUMMARY.map(e=>e.store))];
+  let html = '';
+  stores.forEach(store => {
+    const emps = ANA_SUMMARY.filter(e=>e.store===store);
+    const shortStore = store.includes('TGD') ? '🏪 TGDĐ' : store.includes('AAR') ? '🍎 TopZone' : store;
+    html += `<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:4px">
+        ${shortStore} — <span style="color:var(--text-mid);font-weight:600;text-transform:none">${emps.length} nhân viên</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">`;
+    emps.forEach((e, idx) => {
+      const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
+      const barW  = Math.min(100, e.avgPct);
+      const barColor = e.avgPct>=100?'#16a34a':e.avgPct>=70?'#d97706':'#dc2626';
+      const doneBadge = `<span style="font-size:9px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:10px;font-weight:700">${e.done}/${e.total} môn ✓</span>`;
+      // Top cat
+      const topCat = e.cats[0];
+      const topStr = topCat ? `<span style="font-size:9px;color:var(--text-light);margin-left:4px">↑ ${topCat.cat.substring(0,20)}… ${topCat.pct}%</span>` : '';
+      html += `<div style="background:#fff;border:1px solid var(--gray-line);border-radius:10px;padding:8px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+            <span style="font-size:14px;width:20px;text-align:center">${medal||'<span style=color:var(--text-light);font-size:11px>#'+(idx+1)+'</span>'}</span>
+            <span style="font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</span>
+            ${doneBadge}
+          </div>
+          <span style="font-size:14px;font-weight:900;color:${barColor};margin-left:8px;white-space:nowrap">${e.avgPct}%</span>
+        </div>
+        <div style="height:5px;background:#f3f4f6;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${barW}%;background:${barColor};border-radius:3px;transition:.4s"></div>
+        </div>
+        ${topStr}
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  document.getElementById('anaRankInner').innerHTML = html;
+}
+
+// ── Auto-refresh toggle ──
+function anaToggleAutoRefresh(el){
+  if(ANA_AUTO_INTERVAL){
+    clearInterval(ANA_AUTO_INTERVAL);
+    ANA_AUTO_INTERVAL = null;
+    el.textContent = '⏱ Tự động làm mới';
+    el.style.background = '';
+    el.style.color = '';
+    toast('Đã tắt tự động làm mới', 'ok');
+  } else {
+    anaFetchSheet();
+    ANA_AUTO_INTERVAL = setInterval(anaFetchSheet, 60000); // mỗi 60s
+    el.textContent = '⏹ Đang làm mới (60s)…';
+    el.style.background = '#dcfce7';
+    el.style.color = '#16a34a';
+    toast('✅ Tự động làm mới mỗi 60 giây', 'ok');
+  }
+}
+
+// ── Simple CSV parser (handles quoted fields) ──
+function anaParseCsv(text){
+  const rows = [];
+  const lines = text.split('\n');
+  lines.forEach(line => {
+    if(!line.trim()) return;
+    const cols = [];
+    let cur = '', inQ = false;
+    for(let i = 0; i < line.length; i++){
+      const c = line[i];
+      if(c === '"'){ inQ = !inQ; }
+      else if(c === ',' && !inQ){ cols.push(cur); cur = ''; }
+      else { cur += c; }
+    }
+    cols.push(cur);
+    rows.push(cols.map(c => c.trim().replace(/^"|"$/g,'')));
+  });
+  return rows;
+}
+
+function anaParsePaste(){
+  const raw = document.getElementById('anaPaste').value.trim();
+  if(!raw){ toast('⚠️ Chưa có dữ liệu để nhập', 'err'); return; }
+  let added = 0;
+  raw.split('\n').forEach(line => {
+    const parts = line.split(/[\t\/\|,]/).map(p => p.trim());
+    if(parts.length < 4) return;
+    const [store, empName, cat, actualStr, pctStr='0'] = parts;
+    if(!store || !empName || !cat) return;
+    const emp = EMPS.find(e => e.name === empName || e.name.includes(empName));
+    const pct = parseFloat((pctStr||'0').replace(/[^0-9.]/g,'')) || 0;
+    ANA_ROWS.push({ store, empId: emp ? emp.id : empName, empName, cat,
+      actual: parseFloat(actualStr)||0, pct });
+    added++;
+  });
+  document.getElementById('anaPaste').value = '';
+  anaRenderDataTable();
+  toast(`✓ Đã nhập ${added} dòng`, 'ok');
+}
+
+function anaRenderDataTable(){
+  const body    = document.getElementById('anaDataBody');
+  const card    = document.getElementById('anaDataCard');
+  const btn     = document.getElementById('anaBtn');
+  const res     = document.getElementById('anaResults');
+  const countEl = document.getElementById('anaDataCount');
+  const filterSel = document.getElementById('anaFilterEmp');
+  res.style.display = 'none';
+
+  if(!ANA_ROWS.length){ card.style.display='none'; btn.style.display='none'; return; }
+  card.style.display = 'block';
+  btn.style.display  = 'flex';
+
+  // Populate employee filter
+  const allEmps = [...new Set(ANA_ROWS.map(r => r.empName))].sort();
+  const curFilter = filterSel.value;
+  filterSel.innerHTML = '<option value="">Tất cả NV</option>' +
+    allEmps.map(n => `<option value="${n}"${n===curFilter?' selected':''}>${n}</option>`).join('');
+
+  const filtered = curFilter ? ANA_ROWS.filter(r => r.empName === curFilter) : ANA_ROWS;
+  countEl.textContent = `${ANA_ROWS.length} dòng · ${allEmps.length} nhân viên`;
+
+  body.innerHTML = '';
+  filtered.forEach(r => {
+    const pct = r.pct;
+    const pctCls = pct >= 100 ? 'ana-pct-high' : pct >= 70 ? 'ana-pct-mid' : 'ana-pct-low';
+    // Shorten store name for display
+    const storeShort = r.store.replace('TGD_DNA_HCH - ','').replace('TGD_','').substring(0,18);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="tl" style="font-size:10px;font-weight:700;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.store}">${storeShort}</td>
+      <td class="tl" style="font-size:11px;font-weight:700">${r.empName}</td>
+      <td class="tl" style="font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.cat}">${r.cat}</td>
+      <td style="font-size:12px;font-weight:800">${r.actual}</td>
+      <td><span class="ana-pct-badge ${pctCls}">${pct}%</span></td>`;
+    body.appendChild(tr);
+  });
+}
+
+function anaClearAll(){
+  ANA_ROWS = [];
+  anaRenderDataTable();
+  document.getElementById('anaResults').style.display = 'none';
+  const s = document.getElementById('anaFetchStatus');
+  if(s) s.style.display = 'none';
+}
+
+function anaAnalyze(){
+  if(!ANA_ROWS.length){ toast('⚠️ Chưa có dữ liệu', 'err'); return; }
+
+  // ── 1. Store-level: average % per category per store ──
+  const storeMap = {}; // store → { cat → [pcts] }
+  ANA_ROWS.forEach(r => {
+    if(!storeMap[r.store]) storeMap[r.store] = {};
+    if(!storeMap[r.store][r.cat]) storeMap[r.store][r.cat] = [];
+    storeMap[r.store][r.cat].push(r.pct);
+  });
+
+  const storeSumEl = document.getElementById('anaStoreSummary');
+  storeSumEl.innerHTML = '';
+  const storeCatAvgs = {}; // store → { cat → avg }
+  Object.entries(storeMap).forEach(([store, cats]) => {
+    storeCatAvgs[store] = {};
+    const card = document.createElement('div');
+    card.className = 'ana-store-card';
+    let rows = '';
+    Object.entries(cats).sort((a,b) => {
+      const avgA = a[1].reduce((s,v)=>s+v,0)/a[1].length;
+      const avgB = b[1].reduce((s,v)=>s+v,0)/b[1].length;
+      return avgA - avgB; // lowest first
+    }).forEach(([cat, pcts]) => {
+      const avg = Math.round(pcts.reduce((s,v)=>s+v,0)/pcts.length);
+      storeCatAvgs[store][cat] = avg;
+      const cls = avg >= 100 ? 'ana-pct-high' : avg >= 70 ? 'ana-pct-mid' : 'ana-pct-low';
+      const icon = avg >= 100 ? '✅' : avg >= 70 ? '⚠️' : '🔴';
+      rows += `<div class="ana-cat-row">
+        <span class="ana-cat-name">${icon} ${cat}</span>
+        <span style="font-size:11px;color:var(--text-light);margin-right:8px">${pcts.length} NV</span>
+        <span class="ana-pct-badge ${cls}">${avg}%</span>
+      </div>`;
+    });
+    const allPct = Object.values(cats).flat();
+    const overallAvg = Math.round(allPct.reduce((s,v)=>s+v,0)/allPct.length);
+    const ovCls = overallAvg >= 100 ? 'ana-pct-high' : overallAvg >= 70 ? 'ana-pct-mid' : 'ana-pct-low';
+    card.innerHTML = `
+      <div class="ana-store-hdr">
+        <span class="ana-store-name"><i class="ti ti-building-store" style="margin-right:4px"></i>${store}</span>
+        <span class="ana-pct-badge ${ovCls}">TB: ${overallAvg}%</span>
+      </div>${rows}`;
+    storeSumEl.appendChild(card);
+  });
+
+  // ── 2. Employee cross-analysis ──
+  const empMap = {}; // empId → { empName, store, cats: {cat→pct}, starRank }
+  ANA_ROWS.forEach(r => {
+    if(!empMap[r.empId]) empMap[r.empId] = { empName:r.empName, store:r.store, cats:{} };
+    empMap[r.empId].cats[r.cat] = r.pct;
+  });
+
+  // Star ranking
+  const sortedByStars = [...EMPS].sort((a,b) => b.stars - a.stars);
+  sortedByStars.forEach((e,i) => {
+    if(empMap[e.id]) empMap[e.id].starRank = i + 1;
+    if(empMap[e.name]) empMap[e.name].starRank = i + 1; // fallback for paste
+  });
+
+  const empMatrixEl = document.getElementById('anaEmpMatrix');
+  empMatrixEl.innerHTML = '';
+
+  // Sort employees: those with high stars but low result first (anomaly first)
+  const empEntries = Object.entries(empMap);
+  empEntries.sort((a,b) => {
+    const avgA = Object.values(a[1].cats).reduce((s,v)=>s+v,0)/Math.max(1,Object.values(a[1].cats).length);
+    const avgB = Object.values(b[1].cats).reduce((s,v)=>s+v,0)/Math.max(1,Object.values(b[1].cats).length);
+    const rankA = a[1].starRank || 999;
+    const rankB = b[1].starRank || 999;
+    // anomaly score: high rank (low number) but low pct = bad
+    return (rankA - avgA/10) - (rankB - avgB/10);
+  });
+
+  empEntries.forEach(([empId, data]) => {
+    const avgPct = Math.round(Object.values(data.cats).reduce((s,v)=>s+v,0)/Math.max(1,Object.values(data.cats).length));
+    const starRank = data.starRank;
+    const rankColor = starRank<=3 ? '#c87f00' : starRank<=6 ? '#4b5563' : '#9ca3af';
+    const pctCls = avgPct >= 100 ? 'ana-pct-high' : avgPct >= 70 ? 'ana-pct-mid' : 'ana-pct-low';
+
+    // Detect anomaly
+    let anomaly = '';
+    if(starRank && starRank <= 3 && avgPct < 70) anomaly = '⚠️ BXH sao CAO nhưng kết quả THẤP — cần xem xét';
+    else if(starRank && starRank > EMPS.length*0.6 && avgPct >= 100) anomaly = '💡 BXH sao thấp nhưng kết quả TỐT — cần ghi nhận';
+    else if(avgPct >= 100 && starRank && starRank <= 3) anomaly = '✅ BXH sao cao và kết quả tương xứng';
+    else if(avgPct < 50) anomaly = '🔴 Kết quả rất thấp — cần tập trung';
+
+    // Weak cats
+    const weakCats = Object.entries(data.cats).filter(([,p]) => p < 70).map(([c]) => c);
+    const strongCats = Object.entries(data.cats).filter(([,p]) => p >= 100).map(([c]) => c);
+
+    let catRows = Object.entries(data.cats).sort((a,b)=>a[1]-b[1]).map(([c,p])=>{
+      const cls = p>=100?'ana-pct-high':p>=70?'ana-pct-mid':'ana-pct-low';
+      // vs store avg
+      const storeAvg = (storeCatAvgs[data.store]||{})[c];
+      const vsStore = storeAvg !== undefined ? (p - storeAvg) : null;
+      const vsStr = vsStore !== null ? `<span style="font-size:10px;color:${vsStore>=0?'var(--green)':'var(--red)'}"> (${vsStore>=0?'+':''}${vsStore}% vs ST)</span>` : '';
+      return `<div class="ana-cat-row"><span class="ana-cat-name">${c}${vsStr}</span><span class="ana-pct-badge ${cls}">${p}%</span></div>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'ana-emp-card';
+    card.innerHTML = `
+      <div class="ana-emp-hdr">
+        <div>
+          <div class="ana-emp-name">${data.empName}</div>
+          <div style="font-size:10px;color:var(--text-light);margin-top:2px">${data.store}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div class="ana-rank-badge" style="color:${rankColor}">
+            <i class="ti ti-star-filled" style="font-size:14px;color:var(--gold)"></i>
+            #${starRank || '?'} BXH
+          </div>
+          <span class="ana-pct-badge ${pctCls}">TB: ${avgPct}%</span>
+        </div>
+      </div>
+      <div class="ana-emp-body">
+        ${anomaly ? `<div class="ana-insight">${anomaly}</div>` : ''}
+        ${weakCats.length ? `<div style="font-size:10px;font-weight:800;color:var(--red);margin:6px 0 4px">Môn yếu: ${weakCats.join(', ')}</div>` : ''}
+        ${catRows}
+      </div>`;
+    empMatrixEl.appendChild(card);
+  });
+
+  // ── 3. Recommendations ──
+  const recoEl = document.getElementById('anaReco');
+  recoEl.innerHTML = '';
+
+  // A) Store cats that are low → tăng trừ sao
+  const lowStoreCats = []; // {store, cat, avg}
+  const highStoreCats = [];
+  Object.entries(storeCatAvgs).forEach(([store, cats]) => {
+    Object.entries(cats).forEach(([cat, avg]) => {
+      if(avg < 70) lowStoreCats.push({store, cat, avg});
+      else if(avg >= 100) highStoreCats.push({store, cat, avg});
+    });
+  });
+
+  if(lowStoreCats.length){
+    const card = document.createElement('div');
+    card.className = 'reco-card';
+    card.innerHTML = `<div class="reco-hdr reco-inc"><i class="ti ti-arrow-up"></i>Tăng trừ sao — Môn siêu thị thấp (dưới 70%)</div>
+      <div class="reco-body">${
+        lowStoreCats.sort((a,b)=>a.avg-b.avg).map(r=>
+          `<div class="reco-item"><span class="reco-dot reco-dot-red"></span>
+          <span><strong>${r.store}</strong> — Môn <strong>${r.cat}</strong>: TB ${r.avg}% → Nên <strong>tăng mức trừ sao</strong> để tạo áp lực tập trung</span></div>`
+        ).join('')
+      }</div>`;
+    recoEl.appendChild(card);
+  }
+
+  if(highStoreCats.length){
+    const card = document.createElement('div');
+    card.className = 'reco-card';
+    card.innerHTML = `<div class="reco-hdr reco-dec"><i class="ti ti-arrow-down"></i>Giảm trừ sao — Môn siêu thị cao (đạt 100%+)</div>
+      <div class="reco-body">${
+        highStoreCats.sort((a,b)=>b.avg-a.avg).map(r=>
+          `<div class="reco-item"><span class="reco-dot reco-dot-green"></span>
+          <span><strong>${r.store}</strong> — Môn <strong>${r.cat}</strong>: TB ${r.avg}% → Có thể <strong>giảm mức trừ sao</strong> hoặc giữ thưởng để cân bằng</span></div>`
+        ).join('')
+      }</div>`;
+    recoEl.appendChild(card);
+  }
+
+  // B) Employee weak cats → tăng trừ sao cá nhân
+  const empWeakReco = [];
+  empEntries.forEach(([empId, data]) => {
+    const avgPct = Object.values(data.cats).reduce((s,v)=>s+v,0)/Math.max(1,Object.values(data.cats).length);
+    const starRank = data.starRank || 999;
+    // Focus issue: BXH cao nhưng 1 số môn rất yếu
+    const veryWeak = Object.entries(data.cats).filter(([,p])=>p<60);
+    if(veryWeak.length && starRank <= Math.ceil(EMPS.length/2)){
+      empWeakReco.push({ emp: data.empName, store: data.store, starRank, cats: veryWeak, avgPct: Math.round(avgPct) });
+    }
+  });
+
+  if(empWeakReco.length){
+    const card = document.createElement('div');
+    card.className = 'reco-card';
+    card.innerHTML = `<div class="reco-hdr reco-warn"><i class="ti ti-user-exclamation"></i>Tập trung cá nhân — Môn nhân viên không tập trung (dưới 60%)</div>
+      <div class="reco-body">${
+        empWeakReco.map(r=>
+          `<div class="reco-item"><span class="reco-dot reco-dot-orange"></span>
+          <span><strong>${r.emp}</strong> (${r.store}, BXH #${r.starRank}) — Yếu môn: <strong>${r.cats.map(([c,p])=>c+' '+p+'%').join(', ')}</strong> → Tăng trừ sao các môn này để NV tập trung</span></div>`
+        ).join('')
+      }</div>`;
+    recoEl.appendChild(card);
+  }
+
+  // C) High star / low result anomalies
+  const anomalyList = [];
+  empEntries.forEach(([empId, data]) => {
+    const avgPct = Math.round(Object.values(data.cats).reduce((s,v)=>s+v,0)/Math.max(1,Object.values(data.cats).length));
+    const starRank = data.starRank || 999;
+    if(starRank <= 3 && avgPct < 70){
+      anomalyList.push({ emp: data.empName, starRank, avgPct });
+    }
+  });
+
+  if(anomalyList.length){
+    const card = document.createElement('div');
+    card.className = 'reco-card';
+    card.innerHTML = `<div class="reco-hdr reco-inc"><i class="ti ti-alert-triangle"></i>Cảnh báo: BXH sao cao nhưng kết quả thực tế thấp</div>
+      <div class="reco-body">${
+        anomalyList.map(r=>
+          `<div class="reco-item"><span class="reco-dot reco-dot-red"></span>
+          <span><strong>${r.emp}</strong> — BXH sao #${r.starRank} nhưng kết quả thực chỉ TB <strong>${r.avgPct}%</strong> → Cần rà soát lại cơ chế tích sao, tăng trừ sao các môn yếu</span></div>`
+        ).join('')
+      }</div>`;
+    recoEl.appendChild(card);
+  }
+
+  if(!lowStoreCats.length && !highStoreCats.length && !empWeakReco.length && !anomalyList.length){
+    recoEl.innerHTML = '<div class="ana-insight" style="background:var(--green-bg);border-color:var(--green);color:var(--green)">✅ Kết quả nhìn chung tốt — không có đề xuất điều chỉnh lớn</div>';
+  }
+
+  document.getElementById('anaResults').style.display = 'block';
+  document.getElementById('anaResults').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════
 loadAll();
 </script>
 </body>
