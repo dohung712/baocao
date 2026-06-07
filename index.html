@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Báo cáo kết quả ngày</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;min-height:100vh}
+.app{max-width:860px;margin:0 auto;padding:10px}
+/* header */
+.hdr{background:#1a237e;border-radius:12px;padding:13px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hdr-l h2{font-size:16px;font-weight:700;letter-spacing:.5px}
+.hdr-l p{font-size:11px;opacity:.65;margin-top:2px}
+.star-box{background:rgba(255,200,0,.15);border:1px solid rgba(255,200,0,.35);border-radius:8px;padding:5px 13px;text-align:center}
+.star-box .sv{font-size:20px;font-weight:700;color:#FFD700;line-height:1.1}
+.star-box .sl{font-size:10px;opacity:.65}
+.sync-wrap{display:flex;align-items:center;gap:5px;font-size:11px;opacity:.75}
+.dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
+.dot.ok{background:#69f0ae}.dot.err{background:#ff5252}.dot.busy{background:#ffab40;animation:blink .7s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+/* tabs */
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{flex:1;padding:9px 4px;border:1px solid #dde1e7;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;font-weight:500;color:#666;text-align:center;transition:.15s}
+.tab.on{background:#1a237e;color:#fff;border-color:#1a237e}
+.pnl{display:none}.pnl.on{display:block}
+/* cards */
+.card{background:#fff;border-radius:12px;border:1px solid #e8eaed;padding:13px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lbl{font-size:12px;color:#666;white-space:nowrap}
+select,input[type=date]{padding:6px 9px;border:1px solid #dde1e7;border-radius:7px;font-size:13px;background:#fff;color:#333}
+.badge-dept{display:inline-block;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:600;letter-spacing:.3px}
+.tgdd{background:#E6F1FB;color:#0C447C}
+.topzone{background:#EAF3DE;color:#27500A}
+/* streak */
+.stk-box{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.stk{padding:3px 10px;border-radius:5px;font-size:11px;font-weight:500}
+.stk-w{background:#FAEEDA;color:#854F0B}
+.stk-d{background:#FCEBEB;color:#A32D2D}
+/* emp info */
+.emp-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.emp-name{font-size:14px;font-weight:600;color:#333}
+.emp-sub{font-size:11px;color:#888;margin-top:3px}
+.emp-star{font-size:13px;font-weight:500;color:#BA7517}
+/* legend */
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:#888;padding:7px 10px;background:#f9fafb;border-radius:7px;margin-bottom:10px}
+.leg{display:flex;align-items:center;gap:3px}
+.leg-d{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+/* table */
+.tbl-w{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:6px 4px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #e8eaed;text-align:center;white-space:nowrap}
+th.left,td.left{text-align:left}
+td{padding:5px 4px;border-bottom:1px solid #f0f2f5;text-align:center;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.done td{background:rgba(99,153,34,.05)}
+.cn{font-size:12px;font-weight:500;color:#333}
+.ni{width:52px;padding:3px 5px;border:1px solid #dde1e7;border-radius:5px;font-size:12px;text-align:center;background:#fff;color:#333}
+.ni:focus{outline:none;border-color:#1a237e}
+.pg{font-weight:700;color:#3B6D11}.po{font-weight:700;color:#BA7517}.pr{font-weight:700;color:#E24B4A}.pz{color:#bbb}
+.bar{height:3px;background:#f0f2f5;border-radius:2px;margin-top:3px}
+.barf{height:100%;border-radius:2px}
+.sp{color:#3B6D11;font-weight:700;font-size:12px}
+.sz{color:#bbb;font-size:11px}
+.sm2{color:#E24B4A;font-weight:700;font-size:12px}
+/* zero-day badge */
+.zd{display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;background:#FAEEDA;color:#854F0B}
+.zd0{color:#bbb;font-size:11px}
+/* hope btn */
+.hb{padding:3px 8px;border-radius:5px;font-size:11px;font-weight:500;border:1px solid #dde1e7;cursor:pointer;background:#fff;color:#666;white-space:nowrap}
+.hb:hover{background:#f0f2f5}
+.hb.hon{background:#FAEEDA;color:#854F0B;border-color:#EF9F27}
+.hb:disabled{opacity:.35;cursor:default}
+/* summary grid */
+.sg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}
+.sc{background:#f9fafb;border-radius:7px;padding:9px;text-align:center}
+.sc-l{font-size:10px;color:#888;margin-bottom:2px}
+.sc-v{font-size:18px;font-weight:500}
+.cbl{color:#185FA5}.cgr{color:#3B6D11}.crd{color:#E24B4A}.cgo{color:#BA7517}
+/* submit */
+.sub-btn{width:100%;padding:10px;background:#1a237e;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+.sub-btn:hover:not(:disabled){background:#283593}
+.sub-btn:disabled{opacity:.55;cursor:default}
+/* leaderboard */
+.mg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.lb-wrap{background:#fff;border-radius:12px;border:1px solid #e8eaed;overflow:hidden;margin-bottom:10px}
+.lb-hdr{padding:9px 13px;background:#f9fafb;border-bottom:1px solid #e8eaed;display:flex;justify-content:space-between;align-items:center}
+.lb-hdr span{font-size:13px;font-weight:500;color:#666}
+.lb-row{display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid #f0f2f5}
+.lb-row:last-child{border-bottom:none}
+.rk{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.r1{background:#FFD700;color:#5c3d00}.r2{background:#C0C0C0;color:#333}.r3{background:#CD7F32;color:#fff}.rn{background:#f0f2f5;color:#666}
+.lb-ei{flex:1;min-width:0}
+.lb-ei .nm{font-weight:500;font-size:13px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-ei .dt{font-size:11px;color:#888;margin-top:1px}
+.lb-sv{font-size:16px;font-weight:700;color:#BA7517;white-space:nowrap}
+/* setup */
+.setup-box{background:#fff;border-radius:12px;padding:24px;border:1px solid #e8eaed}
+.setup-box h3{font-size:16px;font-weight:600;color:#1a237e;margin-bottom:8px}
+.setup-box p{font-size:13px;color:#555;line-height:1.6;margin-bottom:12px}
+.setup-box input{width:100%;padding:10px 12px;border:1px solid #dde1e7;border-radius:8px;font-size:13px;margin-bottom:10px}
+.setup-box input:focus{outline:none;border-color:#1a237e}
+/* toast */
+.toast{color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;text-align:center;display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999;min-width:240px;box-shadow:0 4px 16px rgba(0,0,0,.2);pointer-events:none}
+.toast.ok{background:#1a237e}
+.toast.err{background:#C62828}
+/* loading */
+.loading{text-align:center;padding:50px 20px;color:#666;font-size:14px}
+.loading i{font-size:28px;display:block;margin-bottom:10px;color:#1a237e;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* dept filter */
+.dept-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.dept-tab{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid #dde1e7;cursor:pointer;background:#fff;color:#666;transition:.15s}
+.dept-tab.on{border-color:#1a237e;color:#1a237e;background:#EEF1FA}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="toast" class="toast"></div>
+
+  <!-- SETUP -->
+  <div id="setupScreen" style="display:none">
+    <div class="hdr" style="margin-bottom:14px">
+      <div class="hdr-l"><h2>BÁO CÁO KẾT QUẢ NGÀY</h2><p>Thiết lập kết nối</p></div>
+    </div>
+    <div class="setup-box">
+      <h3><i class="ti ti-plug-connected" style="margin-right:6px"></i>Kết nối Google Sheets</h3>
+      <p>Dán URL <strong>Google Apps Script Web App</strong> vào đây. Chỉ cần nhập 1 lần trên máy này.</p>
+      <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/XXXXX/exec">
+      <button class="sub-btn" onclick="saveGasUrl()">
+        <i class="ti ti-plug-connected"></i> Kết nối & Tải dữ liệu
+      </button>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loadingMsg" class="loading" style="display:none">
+    <i class="ti ti-loader"></i>Đang tải từ Google Sheets...
+  </div>
+
+  <!-- MAIN -->
+  <div id="appContent" style="display:none">
+    <div class="hdr">
+      <div class="hdr-l">
+        <h2>BÁO CÁO KẾT QUẢ NGÀY</h2>
+        <p><span id="hdrDate"></span></p>
+      </div>
+      <div class="hdr-r" style="display:flex;gap:10px;align-items:center">
+        <div class="sync-wrap"><span class="dot" id="syncDot"></span><span id="syncTxt">—</span></div>
+        <div class="star-box">
+          <div class="sv" id="hdrStar">—</div>
+          <div class="sl">Sao lũy kế</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab on" onclick="goTab('report',this)"><i class="ti ti-clipboard-check" style="font-size:13px;margin-right:3px"></i>Báo cáo</div>
+      <div class="tab" onclick="goTab('rank',this)"><i class="ti ti-trophy" style="font-size:13px;margin-right:3px"></i>Xếp hạng</div>
+    </div>
+
+    <!-- TAB BÁO CÁO -->
+    <div id="tab-report" class="pnl on">
+      <div class="card">
+        <div class="row2">
+          <span class="lbl">Nhân viên:</span>
+          <select id="empSel" onchange="onEmpChange()" style="flex:1;min-width:160px"></select>
+          <span class="lbl">Ngày:</span>
+          <input type="date" id="dateIn" onchange="onDateChange()" style="width:145px">
+        </div>
+        <div class="stk-box" id="stkBox"></div>
+      </div>
+
+      <div id="repCard" style="display:none">
+        <div class="card">
+          <div class="emp-row">
+            <div>
+              <div class="emp-name" id="empNameD"></div>
+              <div class="emp-sub">
+                <span id="empDeptBadge" class="badge-dept"></span>
+                &nbsp;Hy vọng còn: <span id="hopeLeftD" style="font-weight:600;color:#BA7517"></span>
+              </div>
+            </div>
+            <div class="emp-star">Sao lũy kế: <span id="empStarD">0</span> <i class="ti ti-star" style="color:#FFD700"></i></div>
+          </div>
+          <div class="legend">
+            <span class="leg"><span class="leg-d" style="background:#3B6D11"></span>Đạt ≥100% → +sao</span>
+            <span class="leg"><span class="leg-d" style="background:#888"></span>Chưa đạt → chọn số ngày chưa hoàn thành</span>
+            <span class="leg"><span class="leg-d" style="background:#E24B4A"></span>Dùng hy vọng → −sao</span>
+          </div>
+          <div class="tbl-w">
+            <table>
+              <colgroup>
+                <col style="width:20px"><col style="width:140px"><col style="width:38px">
+                <col style="width:54px"><col style="width:66px"><col style="width:58px">
+                <col style="width:80px"><col style="width:58px">
+              </colgroup>
+              <thead><tr>
+                <th>#</th><th class="left">Môn thi đua</th><th>CT</th>
+                <th>Thực tế</th><th>% Đạt</th><th>Sao</th>
+                <th>Ngày chưa HT</th><th>Hy vọng</th>
+              </tr></thead>
+              <tbody id="repBody"></tbody>
+            </table>
+          </div>
+          <div class="sg">
+            <div class="sc"><div class="sc-l">Môn đạt</div><div class="sc-v cbl" id="sDone">0/0</div></div>
+            <div class="sc"><div class="sc-l">Sao nhận</div><div class="sc-v cgr" id="sPlus">+0</div></div>
+            <div class="sc"><div class="sc-l">Sao trừ</div><div class="sc-v crd" id="sMinus">-0</div></div>
+            <div class="sc"><div class="sc-l">Tổng hôm nay</div><div class="sc-v cgo" id="sNet">0</div></div>
+          </div>
+          <button class="sub-btn" id="subBtn" onclick="submitReport()">
+            <i class="ti ti-send"></i>Gửi báo cáo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB XẾP HẠNG -->
+    <div id="tab-rank" class="pnl">
+      <div class="dept-tabs" id="deptTabs"></div>
+      <div class="mg">
+        <div class="sc"><div class="sc-l">Ngày đã báo cáo</div><div class="sc-v cbl" id="lbDays">—</div></div>
+        <div class="sc"><div class="sc-l">Ngày xuất sắc nhất</div><div class="sc-v cgo" id="lbBest">—</div></div>
+      </div>
+      <div class="lb-wrap">
+        <div class="lb-hdr">
+          <span><i class="ti ti-trophy" style="font-size:13px;margin-right:4px"></i>Bảng xếp hạng sao</span>
+          <span id="lbDateD" style="font-size:11px;color:#aaa"></span>
+        </div>
+        <div id="lbBody"></div>
+      </div>
+    </div>
+  </div><!-- /appContent -->
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────
+const LS_URL = 'bcng_gas_url_v4';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyYleEwB9ywtQ8PeRJQftZ7-mWWP7C-J8DcUx_DvmTLZtaBnjMralaswuLz5fRo8wvXsA/exec';
+const pad = n => String(n).padStart(2,'0');
+const nw  = new Date();
+const todayStr = `${nw.getFullYear()}-${pad(nw.getMonth()+1)}-${pad(nw.getDate())}`;
+
+document.getElementById('hdrDate').textContent = todayStr;
+
+// ─── STATE ────────────────────────────────────────────
+let GAS_URL = '';
+let EMPS    = [];   // [{id,name,dept,stars,hope}]
+let CATS    = {};   // {'TGDD':[{id,name,target,sp,sm}], 'Topzone':[...]}
+let STORED  = { reports:{}, empStars:{} };
+let curEmpId = null;
+let inputs   = {};  // {catId: actual, 'h_catId': bool, 'zd_catId': days}
+let lbDeptFilter = 'all';
+
+// ─── SYNC DOT ─────────────────────────────────────────
+function setSync(s, txt){
+  const d = document.getElementById('syncDot');
+  const t = document.getElementById('syncTxt');
+  d.className = 'dot ' + s;
+  if(t) t.textContent = txt;
+}
+
+// ─── GAS CALL ─────────────────────────────────────────
+async function gasCall(payload){
+  setSync('busy','Đang sync...');
+  const res  = await fetch(GAS_URL, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload)});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  setSync('ok','Đã đồng bộ');
+  return data;
+}
+
+// ─── SETUP ────────────────────────────────────────────
+function saveGasUrl(){
+  const url = document.getElementById('gasUrlInput').value.trim();
+  if(!url.startsWith('https://script.google.com')){
+    toast('URL không hợp lệ!','err'); return;
+  }
+  localStorage.setItem(LS_URL, url);
+  GAS_URL = url;
+  document.getElementById('setupScreen').style.display='none';
+  loadAll();
+}
+
+// ─── LOAD ─────────────────────────────────────────────
+async function loadAll(){
+  document.getElementById('loadingMsg').style.display='block';
+  try {
+    const data = await gasCall({action:'load'});
+    EMPS   = data.emps   || [];
+    CATS   = data.cats   || {};
+    STORED = data.stored || {reports:{},empStars:{}};
+
+    // Merge empStars vào EMPS (override từ stored, vì sheet NhanVien là nguồn gốc)
+    EMPS.forEach(e => {
+      const s = STORED.empStars[e.id];
+      if(s){
+        if(s.stars !== undefined) e.stars = s.stars;
+        if(s.hope  !== undefined) e.hope  = s.hope;
+        e.reportDays = s.reportDays || 0;
+        e.bestDay    = s.bestDay    || '—';
+      } else {
+        e.reportDays = 0; e.bestDay = '—';
+      }
+    });
+
+    document.getElementById('loadingMsg').style.display='none';
+    document.getElementById('appContent').style.display='block';
+    document.getElementById('dateIn').value = todayStr;
+
+    buildEmpSelect();
+    renderLeaderboard();
+  } catch(err){
+    document.getElementById('loadingMsg').style.display='none';
+    document.getElementById('setupScreen').style.display='block';
+    toast('❌ Không tải được: '+err.message,'err');
+    setSync('err','Lỗi kết nối');
+  }
+}
+
+// ─── EMP SELECT ───────────────────────────────────────
+function buildEmpSelect(){
+  const s = document.getElementById('empSel');
+  const prev = s.value;
+  s.innerHTML = '<option value="">-- Chọn nhân viên --</option>';
+
+  // Nhóm theo siêu thị
+  const depts = [...new Set(EMPS.map(e=>e.dept))];
+  depts.forEach(dept => {
+    const grp = document.createElement('optgroup');
+    grp.label = dept;
+    EMPS.filter(e=>e.dept===dept).forEach(e=>{
+      const o = document.createElement('option');
+      o.value = e.id; o.textContent = e.name;
+      grp.appendChild(o);
+    });
+    s.appendChild(grp);
+  });
+  if(prev) s.value = prev;
+}
+
+function getCurEmp(){ return EMPS.find(e=>e.id===curEmpId)||null; }
+function getCats(dept){ return CATS[dept]||[]; }
+
+function onEmpChange(){
+  curEmpId = document.getElementById('empSel').value || null;
+  inputs = {};
+  const emp = getCurEmp();
+  if(!emp){ document.getElementById('repCard').style.display='none'; document.getElementById('hdrStar').textContent='—'; return; }
+  document.getElementById('repCard').style.display='block';
+  updateEmpHeader();
+  computeStreak();
+  renderTable();
+}
+function onDateChange(){ if(!curEmpId) return; inputs={}; computeStreak(); renderTable(); }
+
+function updateEmpHeader(){
+  const emp = getCurEmp(); if(!emp) return;
+  document.getElementById('empNameD').textContent = emp.name;
+  document.getElementById('empStarD').textContent = emp.stars;
+  document.getElementById('hopeLeftD').textContent = emp.hope;
+  document.getElementById('hdrStar').textContent = emp.stars;
+  const badge = document.getElementById('empDeptBadge');
+  badge.textContent = emp.dept;
+  badge.className = 'badge-dept ' + (emp.dept.toLowerCase().includes('top')?'topzone':'tgdd');
+}
+
+// ─── STREAK ───────────────────────────────────────────
+function daysBefore(dateStr, n){
+  const d = new Date(dateStr); d.setDate(d.getDate()-n);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function computeStreak(){
+  const emp = getCurEmp();
+  const box = document.getElementById('stkBox');
+  if(!emp){ box.innerHTML=''; return; }
+  const dateKey = document.getElementById('dateIn').value;
+  let streak=0;
+  for(let i=1;i<=60;i++){
+    const k = daysBefore(dateKey, i);
+    const rep = (STORED.reports[emp.id]||{})[k];
+    if(!rep) break;
+    if((rep._pct||0)>=100) break;
+    streak++;
+  }
+  if(!streak){ box.innerHTML=''; return; }
+  const cls = streak>=3?'stk stk-d':'stk stk-w';
+  box.innerHTML = `<span class="${cls}"><i class="ti ti-alert-triangle" style="font-size:12px;margin-right:3px"></i>${streak>=3?'Nguy hiểm':'Cảnh báo'}: ${streak} ngày liên tiếp chưa đạt 100%!</span>`;
+}
+
+// ─── TABLE ────────────────────────────────────────────
+function getPct(a,t){ return t>0 ? Math.round(a/t*100) : 0; }
+
+function renderTable(){
+  const emp = getCurEmp(); if(!emp) return;
+  const cats = getCats(emp.dept);
+  const dateKey = document.getElementById('dateIn').value;
+  const saved = (STORED.reports[emp.id]||{})[dateKey] || {};
+  const tbody = document.getElementById('repBody');
+  tbody.innerHTML='';
+  let totPlus=0, totMinus=0, done=0;
+
+  cats.forEach((cat,i) => {
+    const actual = inputs[cat.id]!==undefined ? inputs[cat.id] : (saved[cat.id]||0);
+    const hk  = 'h_'+cat.id;
+    const zk  = 'zd_'+cat.id;
+    const hope = inputs[hk]!==undefined ? inputs[hk] : (saved[hk]||false);
+    // days not completed — from input or saved
+    const zdSaved = saved[zk] || 0;
+    const zdVal   = inputs[zk]!==undefined ? inputs[zk] : zdSaved;
+
+    const pct   = getPct(actual, cat.target);
+    const isDone = pct >= 100;
+    if(isDone) done++;
+
+    let starH='', sp=0, sm=0;
+    if(isDone){ sp=cat.sp; totPlus+=sp; starH=`<span class="sp">+${sp}</span>`; }
+    else if(hope){ sm=cat.sm; totMinus+=sm; starH=`<span class="sm2">-${sm}</span>`; }
+    else{ starH=`<span class="sz">—</span>`; }
+
+    // Zero-day column: nếu chưa đạt, hiển thị input số ngày
+    let zdH;
+    if(isDone){
+      zdH = '<span class="zd0">—</span>';
+    } else {
+      zdH = `<input class="ni" type="number" min="0" max="99" style="width:44px"
+               value="${zdVal}" oninput="onZdInput('${cat.id}',this.value)"
+               title="Số ngày chưa hoàn thành môn này">`;
+    }
+
+    let pC='pz', pD='—';
+    if(actual>0||isDone){ pD=pct+'%'; pC=isDone?'pg':pct>=50?'po':'pr'; }
+    const bc = isDone?'#639922':pct>=50?'#EF9F27':'#E24B4A';
+    const bw = Math.min(pct,100);
+    const hDis = (isDone||(emp.hope<=0&&!hope))?'disabled':'';
+    const hCls = 'hb'+(hope?' hon':'');
+
+    const tr = document.createElement('tr');
+    if(isDone) tr.className='done';
+    tr.innerHTML=`
+<td style="color:#bbb;font-size:11px">${i+1}</td>
+<td class="left cn">${cat.name}</td>
+<td style="color:#888">${cat.target}</td>
+<td><input class="ni" type="number" min="0" value="${actual}" oninput="onInput('${cat.id}',this.value)"></td>
+<td><span class="${pC}">${pD}</span><div class="bar"><div class="barf" style="width:${bw}%;background:${bc}"></div></div></td>
+<td>${starH}</td>
+<td>${zdH}</td>
+<td><button class="${hCls}" onclick="toggleHope('${cat.id}')" ${hDis}>${hope?'★ Đang dùng':'Dùng'}</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  const net = totPlus-totMinus;
+  document.getElementById('sDone').textContent  = `${done}/${cats.length}`;
+  document.getElementById('sPlus').textContent  = `+${totPlus}`;
+  document.getElementById('sMinus').textContent = `-${totMinus}`;
+  document.getElementById('sNet').textContent   = (net>=0?'+':'')+net;
+  document.getElementById('sNet').className = 'sc-v '+(net>0?'cgr':net<0?'crd':'cgo');
+}
+
+function onInput(catId, val){ inputs[catId]=parseInt(val)||0; renderTable(); }
+function onZdInput(catId, val){ inputs['zd_'+catId]=parseInt(val)||0; }
+
+function toggleHope(catId){
+  const emp = getCurEmp(); if(!emp) return;
+  const hk = 'h_'+catId;
+  const dateKey = document.getElementById('dateIn').value;
+  const saved = (STORED.reports[emp.id]||{})[dateKey]||{};
+  const cat = getCats(emp.dept).find(c=>c.id===catId);
+  const actual = inputs[catId]!==undefined ? inputs[catId] : (saved[catId]||0);
+  const pct = getPct(actual, cat.target);
+  if(pct>=100) return;
+  const cur = inputs[hk]!==undefined ? inputs[hk] : (saved[hk]||false);
+  if(!cur && emp.hope<=0){ toast('Không còn sao hy vọng!','err'); return; }
+  inputs[hk] = !cur;
+  renderTable();
+}
+
+// ─── SUBMIT ───────────────────────────────────────────
+async function submitReport(){
+  const emp = getCurEmp(); if(!emp) return;
+  const cats = getCats(emp.dept);
+  const dateKey = document.getElementById('dateIn').value;
+  const saved = (STORED.reports[emp.id]||{})[dateKey]||{};
+
+  const rep = {};
+  let pctSum=0, totPlus=0, totMinus=0, hopeUsed=0;
+  const lines = [];
+
+  cats.forEach(cat => {
+    const actual = inputs[cat.id]!==undefined ? inputs[cat.id] : (saved[cat.id]||0);
+    const hk = 'h_'+cat.id;
+    const zk = 'zd_'+cat.id;
+    const hope = inputs[hk]!==undefined ? inputs[hk] : (saved[hk]||false);
+    const zdVal = inputs[zk]!==undefined ? inputs[zk] : (saved[zk]||0);
+
+    rep[cat.id] = actual;
+    rep[hk]     = hope;
+    rep[zk]     = zdVal;
+
+    const pct = getPct(actual, cat.target);
+    pctSum += pct;
+
+    let star = 0;
+    if(pct>=100){ totPlus+=cat.sp; star=cat.sp; }
+    else if(hope){ totMinus+=cat.sm; hopeUsed++; star=-cat.sm; }
+
+    lines.push({name:cat.name, target:cat.target, actual, pct, star});
+  });
+
+  rep._pct = Math.round(pctSum / cats.length);
+
+  const net      = totPlus - totMinus;
+  const starsNew = Math.max(0, emp.stars + net);
+  const hopeNew  = Math.max(0, emp.hope  - hopeUsed);
+
+  // Optimistic update
+  if(!STORED.reports[emp.id]) STORED.reports[emp.id]={};
+  STORED.reports[emp.id][dateKey] = rep;
+  const empIdx = EMPS.findIndex(e=>e.id===emp.id);
+  EMPS[empIdx].stars = starsNew;
+  EMPS[empIdx].hope  = hopeNew;
+  EMPS[empIdx].reportDays = (emp.reportDays||0)+1;
+  if(net>0) EMPS[empIdx].bestDay = dateKey.slice(5).replace('-','/')+ ' (+'+net+')';
+  STORED.empStars[emp.id] = {stars:starsNew, hope:hopeNew, reportDays:EMPS[empIdx].reportDays, bestDay:EMPS[empIdx].bestDay};
+
+  inputs = {};
+  const btn = document.getElementById('subBtn');
+  btn.disabled = true;
+
+  try {
+    await gasCall({
+      action:'saveReport',
+      empId: emp.id, empName: emp.name, dept: emp.dept,
+      date: dateKey, rep, lines,
+      starsBase: emp.stars, hopeBase: emp.hope,
+      starsNew, hopeNew, net
+    });
+    toast(`✓ Đã gửi! +${totPlus} sao − ${totMinus} sao = ${net>=0?'+':''}${net} hôm nay`,'ok');
+  } catch(err){
+    toast('⚠️ Gửi thất bại: '+err.message,'err');
+  }
+
+  btn.disabled = false;
+  updateEmpHeader();
+  computeStreak();
+  renderTable();
+  renderLeaderboard();
+}
+
+// ─── LEADERBOARD ──────────────────────────────────────
+function renderLeaderboard(){
+  // dept filter tabs
+  const depts = ['all', ...new Set(EMPS.map(e=>e.dept))];
+  const dtabs = document.getElementById('deptTabs');
+  dtabs.innerHTML = '';
+  depts.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'dept-tab'+(d===lbDeptFilter?' on':'');
+    el.textContent = d==='all'?'Tất cả':d;
+    el.onclick = ()=>{ lbDeptFilter=d; renderLeaderboard(); };
+    dtabs.appendChild(el);
+  });
+
+  const list = lbDeptFilter==='all' ? EMPS : EMPS.filter(e=>e.dept===lbDeptFilter);
+  const sorted = [...list].sort((a,b)=>b.stars-a.stars);
+
+  // update summary cards based on selected emp
+  const emp = getCurEmp() || sorted[0];
+  if(emp){
+    document.getElementById('lbDays').textContent = (emp.reportDays||0)+' ngày';
+    document.getElementById('lbBest').textContent = emp.bestDay||'—';
+  }
+  document.getElementById('lbDateD').textContent = todayStr;
+
+  const body = document.getElementById('lbBody');
+  body.innerHTML = '';
+  sorted.forEach((e,i)=>{
+    const rc = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    const deptBadge = `<span class="badge-dept ${e.dept.toLowerCase().includes('top')?'topzone':'tgdd'}" style="font-size:10px;padding:2px 7px;margin-left:6px">${e.dept}</span>`;
+    const row = document.createElement('div'); row.className='lb-row';
+    row.innerHTML=`<div class="rk ${rc}">${i+1}</div>
+<div class="lb-ei">
+  <div class="nm">${e.name}${deptBadge}</div>
+  <div class="dt">Hy vọng: ${e.hope} &nbsp;·&nbsp; BC: ${e.reportDays||0} ngày</div>
+</div>
+<div class="lb-sv"><i class="ti ti-star" style="font-size:13px;color:#FFD700;margin-right:3px"></i>${e.stars}</div>`;
+    body.appendChild(row);
+  });
+}
+
+// ─── TAB SWITCH ───────────────────────────────────────
+function goTab(name, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.pnl').forEach(p=>p.classList.remove('on'));
+  document.getElementById('tab-'+name).classList.add('on');
+  if(name==='rank') renderLeaderboard();
+}
+
+// ─── TOAST ────────────────────────────────────────────
+function toast(msg, type='ok'){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className='toast '+type;
+  t.style.display='block';
+  clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',3500);
+}
+
+// ─── BOOT ─────────────────────────────────────────────
+(function boot(){
+  GAS_URL = FIXED_GAS_URL;
+  loadAll();
+})();
+</script>
+</body>
+</html>
