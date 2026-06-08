@@ -653,6 +653,24 @@ tr.row-done .cat-name{color:var(--green)}
             <span id="hopeToggleTxt">—</span>
           </div>
         </div>
+        <div class="toggle-card">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="t-title">📅 Chế độ "Số Ngày"</div>
+              <div class="t-sub">Bật → Nhân viên tự chọn số ngày chưa đạt<br>Tắt → Hệ thống tự động tính từ lịch sử</div>
+              <span class="t-badge" id="zdBadge">—</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="zdToggle" onchange="onZdToggle(this.checked)">
+              <span class="sw-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-sync-txt" id="zdToggleSyncTxt">
+            <span class="dot" id="zdToggleDot"></span>
+            <span id="zdToggleTxt">—</span>
+          </div>
+        </div>
+
         <div style="font-size:10px;color:var(--text-light);padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:14px;line-height:1.5">
           <i class="ti ti-info-circle" style="color:#d97706;margin-right:4px"></i>
           <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
@@ -825,7 +843,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbxJRLMQ39Bp6Uqyc24MT77OEZoqE_DczYniP0ATd0Km7OM7zaN6W6ZLwLDGcuuJ0jDJfQ/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyjvXOsV2zx8xQ2g7KA-XeOpullndYDwtl-hEaAUkB-xQf1FDhqwmJduZMjnx4tld9WjQ/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -847,7 +865,8 @@ let allowHope     = true;      // QL toggle: bật/tắt nút Dùng sao cho tấ
 let ANA_ROWS = []; // {store, empId, empName, cat, actual, pct}
 
 // ══ ZD MODE ══
-let zdAutoMode = true;   // true = tự động, false = NV tự chọn
+let zdAutoMode = true;   // true = tự động, false = NV tự chọn (bị ghi đè bởi QL)
+let allowZdManual = false; // QL toggle: false=auto, true=NV tự chọn
 
 // ════════════════════════════════════════════
 //  SYNC INDICATOR
@@ -888,6 +907,10 @@ async function loadAll(){
     // Đọc trạng thái toggle Dùng sao từ server (do QL thiết lập)
     if(data.settings && data.settings.allowHope !== undefined){
       allowHope = data.settings.allowHope;
+    }
+    if(data.settings && data.settings.allowZdManual !== undefined){
+      allowZdManual = data.settings.allowZdManual;
+      zdAutoMode    = !allowZdManual; // sync biến gốc
     }
 
     EMPS.forEach(e => {
@@ -1107,6 +1130,8 @@ function renderTable(){
   const tabsH  = (tabsEl ? tabsEl.offsetHeight : 56);
   const thead  = document.getElementById('repThead');
   if(thead) thead.style.top = tabsH + 'px';
+  // Sync zdAutoMode với QL setting mỗi khi render
+  if(!adminUnlocked){ zdAutoMode = !allowZdManual; }
   tbody.innerHTML = '';
 
   let totPlus = 0, totMinus = 0, done = 0;
@@ -1159,8 +1184,8 @@ function renderTable(){
     }
 
     /* use-star button */
-    // canToggle: QL đã bật allowHope VÀ môn chưa đạt
-    const canToggle = allowHope && !isDone;
+    // canToggle: QL đã bật allowHope VÀ môn chưa đạt VÀ (đã bật hoặc còn sao hy vọng)
+    const canToggle = allowHope && !isDone && (hope || emp.hope > 0);
     const btnCls    = 'use-btn' + (hope ? ' active' : '') + (!allowHope ? ' ql-locked' : '');
     const btnDis    = canToggle ? '' : 'disabled';
     const btnTxt    = !allowHope
@@ -1262,9 +1287,47 @@ function renderHopeToggle(){
   badge.className = 't-badge ' + (allowHope ? 't-badge-on' : 't-badge-off');
 }
 
+function renderZdToggle(){
+  const chk   = document.getElementById('zdToggle');
+  const badge = document.getElementById('zdBadge');
+  if(!chk || !badge) return;
+  chk.checked = allowZdManual;
+  badge.textContent = allowZdManual ? '✅ Đang BẬT — NV tự chọn số ngày' : '🔵 Đang TẮT — Hệ thống tự động';
+  badge.className = 't-badge ' + (allowZdManual ? 't-badge-on' : 't-badge-off');
+  // Sync header label trên bảng
+  const lbl = document.getElementById('zdModeLabel');
+  if(lbl){
+    lbl.textContent = allowZdManual ? 'TỰ CHỌN' : 'AUTO';
+    lbl.style.background = allowZdManual ? 'rgba(255,215,0,.5)' : 'rgba(0,0,0,.15)';
+    lbl.style.color = allowZdManual ? '#4a2e00' : '';
+  }
+}
+
+async function onZdToggle(val){
+  allowZdManual = val;
+  zdAutoMode    = !val;
+  renderZdToggle();
+  renderTable();
+  const dot = document.getElementById('zdToggleDot');
+  const txt = document.getElementById('zdToggleTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'allowZdManual', value: val });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'NV tự chọn' : 'Tự động'}`;
+    toast(val ? '✅ NV có thể tự chọn Số Ngày' : '🔵 Số Ngày chạy tự động', 'ok');
+  } catch(err){
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi: ' + err.message, 'err');
+  }
+}
+
 async function onHopeToggle(val){
   allowHope = val;
   renderHopeToggle();
+  renderZdToggle();
   renderTable();
   // Sync lên server
   const dot = document.getElementById('hopeToggleDot');
@@ -1298,6 +1361,8 @@ function toggleHope(catId){
   if(getPct(actual, cat.target) >= 100){ toast('Môn này đã đạt rồi!','err'); return; }
 
   const cur = inputs[hk] !== undefined ? inputs[hk] : (saved[hk] || false);
+  // Nếu đang tắt và hết sao hy vọng → không cho bật thêm
+  if(!cur && emp.hope <= 0){ toast(`Không còn sao hy vọng! (Hy vọng: ${emp.hope})`, 'err'); return; }
   inputs[hk] = !cur;
   renderTable();
 }
