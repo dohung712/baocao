@@ -1184,8 +1184,8 @@ function renderTable(){
     }
 
     /* use-star button */
-    // canToggle: QL đã bật allowHope VÀ môn chưa đạt VÀ (đã bật hoặc còn sao hy vọng)
-    const canToggle = allowHope && !isDone && (hope || emp.hope > 0);
+    // canToggle: QL đã bật allowHope VÀ môn chưa đạt
+    const canToggle = allowHope && !isDone;
     const btnCls    = 'use-btn' + (hope ? ' active' : '') + (!allowHope ? ' ql-locked' : '');
     const btnDis    = canToggle ? '' : 'disabled';
     const btnTxt    = !allowHope
@@ -1362,7 +1362,6 @@ function toggleHope(catId){
 
   const cur = inputs[hk] !== undefined ? inputs[hk] : (saved[hk] || false);
   // Nếu đang tắt và hết sao hy vọng → không cho bật thêm
-  if(!cur && emp.hope <= 0){ toast(`Không còn sao hy vọng! (Hy vọng: ${emp.hope})`, 'err'); return; }
   inputs[hk] = !cur;
   renderTable();
 }
@@ -1417,7 +1416,7 @@ async function submitReport(){
   rep._pct   = Math.round(pctSum / cats.length);
   const net  = totPlus - totMinus;
   const starsNew = Math.max(0, emp.stars + net);
-  const hopeNew  = Math.max(0, emp.hope  - hopeUsed);
+  const hopeNew  = emp.hope; // không giới hạn sao hy vọng
 
   // Giữ lại cờ reset của QL
   Object.keys(saved).forEach(k => { if(k.startsWith('_reset_')) rep[k] = saved[k]; });
