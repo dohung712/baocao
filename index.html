@@ -202,11 +202,6 @@ tr.row-done .cat-name{color:var(--green)}
 .zd-off{background:#f3f4f6;color:#9ca3af}
 .zd-past{background:#fecaca;color:#991b1b}
 .zd-on{background:#dc2626;color:#fff;box-shadow:0 0 0 1.5px #991b1b}
-.zd-warn{
-  font-size:9px;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;
-  border-radius:5px;padding:2px 6px;margin-top:3px;line-height:1.4;text-align:center;
-  white-space:nowrap;max-width:130px;
-}
 
 /* Dùng sao button — compact */
 .use-btn{
@@ -406,7 +401,6 @@ tr.row-done .cat-name{color:var(--green)}
 }
 .toast.ok{background:linear-gradient(135deg,#0d1b6e,#1a237e)}
 .toast.err{background:linear-gradient(135deg,#b71c1c,#c62828)}
-.toast.warn{background:linear-gradient(135deg,#92400e,#b45309)}
 
 /* ═══ ANALYSIS TAB ═══ */
 .ana-store-card{background:#fff;border-radius:12px;border:1px solid var(--gray-line);padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
@@ -491,9 +485,6 @@ tr.row-done .cat-name{color:var(--green)}
     <div class="tabs">
       <div class="tab on" onclick="goTab('report',this)">
         <i class="ti ti-clipboard-check"></i>Báo cáo
-      </div>
-      <div class="tab" onclick="goTab('monThi',this)">
-        <i class="ti ti-star"></i>Môn Thi
       </div>
       <div class="tab" onclick="goTab('rank',this)">
         <i class="ti ti-trophy"></i>Xếp hạng
@@ -618,22 +609,6 @@ tr.row-done .cat-name{color:var(--green)}
     </div><!-- /tab-report -->
 
     <!-- ══ TAB XẾP HẠNG ══ -->
-    <!-- ══ TAB MÔN THI ══ -->
-    <div id="tab-monThi" class="pnl">
-      <div class="admin-section">
-        <div style="font-size:12px;font-weight:800;color:var(--blue);display:flex;align-items:center;gap:6px;margin-bottom:14px">
-          <i class="ti ti-star-filled" style="color:#f59e0b"></i>
-          BẢNG THƯỞNG / TRỪ SAO THEO MÔN THI
-        </div>
-        <div id="monThiContent">
-          <div style="text-align:center;color:var(--text-light);padding:40px 0;font-size:12px">
-            <i class="ti ti-user-question" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4"></i>
-            Vui lòng chọn nhân viên ở tab Báo cáo để xem bảng môn thi.
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div id="tab-rank" class="pnl">
       <div class="dept-tabs" id="deptTabs"></div>
       <div class="lb-stats">
@@ -678,24 +653,27 @@ tr.row-done .cat-name{color:var(--green)}
             <span id="hopeToggleTxt">—</span>
           </div>
         </div>
-
-        <!-- ══ TOGGLE SỐ NGÀY ══ -->
         <div class="toggle-card">
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="t-title">🗓️ Chế độ "Số Ngày"</div>
+              <div class="t-title">📅 Chế độ "Số Ngày"</div>
               <div class="t-sub">Bật → Nhân viên tự chọn số ngày chưa đạt<br>Tắt → Hệ thống tự động tính từ lịch sử</div>
-              <span class="t-badge" id="zdModeBadge">—</span>
+              <span class="t-badge" id="zdBadge">—</span>
             </div>
             <label class="sw">
-              <input type="checkbox" id="zdModeToggle" onchange="onZdModeToggle(this.checked)">
+              <input type="checkbox" id="zdToggle" onchange="onZdToggle(this.checked)">
               <span class="sw-slider"></span>
             </label>
           </div>
-          <div class="toggle-sync-txt" id="zdModeSyncTxt">
-            <span class="dot" id="zdModeDot"></span>
-            <span id="zdModeTxt">—</span>
+          <div class="toggle-sync-txt" id="zdToggleSyncTxt">
+            <span class="dot" id="zdToggleDot"></span>
+            <span id="zdToggleTxt">—</span>
           </div>
+        </div>
+
+        <div style="font-size:10px;color:var(--text-light);padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:14px;line-height:1.5">
+          <i class="ti ti-info-circle" style="color:#d97706;margin-right:4px"></i>
+          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
         </div>
 
         <div class="sec-title"><i class="ti ti-users"></i>Sao lũy kế nhân viên</div>
@@ -718,6 +696,42 @@ tr.row-done .cat-name{color:var(--green)}
           <i class="ti ti-info-circle" style="margin-right:4px;color:var(--blue)"></i>
           Môn thi đua & target → chỉnh trong sheet <strong>CauHinh</strong> trên Google Sheets, sau đó tải lại trang.
         </div>
+
+        <!-- ══ SỬA BÁO CÁO ══ -->
+        <div class="sec-title" style="margin-top:18px"><i class="ti ti-edit"></i>Sửa báo cáo nhân viên</div>
+        <div class="adm-card" style="padding:14px 16px">
+          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:12px">
+            <div>
+              <div class="sel-label" style="margin-bottom:5px">Nhân viên</div>
+              <select id="qlEmpSel" class="sel-control" onchange="qlLoadReport()">
+                <option value="">— Chọn nhân viên —</option>
+              </select>
+            </div>
+            <div>
+              <div class="sel-label" style="margin-bottom:5px">Ngày</div>
+              <input type="date" id="qlDateIn" class="sel-control" style="width:145px" onchange="qlLoadReport()">
+            </div>
+          </div>
+          <div id="qlRepWrap" style="display:none">
+            <table style="width:100%;border-collapse:collapse;margin-bottom:10px">
+              <thead><tr>
+                <th class="tl" style="font-size:9px;font-weight:900;padding:5px 6px;background:linear-gradient(135deg,#e6a800,#f5c400);color:#1a1200;border-bottom:2px solid #b07d00">Môn</th>
+                <th style="font-size:9px;font-weight:900;padding:5px 4px;background:linear-gradient(135deg,#e6a800,#f5c400);color:#1a1200;border-bottom:2px solid #b07d00;width:52px">Target</th>
+                <th style="font-size:9px;font-weight:900;padding:5px 4px;background:linear-gradient(135deg,#e6a800,#f5c400);color:#1a1200;border-bottom:2px solid #b07d00;width:64px">Thực tế</th>
+                <th style="font-size:9px;font-weight:900;padding:5px 4px;background:linear-gradient(135deg,#e6a800,#f5c400);color:#1a1200;border-bottom:2px solid #b07d00;width:52px">Dùng sao</th>
+              </tr></thead>
+              <tbody id="qlRepBody"></tbody>
+            </table>
+            <div id="qlNetPreview" style="font-size:12px;font-weight:800;text-align:right;padding:6px 4px;margin-bottom:8px;color:var(--text-mid)"></div>
+            <button class="act-btn primary" style="width:100%;padding:10px" onclick="qlSaveReport()">
+              <i class="ti ti-device-floppy"></i> Lưu chỉnh sửa & cập nhật lũy kế
+            </button>
+          </div>
+          <div id="qlRepEmpty" style="font-size:11px;color:var(--text-light);text-align:center;padding:12px 0">
+            Chọn nhân viên và ngày để xem báo cáo
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -740,28 +754,33 @@ tr.row-done .cat-name{color:var(--green)}
             <i class="ti ti-brand-google" style="font-size:18px;color:#fff"></i>
             <div>
               <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.9);letter-spacing:.5px">KẾT NỐI GOOGLE SHEETS — Sheet: Realtime</div>
-              <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">Cột A: Siêu thị · B: Nhân Viên · C: Môn Thi Đua · D: Thực Đạt · E: % Đạt HT</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">Đồng bộ qua GAS (ưu tiên) · fallback CSV công khai</div>
             </div>
           </div>
           <div style="padding:12px 14px">
-            <div style="margin-bottom:10px">
-              <div class="sel-label" style="margin-bottom:5px">Link Google Sheets (chia sẻ công khai)</div>
-              <input type="url" id="anaSheetUrl" class="sel-control"
-                placeholder="https://docs.google.com/spreadsheets/d/..."
-                style="font-size:11px;padding:9px 12px;width:100%"
-                value="https://docs.google.com/spreadsheets/d/1GyJkJgNlsdDvcR9nQqP_Ck2JzX8SDqcBriO2ovlsgC4/edit">
-            </div>
             <div style="display:flex;gap:8px;align-items:center">
               <button class="act-btn primary" onclick="anaFetchSheet()" id="anaFetchBtn"
                 style="flex:1;font-size:12px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px">
-                <i class="ti ti-refresh" style="font-size:15px"></i>Tải dữ liệu Realtime
+                <i class="ti ti-refresh" style="font-size:15px"></i>Đồng bộ Realtime
+              </button>
+              <button class="act-btn" id="anaAutoBtn" onclick="anaToggleAutoRefresh(this)"
+                style="font-size:11px;padding:9px 12px;white-space:nowrap;display:flex;align-items:center;gap:4px">
+                ⏱ Tự động làm mới
               </button>
               <button class="act-btn" onclick="anaClearAll()" style="font-size:11px;padding:9px 12px;color:var(--red);border-color:#fca5a5;white-space:nowrap">
-                <i class="ti ti-trash"></i> Xóa
+                <i class="ti ti-trash"></i>
               </button>
             </div>
             <div id="anaFetchStatus" style="margin-top:8px;font-size:11px;display:none;padding:8px 10px;border-radius:8px;font-weight:700"></div>
           </div>
+        </div>
+
+        <!-- ══ BẢNG XẾP HẠNG NHANH ══ -->
+        <div id="anaRankWrap" style="display:none;margin-bottom:14px">
+          <div class="sec-title" style="margin-bottom:8px">
+            <i class="ti ti-trophy"></i>XẾP HẠNG REALTIME — % ĐẠT TRUNG BÌNH
+          </div>
+          <div id="anaRankInner"></div>
         </div>
 
         <!-- ── OR: Paste manually ── -->
@@ -860,7 +879,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbxbiLW9T8roJirvBVTgFlcDof86ZUYDpfvOP5usifojgjrS12aXUcIGRogRsvLCzv7uNQ/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyjvXOsV2zx8xQ2g7KA-XeOpullndYDwtl-hEaAUkB-xQf1FDhqwmJduZMjnx4tld9WjQ/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -882,7 +901,8 @@ let allowHope     = true;      // QL toggle: bật/tắt nút Dùng sao cho tấ
 let ANA_ROWS = []; // {store, empId, empName, cat, actual, pct}
 
 // ══ ZD MODE ══
-let zdAutoMode = false;  // false = NV tự chọn (sync từ server), true = tự động
+let zdAutoMode = true;   // true = tự động, false = NV tự chọn (bị ghi đè bởi QL)
+let allowZdManual = false; // QL toggle: false=auto, true=NV tự chọn
 
 // ════════════════════════════════════════════
 //  SYNC INDICATOR
@@ -920,13 +940,13 @@ async function loadAll(){
     EMPS   = data.emps   || [];
     CATS   = data.cats   || {};
     STORED = data.stored || { reports:{}, empStars:{} };
-    // Đọc trạng thái toggle từ server (do QL thiết lập, đồng bộ tất cả NV)
+    // Đọc trạng thái toggle Dùng sao từ server (do QL thiết lập)
     if(data.settings && data.settings.allowHope !== undefined){
       allowHope = data.settings.allowHope;
     }
     if(data.settings && data.settings.allowZdManual !== undefined){
-      // allowZdManual=true → NV tự chọn → zdAutoMode=false
-      zdAutoMode = !data.settings.allowZdManual;
+      allowZdManual = data.settings.allowZdManual;
+      zdAutoMode    = !allowZdManual; // sync biến gốc
     }
 
     EMPS.forEach(e => {
@@ -999,8 +1019,6 @@ function onEmpChange(){
   updateEmpHeader();
   computeStreak();
   renderTable();
-  // Cập nhật tab Môn Thi nếu đang mở
-  if(document.getElementById('tab-monThi').classList.contains('on')) renderMonThi();
 }
 
 function onDateChange(){
@@ -1079,15 +1097,8 @@ function computeStreak(){
 // ════════════════════════════════════════════
 //  ZD MODE TOGGLE
 // ════════════════════════════════════════════
-function renderZdModeToggle(){
-  const chk   = document.getElementById('zdModeToggle');
-  const badge = document.getElementById('zdModeBadge');
-  if(!chk || !badge) return;
-  // toggle ON = NV tự chọn = zdAutoMode false
-  chk.checked = !zdAutoMode;
-  badge.textContent = !zdAutoMode ? '✅ Đang BẬT — NV tự chọn số ngày' : '🔴 Đang TẮT — Hệ thống tự động tính';
-  badge.className = 't-badge ' + (!zdAutoMode ? 't-badge-on' : 't-badge-off');
-  // Cập nhật label trong bảng báo cáo
+function toggleZdMode(){
+  zdAutoMode = !zdAutoMode;
   const lbl = document.getElementById('zdModeLabel');
   const th  = document.getElementById('zdModeTh');
   if(lbl){
@@ -1097,39 +1108,15 @@ function renderZdModeToggle(){
   }
   if(th){
     th.style.background = zdAutoMode
-      ? ''
-      : 'linear-gradient(135deg,#e6a800,#f5c400)';
+      ? '' // default gold header bg
+      : 'linear-gradient(135deg,#e6a800,#f5c400)'; // same but with indicator
   }
-}
-
-async function onZdModeToggle(val){
-  // val=true → NV tự chọn → zdAutoMode=false
-  zdAutoMode = !val;
+  // Clear manual zd overrides when switching back to auto
   if(zdAutoMode){
     Object.keys(inputs).forEach(k => { if(k.startsWith('zd_')) delete inputs[k]; });
   }
-  renderZdModeToggle();
   renderTable();
-  // Sync lên server
-  const dot = document.getElementById('zdModeDot');
-  const txt = document.getElementById('zdModeTxt');
-  if(dot) dot.className = 'dot busy';
-  if(txt) txt.textContent = 'Đang đồng bộ…';
-  try {
-    await gasCall({ action:'saveSetting', key:'allowZdManual', value: val });
-    if(dot) dot.className = 'dot ok';
-    if(txt) txt.textContent = val ? 'Đã đồng bộ — NV tự chọn' : 'Đã đồng bộ — Tự động';
-    toast(val ? '✋ Đã BẬT chế độ NV tự chọn số ngày' : '🔄 Đã TẮT — Hệ thống tự động tính số ngày', 'ok');
-  } catch(err){
-    if(dot) dot.className = 'dot err';
-    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
-    toast('⚠️ Lỗi đồng bộ: ' + err.message, 'err');
-  }
-}
-
-// Legacy — click trực tiếp vào cột header trong bảng (vẫn giữ để tương thích)
-function toggleZdMode(){
-  onZdModeToggle(zdAutoMode); // flip current state
+  toast(zdAutoMode ? '🔄 Số Ngày: Chạy tự động' : '✋ Số Ngày: Nhân viên tự chọn', 'ok');
 }
 
 
@@ -1138,25 +1125,19 @@ function getZeroDays(empId, catId, dateKey){
   const emp2 = EMPS.find(e => e.id === empId);
   // Nếu hôm nay có cờ reset → 0
   if((reps[dateKey] || {})['_reset_' + catId]) return 0;
-  const cat2   = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
-  const target = cat2 ? cat2.target : 1;
   let count = 0;
-  // Quy tắc đếm ngày chưa đạt liên tiếp (tính ngược từ hôm qua):
-  //   - Không có báo cáo (ngày OFF)      → bỏ qua, KHÔNG đếm, KHÔNG dừng chuỗi
-  //   - Có báo cáo, actual = 0 hoặc > 0 nhưng chưa đạt → đếm +1
-  //   - Đạt chỉ tiêu                     → dừng chuỗi, reset về 0
-  //   - Dùng sao hy vọng                 → dừng chuỗi, reset về 0
-  //   - Reset bởi QL                     → dừng chuỗi, reset về 0
   for(let i = 1; i <= 90; i++){
     const k   = daysBefore(dateKey, i);
     const rep = reps[k];
-    if(!rep) continue;                         // ngày OFF → bỏ qua
-    if(rep['_reset_' + catId]) break;          // QL reset → dừng
-    const actual = rep[catId] || 0;
-    const hope   = rep['h_' + catId] || false;
-    if(hope) break;                            // dùng sao → dừng
-    if(target > 0 && Math.round(actual / target * 100) >= 100) break; // đạt → dừng
-    count++;                                   // chưa đạt (kể cả actual=0) → đếm
+    if(!rep) break;
+    if(rep['_reset_' + catId]) break;   // gặp ngày reset → dừng
+    const actual = rep[catId]           || 0;
+    const hope   = rep['h_' + catId]   || false;
+    if(hope) break;
+    const cat2   = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
+    const target = cat2 ? cat2.target : 1;
+    if(target > 0 && Math.round(actual / target * 100) >= 100) break;
+    count++;
   }
   return count;
 }
@@ -1185,6 +1166,8 @@ function renderTable(){
   const tabsH  = (tabsEl ? tabsEl.offsetHeight : 56);
   const thead  = document.getElementById('repThead');
   if(thead) thead.style.top = tabsH + 'px';
+  // Sync zdAutoMode với QL setting mỗi khi render
+  if(!adminUnlocked){ zdAutoMode = !allowZdManual; }
   tbody.innerHTML = '';
 
   let totPlus = 0, totMinus = 0, done = 0;
@@ -1227,23 +1210,18 @@ function renderTable(){
       // AUTO: tính từ lịch sử
       const past   = getZeroDays(emp.id, cat.id, dateKey);
       const today1 = past + 1;
-      zdH = `<div class="zd-pills">${[1,2,3,4].map(n=>`<span class="zd-pill ${n===today1?'zd-on':n<today1?'zd-past':'zd-off'}" title="Ngày chưa đạt: ${n}">${n}</span>`).join('')}</div>`;
+      zdH = `<div class="zd-pills">${[1,2,3,4].map(n=>`<span class="zd-pill ${n===today1?'zd-on':n<today1?'zd-past':'zd-off'}">${n}</span>`).join('')}</div>`;
     } else {
       // MANUAL: NV tự chọn bằng 4 ô bấm
-      const autoVal = getZeroDays(emp.id, cat.id, dateKey) + 1; // giá trị tự động tính
       const manVal = inputs['zd_' + cat.id] !== undefined
         ? inputs['zd_' + cat.id]
         : (saved['zd_' + cat.id] || 0);
-      const warnZd = manVal > 0 && manVal !== autoVal;
-      const warnTxt = warnZd
-        ? `<div class="zd-warn">⚠️ Hệ thống tính <strong>${autoVal}</strong> ngày — bạn chọn <strong>${manVal}</strong> ngày</div>`
-        : '';
-      zdH = `<div class="zd-pills">${[1,2,3,4].map(n=>`<span class="zd-pill ${n===manVal?'zd-on':n<manVal?'zd-past':'zd-off'}" style="cursor:pointer" data-zdcat="${cat.id}" data-zdval="${n}" data-zdauto="${autoVal}">${n}</span>`).join('')}</div>${warnTxt}`;
+      zdH = `<div class="zd-pills">${[1,2,3,4].map(n=>`<span class="zd-pill ${n===manVal?'zd-on':n<manVal?'zd-past':'zd-off'}" style="cursor:pointer" data-zdcat="${cat.id}" data-zdval="${n}">${n}</span>`).join('')}</div>`;
     }
 
     /* use-star button */
-    // canToggle: QL đã bật allowHope VÀ môn chưa đạt VÀ (đã bật hoặc còn sao hy vọng)
-    const canToggle = allowHope && !isDone && (hope || emp.hope > 0);
+    // canToggle: QL đã bật allowHope VÀ môn chưa đạt
+    const canToggle = allowHope && !isDone;
     const btnCls    = 'use-btn' + (hope ? ' active' : '') + (!allowHope ? ' ql-locked' : '');
     const btnDis    = canToggle ? '' : 'disabled';
     const btnTxt    = !allowHope
@@ -1324,17 +1302,11 @@ document.addEventListener('click', e => {
   }
   // Số Ngày manual pill
   if(!zdAutoMode && e.target.dataset.zdcat){
-    const catId  = e.target.dataset.zdcat;
-    const val    = parseInt(e.target.dataset.zdval);
-    const auto   = parseInt(e.target.dataset.zdauto || '0');
+    const catId = e.target.dataset.zdcat;
+    const val   = parseInt(e.target.dataset.zdval);
     // Toggle: bấm lại ô đang chọn → về 0
-    const newVal = (inputs['zd_' + catId] === val) ? 0 : val;
-    inputs['zd_' + catId] = newVal;
+    inputs['zd_' + catId] = (inputs['zd_' + catId] === val) ? 0 : val;
     renderTable();
-    // Cảnh báo nếu khác auto
-    if(newVal > 0 && auto > 0 && newVal !== auto){
-      toast(`⚠️ Hệ thống tính ${auto} ngày — bạn đang chọn ${newVal} ngày. Kiểm tra lại lịch sử!`, 'warn');
-    }
     return;
   }
 });
@@ -1351,9 +1323,47 @@ function renderHopeToggle(){
   badge.className = 't-badge ' + (allowHope ? 't-badge-on' : 't-badge-off');
 }
 
+function renderZdToggle(){
+  const chk   = document.getElementById('zdToggle');
+  const badge = document.getElementById('zdBadge');
+  if(!chk || !badge) return;
+  chk.checked = allowZdManual;
+  badge.textContent = allowZdManual ? '✅ Đang BẬT — NV tự chọn số ngày' : '🔵 Đang TẮT — Hệ thống tự động';
+  badge.className = 't-badge ' + (allowZdManual ? 't-badge-on' : 't-badge-off');
+  // Sync header label trên bảng
+  const lbl = document.getElementById('zdModeLabel');
+  if(lbl){
+    lbl.textContent = allowZdManual ? 'TỰ CHỌN' : 'AUTO';
+    lbl.style.background = allowZdManual ? 'rgba(255,215,0,.5)' : 'rgba(0,0,0,.15)';
+    lbl.style.color = allowZdManual ? '#4a2e00' : '';
+  }
+}
+
+async function onZdToggle(val){
+  allowZdManual = val;
+  zdAutoMode    = !val;
+  renderZdToggle();
+  renderTable();
+  const dot = document.getElementById('zdToggleDot');
+  const txt = document.getElementById('zdToggleTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'allowZdManual', value: val });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'NV tự chọn' : 'Tự động'}`;
+    toast(val ? '✅ NV có thể tự chọn Số Ngày' : '🔵 Số Ngày chạy tự động', 'ok');
+  } catch(err){
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi: ' + err.message, 'err');
+  }
+}
+
 async function onHopeToggle(val){
   allowHope = val;
   renderHopeToggle();
+  renderZdToggle();
   renderTable();
   // Sync lên server
   const dot = document.getElementById('hopeToggleDot');
@@ -1388,7 +1398,6 @@ function toggleHope(catId){
 
   const cur = inputs[hk] !== undefined ? inputs[hk] : (saved[hk] || false);
   // Nếu đang tắt và hết sao hy vọng → không cho bật thêm
-  if(!cur && emp.hope <= 0){ toast(`Không còn sao hy vọng! (Hy vọng: ${emp.hope})`, 'err'); return; }
   inputs[hk] = !cur;
   renderTable();
 }
@@ -1442,8 +1451,23 @@ async function submitReport(){
 
   rep._pct   = Math.round(pctSum / cats.length);
   const net  = totPlus - totMinus;
-  const starsNew = Math.max(0, emp.stars + net);
-  const hopeNew  = Math.max(0, emp.hope  - hopeUsed);
+
+  // Trừ đi net của báo cáo cũ cùng ngày (nếu đã submit trước đó) để tránh cộng double
+  let oldNet = 0;
+  if(saved && Object.keys(saved).length > 0){
+    const cats2 = getCats(emp.dept);
+    let oldPlus = 0, oldMinus = 0;
+    cats2.forEach(cat => {
+      const oldActual = saved[cat.id] || 0;
+      const oldHope   = saved['h_' + cat.id] || false;
+      const oldPct    = getPct(oldActual, cat.target);
+      if(oldPct >= 100)   oldPlus  += cat.sp;
+      else if(oldHope)    oldMinus += cat.sm;
+    });
+    oldNet = oldPlus - oldMinus;
+  }
+  const starsNew = Math.max(0, emp.stars - oldNet + net);
+  const hopeNew  = emp.hope; // không giới hạn sao hy vọng
 
   // Giữ lại cờ reset của QL
   Object.keys(saved).forEach(k => { if(k.startsWith('_reset_')) rep[k] = saved[k]; });
@@ -1494,36 +1518,10 @@ async function submitReport(){
 async function captureReport(){
   try {
     const target = document.getElementById('appContent');
-    const tabs   = target.querySelector('.tabs');
-
-    // Tạm tắt sticky để html2canvas render đúng vị trí thật
-    const prevPosition = tabs ? tabs.style.position : null;
-    const prevTop      = tabs ? tabs.style.top : null;
-    const prevZIndex   = tabs ? tabs.style.zIndex : null;
-    if(tabs){
-      tabs.style.position = 'relative';
-      tabs.style.top      = 'auto';
-      tabs.style.zIndex   = '1';
-    }
-
-    // Scroll về đầu trang để canvas chụp từ trên xuống
-    const prevScroll = window.scrollY;
-    window.scrollTo(0, 0);
-
     const canvas = await html2canvas(target, {
       scale:2, useCORS:true, backgroundColor:'#f0f2f8', logging:false,
-      width:target.offsetWidth, windowWidth:target.offsetWidth,
-      scrollX:0, scrollY:0
+      width:target.offsetWidth, windowWidth:target.offsetWidth
     });
-
-    // Khôi phục sticky
-    if(tabs){
-      tabs.style.position = prevPosition;
-      tabs.style.top      = prevTop;
-      tabs.style.zIndex   = prevZIndex;
-    }
-    window.scrollTo(0, prevScroll);
-
     const a    = document.createElement('a');
     const emp  = getCurEmp();
     const date = document.getElementById('dateIn').value;
@@ -1625,7 +1623,6 @@ function closePwd(){
 // ════════════════════════════════════════════
 function renderAdminTab(){
   renderHopeToggle();
-  renderZdModeToggle();
   const tbody = document.getElementById('adminEmpBody');
   tbody.innerHTML = '';
   EMPS.forEach(e => {
@@ -1664,6 +1661,160 @@ async function saveEmpStars(empId){
 }
 
 // ════════════════════════════════════════════
+//  QL — SỬA BÁO CÁO NHÂN VIÊN
+// ════════════════════════════════════════════
+function qlBuildEmpSelect(){
+  const sel = document.getElementById('qlEmpSel');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Chọn nhân viên —</option>';
+  const depts = [...new Set(EMPS.map(e => e.dept))];
+  depts.forEach(dept => {
+    const grp = document.createElement('optgroup');
+    grp.label = dept;
+    EMPS.filter(e => e.dept === dept).forEach(e => {
+      const o = document.createElement('option');
+      o.value = e.id;
+      o.textContent = e.name;
+      grp.appendChild(o);
+    });
+    sel.appendChild(grp);
+  });
+  // Mặc định ngày hôm nay
+  const di = document.getElementById('qlDateIn');
+  if(di && !di.value) di.value = todayStr;
+}
+
+function qlLoadReport(){
+  const empId  = document.getElementById('qlEmpSel').value;
+  const date   = document.getElementById('qlDateIn').value;
+  const wrap   = document.getElementById('qlRepWrap');
+  const empty  = document.getElementById('qlRepEmpty');
+  const tbody  = document.getElementById('qlRepBody');
+  if(!empId || !date){ wrap.style.display='none'; empty.style.display='block'; return; }
+
+  const emp  = EMPS.find(e => e.id === empId);
+  if(!emp){ wrap.style.display='none'; empty.style.display='block'; return; }
+
+  const saved = (STORED.reports[empId] || {})[date] || {};
+  const cats  = getCats(emp.dept);
+
+  if(!cats.length){ empty.textContent='Không có môn thi đua'; wrap.style.display='none'; empty.style.display='block'; return; }
+
+  tbody.innerHTML = '';
+  cats.forEach(cat => {
+    const actual = saved[cat.id] || 0;
+    const hope   = saved['h_' + cat.id] || false;
+    const pct    = getPct(actual, cat.target);
+    const isDone = pct >= 100;
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #e4e7f0';
+    tr.innerHTML = `
+      <td style="font-size:11px;font-weight:700;padding:5px 4px;color:${isDone?'var(--green)':'var(--text)'}">${cat.name}</td>
+      <td style="font-size:11px;text-align:center;color:var(--text-mid)">${cat.target}</td>
+      <td style="text-align:center;padding:3px 4px">
+        <input class="num-input" type="number" min="0" style="width:52px"
+          data-ql-cat="${cat.id}" value="${actual}" oninput="qlPreviewNet()">
+      </td>
+      <td style="text-align:center;padding:3px 4px">
+        <input type="checkbox" data-ql-hope="${cat.id}" ${hope?'checked':''} ${isDone?'disabled':''} onchange="qlPreviewNet()"
+          style="width:16px;height:16px;cursor:pointer;accent-color:var(--orange)">
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  wrap.style.display  = 'block';
+  empty.style.display = 'none';
+  qlPreviewNet();
+}
+
+function qlPreviewNet(){
+  const empId = document.getElementById('qlEmpSel').value;
+  const emp   = EMPS.find(e => e.id === empId); if(!emp) return;
+  const cats  = getCats(emp.dept);
+  let plus = 0, minus = 0;
+  cats.forEach(cat => {
+    const inp  = document.querySelector(`[data-ql-cat="${cat.id}"]`);
+    const chk  = document.querySelector(`[data-ql-hope="${cat.id}"]`);
+    const actual = inp ? (parseInt(inp.value)||0) : 0;
+    const hope   = chk ? chk.checked : false;
+    const pct    = getPct(actual, cat.target);
+    if(pct >= 100)  plus  += cat.sp;
+    else if(hope)   minus += cat.sm;
+  });
+  const net = plus - minus;
+  const el  = document.getElementById('qlNetPreview');
+  if(el) el.innerHTML = `Nhận: <span style="color:var(--green)">+${plus}</span> &nbsp; Trừ: <span style="color:var(--red)">-${minus}</span> &nbsp; Net hôm đó: <strong style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''}${net}</strong>`;
+}
+
+async function qlSaveReport(){
+  const empId  = document.getElementById('qlEmpSel').value;
+  const date   = document.getElementById('qlDateIn').value;
+  if(!empId || !date){ toast('Chọn nhân viên và ngày!','err'); return; }
+  const emp    = EMPS.find(e => e.id === empId); if(!emp) return;
+  const cats   = getCats(emp.dept);
+  const saved  = (STORED.reports[empId] || {})[date] || {};
+
+  // Tính net cũ của ngày đó
+  let oldPlus = 0, oldMinus = 0;
+  cats.forEach(cat => {
+    const oldActual = saved[cat.id] || 0;
+    const oldHope   = saved['h_' + cat.id] || false;
+    const oldPct    = getPct(oldActual, cat.target);
+    if(oldPct >= 100)  oldPlus  += cat.sp;
+    else if(oldHope)   oldMinus += cat.sm;
+  });
+  const oldNet = oldPlus - oldMinus;
+
+  // Tính net mới
+  const rep = {};
+  let newPlus = 0, newMinus = 0, pctSum = 0;
+  const lines = [];
+  cats.forEach(cat => {
+    const inp    = document.querySelector(`[data-ql-cat="${cat.id}"]`);
+    const chk    = document.querySelector(`[data-ql-hope="${cat.id}"]`);
+    const actual = inp ? (parseInt(inp.value)||0) : (saved[cat.id]||0);
+    const hope   = chk ? chk.checked : (saved['h_'+cat.id]||false);
+    rep[cat.id]       = actual;
+    rep['h_'+cat.id]  = hope;
+    const pct = getPct(actual, cat.target);
+    pctSum += pct;
+    let star = 0;
+    if(pct >= 100)  { newPlus  += cat.sp; star =  cat.sp; }
+    else if(hope)   { newMinus += cat.sm; star = -cat.sm; }
+    lines.push({ name:cat.name, target:cat.target, actual, pct, star });
+  });
+  rep._pct = Math.round(pctSum / cats.length);
+  // Giữ cờ reset
+  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_')) rep[k] = saved[k]; });
+
+  const newNet   = newPlus - newMinus;
+  const diff     = newNet - oldNet;           // chênh lệch so với báo cáo cũ
+  const starsNew = Math.max(0, emp.stars + diff);
+
+  // Cập nhật bộ nhớ
+  if(!STORED.reports[empId]) STORED.reports[empId] = {};
+  STORED.reports[empId][date] = rep;
+  const idx = EMPS.findIndex(e => e.id === empId);
+  EMPS[idx].stars = starsNew;
+  if(!STORED.empStars[empId]) STORED.empStars[empId] = {};
+  STORED.empStars[empId].stars = starsNew;
+
+  try {
+    await gasCall({
+      action:'saveReport', empId, empName:emp.name, dept:emp.dept,
+      date, rep, lines,
+      starsBase:emp.stars, hopeBase:emp.hope, starsNew, hopeNew:emp.hope, net:newNet
+    });
+    toast(`✓ Đã sửa! Lũy kế ${emp.name}: ${starsNew} sao (${diff>=0?'+':''}${diff})`, 'ok');
+    renderAdminTab();
+    renderLeaderboard();
+    qlLoadReport();
+  } catch(err){
+    toast('⚠️ Lỗi: ' + err.message, 'err');
+  }
+}
+
+// ════════════════════════════════════════════
 //  TAB SWITCH
 // ════════════════════════════════════════════
 function goTab(name, el){
@@ -1672,106 +1823,7 @@ function goTab(name, el){
   document.querySelectorAll('.pnl').forEach(p => p.classList.remove('on'));
   document.getElementById('tab-' + name).classList.add('on');
   if(name === 'rank')     renderLeaderboard();
-  if(name === 'admin')    renderAdminTab();
-  if(name === 'monThi')   renderMonThi();
-}
-
-// ════════════════════════════════════════════
-//  TAB MÔN THI — BẢNG THƯỞNG / TRỪ SAO
-// ════════════════════════════════════════════
-function renderMonThi(){
-  const wrap = document.getElementById('monThiContent');
-  if(!wrap) return;
-
-  // Lấy emp hiện tại
-  const empId = document.getElementById('empSel') && document.getElementById('empSel').value;
-  const emp = EMPS.find(e => e.id === empId);
-
-  if(!emp){
-    wrap.innerHTML = `<div style="text-align:center;color:var(--text-light);padding:40px 0;font-size:12px">
-      <i class="ti ti-user-question" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4"></i>
-      Vui lòng chọn nhân viên ở tab Báo cáo để xem bảng môn thi.
-    </div>`;
-    return;
-  }
-
-  const cats = getCats(emp.dept);
-  if(!cats.length){
-    wrap.innerHTML = `<div style="text-align:center;color:var(--text-light);padding:40px 0;font-size:12px">Chưa có cấu hình môn thi cho siêu thị này.</div>`;
-    return;
-  }
-
-  // Summary row
-  const totalSp = cats.reduce((s,c)=>s+c.sp, 0);
-  const totalSm = cats.reduce((s,c)=>s+c.sm, 0);
-
-  let rows = cats.map((cat, i) => `
-    <tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:10px 12px;font-size:11px;color:var(--text-mid);font-weight:600">${i+1}</td>
-      <td style="padding:10px 8px;font-size:12px;font-weight:700;color:var(--text)">${cat.name}</td>
-      <td style="padding:10px 8px;font-size:12px;color:var(--text-light);text-align:center">${cat.target}</td>
-      <td style="padding:10px 8px;text-align:center">
-        <span style="display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#d4edda,#c3e6cb);color:#155724;font-size:13px;font-weight:800;padding:4px 10px;border-radius:20px">
-          +${cat.sp} ⭐
-        </span>
-      </td>
-      <td style="padding:10px 8px;text-align:center">
-        <span style="display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#fde8e8,#f8d7da);color:#721c24;font-size:13px;font-weight:800;padding:4px 10px;border-radius:20px">
-          −${cat.sm} ⭐
-        </span>
-      </td>
-    </tr>`).join('');
-
-  wrap.innerHTML = `
-    <!-- Info card nhân viên -->
-    <div style="background:linear-gradient(135deg,var(--surface2),var(--surface));border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-size:11px;color:var(--text-light)">Nhân viên</div>
-        <div style="font-size:14px;font-weight:800;color:var(--text)">${emp.name}</div>
-        <div style="font-size:10px;color:var(--text-light);margin-top:2px">${emp.dept}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:10px;color:var(--text-light)">Sao lũy kế</div>
-        <div style="font-size:18px;font-weight:800;color:#f59e0b">★ ${emp.stars}</div>
-      </div>
-    </div>
-
-    <!-- Chú thích -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-      <span style="font-size:10px;background:#d4edda;color:#155724;padding:3px 10px;border-radius:20px;font-weight:700">⭐ Đạt chỉ tiêu → Được thưởng sao</span>
-      <span style="font-size:10px;background:#fde8e8;color:#721c24;padding:3px 10px;border-radius:20px;font-weight:700">⭐ Không đạt + Dùng sao hy vọng → Bị trừ sao</span>
-    </div>
-
-    <!-- Bảng môn thi -->
-    <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
-      <table style="width:100%;border-collapse:collapse">
-        <thead>
-          <tr style="background:linear-gradient(135deg,var(--blue),#1e40af)">
-            <th style="padding:10px 12px;font-size:10px;color:rgba(255,255,255,.8);text-align:left;width:30px">#</th>
-            <th style="padding:10px 8px;font-size:10px;color:rgba(255,255,255,.8);text-align:left">MÔN THI ĐUA</th>
-            <th style="padding:10px 8px;font-size:10px;color:rgba(255,255,255,.8);text-align:center">CHỈ TIÊU</th>
-            <th style="padding:10px 8px;font-size:10px;color:rgba(255,255,255,.8);text-align:center">THƯỞNG SAO</th>
-            <th style="padding:10px 8px;font-size:10px;color:rgba(255,255,255,.8);text-align:center">TRỪ SAO</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-        <tfoot>
-          <tr style="background:var(--surface2)">
-            <td colspan="3" style="padding:10px 12px;font-size:11px;font-weight:800;color:var(--text)">TỔNG (${cats.length} môn)</td>
-            <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:800;color:#155724">+${totalSp} ⭐</td>
-            <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:800;color:#721c24">−${totalSm} ⭐</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-
-    <!-- Net note -->
-    <div style="margin-top:12px;padding:10px 14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);font-size:11px;color:var(--text-light);line-height:1.6">
-      💡 Nếu đạt tất cả ${cats.length} môn: <strong style="color:#155724">+${totalSp} sao</strong>.<br>
-      Nếu không đạt và dùng sao hy vọng tất cả: <strong style="color:#721c24">−${totalSm} sao</strong>.<br>
-      Sao hy vọng hiện có của bạn: <strong style="color:#f59e0b">★ ${emp.hope}</strong>
-    </div>
-  `;
+  if(name === 'admin')    { renderAdminTab(); qlBuildEmpSelect(); }
 }
 
 // ════════════════════════════════════════════
@@ -1817,57 +1869,168 @@ function extractSheetId(url){
   return m ? m[1] : null;
 }
 
-// ── Fetch sheet "Realtime" via Google Sheets CSV export ──
+// ══════════════════════════════════════════════════════════════
+//  FETCH REALTIME — ưu tiên GAS (không cần public), fallback CSV
+// ══════════════════════════════════════════════════════════════
+let ANA_SUMMARY = [];        // tổng hợp theo NV từ GAS
+let ANA_AUTO_INTERVAL = null;// setInterval handle cho auto-refresh
+
 async function anaFetchSheet(){
-  const urlRaw = document.getElementById('anaSheetUrl').value.trim();
-  const sheetId = extractSheetId(urlRaw) || '1GyJkJgNlsdDvcR9nQqP_Ck2JzX8SDqcBriO2ovlsgC4';
-  const btn = document.getElementById('anaFetchBtn');
+  const btn      = document.getElementById('anaFetchBtn');
   const statusEl = document.getElementById('anaFetchStatus');
 
   btn.disabled = true;
-  btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Đang tải…';
+  btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:15px"></i> Đang đồng bộ qua GAS…';
   statusEl.style.display = 'none';
 
-  // Google Sheets public CSV export — sheet name "Realtime"
-  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Realtime`;
-
+  // ── Thử GAS trước ──
   try {
-    const res = await fetch(csvUrl);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const rows = anaParseCsv(text);
+    const data = await gasCall({ action: 'loadRealtime' });
+    if(!data.ok) throw new Error(data.error || 'GAS trả lỗi');
 
-    if(!rows.length) throw new Error('Không có dữ liệu hoặc sheet chưa chia sẻ công khai');
-
-    // Skip header row if exists (check if first cell looks like a header)
-    const startIdx = (rows[0][0] || '').toLowerCase().includes('siêu') || (rows[0][0] || '').toLowerCase().includes('sieu') ? 1 : 0;
-    ANA_ROWS = [];
-    rows.slice(startIdx).forEach(cols => {
-      if(cols.length < 4) return;
-      const store  = (cols[0] || '').trim();
-      const emp    = (cols[1] || '').trim();
-      const cat    = (cols[2] || '').trim();
-      const actual = parseFloat((cols[3] || '0').replace(/[^0-9.]/g,'')) || 0;
-      const pctRaw = (cols[4] || '0').replace(/[^0-9.]/g,'');
-      const pct    = parseFloat(pctRaw) || 0;
-      if(!store || !emp || !cat) return;
-      // Find matching EMPS entry
-      const empObj = EMPS.find(e => e.name === emp || e.name.includes(emp) || emp.includes(e.name));
-      ANA_ROWS.push({ store, empId: empObj ? empObj.id : emp, empName: emp, cat, actual, pct });
-    });
+    ANA_ROWS    = data.rows    || [];
+    ANA_SUMMARY = data.summary || [];
 
     statusEl.style.cssText = 'display:block;background:var(--green-bg);color:var(--green);border:1px solid #a7f3d0;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;margin-top:8px';
-    statusEl.innerHTML = `<i class="ti ti-check"></i> Tải thành công ${ANA_ROWS.length} dòng từ sheet Realtime`;
+    statusEl.innerHTML = `<i class="ti ti-check"></i> ✅ Đã đồng bộ qua GAS — ${ANA_ROWS.length} dòng · ${ANA_SUMMARY.length} nhân viên · cập nhật lúc ${data.updatedAt || '—'}`;
+
+    anaRenderRanking();   // bảng xếp hạng nhanh
     anaRenderDataTable();
-    toast(`✓ Đã tải ${ANA_ROWS.length} dòng từ Sheets`, 'ok');
-  } catch(err){
-    statusEl.style.cssText = 'display:block;background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;margin-top:8px';
-    statusEl.innerHTML = `<i class="ti ti-alert-triangle"></i> Lỗi: ${err.message}<br><small style="font-weight:400;opacity:.8">Đảm bảo sheet đã bật "Chia sẻ — Bất kỳ ai có link"</small>`;
-    toast('⚠️ Không tải được: ' + err.message, 'err');
+    toast(`✅ Realtime: ${ANA_ROWS.length} dòng · ${ANA_SUMMARY.length} NV`, 'ok');
+
+  } catch(gasErr){
+    // ── Fallback: CSV công khai ──
+    statusEl.style.cssText = 'display:block;background:var(--orange-bg);color:var(--orange);border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;margin-top:8px';
+    statusEl.innerHTML = `<i class="ti ti-alert-triangle"></i> GAS lỗi: ${gasErr.message} — đang thử CSV công khai…`;
+
+    try {
+      const sheetId = '1GyJkJgNlsdDvcR9nQqP_Ck2JzX8SDqcBriO2ovlsgC4';
+      const csvUrl  = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Realtime`;
+      const res     = await fetch(csvUrl);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const text    = await res.text();
+      const rows    = anaParseCsv(text);
+      if(!rows.length) throw new Error('Không có dữ liệu');
+
+      const startIdx = (rows[0][0]||'').toLowerCase().match(/si[eê]u/) ? 1 : 0;
+      ANA_ROWS = [];
+      rows.slice(startIdx).forEach(cols => {
+        if(cols.length < 4) return;
+        const store  = (cols[0]||'').trim();
+        const emp    = (cols[1]||'').trim();
+        const cat    = (cols[2]||'').trim();
+        const actual = parseFloat((cols[3]||'0').replace(/[^0-9.-]/g,'')) || 0;
+        const pct    = parseFloat((cols[4]||'0').replace(/[^0-9.-]/g,'')) || 0;
+        if(!store||!emp||!cat) return;
+        const empObj = EMPS.find(e => e.name===emp || e.name.includes(emp) || emp.includes(e.name));
+        ANA_ROWS.push({ store, empId: empObj?empObj.id:emp, empName:emp, cat, actual, pct });
+      });
+
+      // Tự build summary từ CSV data
+      ANA_SUMMARY = _buildSummary(ANA_ROWS);
+
+      statusEl.style.cssText = 'display:block;background:var(--green-bg);color:var(--green);border:1px solid #a7f3d0;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;margin-top:8px';
+      statusEl.innerHTML = `<i class="ti ti-check"></i> CSV — ${ANA_ROWS.length} dòng · ${ANA_SUMMARY.length} nhân viên (sheet cần chia sẻ công khai)`;
+
+      anaRenderRanking();
+      anaRenderDataTable();
+      toast(`✓ CSV: ${ANA_ROWS.length} dòng`, 'ok');
+
+    } catch(csvErr){
+      statusEl.style.cssText = 'display:block;background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;margin-top:8px';
+      statusEl.innerHTML = `<i class="ti ti-alert-triangle"></i> Không tải được: ${csvErr.message}<br><small style="font-weight:400;opacity:.7">GAS: cần thêm hàm <code>handleLoadRealtime</code> và deploy lại</small>`;
+      toast('⚠️ Không tải được dữ liệu Realtime', 'err');
+    }
   }
 
   btn.disabled = false;
-  btn.innerHTML = '<i class="ti ti-refresh" style="font-size:15px"></i>Tải dữ liệu Realtime';
+  btn.innerHTML = '<i class="ti ti-refresh" style="font-size:15px"></i>Đồng bộ Realtime';
+}
+
+// Build summary từ raw rows (dùng khi GAS không có summary)
+function _buildSummary(rows){
+  const map = {};
+  rows.forEach(r => {
+    const key = r.store+'||'+r.empName;
+    if(!map[key]) map[key] = { store:r.store, name:r.empName, cats:[], totalPct:0, count:0, done:0 };
+    map[key].cats.push({ cat:r.cat, actual:r.actual, pct:r.pct });
+    map[key].totalPct += r.pct;
+    map[key].count++;
+    if(r.pct >= 100) map[key].done++;
+  });
+  return Object.values(map).map(e => ({
+    store:  e.store,
+    name:   e.name,
+    avgPct: e.count > 0 ? Math.round(e.totalPct/e.count*10)/10 : 0,
+    done:   e.done,
+    total:  e.count,
+    cats:   e.cats.sort((a,b)=>b.pct-a.pct)
+  })).sort((a,b)=>b.avgPct-a.avgPct);
+}
+
+// ── Bảng xếp hạng nhanh theo % đạt TB ──
+function anaRenderRanking(){
+  const wrap = document.getElementById('anaRankWrap');
+  if(!wrap || !ANA_SUMMARY.length){ if(wrap) wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+
+  // Group by store
+  const stores = [...new Set(ANA_SUMMARY.map(e=>e.store))];
+  let html = '';
+  stores.forEach(store => {
+    const emps = ANA_SUMMARY.filter(e=>e.store===store);
+    const shortStore = store.includes('TGD') ? '🏪 TGDĐ' : store.includes('AAR') ? '🍎 TopZone' : store;
+    html += `<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:4px">
+        ${shortStore} — <span style="color:var(--text-mid);font-weight:600;text-transform:none">${emps.length} nhân viên</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">`;
+    emps.forEach((e, idx) => {
+      const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
+      const barW  = Math.min(100, e.avgPct);
+      const barColor = e.avgPct>=100?'#16a34a':e.avgPct>=70?'#d97706':'#dc2626';
+      const doneBadge = `<span style="font-size:9px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:10px;font-weight:700">${e.done}/${e.total} môn ✓</span>`;
+      // Top cat
+      const topCat = e.cats[0];
+      const topStr = topCat ? `<span style="font-size:9px;color:var(--text-light);margin-left:4px">↑ ${topCat.cat.substring(0,20)}… ${topCat.pct}%</span>` : '';
+      html += `<div style="background:#fff;border:1px solid var(--gray-line);border-radius:10px;padding:8px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+            <span style="font-size:14px;width:20px;text-align:center">${medal||'<span style=color:var(--text-light);font-size:11px>#'+(idx+1)+'</span>'}</span>
+            <span style="font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</span>
+            ${doneBadge}
+          </div>
+          <span style="font-size:14px;font-weight:900;color:${barColor};margin-left:8px;white-space:nowrap">${e.avgPct}%</span>
+        </div>
+        <div style="height:5px;background:#f3f4f6;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${barW}%;background:${barColor};border-radius:3px;transition:.4s"></div>
+        </div>
+        ${topStr}
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  document.getElementById('anaRankInner').innerHTML = html;
+}
+
+// ── Auto-refresh toggle ──
+function anaToggleAutoRefresh(el){
+  if(ANA_AUTO_INTERVAL){
+    clearInterval(ANA_AUTO_INTERVAL);
+    ANA_AUTO_INTERVAL = null;
+    el.textContent = '⏱ Tự động làm mới';
+    el.style.background = '';
+    el.style.color = '';
+    toast('Đã tắt tự động làm mới', 'ok');
+  } else {
+    anaFetchSheet();
+    ANA_AUTO_INTERVAL = setInterval(anaFetchSheet, 60000); // mỗi 60s
+    el.textContent = '⏹ Đang làm mới (60s)…';
+    el.style.background = '#dcfce7';
+    el.style.color = '#16a34a';
+    toast('✅ Tự động làm mới mỗi 60 giây', 'ok');
+  }
 }
 
 // ── Simple CSV parser (handles quoted fields) ──
@@ -2177,9 +2340,61 @@ function anaAnalyze(){
 }
 
 // ════════════════════════════════════════════
+//  POLL SETTINGS (cập nhật allowHope / allowZdManual cho NV)
+//  Gọi mỗi 30 giây để đồng bộ toggle QL → NV không cần reload trang
+// ════════════════════════════════════════════
+async function pollSettings(){
+  try {
+    const res = await fetch(GAS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({ action:'load' })
+    });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data.settings) return;
+
+    let changed = false;
+
+    // Kiểm tra allowHope
+    if(data.settings.allowHope !== undefined && data.settings.allowHope !== allowHope){
+      allowHope = data.settings.allowHope;
+      changed = true;
+      // Thông báo NV nếu trạng thái thay đổi
+      if(!adminUnlocked){
+        toast(allowHope
+          ? '✅ Quản lý đã BẬT chức năng Dùng Sao'
+          : '🔒 Quản lý đã TẮT chức năng Dùng Sao', 'ok');
+      }
+      renderHopeToggle();
+    }
+
+    // Kiểm tra allowZdManual
+    if(data.settings.allowZdManual !== undefined && data.settings.allowZdManual !== allowZdManual){
+      allowZdManual = data.settings.allowZdManual;
+      zdAutoMode    = !allowZdManual;
+      changed = true;
+      renderZdToggle();
+    }
+
+    // Nếu có thay đổi → render lại bảng để cập nhật nút Dùng Sao
+    if(changed && curEmpId) renderTable();
+
+  } catch(e){
+    // Silent fail — không làm phiền NV nếu poll lỗi
+  }
+}
+
+// ════════════════════════════════════════════
 //  BOOT
 // ════════════════════════════════════════════
 loadAll();
+
+// Bắt đầu polling sau 5 giây (chờ loadAll xong), lặp mỗi 30 giây
+setTimeout(() => {
+  pollSettings();
+  setInterval(pollSettings, 30000);
+}, 5000);
 </script>
 </body>
 </html>
