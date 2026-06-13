@@ -1557,11 +1557,46 @@ async function submitReport(){
 // ════════════════════════════════════════════
 async function captureReport(){
   try {
-    const target = document.getElementById('appContent');
+    const repCard = document.getElementById('repCard');
+    if(!repCard || repCard.style.display === 'none'){
+      toast('Chưa có báo cáo để xuất ảnh', 'err'); return;
+    }
+
+    // 1. Đảm bảo đang ở tab báo cáo
+    const tabBtns = document.querySelectorAll('.tab');
+    let reportTabEl = null;
+    tabBtns.forEach(t => { if((t.getAttribute('onclick')||'').includes("'report'")) reportTabEl = t; });
+    if(reportTabEl) goTab('report', reportTabEl);
+    await new Promise(r => setTimeout(r, 120));
+
+    // 2. Cuộn về đầu
+    window.scrollTo(0, 0);
+    await new Promise(r => setTimeout(r, 80));
+
+    // 3. Tạm ẩn nút Lưu để không xuất hiện trong ảnh
+    const subBtn = document.getElementById('subBtn');
+    const prevDisplay = subBtn ? subBtn.style.display : '';
+    if(subBtn) subBtn.style.display = 'none';
+
+    // 4. Chụp tab-report với đúng chiều cao thực
+    const target = document.getElementById('tab-report');
     const canvas = await html2canvas(target, {
-      scale:2, useCORS:true, backgroundColor:'#f0f2f8', logging:false,
-      width:target.offsetWidth, windowWidth:target.offsetWidth
+      scale:       2,
+      useCORS:     true,
+      allowTaint:  true,
+      backgroundColor: '#f0f2f8',
+      logging:     false,
+      width:       target.offsetWidth,
+      height:      target.scrollHeight,
+      windowWidth: target.offsetWidth,
+      scrollX:     0,
+      scrollY:     -window.scrollY
     });
+
+    // 5. Hiện lại nút
+    if(subBtn) subBtn.style.display = prevDisplay;
+
+    // 6. Tải ảnh về
     const a    = document.createElement('a');
     const emp  = getCurEmp();
     const date = document.getElementById('dateIn').value;
