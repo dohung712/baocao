@@ -918,7 +918,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyjvXOsV2zx8xQ2g7KA-XeOpullndYDwtl-hEaAUkB-xQf1FDhqwmJduZMjnx4tld9WjQ/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbz0LusMxsQHHNyUd1oS0nHqWpKmke9dYxhT_1Wnjyea0rqr_1SjymTUZUMnta-5t5KSjA/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -1370,16 +1370,13 @@ function renderZdToggle(){
   chk.checked = allowZdManual;
   badge.textContent = allowZdManual ? '✅ Đang BẬT — NV tự chọn số ngày' : '🔵 Đang TẮT — Hệ thống tự động';
   badge.className = 't-badge ' + (allowZdManual ? 't-badge-on' : 't-badge-off');
-  // Sync header label trên bảng
-  const lbl = document.getElementById('zdModeLabel');
-  if(lbl){
-    lbl.textContent = allowZdManual ? 'TỰ CHỌN' : 'AUTO';
-    lbl.style.background = allowZdManual ? 'rgba(255,215,0,.5)' : 'rgba(0,0,0,.15)';
-    lbl.style.color = allowZdManual ? '#4a2e00' : '';
-  }
+  // KHÔNG đụng vào zdModeLabel/zdModeTh ở đây — đó là toggle riêng của NV
+  // trên header bảng báo cáo (zdAutoMode, điều khiển qua toggleZdMode()).
+  // allowZdManual chỉ quyết định NV CÓ ĐƯỢC bấm đổi hay không, không tự đổi giá trị đó.
 }
 
 async function onZdToggle(val){
+  const prevVal = allowZdManual; // lưu lại để revert nếu lỗi
   allowZdManual = val;
   zdAutoMode    = !val;
   renderZdToggle();
@@ -1394,13 +1391,19 @@ async function onZdToggle(val){
     if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'NV tự chọn' : 'Tự động'}`;
     toast(val ? '✅ NV có thể tự chọn Số Ngày' : '🔵 Số Ngày chạy tự động', 'ok');
   } catch(err){
+    // Revert trạng thái local vì server chưa lưu được — tránh lệch UI/server
+    allowZdManual = prevVal;
+    zdAutoMode    = !prevVal;
+    renderZdToggle();
+    renderTable();
     if(dot) dot.className = 'dot err';
     if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
-    toast('⚠️ Lỗi: ' + err.message, 'err');
+    toast('⚠️ Lỗi: ' + err.message + ' — đã hoàn tác', 'err');
   }
 }
 
 async function onHopeToggle(val){
+  const prevVal = allowHope; // lưu lại để revert nếu lỗi
   allowHope = val;
   renderHopeToggle();
   renderZdToggle();
@@ -1416,9 +1419,14 @@ async function onHopeToggle(val){
     if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'BẬT' : 'TẮT'} cho tất cả nhân viên`;
     toast(val ? '✅ Đã BẬT nút Dùng Sao cho tất cả NV' : '🔒 Đã TẮT nút Dùng Sao cho tất cả NV', 'ok');
   } catch(err){
+    // Revert vì server chưa lưu được — tránh lệch UI/server
+    allowHope = prevVal;
+    renderHopeToggle();
+    renderZdToggle();
+    renderTable();
     if(dot) dot.className = 'dot err';
     if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
-    toast('⚠️ Lỗi đồng bộ: ' + err.message, 'err');
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
   }
 }
 
@@ -1748,6 +1756,7 @@ function closePwd(){
 // ════════════════════════════════════════════
 function renderAdminTab(){
   renderHopeToggle();
+  renderZdToggle();
   const tbody = document.getElementById('adminEmpBody');
   tbody.innerHTML = '';
   EMPS.forEach(e => {
