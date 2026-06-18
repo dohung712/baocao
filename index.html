@@ -715,6 +715,18 @@ tr.row-done .cat-name{color:var(--green)}
           <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
         </div>
 
+        <!-- ══ THIẾU BÁO CÁO (THÁNG NÀY) ══ -->
+        <div class="sec-title"><i class="ti ti-calendar-x"></i>Thiếu báo cáo (tháng này)</div>
+        <div class="adm-card" style="padding:14px 16px;margin-bottom:14px">
+          <div id="lateSubmitWarnBlock"></div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <button class="act-btn" id="missingViewByEmpBtn" onclick="setMissingView('emp')" style="flex:1;font-size:12px">Theo NV</button>
+            <button class="act-btn" id="missingViewByDateBtn" onclick="setMissingView('date')" style="flex:1;font-size:12px">Theo ngày</button>
+          </div>
+          <div id="missingByEmpWrap"></div>
+          <div id="missingByDateWrap" style="display:none"></div>
+        </div>
+
         <div class="sec-title"><i class="ti ti-users"></i>Sao lũy kế nhân viên</div>
         <p style="font-size:11px;color:var(--text-light);margin-bottom:12px">Chỉnh sao trực tiếp. Nhấn <strong>Lưu</strong> để đồng bộ Sheets.</p>
         <div class="adm-card">
@@ -933,6 +945,7 @@ let curEmpId      = null;
 let inputs        = {};        // { catId: number, 'h_catId': bool }
 let lbDeptFilter  = 'all';
 let adminUnlocked = false;
+let missingView   = 'emp'; // 'emp' hoặc 'date' — chế độ xem khối "Thiếu báo cáo"
 let pendingAdminEl = null;
 let allowHope     = true;      // QL toggle: bật/tắt nút Dùng sao cho tất cả NV
 
@@ -1126,12 +1139,23 @@ function computeStreak(){
     if((rep._pct || 0) >= 100) break;
     streak++;
   }
-  box.innerHTML = streak
+  const streakHtml = streak
     ? `<span class="stk ${streak >= 3 ? 'stk-d' : 'stk-w'}">
         <i class="ti ti-alert-triangle" style="font-size:12px;margin-right:3px"></i>
         ${streak >= 3 ? 'Nguy hiểm' : 'Cảnh báo'}: ${streak} ngày liên tiếp chưa đạt 100%!
        </span>`
     : '';
+
+  // Cảnh báo nộp báo cáo trễ sau 22h30 (>2 lần trong tuần dương lịch hiện tại)
+  const late = countLateSubmits(emp.id);
+  const lateHtml = late.count > 2
+    ? `<span class="stk stk-d" style="margin-left:6px">
+        <i class="ti ti-clock-exclamation" style="font-size:12px;margin-right:3px"></i>
+        Đã nộp báo cáo trễ sau 22h30 ${late.count} lần trong tuần này!
+       </span>`
+    : '';
+
+  box.innerHTML = streakHtml + lateHtml;
 }
 
 // ════════════════════════════════════════════
@@ -1498,6 +1522,9 @@ async function submitReport(){
   });
 
   rep._pct   = Math.round(pctSum / cats.length);
+  // Lưu giờ thực nhấn "Lưu & Xuất ảnh" — dùng để cảnh báo nộp báo cáo trễ (sau 22h30)
+  const nowSubmit = new Date();
+  rep._submitTime = `${pad(nowSubmit.getHours())}:${pad(nowSubmit.getMinutes())}`;
   const net  = totPlus - totMinus;
 
   // Trừ đi net của báo cáo cũ cùng ngày (nếu đã submit trước đó) để tránh cộng double
@@ -1752,11 +1779,155 @@ function closePwd(){
 }
 
 // ════════════════════════════════════════════
+//  CẢNH BÁO NỘP BÁO CÁO TRỄ (sau 22h30, >2 lần/tuần)
+// ════════════════════════════════════════════
+// Trả về danh sách ngày (YYYY-MM-DD) của tuần dương lịch hiện tại, từ Thứ 2 đến hôm nay
+function getWeekDaysToToday(){
+  const now = new Date();
+  const dow = now.getDay(); // 0=CN, 1=T2 ... 6=T7
+  const diffToMonday = dow === 0 ? 6 : dow - 1; // số ngày lùi về Thứ 2
+  const days = [];
+  for(let i = diffToMonday; i >= 0; i--){
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    days.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`);
+  }
+  return days;
+}
+
+// Đếm số lần 1 NV nộp báo cáo sau 22h30 trong tuần dương lịch hiện tại
+function countLateSubmits(empId){
+  const weekDays = getWeekDaysToToday();
+  const reps = STORED.reports[empId] || {};
+  let count = 0;
+  const lateDays = [];
+  weekDays.forEach(d => {
+    const rep = reps[d];
+    if(rep && rep._submitTime && rep._submitTime > '22:30'){
+      count++;
+      lateDays.push(d);
+    }
+  });
+  return { count, lateDays };
+}
+
+
+
+// Trả về danh sách các ngày (YYYY-MM-DD) từ đầu tháng hiện tại đến hôm nay
+function getMonthDaysToToday(){
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth(); // 0-based
+  const days  = [];
+  for(let d = 1; d <= now.getDate(); d++){
+    days.push(`${year}-${pad(month+1)}-${pad(d)}`);
+  }
+  return days;
+}
+
+// Tính danh sách ngày thiếu báo cáo cho từng NV trong tháng hiện tại (tính đến hôm nay)
+function computeMissingReports(){
+  const monthDays = getMonthDaysToToday();
+  const result = [];
+  EMPS.forEach(emp => {
+    const reps = STORED.reports[emp.id] || {};
+    const missingDays = monthDays.filter(d => !reps[d]);
+    result.push({ emp, missingDays, missingCount: missingDays.length });
+  });
+  return result;
+}
+
+function setMissingView(view){
+  missingView = view;
+  renderMissingReports();
+}
+
+function renderMissingReports(){
+  const empBtn  = document.getElementById('missingViewByEmpBtn');
+  const dateBtn = document.getElementById('missingViewByDateBtn');
+  const empWrap  = document.getElementById('missingByEmpWrap');
+  const dateWrap = document.getElementById('missingByDateWrap');
+  if(!empWrap || !dateWrap) return;
+
+  if(empBtn)  empBtn.className  = 'act-btn' + (missingView==='emp'  ? ' primary' : '');
+  if(dateBtn) dateBtn.className = 'act-btn' + (missingView==='date' ? ' primary' : '');
+  empWrap.style.display  = missingView === 'emp'  ? 'block' : 'none';
+  dateWrap.style.display = missingView === 'date' ? 'block' : 'none';
+
+  // ── Cảnh báo nộp trễ (sau 22h30, >2 lần trong tuần dương lịch) ──
+  const lateBlock = document.getElementById('lateSubmitWarnBlock');
+  if(lateBlock){
+    const lateList = EMPS.map(emp => ({ emp, late: countLateSubmits(emp.id) }))
+      .filter(r => r.late.count > 2);
+    if(!lateList.length){
+      lateBlock.innerHTML = '';
+    } else {
+      lateBlock.innerHTML = `
+        <div style="background:#fff0f0;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:800;color:#c62828;margin-bottom:6px">
+            <i class="ti ti-alert-triangle" style="margin-right:4px"></i>Nộp báo cáo trễ sau 22h30 (>2 lần/tuần)
+          </div>
+          ${lateList.map(r => `
+            <div style="font-size:11px;color:#7a1f1f;padding:2px 0">
+              <strong>${r.emp.name}</strong> — trễ ${r.late.count} lần (${r.late.lateDays.map(d=>d.slice(8)).join(', ')})
+            </div>`).join('')}
+        </div>`;
+    }
+  }
+
+  const data = computeMissingReports();
+
+  if(missingView === 'emp'){
+    const withMissing = data.filter(r => r.missingCount > 0)
+      .sort((a,b) => b.missingCount - a.missingCount);
+    if(!withMissing.length){
+      empWrap.innerHTML = `<div style="text-align:center;padding:16px;color:var(--green);font-size:12px">
+        <i class="ti ti-check" style="font-size:18px;display:block;margin-bottom:4px"></i>
+        Tất cả NV đã nộp đủ báo cáo tháng này!</div>`;
+      return;
+    }
+    empWrap.innerHTML = withMissing.map(r => {
+      const dCls = r.emp.dept.toLowerCase().includes('top') ? 'b-top' : 'b-tgdd';
+      const daysShown = r.missingDays.map(d => d.slice(8)).join(', ');
+      return `
+        <div style="padding:10px 0;border-bottom:1px solid var(--gray-line)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-weight:700;font-size:13px">${r.emp.name} <span class="badge ${dCls}" style="font-size:9px;margin-left:4px">${r.emp.dept}</span></div>
+            <span style="font-size:12px;font-weight:800;color:var(--red)">Thiếu ${r.missingCount} ngày</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-light)">Ngày: ${daysShown}</div>
+        </div>`;
+    }).join('');
+  } else {
+    const monthDays = getMonthDaysToToday().slice().reverse(); // mới nhất trước
+    const rows = monthDays.map(d => {
+      const missingEmps = data.filter(r => r.missingDays.includes(d)).map(r => r.emp.name);
+      return { date: d, missingEmps };
+    }).filter(r => r.missingEmps.length > 0);
+    if(!rows.length){
+      dateWrap.innerHTML = `<div style="text-align:center;padding:16px;color:var(--green);font-size:12px">
+        <i class="ti ti-check" style="font-size:18px;display:block;margin-bottom:4px"></i>
+        Tất cả NV đã nộp đủ báo cáo tháng này!</div>`;
+      return;
+    }
+    dateWrap.innerHTML = rows.map(r => `
+      <div style="padding:10px 0;border-bottom:1px solid var(--gray-line)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-weight:700;font-size:13px">${r.date}</div>
+          <span style="font-size:12px;font-weight:800;color:var(--red)">${r.missingEmps.length} NV thiếu</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-light)">${r.missingEmps.join(', ')}</div>
+      </div>`).join('');
+  }
+}
+
+// ════════════════════════════════════════════
 //  ADMIN TAB
 // ════════════════════════════════════════════
 function renderAdminTab(){
   renderHopeToggle();
   renderZdToggle();
+  renderMissingReports();
   const tbody = document.getElementById('adminEmpBody');
   tbody.innerHTML = '';
   EMPS.forEach(e => {
