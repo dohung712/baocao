@@ -930,7 +930,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbz0LusMxsQHHNyUd1oS0nHqWpKmke9dYxhT_1Wnjyea0rqr_1SjymTUZUMnta-5t5KSjA/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbwGUCBQEGNQmqU8tHBtZLjCEzQ-Cl4VTxOuKK9l6nY2JRsN4f_Fy2reACn6YW67F3KXpA/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -976,7 +976,10 @@ async function gasCall(payload){
   });
   if(!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
-  if(data.error) throw new Error(data.error);
+  if(data.error){
+    const e = new Error(data.error + (data._debugStack ? ' | ' + data._debugStack : ''));
+    throw e;
+  }
   setSync('ok','Đã đồng bộ');
   return data;
 }
@@ -1814,14 +1817,22 @@ function countLateSubmits(empId){
 
 
 // Trả về danh sách các ngày (YYYY-MM-DD) từ đầu tháng hiện tại đến hôm nay
+// Mốc cố định bắt đầu thống kê "thiếu báo cáo" — không tính các ngày trước mốc này
+// (đặt 1 lần, không tự đổi theo ngày hôm nay)
+const MISSING_TRACK_START = '2026-06-18';
+
 function getMonthDaysToToday(){
-  const now   = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth(); // 0-based
-  const days  = [];
-  // Bắt đầu từ hôm nay, lùi dần về ngày 1 đầu tháng (không tính ngày tương lai)
-  for(let d = now.getDate(); d >= 1; d--){
-    days.push(`${year}-${pad(month+1)}-${pad(d)}`);
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const days = [];
+  // Lùi dần từ hôm nay về quá khứ, nhưng dừng lại ở mốc MISSING_TRACK_START
+  // (không tính các ngày trước mốc này, dù vẫn trong tháng)
+  for(let i = 0; i < 31; i++){
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const key = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    if(key < MISSING_TRACK_START) break;
+    days.push(key);
   }
   return days;
 }
