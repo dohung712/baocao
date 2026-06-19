@@ -257,6 +257,18 @@ tr.row-done .cat-name{color:var(--green)}
 .rb-right .sv i{font-size:26px}
 .rb-right .sl{font-size:9px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.7px;margin-top:2px;font-weight:700}
 
+/* 3 dòng rõ ràng: lũy kế trước đó / hôm nay +- / tổng sao hôm nay */
+.rb-right-3line{min-width:170px;padding:10px 14px;text-align:left}
+.rb3-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:3px 0}
+.rb3-lbl{font-size:9px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.rb3-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:#fff}
+.rb3-row-total{border-top:1px solid rgba(255,215,0,.3);margin-top:4px;padding-top:6px}
+.rb3-val-big{font-size:24px;color:var(--gold);display:flex;align-items:center;gap:4px}
+.rb3-val-big i{font-size:18px}
+.sv-net.c-green{color:#69f0ae}
+.sv-net.c-red{color:#ff6b6b}
+.sv-net.c-gold{color:var(--gold)}
+
 /* ═══ HISTORY SECTION ═══ */
 .hist-wrap{background:#131c55;padding:14px 20px 18px}
 .hist-title{
@@ -618,9 +630,10 @@ tr.row-done .cat-name{color:var(--green)}
               <span class="minus" id="botMinus">-0 trừ</span>
             </div>
           </div>
-          <div class="rb-right">
-            <div class="sv"><i class="ti ti-star-filled"></i><span id="botStar">—</span></div>
-            <div class="sl">Tổng sao sau hôm nay</div>
+          <div class="rb-right rb-right-3line">
+            <div class="rb3-row"><span class="rb3-lbl">Sao tích lũy (trước đó)</span><span class="rb3-val" id="botStarBefore">—</span></div>
+            <div class="rb3-row"><span class="rb3-lbl">Hôm nay</span><span class="rb3-val sv-net" id="botStarNet">—</span></div>
+            <div class="rb3-row rb3-row-total"><span class="rb3-lbl">Tổng sao hôm nay</span><span class="rb3-val rb3-val-big" id="botStarToday"><i class="ti ti-star-filled"></i>—</span></div>
           </div>
         </div>
 
@@ -719,9 +732,12 @@ tr.row-done .cat-name{color:var(--green)}
         <div class="sec-title"><i class="ti ti-calendar-x"></i>Thiếu báo cáo (tháng này)</div>
         <div class="adm-card" style="padding:14px 16px;margin-bottom:14px">
           <div id="lateSubmitWarnBlock"></div>
-          <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
             <button class="act-btn" id="missingViewByEmpBtn" onclick="setMissingView('emp')" style="flex:1;font-size:12px">Theo NV</button>
-            <button class="act-btn" id="missingViewByDateBtn" onclick="setMissingView('date')" style="flex:1;font-size:12px">Theo ngày</button>
+            <div style="flex:1;display:flex;align-items:center;gap:4px">
+              <input type="date" id="missingDatePick" class="sel-control" style="flex:1;font-size:12px;padding:7px 8px"
+                onchange="onMissingDateChange()">
+            </div>
           </div>
           <div id="missingByEmpWrap"></div>
           <div id="missingByDateWrap" style="display:none"></div>
@@ -946,6 +962,7 @@ let inputs        = {};        // { catId: number, 'h_catId': bool }
 let lbDeptFilter  = 'all';
 let adminUnlocked = false;
 let missingView   = 'emp'; // 'emp' hoặc 'date' — chế độ xem khối "Thiếu báo cáo"
+let missingSelectedDate = null; // ngày đang chọn ở chế độ "Theo ngày" — gán mặc định khi render lần đầu
 let pendingAdminEl = null;
 let allowHope     = true;      // QL toggle: bật/tắt nút Dùng sao cho tất cả NV
 
@@ -1328,11 +1345,26 @@ function renderTable(){
   });
 
   /* totals */
-  const starsAfter = Math.max(0, (getCurEmp() || {stars:0}).stars + (totPlus - totMinus));
+  // Tính net đã lưu trước đó của CHÍNH ngày đang xem (nếu đã nộp rồi) để
+  // tách "sao lũy kế trước hôm nay" ra khỏi emp.stars (vốn đã gồm cả hôm nay
+  // nếu NV đã bấm Lưu) — tránh cộng net hôm nay 2 lần khi render lại.
+  let prevNet = 0;
+  if(saved && Object.keys(saved).length > 0){
+    cats.forEach(cat => {
+      const a = saved[cat.id] || 0;
+      const pct = getPct(a, cat.target);
+      const hopeUsed = saved['h_' + cat.id] || false;
+      if(pct >= 100) prevNet += cat.sp;
+      else if(hopeUsed) prevNet -= cat.sm;
+    });
+  }
+  const net = totPlus - totMinus;
+  const starsBeforeToday = Math.max(0, (getCurEmp() || {stars:0}).stars - prevNet);
+  const starsAfter       = Math.max(0, starsBeforeToday + net);
+
   document.getElementById('sDone').textContent = `${done}/${cats.length}`;
   document.getElementById('sPlus').textContent = `+${totPlus}`;
   document.getElementById('sMinus').textContent= `-${totMinus}`;
-  const net = totPlus - totMinus;
   document.getElementById('sNet').textContent  = (net >= 0 ? '+' : '') + net;
   document.getElementById('sNet').className    = 'sum-val ' + (net > 0 ? 'c-green' : net < 0 ? 'c-red' : 'c-gold');
 
@@ -1340,8 +1372,18 @@ function renderTable(){
   document.getElementById('botTotal').textContent = cats.length;
   document.getElementById('botPlus').textContent  = '+' + totPlus  + ' thưởng';
   document.getElementById('botMinus').textContent = '-' + totMinus + ' trừ';
-  document.getElementById('botStar').textContent  = starsAfter;
   document.getElementById('hdrStar').textContent  = starsAfter;
+
+  // 3 dòng rõ ràng trong khung "Kết quả hôm nay"
+  const elBefore = document.getElementById('botStarBefore');
+  const elNet    = document.getElementById('botStarNet');
+  const elToday  = document.getElementById('botStarToday');
+  if(elBefore) elBefore.textContent = starsBeforeToday;
+  if(elNet){
+    elNet.textContent = (net >= 0 ? '+' : '') + net;
+    elNet.className = 'sv-net ' + (net > 0 ? 'c-green' : net < 0 ? 'c-red' : 'c-gold');
+  }
+  if(elToday) elToday.textContent = starsAfter;
 }
 
 /* ── Event delegation for table inputs & buttons ── */
@@ -1855,14 +1897,33 @@ function setMissingView(view){
 }
 
 function renderMissingReports(){
-  const empBtn  = document.getElementById('missingViewByEmpBtn');
-  const dateBtn = document.getElementById('missingViewByDateBtn');
+  const empBtn   = document.getElementById('missingViewByEmpBtn');
+  const dateInp  = document.getElementById('missingDatePick');
   const empWrap  = document.getElementById('missingByEmpWrap');
   const dateWrap = document.getElementById('missingByDateWrap');
   if(!empWrap || !dateWrap) return;
 
-  if(empBtn)  empBtn.className  = 'act-btn' + (missingView==='emp'  ? ' primary' : '');
-  if(dateBtn) dateBtn.className = 'act-btn' + (missingView==='date' ? ' primary' : '');
+  // Giới hạn phạm vi chọn: từ mốc MISSING_TRACK_START đến hôm nay
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+
+  // Khởi tạo mặc định lần đầu: hôm nay - 1, kẹp trong phạm vi cho phép
+  if(!missingSelectedDate){
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    let def = `${yesterday.getFullYear()}-${pad(yesterday.getMonth()+1)}-${pad(yesterday.getDate())}`;
+    if(def < MISSING_TRACK_START) def = MISSING_TRACK_START;
+    if(def > todayKey) def = todayKey;
+    missingSelectedDate = def;
+  }
+
+  if(dateInp){
+    dateInp.min = MISSING_TRACK_START;
+    dateInp.max = todayKey;
+    if(!dateInp.value) dateInp.value = missingSelectedDate;
+  }
+
+  if(empBtn) empBtn.className = 'act-btn' + (missingView==='emp' ? ' primary' : '');
   empWrap.style.display  = missingView === 'emp'  ? 'block' : 'none';
   dateWrap.style.display = missingView === 'date' ? 'block' : 'none';
 
@@ -1911,26 +1972,43 @@ function renderMissingReports(){
         </div>`;
     }).join('');
   } else {
-    const monthDays = getMonthDaysToToday(); // đã sắp xếp: hôm nay trước, lùi dần về đầu tháng
-    const rows = monthDays.map(d => {
-      const missingEmps = data.filter(r => r.missingDays.includes(d)).map(r => r.emp.name);
-      return { date: d, missingEmps };
-    }).filter(r => r.missingEmps.length > 0);
-    if(!rows.length){
+    // Xem theo 1 ngày cụ thể đã chọn từ ô input
+    const d = missingSelectedDate;
+    const missingEmps = data.filter(r => r.missingDays.includes(d)).map(r => r.emp);
+    if(!missingEmps.length){
       dateWrap.innerHTML = `<div style="text-align:center;padding:16px;color:var(--green);font-size:12px">
         <i class="ti ti-check" style="font-size:18px;display:block;margin-bottom:4px"></i>
-        Tất cả NV đã nộp đủ báo cáo tháng này!</div>`;
+        Tất cả NV đã nộp đủ báo cáo ngày ${d}!</div>`;
       return;
     }
-    dateWrap.innerHTML = rows.map(r => `
-      <div style="padding:10px 0;border-bottom:1px solid var(--gray-line)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <div style="font-weight:700;font-size:13px">${r.date}</div>
-          <span style="font-size:12px;font-weight:800;color:var(--red)">${r.missingEmps.length} NV thiếu</span>
-        </div>
-        <div style="font-size:11px;color:var(--text-light)">${r.missingEmps.join(', ')}</div>
-      </div>`).join('');
+    dateWrap.innerHTML = `
+      <div style="padding:8px 0 4px;font-size:12px;font-weight:800;color:var(--red)">
+        Ngày ${d} — ${missingEmps.length} NV chưa nộp:
+      </div>
+      ${missingEmps.map(emp => {
+        const dCls = emp.dept.toLowerCase().includes('top') ? 'b-top' : 'b-tgdd';
+        return `
+          <div style="padding:8px 0;border-bottom:1px solid var(--gray-line);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-weight:700;font-size:13px">${emp.name}</span>
+            <span class="badge ${dCls}" style="font-size:9px">${emp.dept}</span>
+          </div>`;
+      }).join('')}`;
   }
+}
+
+function onMissingDateChange(){
+  const dateInp = document.getElementById('missingDatePick');
+  if(!dateInp || !dateInp.value) return;
+  let v = dateInp.value;
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  // Kẹp lại trong phạm vi cho phép, phòng trường hợp trình duyệt không chặn min/max
+  if(v < MISSING_TRACK_START) v = MISSING_TRACK_START;
+  if(v > todayKey) v = todayKey;
+  dateInp.value = v;
+  missingSelectedDate = v;
+  missingView = 'date'; // chọn ngày tức là chuyển sang xem theo ngày đó
+  renderMissingReports();
 }
 
 // ════════════════════════════════════════════
