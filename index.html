@@ -959,7 +959,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNMGEenNVQdCjwPlrGzTrc_kQ8J7Z-xYwgsHNifly3BSavR3qpeGOwc-0YfGk4RE1PTQ/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbzt34mYPx1TL-gv9m0QOQj6GJtK1w0pCqKM1vOgPX1Z3P67D9efWYxHdyxyaNU0A6hMfg/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -1005,7 +1005,15 @@ async function gasCall(payload){
     body: JSON.stringify(payload)
   });
   if(!res.ok) throw new Error('HTTP ' + res.status);
-  const data = await res.json();
+  const rawText = await res.text();
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch(parseErr){
+    // Server không trả JSON hợp lệ (ví dụ HTML lỗi từ Google) — hiện rõ để debug
+    console.error('GAS trả về không phải JSON:', rawText);
+    throw new Error('Server không trả JSON hợp lệ. Nội dung nhận được: ' + rawText.slice(0,200));
+  }
   if(data.error){
     const e = new Error(data.error + (data._debugStack ? ' | ' + data._debugStack : ''));
     throw e;
@@ -1025,6 +1033,10 @@ async function loadAll(){
     EMPS   = data.emps   || [];
     CATS   = data.cats   || {};
     STORED = data.stored || { reports:{}, empStars:{} };
+    // Phòng trường hợp server trả về stored không phải object (vd: số, mảng, do dữ liệu sheet bị lỗi)
+    if(typeof STORED !== 'object' || STORED === null || Array.isArray(STORED)){
+      STORED = { reports:{}, empStars:{} };
+    }
     if(!STORED.reports)  STORED.reports  = {};
     if(!STORED.empStars) STORED.empStars = {};
     // Đọc trạng thái toggle Dùng sao từ server (do QL thiết lập)
@@ -1058,6 +1070,7 @@ async function loadAll(){
     renderAdminTab();
   } catch(err){
     document.getElementById('loadingMsg').style.display = 'none';
+    console.error('loadAll lỗi chi tiết:', err, err.stack);
     toast('❌ Không tải được: ' + err.message, 'err');
     setSync('err','Lỗi kết nối');
   }
