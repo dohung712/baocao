@@ -959,7 +959,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbz0hebc3dZQngDyg7A4fIEnn7QnArCFEyh4ykOqB8ClSh4iqqwUm_LahBRT-c832JmzIA/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNMGEenNVQdCjwPlrGzTrc_kQ8J7Z-xYwgsHNifly3BSavR3qpeGOwc-0YfGk4RE1PTQ/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -1025,6 +1025,8 @@ async function loadAll(){
     EMPS   = data.emps   || [];
     CATS   = data.cats   || {};
     STORED = data.stored || { reports:{}, empStars:{} };
+    if(!STORED.reports)  STORED.reports  = {};
+    if(!STORED.empStars) STORED.empStars = {};
     // Đọc trạng thái toggle Dùng sao từ server (do QL thiết lập)
     if(data.settings && data.settings.allowHope !== undefined){
       allowHope = data.settings.allowHope;
