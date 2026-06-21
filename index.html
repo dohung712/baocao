@@ -959,7 +959,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbwGUCBQEGNQmqU8tHBtZLjCEzQ-Cl4VTxOuKK9l6nY2JRsN4f_Fy2reACn6YW67F3KXpA/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbz0hebc3dZQngDyg7A4fIEnn7QnArCFEyh4ykOqB8ClSh4iqqwUm_LahBRT-c832JmzIA/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -1246,8 +1246,10 @@ function getZeroDays(empId, catId, dateKey){
   const target = cat2 ? cat2.target : 1;
   let count = 0;
   // Quy tắc đếm ngày chưa đạt liên tiếp (tính ngược từ hôm qua), max 6:
-  //   - Không có báo cáo (ngày OFF)         → bỏ qua, KHÔNG đếm, KHÔNG dừng chuỗi
-  //   - Có báo cáo, actual = 0 hoặc chưa đạt → đếm +1
+  //   - Không có báo cáo (ngày OFF)              → bỏ qua, KHÔNG đếm, KHÔNG dừng chuỗi
+  //   - Ngày đó NV đã từng TỰ CHỌN số ngày (zd_) → dùng giá trị đó làm điểm neo, dừng quét tiếp
+  //     (vì NV đã khai báo rõ ràng tại thời điểm đó — không cần tính lại từ % lịch sử cũ hơn)
+  //   - Có báo cáo, actual = 0 hoặc chưa đạt      → đếm +1
   //   - Đạt chỉ tiêu / dùng sao hy vọng / QL reset → dừng chuỗi (reset về 0)
   for(let i = 1; i <= 90; i++){
     if(count >= 6) break;                      // chặn ở mức 6, không đếm thêm
@@ -1255,13 +1257,19 @@ function getZeroDays(empId, catId, dateKey){
     const rep = reps[k];
     if(!rep) continue;                         // ngày OFF → bỏ qua
     if(rep['_reset_' + catId]) break;          // QL reset → dừng
+    // Nếu ngày này NV đã tự chọn số ngày (chế độ MANUAL) → lấy làm điểm neo, cộng thêm
+    // số ngày đã trôi qua từ đó đến hiện tại (i-1 ngày có báo cáo đã đếm trước đó)
+    if(rep['zd_' + catId] !== undefined && rep['zd_' + catId] > 0){
+      count += rep['zd_' + catId];
+      break;
+    }
     const actual = rep[catId] || 0;
     const hope   = rep['h_' + catId] || false;
     if(hope) break;                            // dùng sao hy vọng → coi như đạt, dừng
     if(target > 0 && Math.round(actual / target * 100) >= 100) break; // đạt → dừng
     count++;                                   // chưa đạt (kể cả actual=0) → đếm
   }
-  return count;
+  return Math.min(count, 6);
 }
 
 // ════════════════════════════════════════════
@@ -1464,7 +1472,9 @@ document.addEventListener('click', e => {
     inputs['zd_' + catId] = newVal;
     renderTable();
     if(newVal > 0 && auto > 0 && newVal !== auto){
-      toast(`⚠️ Hệ thống tính ${auto} ngày — bạn đang chọn ${newVal} ngày. Kiểm tra lại lịch sử!`, 'warn');
+      const emp = getCurEmp();
+      const cat = emp ? getCats(emp.dept).find(c => c.id === catId) : null;
+      showZdMismatchModal(cat ? cat.name : 'môn này', auto, newVal);
     }
     return;
   }
@@ -1617,6 +1627,33 @@ function showMissingCatsModal(missing, total){
 
 function closeModal(){
   document.getElementById('modalBg').classList.remove('open');
+}
+
+// ════════════════════════════════════════════
+//  POPUP CẢNH BÁO — NV TỰ CHỌN SỐ NGÀY LỆCH VỚI HỆ THỐNG
+// ════════════════════════════════════════════
+function showZdMismatchModal(catName, autoVal, chosenVal){
+  const bg    = document.getElementById('modalBg');
+  const title = document.getElementById('modalTitle');
+  const body  = document.getElementById('modalBody');
+  const btns  = document.getElementById('modalBtns');
+
+  title.innerHTML = `<span style="color:#b45309">⚠️ Kiểm tra lại số ngày</span>`;
+
+  body.innerHTML = `
+    <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
+      Môn <strong>${catName}</strong>: hệ thống tự động tính được
+      <strong style="color:#1a237e">${autoVal} ngày</strong> chưa đạt liên tiếp,
+      nhưng bạn vừa chọn <strong style="color:#dc2626">${chosenVal} ngày</strong>.
+    </p>
+    <p style="font-size:12px;color:var(--text-light);line-height:1.5;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px">
+      Vui lòng kiểm tra lại lịch sử báo cáo của môn này trước khi tiếp tục.
+      Nếu bạn chắc chắn số mình chọn đúng, hệ thống vẫn sẽ ghi nhận giá trị này.
+    </p>`;
+
+  btns.innerHTML = `<button class="act-btn primary" onclick="closeModal()">Đã hiểu, tôi xác nhận số ngày này</button>`;
+
+  bg.classList.add('open');
 }
 
 async function submitReport(){
