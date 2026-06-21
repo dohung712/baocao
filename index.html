@@ -1612,15 +1612,15 @@ function resetZeroDays(catId){
 //  SUBMIT
 // ════════════════════════════════════════════
 // ════════════════════════════════════════════
-//  POPUP CẢNH BÁO — THIẾU MÔN CHƯA NHẬP
+//  POPUP CẢNH BÁO — CHƯA CHỌN SỐ NGÀY (chế độ NV tự chọn)
 // ════════════════════════════════════════════
-function showMissingCatsModal(missing, total){
+function showMissingZdModal(missing){
   const bg    = document.getElementById('modalBg');
   const title = document.getElementById('modalTitle');
   const body  = document.getElementById('modalBody');
   const btns  = document.getElementById('modalBtns');
 
-  title.innerHTML = `<span style="color:#dc2626">⚠️ Chưa nhập đủ môn thi đua</span>`;
+  title.innerHTML = `<span style="color:#dc2626">⚠️ Chưa chọn Số Ngày</span>`;
 
   const listH = missing.map(name =>
     `<li style="margin-bottom:4px">${name}</li>`
@@ -1628,14 +1628,15 @@ function showMissingCatsModal(missing, total){
 
   body.innerHTML = `
     <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
-      Bạn còn <strong style="color:#dc2626">${missing.length}/${total}</strong> môn chưa nhập số liệu.
-      Vui lòng nhập đầy đủ <strong>tất cả các môn</strong> trước khi lưu &amp; xuất báo cáo.
+      Các môn dưới đây <strong style="color:#dc2626">chưa đạt</strong> và bạn chưa chọn
+      <strong>Số Ngày</strong> tương ứng. Vui lòng bấm chọn số ngày cho các môn này
+      trước khi lưu &amp; xuất báo cáo.
     </p>
     <ul style="font-size:12px;color:#dc2626;font-weight:700;padding-left:18px;max-height:180px;overflow-y:auto;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 10px 10px 26px">
       ${listH}
     </ul>`;
 
-  btns.innerHTML = `<button class="act-btn primary" onclick="closeModal()">Đã hiểu, để tôi nhập tiếp</button>`;
+  btns.innerHTML = `<button class="act-btn primary" onclick="closeModal()">Đã hiểu, để tôi chọn</button>`;
 
   bg.classList.add('open');
 }
@@ -1677,19 +1678,27 @@ async function submitReport(){
   const dateKey = document.getElementById('dateIn').value;
   const saved   = (STORED.reports[emp.id] || {})[dateKey] || {};
 
-  // ══ VALIDATION: phải nhập đầy đủ TẤT CẢ môn thi đua mới được lưu/xuất ══
-  const missing = [];
-  cats.forEach(cat => {
-    // Nếu user đã từng sửa ô này trong session (key tồn tại trong `inputs`) → lấy giá trị đó,
-    // dù là undefined (vd: user xóa trống). Nếu chưa từng sửa → lấy từ dữ liệu đã lưu (saved).
-    const actual = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
-    if(actual === undefined || actual === null || actual === ''){
-      missing.push(cat.name);
+  // ══ VALIDATION: chỉ bắt buộc chọn Số Ngày khi đang ở chế độ NV TỰ CHỌN
+  // và môn đó CHƯA ĐẠT và CHƯA dùng sao hy vọng. Môn để trống số liệu vẫn
+  // được lưu bình thường, mặc định tính là 0. ══
+  if(!zdAutoMode){
+    const missingZd = [];
+    cats.forEach(cat => {
+      const actual = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
+      const actualNum = actual === undefined || actual === null || actual === '' ? 0 : actual;
+      const hk   = 'h_' + cat.id;
+      const hope = inputs[hk] !== undefined ? inputs[hk] : (saved[hk] || false);
+      const pct  = getPct(actualNum, cat.target);
+      if(pct >= 100 || hope) return; // đạt hoặc đã dùng sao hy vọng → không cần chọn số ngày
+      const zdVal = inputs['zd_' + cat.id] !== undefined ? inputs['zd_' + cat.id] : (saved['zd_' + cat.id] || 0);
+      if(!zdVal || zdVal <= 0){
+        missingZd.push(cat.name);
+      }
+    });
+    if(missingZd.length > 0){
+      showMissingZdModal(missingZd);
+      return;
     }
-  });
-  if(missing.length > 0){
-    showMissingCatsModal(missing, cats.length);
-    return;
   }
 
   const rep  = {};
@@ -1697,7 +1706,8 @@ async function submitReport(){
   const lines = [];
 
   cats.forEach(cat => {
-    const actual = inputs[cat.id] !== undefined ? inputs[cat.id] : (saved[cat.id] || 0);
+    const actualRaw = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
+    const actual = actualRaw === undefined || actualRaw === null || actualRaw === '' ? 0 : actualRaw;
     const hk     = 'h_' + cat.id;
     const hope   = inputs[hk]     !== undefined ? inputs[hk]     : (saved[hk]     || false);
     rep[cat.id]  = actual;
