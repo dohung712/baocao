@@ -646,8 +646,15 @@ tr.row-done .cat-name{color:var(--green)}
           <div class="rb-right rb-right-3line">
             <div class="rb3-row"><span class="rb3-lbl">Sao tích lũy (trước đó)</span><span class="rb3-val" id="botStarBefore">—</span></div>
             <div class="rb3-row"><span class="rb3-lbl">Hôm nay</span><span class="rb3-val sv-net" id="botStarNet">—</span></div>
+            <div class="rb3-row rb3-row-late" id="botLatePenaltyRow" style="display:none">
+              <span class="rb3-lbl">⏰ Phạt nộp trễ (sau 22h30)</span>
+              <span class="rb3-val" id="botLatePenaltyVal" style="color:#dc2626;font-weight:800">—</span>
+            </div>
             <div class="rb3-row rb3-row-total"><span class="rb3-lbl">Tổng sao hôm nay</span><span class="rb3-val rb3-val-big" id="botStarToday"><i class="ti ti-star-filled"></i>—</span></div>
           </div>
+        </div>
+        <div id="latePenaltyBanner" style="display:none;margin:10px 0;padding:10px 14px;background:linear-gradient(135deg,#b91c1c,#dc2626);border-radius:10px;color:#fff;font-size:12px;font-weight:700;text-align:center;line-height:1.5">
+          ⏰ NỘP BÁO CÁO TRỄ SAU 22H30 — Bị trừ <span id="latePenaltyBannerVal">—</span> sao (lần <span id="latePenaltyBannerOcc">—</span> trong tháng)
         </div>
 
         <!-- History -->
@@ -959,7 +966,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbzt34mYPx1TL-gv9m0QOQj6GJtK1w0pCqKM1vOgPX1Z3P67D9efWYxHdyxyaNU0A6hMfg/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbzY4tiZfbYOjVBpH2TGUNcbuuMQfVc5LDna5pggB6WyJdWDJQxNfauGGP8ls66FpRGTmw/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -1424,10 +1431,10 @@ function renderTable(){
       if(pct >= 100) prevNet += cat.sp;
       else if(hopeUsed) prevNet -= cat.sm;
     });
+    prevNet -= (saved._latePenalty || 0); // emp.stars hiện tại đã trừ luôn phạt trễ của ngày này (nếu có)
   }
   const net = totPlus - totMinus;
   const starsBeforeToday = Math.max(0, (getCurEmp() || {stars:0}).stars - prevNet);
-  const starsAfter       = Math.max(0, starsBeforeToday + net);
 
   document.getElementById('sDone').textContent = `${done}/${cats.length}`;
   document.getElementById('sPlus').textContent = `+${totPlus}`;
@@ -1439,7 +1446,14 @@ function renderTable(){
   document.getElementById('botTotal').textContent = cats.length;
   document.getElementById('botPlus').textContent  = '+' + totPlus  + ' thưởng';
   document.getElementById('botMinus').textContent = '-' + totMinus + ' trừ';
-  document.getElementById('hdrStar').textContent  = starsAfter;
+
+  // Phạt nộp trễ ĐÃ LƯU cho ngày này (nếu có) — chỉ hiển thị sau khi đã submit,
+  // vì trước khi bấm Lưu, hệ thống chưa biết giờ nộp thực tế
+  const savedLatePenalty = saved._latePenalty || 0;
+  const dayNetWithPenalty = net - savedLatePenalty;
+  const starsAfterPenalty = Math.max(0, starsBeforeToday + dayNetWithPenalty);
+
+  document.getElementById('hdrStar').textContent  = starsAfterPenalty;
 
   // 3 dòng rõ ràng trong khung "Kết quả hôm nay"
   const elBefore = document.getElementById('botStarBefore');
@@ -1447,10 +1461,31 @@ function renderTable(){
   const elToday  = document.getElementById('botStarToday');
   if(elBefore) elBefore.textContent = starsBeforeToday;
   if(elNet){
-    elNet.textContent = (net >= 0 ? '+' : '') + net;
-    elNet.className = 'sv-net ' + (net > 0 ? 'c-green' : net < 0 ? 'c-red' : 'c-gold');
+    elNet.textContent = (dayNetWithPenalty >= 0 ? '+' : '') + dayNetWithPenalty;
+    elNet.className = 'sv-net ' + (dayNetWithPenalty > 0 ? 'c-green' : dayNetWithPenalty < 0 ? 'c-red' : 'c-gold');
   }
-  if(elToday) elToday.textContent = starsAfter;
+  if(elToday) elToday.textContent = starsAfterPenalty;
+
+  // Hiển thị dòng + banner cảnh báo phạt trễ trong ảnh xuất báo cáo
+  const lateRow    = document.getElementById('botLatePenaltyRow');
+  const lateVal    = document.getElementById('botLatePenaltyVal');
+  const lateBanner = document.getElementById('latePenaltyBanner');
+  const lateBVal    = document.getElementById('latePenaltyBannerVal');
+  const lateBOcc    = document.getElementById('latePenaltyBannerOcc');
+  if(savedLatePenalty > 0){
+    if(lateRow)    lateRow.style.display = 'flex';
+    if(lateVal)    lateVal.textContent   = '-' + savedLatePenalty;
+    if(lateBanner) lateBanner.style.display = 'block';
+    if(lateBVal)   lateBVal.textContent = savedLatePenalty;
+    if(lateBOcc){
+      // Lần thứ mấy = tra theo bậc phạt (50→1, 100→2, 150→3)
+      const occ = LATE_PENALTY_STEPS.indexOf(savedLatePenalty) + 1;
+      lateBOcc.textContent = occ > 0 ? occ : '3+';
+    }
+  } else {
+    if(lateRow)    lateRow.style.display = 'none';
+    if(lateBanner) lateBanner.style.display = 'none';
+  }
 }
 
 /* ── Event delegation for table inputs & buttons ── */
@@ -1727,13 +1762,29 @@ async function submitReport(){
   });
 
   rep._pct   = Math.round(pctSum / cats.length);
-  // Lưu giờ thực nhấn "Lưu & Xuất ảnh" — dùng để cảnh báo nộp báo cáo trễ (sau 22h30)
+  // Lưu giờ thực nhấn "Lưu & Xuất ảnh" — dùng để xác định nộp trễ (sau 22h30) và tính phạt
   const nowSubmit = new Date();
   rep._submitTime = `${pad(nowSubmit.getHours())}:${pad(nowSubmit.getMinutes())}`;
   const net  = totPlus - totMinus;
 
-  // Trừ đi net của báo cáo cũ cùng ngày (nếu đã submit trước đó) để tránh cộng double
+  // ── Trừ sao TỰ ĐỘNG khi nộp trễ sau 22h30 (tính theo tháng dương lịch) ──
+  // Lần 1 trong tháng = -50, lần 2 = -100, lần 3 trở đi = -150 (giữ mức, không tăng thêm)
+  // Nếu đây là SỬA LẠI báo cáo cùng ngày đã từng bị phạt → giữ nguyên mức phạt cũ
+  // (không tính thêm 1 lần trễ mới, không phạt 2 lần cho cùng 1 ngày)
+  let latePenalty = 0;
+  if(saved._latePenalty > 0){
+    latePenalty = saved._latePenalty; // đã từng bị phạt cho ngày này → giữ nguyên
+  } else if(rep._submitTime > '22:30'){
+    const occurrence = countLateSubmitsThisMonth(emp.id, dateKey, dateKey) + 1;
+    latePenalty = getLatePenaltyForOccurrence(occurrence);
+  }
+  rep._latePenalty = latePenalty;
+  // Tổng sao thực nhận trong ngày = net từ các môn − phạt nộp trễ
+  const dayTotalNet = net - latePenalty;
+
+  // Trừ đi net + late-penalty của báo cáo cũ cùng ngày (nếu đã submit trước đó) để tránh cộng double
   let oldNet = 0;
+  const oldLatePenalty = saved._latePenalty || 0;
   if(saved && Object.keys(saved).length > 0){
     const cats2 = getCats(emp.dept);
     let oldPlus = 0, oldMinus = 0;
@@ -1746,7 +1797,8 @@ async function submitReport(){
     });
     oldNet = oldPlus - oldMinus;
   }
-  const starsNew = Math.max(0, emp.stars - oldNet + net);
+  // Hoàn lại phạt trễ cũ rồi áp phạt trễ mới (thường bằng nhau khi sửa lại cùng ngày → không đổi)
+  const starsNew = Math.max(0, emp.stars - oldNet + net + oldLatePenalty - latePenalty);
   const hopeNew  = emp.hope; // không giới hạn sao hy vọng
 
   // Giữ lại cờ reset của QL
@@ -1774,9 +1826,13 @@ async function submitReport(){
     await gasCall({
       action:'saveReport', empId:emp.id, empName:emp.name, dept:emp.dept,
       date:dateKey, rep, lines,
-      starsBase:emp.stars, hopeBase:emp.hope, starsNew, hopeNew, net
+      starsBase:emp.stars, hopeBase:emp.hope, starsNew, hopeNew, net:dayTotalNet
     });
-    toast(`✓ Đã lưu! ${net >= 0 ? '+' : ''}${net} sao hôm nay`, 'ok');
+    if(latePenalty > 0){
+      toast(`⏰ Nộp trễ sau 22h30! Bị trừ ${latePenalty} sao (lần ${countLateSubmitsThisMonth(emp.id, dateKey, dateKey) + 1} trong tháng). Tổng hôm nay: ${dayTotalNet >= 0 ? '+' : ''}${dayTotalNet} sao`, 'warn');
+    } else {
+      toast(`✓ Đã lưu! ${dayTotalNet >= 0 ? '+' : ''}${dayTotalNet} sao hôm nay`, 'ok');
+    }
     updateEmpHeader();
     computeStreak();
     renderTable();
@@ -2014,6 +2070,36 @@ function countLateSubmits(empId){
     }
   });
   return { count, lateDays };
+}
+
+// ════════════════════════════════════════════
+//  TRỪ SAO TỰ ĐỘNG — NỘP BÁO CÁO TRỄ SAU 22H30 (theo tháng dương lịch)
+//  Lần 1 = -50 · Lần 2 = -100 · Lần 3+ = -150 (không tăng thêm)
+// ════════════════════════════════════════════
+const LATE_PENALTY_STEPS = [50, 100, 150]; // lần 1,2,3 — từ lần 4 giữ mức cuối (150)
+
+// Đếm số lần nộp trễ TRONG THÁNG hiện tại của dateKey, KHÔNG tính ngày dateKey đó
+// (dùng để xác định đây là lần trễ thứ mấy nếu hôm nay cũng trễ)
+function countLateSubmitsThisMonth(empId, dateKey, excludeDate){
+  const reps  = STORED.reports[empId] || {};
+  const month = dateKey.slice(0, 7); // 'YYYY-MM'
+  let count = 0;
+  Object.keys(reps).forEach(d => {
+    if(d === excludeDate) return;          // không tính lại ngày đang submit
+    if(!d.startsWith(month)) return;       // chỉ tính trong tháng hiện tại
+    const rep = reps[d];
+    if(rep && rep._submitTime && rep._submitTime > '22:30' && rep._latePenalty > 0){
+      count++;
+    }
+  });
+  return count;
+}
+
+// Trả về mức trừ sao tương ứng với "lần trễ thứ N" trong tháng (1-indexed)
+function getLatePenaltyForOccurrence(occurrence){
+  if(occurrence <= 0) return 0;
+  const idx = Math.min(occurrence, LATE_PENALTY_STEPS.length) - 1;
+  return LATE_PENALTY_STEPS[idx];
 }
 
 
