@@ -1264,23 +1264,24 @@ function getZeroDays(empId, catId, dateKey){
   const emp2 = EMPS.find(e => e.id === empId);
   // Nếu hôm nay có cờ reset → 0
   if((reps[dateKey] || {})['_reset_' + catId]) return 0;
-  const cat2   = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
-  const target = cat2 ? cat2.target : 1;
+  const cat2      = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
+  const target    = cat2 ? cat2.target : 1;
+  const thisMonth = dateKey.slice(0, 7); // 'YYYY-MM' — chỉ đếm trong tháng hiện tại
   let count = 0;
   // Quy tắc đếm ngày chưa đạt liên tiếp (tính ngược từ hôm qua), max 6:
+  //   - Sang tháng khác (tháng trước)            → DỪNG (tự động reset đầu tháng)
   //   - Không có báo cáo (ngày OFF)              → bỏ qua, KHÔNG đếm, KHÔNG dừng chuỗi
   //   - Ngày đó NV đã từng TỰ CHỌN số ngày (zd_) → dùng giá trị đó làm điểm neo, dừng quét tiếp
-  //     (vì NV đã khai báo rõ ràng tại thời điểm đó — không cần tính lại từ % lịch sử cũ hơn)
   //   - Có báo cáo, actual = 0 hoặc chưa đạt      → đếm +1
   //   - Đạt chỉ tiêu / dùng sao hy vọng / QL reset → dừng chuỗi (reset về 0)
   for(let i = 1; i <= 90; i++){
     if(count >= 6) break;                      // chặn ở mức 6, không đếm thêm
-    const k   = daysBefore(dateKey, i);
+    const k = daysBefore(dateKey, i);
+    if(k.slice(0, 7) !== thisMonth) break;     // sang tháng trước → dừng (reset đầu tháng)
     const rep = reps[k];
     if(!rep) continue;                         // ngày OFF → bỏ qua
     if(rep['_reset_' + catId]) break;          // QL reset → dừng
-    // Nếu ngày này NV đã tự chọn số ngày (chế độ MANUAL) → lấy làm điểm neo, cộng thêm
-    // số ngày đã trôi qua từ đó đến hiện tại (i-1 ngày có báo cáo đã đếm trước đó)
+    // Nếu ngày này NV đã tự chọn số ngày (chế độ MANUAL) → lấy làm điểm neo
     if(rep['zd_' + catId] !== undefined && rep['zd_' + catId] > 0){
       count += rep['zd_' + catId];
       break;
