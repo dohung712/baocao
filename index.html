@@ -623,6 +623,7 @@ tr.row-done .cat-name{color:var(--green)}
                     <span id="zdModeLabel" style="font-size:7px;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.15);letter-spacing:.3px">AUTO</span>
                   </div>
                 </th>
+                <th style="width:40px" title="% hoàn thành của ngày báo cáo liền trước">KQ<br>Hôm qua</th>
                 <th class="reset-th" style="width:34px;display:none">Reset</th>
                 <th style="width:52px">Dùng sao</th>
               </tr>
@@ -772,8 +773,22 @@ tr.row-done .cat-name{color:var(--green)}
         <div class="toggle-card">
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="t-title">🕐 Mốc "Tăng ca / Dùng sao"</div>
-              <div class="t-sub">Khi Số Ngày chưa đạt liên tiếp chạm đúng mốc này, NV bắt buộc<br>chọn 🕐 Tăng ca (ghi chú) hoặc ⭐ Dùng sao mới lưu được báo cáo</div>
+              <div class="t-title">🕐 Bắt buộc "Tăng ca / Dùng sao"</div>
+              <div class="t-sub">Bật → Khi Số Ngày chưa đạt liên tiếp chạm mốc đã chọn, NV bắt buộc<br>chọn 🕐 Tăng ca (ghi chú) hoặc ⭐ Dùng sao mới lưu được báo cáo<br>Tắt → Không bắt buộc, ẩn toàn bộ lựa chọn này</div>
+              <span class="t-badge" id="otFeatureBadge">—</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="otFeatureToggle" onchange="onOtFeatureToggle(this.checked)">
+              <span class="sw-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-sync-txt" id="otFeatureSyncTxt">
+            <span class="dot" id="otFeatureDot"></span>
+            <span id="otFeatureTxt">—</span>
+          </div>
+          <div class="toggle-row" id="otThresholdRow" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--gray-line)">
+            <div class="toggle-info">
+              <div class="t-title" style="font-size:12px">Mốc Số Ngày áp dụng</div>
               <span class="t-badge" id="otThresholdBadge">—</span>
             </div>
             <select id="otThresholdSel" class="sel-control" style="width:70px;text-align:center;padding:8px 4px"
@@ -791,7 +806,7 @@ tr.row-done .cat-name{color:var(--green)}
 
         <div style="font-size:10px;color:var(--text-light);padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:14px;line-height:1.5">
           <i class="ti ti-info-circle" style="color:#d97706;margin-right:4px"></i>
-          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
+          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
         </div>
 
         <!-- ══ THIẾU BÁO CÁO (THÁNG NÀY) ══ -->
@@ -1012,7 +1027,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbwfyUHq67-6jAF3Rda2dKlMnwcHj3-pyS-uHfo3AKMllWODArspoH4edg6dpFnFYxHVlw/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbxaNyzfspeYB_khDAetEfWYPFnK1yc6MELOpH8wHe73wxGAzZcx_7yUerQZ7rXCTW52wA/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -1039,6 +1054,7 @@ let ANA_ROWS = []; // {store, empId, empName, cat, actual, pct}
 let zdAutoMode = true;   // true = tự động, false = NV tự chọn (bị ghi đè bởi QL)
 let allowZdManual = false; // QL toggle: false=auto, true=NV tự chọn
 let otThreshold   = 3;     // QL thiết lập: mốc Số Ngày (2/3/4) bắt buộc chọn Tăng ca hoặc Dùng sao
+let otFeatureEnabled = true; // QL toggle: bật/tắt toàn bộ tính năng bắt buộc Tăng ca/Dùng sao
 
 // ════════════════════════════════════════════
 //  SYNC INDICATOR
@@ -1103,6 +1119,9 @@ async function loadAll(){
     }
     if(data.settings && data.settings.otThreshold !== undefined && [2,3,4].includes(Number(data.settings.otThreshold))){
       otThreshold = Number(data.settings.otThreshold);
+    }
+    if(data.settings && data.settings.otFeatureEnabled !== undefined){
+      otFeatureEnabled = data.settings.otFeatureEnabled;
     }
 
     EMPS.forEach(e => {
@@ -1350,6 +1369,19 @@ function getZeroDays(empId, catId, dateKey){
 // ════════════════════════════════════════════
 function getPct(a, t){ return t > 0 ? Math.round(a / t * 100) : 0; }
 
+// Tìm % hoàn thành của môn (cat) ở NGÀY BÁO CÁO LIỀN TRƯỚC (ngày gần nhất
+// có báo cáo, trước dateKey — không nhất thiết là hôm qua theo lịch nếu có ngày OFF).
+function getPrevDayResult(empId, catId, target, dateKey){
+  const reps  = STORED.reports[empId] || {};
+  const dates = Object.keys(reps).filter(d => d < dateKey).sort();
+  if(dates.length === 0) return null;
+  const lastDate = dates[dates.length - 1];
+  const rep    = reps[lastDate] || {};
+  const actual = rep[catId] || 0;
+  const pct    = getPct(actual, target);
+  return { pct, date: lastDate, isDone: pct >= 100 };
+}
+
 function renderTable(){
   const emp = getCurEmp();
   if(!emp) return;
@@ -1431,11 +1463,19 @@ function renderTable(){
       zdH = buildZdPillsHtml(manVal, { clickable:true, catId:cat.id, autoVal }) + warnTxt;
     }
 
+    /* Kết Quả Hôm qua — % hoàn thành của ngày báo cáo liền trước (gần nhất trước dateKey) */
+    const prevRes = getPrevDayResult(emp.id, cat.id, cat.target, dateKey);
+    let prevH = '<span class="star-na">—</span>';
+    if(prevRes){
+      const prevCls = prevRes.isDone ? 'pg' : prevRes.pct >= 50 ? 'po' : 'pr';
+      prevH = `<span class="pct-val ${prevCls}" style="font-size:11px" title="Ngày ${prevRes.date}">${prevRes.pct}%</span>`;
+    }
+
     /* Tăng ca — bắt buộc chọn khi Số Ngày chạm mốc 3 (chưa đạt & chưa dùng sao) */
     const otk       = 'ot_' + cat.id;
     const otNoteK   = 'otNote_' + cat.id;
     const otFlag    = inputs[otk]     !== undefined ? inputs[otk]     : (saved[otk]     || false);
-    const needOtChoice = !isDone && !hope && zdCurrentVal === otThreshold;
+    const needOtChoice = otFeatureEnabled && !isDone && !hope && zdCurrentVal === otThreshold;
 
     /* use-star button */
     // canToggle: QL đã bật allowHope VÀ môn chưa đạt
@@ -1485,6 +1525,7 @@ function renderTable(){
       </td>
       <td>${spH}</td>
       <td>${zdH}</td>
+      <td>${prevH}</td>
       ${resetTd}
       <td>
         ${actionH}
@@ -1653,6 +1694,21 @@ function renderZdToggle(){
   // allowZdManual chỉ quyết định NV CÓ ĐƯỢC bấm đổi hay không, không tự đổi giá trị đó.
 }
 
+function renderOtFeatureToggle(){
+  const chk   = document.getElementById('otFeatureToggle');
+  const badge = document.getElementById('otFeatureBadge');
+  if(!chk || !badge) return;
+  chk.checked = otFeatureEnabled;
+  badge.textContent = otFeatureEnabled ? '✅ Đang BẬT — bắt buộc chọn cho tất cả NV' : '🔴 Đang TẮT — không bắt buộc';
+  badge.className = 't-badge ' + (otFeatureEnabled ? 't-badge-on' : 't-badge-off');
+
+  // Ẩn/mờ khối chọn mốc Số Ngày khi tính năng đang TẮT
+  const row = document.getElementById('otThresholdRow');
+  const sel = document.getElementById('otThresholdSel');
+  if(row) row.style.opacity = otFeatureEnabled ? '1' : '.4';
+  if(sel) sel.disabled = !otFeatureEnabled;
+}
+
 function renderOtThresholdControl(){
   const sel   = document.getElementById('otThresholdSel');
   const badge = document.getElementById('otThresholdBadge');
@@ -1660,6 +1716,32 @@ function renderOtThresholdControl(){
   sel.value = String(otThreshold);
   badge.textContent = `✅ Đang áp dụng — mốc ${otThreshold} ngày chưa đạt liên tiếp`;
   badge.className = 't-badge t-badge-on';
+  renderOtFeatureToggle();
+}
+
+async function onOtFeatureToggle(val){
+  const prevVal    = otFeatureEnabled; // lưu lại để revert nếu lỗi
+  otFeatureEnabled = val;
+  renderOtFeatureToggle();
+  renderTable();
+  const dot = document.getElementById('otFeatureDot');
+  const txt = document.getElementById('otFeatureTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'otFeatureEnabled', value: val });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'BẬT' : 'TẮT'} cho tất cả nhân viên`;
+    toast(val ? '✅ Đã BẬT bắt buộc Tăng ca/Dùng sao cho tất cả NV' : '🔒 Đã TẮT bắt buộc Tăng ca/Dùng sao cho tất cả NV', 'ok');
+  } catch(err){
+    // Revert vì server chưa lưu được — tránh lệch UI/server
+    otFeatureEnabled = prevVal;
+    renderOtFeatureToggle();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
 }
 
 async function onOtThresholdChange(val){
@@ -1967,9 +2049,10 @@ async function submitReport(){
     }
   }
 
-  // ══ VALIDATION: bắt buộc chọn Tăng ca / Dùng sao khi Số Ngày chạm mốc 3 ══
+  // ══ VALIDATION: bắt buộc chọn Tăng ca / Dùng sao khi Số Ngày chạm mốc đã thiết lập ══
   const missingOtChoice = [];
-  cats.forEach(cat => {
+  if(otFeatureEnabled){
+    cats.forEach(cat => {
     const actual = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
     const actualNum = actual === undefined || actual === null || actual === '' ? 0 : actual;
     const pct = getPct(actualNum, cat.target);
@@ -1991,7 +2074,8 @@ async function submitReport(){
       zdCurrentVal = Math.min(past + 1, 6);
     }
     if(zdCurrentVal === otThreshold) missingOtChoice.push(cat.name);
-  });
+    });
+  }
   if(missingOtChoice.length > 0){
     showMissingOtModal(missingOtChoice);
     return;
@@ -3303,6 +3387,18 @@ async function pollSettings(){
         }
         renderOtThresholdControl();
       }
+    }
+
+    // Kiểm tra otFeatureEnabled (bật/tắt toàn bộ tính năng Tăng ca/Dùng sao)
+    if(data.settings.otFeatureEnabled !== undefined && data.settings.otFeatureEnabled !== otFeatureEnabled){
+      otFeatureEnabled = data.settings.otFeatureEnabled;
+      changed = true;
+      if(!adminUnlocked){
+        toast(otFeatureEnabled
+          ? '✅ Quản lý đã BẬT bắt buộc Tăng ca/Dùng sao'
+          : '🔒 Quản lý đã TẮT bắt buộc Tăng ca/Dùng sao', 'ok');
+      }
+      renderOtFeatureToggle();
     }
 
     // Nếu có thay đổi → render lại bảng để cập nhật nút Dùng Sao
