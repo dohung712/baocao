@@ -1286,6 +1286,11 @@ function computeStreak(){
 //  ZD MODE TOGGLE
 // ════════════════════════════════════════════
 function toggleZdMode(){
+  // Chặn đổi sang chế độ Tự chọn nếu QL đã TẮT tính năng "Chế độ Số Ngày"
+  if(!allowZdManual){
+    toast('🔒 QL đã tắt chế độ "NV tự chọn Số Ngày" — hệ thống luôn tự động tính', 'err');
+    return;
+  }
   zdAutoMode = !zdAutoMode;
   const lbl = document.getElementById('zdModeLabel');
   const th  = document.getElementById('zdModeTh');
@@ -1403,6 +1408,19 @@ function renderTable(){
   if(thead) thead.style.top = tabsH + 'px';
   // Sync zdAutoMode với QL setting mỗi khi render
   if(!adminUnlocked){ zdAutoMode = !allowZdManual; }
+  if(!allowZdManual){ zdAutoMode = true; } // QL đã tắt "Chế độ Số Ngày" → luôn Auto, kể cả với QL đang mở khoá
+  const zdTh = document.getElementById('zdModeTh');
+  const zdLbl = document.getElementById('zdModeLabel');
+  if(zdTh){
+    zdTh.style.cursor = allowZdManual ? 'pointer' : 'not-allowed';
+    zdTh.style.opacity = allowZdManual ? '1' : '.6';
+    zdTh.title = allowZdManual ? 'Bấm để đổi chế độ' : 'QL đã tắt — hệ thống luôn tự động tính';
+  }
+  if(zdLbl){
+    zdLbl.textContent = zdAutoMode ? 'AUTO' : 'TỰ CHỌN';
+    zdLbl.style.background = zdAutoMode ? 'rgba(0,0,0,.15)' : 'rgba(255,215,0,.5)';
+    zdLbl.style.color = zdAutoMode ? '' : '#4a2e00';
+  }
   tbody.innerHTML = '';
 
   let totPlus = 0, totMinus = 0, done = 0;
@@ -1443,8 +1461,9 @@ function renderTable(){
     let zdCurrentVal = 0; // giá trị Số Ngày đang hiển thị hôm nay (dùng để bắt mốc 3)
     if(isDone || hope){
       zdH = `<div class="zd-pills">${[1,2,3,4].map(n=>`<span class="zd-pill zd-off">${n}</span>`).join('')}</div>`;
-    } else if(zdAutoMode){
+    } else if(zdAutoMode || !allowZdManual){
       // AUTO: tính từ lịch sử (max 6, dùng sao/đạt → reset về 1)
+      // (cũng dùng nhánh này khi QL đã TẮT "Chế độ Số Ngày" — bất kể zdAutoMode cục bộ đang là gì)
       const past   = getZeroDays(emp.id, cat.id, dateKey);
       const today1 = Math.min(past + 1, 6);
       zdCurrentVal = today1;
