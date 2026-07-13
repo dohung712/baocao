@@ -598,6 +598,16 @@ tr.row-done .cat-name{color:var(--green)}
 
       <!-- Report card -->
       <div id="repCard" style="display:none">
+        <!-- Toolbar -->
+        <div style="display:flex;justify-content:flex-end;padding:8px 12px 0">
+          <button type="button" id="zdModeBtn" onclick="toggleZdMode()" title="Bấm để đổi chế độ Số Ngày"
+            style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1px solid var(--gray-line);background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:#374151;white-space:nowrap">
+            <i class="ti ti-calendar-stats" style="font-size:13px"></i>
+            <span>Số Ngày:</span>
+            <span id="zdModeBtnLabel" style="padding:1px 6px;border-radius:10px;background:#e5e7eb">AUTO</span>
+          </button>
+        </div>
+
         <!-- Legend -->
         <div class="legend-bar">
           <div class="leg-item leg-done"><span>✅</span>Đạt ≥100% → +Sao</div>
@@ -617,10 +627,9 @@ tr.row-done .cat-name{color:var(--green)}
                 <th style="width:44px">Thực tế</th>
                 <th style="width:46px">% Đạt</th>
                 <th style="width:32px">Sao+</th>
-                <th style="width:38px;cursor:pointer" id="zdModeTh" onclick="toggleZdMode()" title="Bấm để đổi chế độ">
+                <th style="width:38px" id="zdModeTh" title="Số Ngày">
                   <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
                     <span>Số Ngày</span>
-                    <span id="zdModeLabel" style="font-size:7px;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.15);letter-spacing:.3px">AUTO</span>
                   </div>
                 </th>
                 <th style="width:40px" title="% hoàn thành của ngày báo cáo liền trước">KQ<br>Hôm qua</th>
@@ -1292,17 +1301,11 @@ function toggleZdMode(){
     return;
   }
   zdAutoMode = !zdAutoMode;
-  const lbl = document.getElementById('zdModeLabel');
-  const th  = document.getElementById('zdModeTh');
-  if(lbl){
-    lbl.textContent = zdAutoMode ? 'AUTO' : 'TỰ CHỌN';
-    lbl.style.background = zdAutoMode ? 'rgba(0,0,0,.15)' : 'rgba(255,215,0,.5)';
-    lbl.style.color = zdAutoMode ? '' : '#4a2e00';
-  }
-  if(th){
-    th.style.background = zdAutoMode
-      ? '' // default gold header bg
-      : 'linear-gradient(135deg,#e6a800,#f5c400)'; // same but with indicator
+  const btnLbl = document.getElementById('zdModeBtnLabel');
+  if(btnLbl){
+    btnLbl.textContent = zdAutoMode ? 'AUTO' : 'TỰ CHỌN';
+    btnLbl.style.background = zdAutoMode ? '#e5e7eb' : '#ffd700';
+    btnLbl.style.color = zdAutoMode ? '' : '#4a2e00';
   }
   // Clear manual zd overrides when switching back to auto
   if(zdAutoMode){
@@ -1409,17 +1412,18 @@ function renderTable(){
   // Sync zdAutoMode với QL setting mỗi khi render
   if(!adminUnlocked){ zdAutoMode = !allowZdManual; }
   if(!allowZdManual){ zdAutoMode = true; } // QL đã tắt "Chế độ Số Ngày" → luôn Auto, kể cả với QL đang mở khoá
-  const zdTh = document.getElementById('zdModeTh');
-  const zdLbl = document.getElementById('zdModeLabel');
-  if(zdTh){
-    zdTh.style.cursor = allowZdManual ? 'pointer' : 'not-allowed';
-    zdTh.style.opacity = allowZdManual ? '1' : '.6';
-    zdTh.title = allowZdManual ? 'Bấm để đổi chế độ' : 'QL đã tắt — hệ thống luôn tự động tính';
+  const zdBtn = document.getElementById('zdModeBtn');
+  const zdBtnLbl = document.getElementById('zdModeBtnLabel');
+  if(zdBtn){
+    zdBtn.disabled = !allowZdManual;
+    zdBtn.style.cursor = allowZdManual ? 'pointer' : 'not-allowed';
+    zdBtn.style.opacity = allowZdManual ? '1' : '.55';
+    zdBtn.title = allowZdManual ? 'Bấm để đổi chế độ Số Ngày' : 'QL đã tắt — hệ thống luôn tự động tính';
   }
-  if(zdLbl){
-    zdLbl.textContent = zdAutoMode ? 'AUTO' : 'TỰ CHỌN';
-    zdLbl.style.background = zdAutoMode ? 'rgba(0,0,0,.15)' : 'rgba(255,215,0,.5)';
-    zdLbl.style.color = zdAutoMode ? '' : '#4a2e00';
+  if(zdBtnLbl){
+    zdBtnLbl.textContent = zdAutoMode ? 'AUTO' : 'TỰ CHỌN';
+    zdBtnLbl.style.background = zdAutoMode ? '#e5e7eb' : '#ffd700';
+    zdBtnLbl.style.color = zdAutoMode ? '' : '#4a2e00';
   }
   tbody.innerHTML = '';
 
@@ -1470,16 +1474,12 @@ function renderTable(){
       zdH = buildZdPillsHtml(today1);
     } else {
       // MANUAL: NV tự chọn bằng các ô bấm (1..6, hiện thêm 5/6 nếu cần)
-      const autoVal = Math.min(getZeroDays(emp.id, cat.id, dateKey) + 1, 6); // giá trị tự động tính, dùng để cảnh báo lệch
+      const autoVal = Math.min(getZeroDays(emp.id, cat.id, dateKey) + 1, 6); // giá trị tự động tính (không hiện cảnh báo lệch nữa)
       const manVal = inputs['zd_' + cat.id] !== undefined
         ? inputs['zd_' + cat.id]
         : (saved['zd_' + cat.id] || 0);
       zdCurrentVal = manVal;
-      const warnZd = manVal > 0 && manVal !== autoVal;
-      const warnTxt = warnZd
-        ? `<div class="zd-warn">⚠️ Hệ thống tính <strong>${autoVal}</strong> ngày — bạn chọn <strong>${manVal}</strong> ngày</div>`
-        : '';
-      zdH = buildZdPillsHtml(manVal, { clickable:true, catId:cat.id, autoVal }) + warnTxt;
+      zdH = buildZdPillsHtml(manVal, { clickable:true, catId:cat.id, autoVal });
     }
 
     /* Kết Quả Hôm qua — % hoàn thành của ngày báo cáo liền trước (gần nhất trước dateKey) */
@@ -1680,11 +1680,6 @@ document.addEventListener('click', e => {
     const newVal = (inputs['zd_' + catId] === val) ? 0 : val;
     inputs['zd_' + catId] = newVal;
     renderTable();
-    if(newVal > 0 && auto > 0 && newVal !== auto){
-      const emp = getCurEmp();
-      const cat = emp ? getCats(emp.dept).find(c => c.id === catId) : null;
-      showZdMismatchModal(cat ? cat.name : 'môn này', auto, newVal);
-    }
     return;
   }
 });
@@ -1708,7 +1703,7 @@ function renderZdToggle(){
   chk.checked = allowZdManual;
   badge.textContent = allowZdManual ? '✅ Đang BẬT — NV tự chọn số ngày' : '🔵 Đang TẮT — Hệ thống tự động';
   badge.className = 't-badge ' + (allowZdManual ? 't-badge-on' : 't-badge-off');
-  // KHÔNG đụng vào zdModeLabel/zdModeTh ở đây — đó là toggle riêng của NV
+  // KHÔNG đụng vào zdModeBtn/zdModeBtnLabel ở đây — đó là toggle riêng của NV
   // trên header bảng báo cáo (zdAutoMode, điều khiển qua toggleZdMode()).
   // allowZdManual chỉ quyết định NV CÓ ĐƯỢC bấm đổi hay không, không tự đổi giá trị đó.
 }
@@ -2010,33 +2005,6 @@ function showMissingZdModal(missing){
 
 function closeModal(){
   document.getElementById('modalBg').classList.remove('open');
-}
-
-// ════════════════════════════════════════════
-//  POPUP CẢNH BÁO — NV TỰ CHỌN SỐ NGÀY LỆCH VỚI HỆ THỐNG
-// ════════════════════════════════════════════
-function showZdMismatchModal(catName, autoVal, chosenVal){
-  const bg    = document.getElementById('modalBg');
-  const title = document.getElementById('modalTitle');
-  const body  = document.getElementById('modalBody');
-  const btns  = document.getElementById('modalBtns');
-
-  title.innerHTML = `<span style="color:#b45309">⚠️ Kiểm tra lại số ngày</span>`;
-
-  body.innerHTML = `
-    <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
-      Môn <strong>${catName}</strong>: hệ thống tự động tính được
-      <strong style="color:#1a237e">${autoVal} ngày</strong> chưa đạt liên tiếp,
-      nhưng bạn vừa chọn <strong style="color:#dc2626">${chosenVal} ngày</strong>.
-    </p>
-    <p style="font-size:12px;color:var(--text-light);line-height:1.5;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px">
-      Vui lòng kiểm tra lại lịch sử báo cáo của môn này trước khi tiếp tục.
-      Nếu bạn chắc chắn số mình chọn đúng, hệ thống vẫn sẽ ghi nhận giá trị này.
-    </p>`;
-
-  btns.innerHTML = `<button class="act-btn primary" onclick="closeModal()">Đã hiểu, tôi xác nhận số ngày này</button>`;
-
-  bg.classList.add('open');
 }
 
 async function submitReport(){
