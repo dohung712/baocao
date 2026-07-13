@@ -575,6 +575,9 @@ tr.row-done .cat-name{color:var(--green)}
       <div class="tab" id="analysisTab" onclick="tryAnalysisTab(this)" style="display:none">
         <i class="ti ti-chart-bar"></i>Phân tích
       </div>
+      <div class="tab" id="viewrepTab" onclick="tryViewRepTab(this)" style="display:none">
+        <i class="ti ti-file-search"></i>Xem báo cáo
+      </div>
     </div>
 
     <!-- ══ TAB BÁO CÁO ══ -->
@@ -892,6 +895,72 @@ tr.row-done .cat-name{color:var(--green)}
       </div>
     </div>
 
+    <!-- ══ TAB XEM BÁO CÁO (READ-ONLY, QL) ══ -->
+    <div id="tab-viewrep" class="pnl">
+      <div class="admin-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div style="font-size:12px;font-weight:800;color:var(--blue);display:flex;align-items:center;gap:5px">
+            <i class="ti ti-file-search"></i>XEM LẠI BÁO CÁO NHÂN VIÊN
+          </div>
+          <button class="act-btn" onclick="adminLogout()" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c62828;border-color:#fca5a5;background:#fff5f5">
+            <i class="ti ti-logout" style="font-size:15px"></i>Đăng xuất
+          </button>
+        </div>
+
+        <div class="sel-card" style="border-radius:12px;border:1px solid var(--gray-line);margin-bottom:0">
+          <div class="sel-grid">
+            <div class="sel-group">
+              <div class="sel-label">Nhân viên</div>
+              <select id="vrEmpSel" class="sel-control" onchange="vrLoadReport()">
+                <option value="">— Chọn nhân viên —</option>
+              </select>
+            </div>
+            <div class="sel-group">
+              <div class="sel-label">Ngày báo cáo</div>
+              <input type="date" id="vrDateIn" class="sel-control" onchange="vrLoadReport()">
+            </div>
+          </div>
+        </div>
+
+        <div id="vrWrap" style="display:none">
+          <!-- Legend giống hệt tab Báo cáo để dễ đối chiếu -->
+          <div class="legend-bar">
+            <div class="leg-item leg-done"><span>✅</span>Đạt ≥100% → +Sao</div>
+            <div class="leg-item leg-miss"><span>⏳</span>Chưa đạt → đếm ngày</div>
+            <div class="leg-item leg-use"><span>⭐</span>Dùng sao → −Sao</div>
+          </div>
+          <div id="vrNoRepBanner" style="display:none;font-size:11px;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;text-align:center">
+            ⚠️ Nhân viên chưa nộp báo cáo ngày này — bảng dưới hiển thị giá trị mặc định (0)
+          </div>
+          <div class="tbl-outer">
+            <div class="tbl-wrap">
+              <table id="vrTable">
+                <thead>
+                  <tr>
+                    <th style="width:20px">#</th>
+                    <th class="tl" style="width:18%">Môn thi đua</th>
+                    <th style="width:36px">Target</th>
+                    <th style="width:44px">Thực tế</th>
+                    <th style="width:46px">% Đạt</th>
+                    <th style="width:32px">Sao+</th>
+                    <th style="width:38px">Số Ngày</th>
+                    <th style="width:40px" title="% hoàn thành của ngày báo cáo liền trước">KQ<br>Hôm qua</th>
+                    <th style="width:52px">Kết quả</th>
+                  </tr>
+                </thead>
+                <tbody id="vrBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="adm-card" style="padding:12px 16px;margin-top:12px" id="vrSummaryCard"></div>
+        </div>
+        <div id="vrEmpty" style="font-size:11px;color:var(--text-light);text-align:center;padding:30px 0;background:#fff;border:1px dashed var(--gray-line);border-radius:12px">
+          <i class="ti ti-clipboard-text" style="font-size:26px;display:block;margin-bottom:8px;color:var(--gray-line)"></i>
+          Chọn nhân viên để xem chi tiết phiếu báo cáo (mặc định ngày hôm nay)
+        </div>
+      </div>
+    </div>
+
     <!-- ══ TAB PHÂN TÍCH ══ -->
     <div id="tab-analysis" class="pnl">
       <div class="admin-section">
@@ -1036,7 +1105,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbxaNyzfspeYB_khDAetEfWYPFnK1yc6MELOpH8wHe73wxGAzZcx_7yUerQZ7rXCTW52wA/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyPrfEsFplUwAuF6dqFNRh7iq3JzkSK5MlCuBedMMdk4tOgXiisCHy4K57-f5DJwDuoZQ/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -2360,11 +2429,12 @@ function checkPwd(){
   if(val === ADMIN_PW){
     adminUnlocked = true;
     document.getElementById('pwdOverlay').classList.remove('open');
-    // Show analysis tab
+    // Show analysis + view-report tabs
     document.getElementById('analysisTab').style.display = '';
+    document.getElementById('viewrepTab').style.display = '';
     if(pendingAdminEl){
-      const isAnalysis = pendingAdminEl.id === 'analysisTab';
-      if(isAnalysis){ goTab('analysis', pendingAdminEl); }
+      if(pendingAdminEl.id === 'analysisTab'){ goTab('analysis', pendingAdminEl); }
+      else if(pendingAdminEl.id === 'viewrepTab'){ goTab('viewrep', pendingAdminEl); }
       else { goTab('admin', pendingAdminEl); }
       pendingAdminEl = null;
     }
@@ -2801,6 +2871,137 @@ async function qlSaveReport(){
 }
 
 // ════════════════════════════════════════════
+//  TAB "XEM BÁO CÁO" — READ-ONLY, QL xem lại phiếu NV
+// ════════════════════════════════════════════
+function vrBuildEmpSelect(){
+  const sel = document.getElementById('vrEmpSel');
+  if(!sel) return;
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">— Chọn nhân viên —</option>';
+  const depts = [...new Set(EMPS.map(e => e.dept))];
+  depts.forEach(dept => {
+    const grp = document.createElement('optgroup');
+    grp.label = dept;
+    EMPS.filter(e => e.dept === dept).forEach(e => {
+      const o = document.createElement('option');
+      o.value = e.id;
+      o.textContent = e.name;
+      grp.appendChild(o);
+    });
+    sel.appendChild(grp);
+  });
+  if(curVal) sel.value = curVal;
+  const di = document.getElementById('vrDateIn');
+  if(di && !di.value) di.value = todayStr;
+}
+
+function vrLoadReport(){
+  const empId = document.getElementById('vrEmpSel').value;
+  const date  = document.getElementById('vrDateIn').value;
+  const wrap  = document.getElementById('vrWrap');
+  const empty = document.getElementById('vrEmpty');
+  if(!empId || !date){ wrap.style.display='none'; empty.style.display='block'; return; }
+
+  const emp = EMPS.find(e => e.id === empId);
+  if(!emp){ wrap.style.display='none'; empty.style.display='block'; return; }
+
+  const saved = (STORED.reports[empId] || {})[date] || {};
+  const hasReport = Object.keys(saved).length > 0;
+  const cats = getCats(emp.dept);
+
+  document.getElementById('vrNoRepBanner').style.display = hasReport ? 'none' : 'block';
+
+  const tbody = document.getElementById('vrBody');
+  tbody.innerHTML = '';
+
+  let totPlus = 0, totMinus = 0, done = 0, pctSum = 0;
+
+  cats.forEach((cat, i) => {
+    const actual = saved[cat.id] || 0;
+    const hope   = saved['h_' + cat.id] || false;
+    const zdVal  = saved['zd_' + cat.id] || 0;
+    const ot     = saved['ot_' + cat.id] || false;
+    const otNote = saved['otNote_' + cat.id] || '';
+    const pct    = getPct(actual, cat.target);
+    const isDone = pct >= 100;
+    if(isDone) done++;
+    pctSum += pct;
+
+    /* % cell — giống tab Báo cáo */
+    let pCls = 'pz', pTxt = '—';
+    if(actual > 0 || isDone){
+      pTxt = pct + '%';
+      pCls = isDone ? 'pg' : pct >= 50 ? 'po' : 'pr';
+    }
+    const bw   = Math.min(pct, 100);
+    const bCol = isDone ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+
+    /* Sao+ cell */
+    const spH = isDone ? `<span class="star-plus">+${cat.sp}</span>` : '<span class="star-na">—</span>';
+
+    /* Kết quả cell (thay cho nút Dùng sao — chỉ hiển thị, không bấm được) */
+    let kqH = '<span class="star-na">—</span>';
+    if(isDone)     { totPlus  += cat.sp; kqH = `<span class="star-plus">+${cat.sp}</span>`; }
+    else if(hope)  { totMinus += cat.sm; kqH = `<span class="star-minus">⭐ −${cat.sm}</span>`; }
+
+    /* Thực tế cell */
+    const actualH = actual > 0
+      ? `<span class="kq-val">${actual}</span>`
+      : '<span class="star-na">—</span>';
+
+    /* Số Ngày — hiện đúng giá trị đã lưu (pills tĩnh, không bấm được) */
+    const zdH = (isDone || hope)
+      ? `<div class="zd-pills">${[1,2,3,4].map(n=>`<span class="zd-pill zd-off">${n}</span>`).join('')}</div>`
+      : buildZdPillsHtml(zdVal || 1);
+
+    /* KQ Hôm qua — % hoàn thành của ngày báo cáo liền trước */
+    const prevRes = getPrevDayResult(emp.id, cat.id, cat.target, date);
+    let prevH = '<span class="star-na">—</span>';
+    if(prevRes){
+      const prevCls = prevRes.isDone ? 'pg' : prevRes.pct >= 50 ? 'po' : 'pr';
+      prevH = `<span class="pct-val ${prevCls}" style="font-size:11px" title="Ngày ${prevRes.date}">${prevRes.pct}%</span>`;
+    }
+
+    const tr = document.createElement('tr');
+    if(isDone) tr.className = 'row-done';
+    tr.innerHTML = `
+      <td><span class="row-num">${i+1}</span></td>
+      <td class="tl" style="padding-left:4px"><span class="cat-name">${cat.name}</span></td>
+      <td style="font-size:11px;font-weight:800;color:var(--text-mid)">${cat.target}</td>
+      <td>${actualH}</td>
+      <td>
+        <div class="pct-wrap">
+          <span class="pct-val ${pCls}">${pTxt}</span>
+          <div class="pct-bar"><div class="pct-fill" style="width:${bw}%;background:${bCol}"></div></div>
+        </div>
+      </td>
+      <td>${spH}</td>
+      <td>${zdH}</td>
+      <td>${prevH}</td>
+      <td>${kqH}${ot ? `<div style="margin-top:3px;font-size:9px;color:#9a3412;font-weight:700" title="${otNote||''}">🕐 Tăng ca</div>` : ''}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const avgPct = cats.length ? Math.round(pctSum / cats.length) : 0;
+  const net = totPlus - totMinus;
+  const summary = document.getElementById('vrSummaryCard');
+  summary.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:12px;color:var(--text-mid)">
+        <strong style="color:var(--text)">${emp.name}</strong> · ${emp.dept} · ${date}
+      </div>
+      <div style="font-size:12px;font-weight:800;display:flex;gap:12px">
+        <span style="color:var(--green)">${done}/${cats.length} đạt</span>
+        <span style="color:var(--blue)">${avgPct}% TB</span>
+        <span style="color:${net>=0?'var(--green)':'var(--red)'}">Net ${net>=0?'+':''}${net} sao</span>
+      </div>
+    </div>`;
+
+  wrap.style.display = 'block';
+  empty.style.display = 'none';
+}
+
+// ════════════════════════════════════════════
 //  TAB SWITCH
 // ════════════════════════════════════════════
 function goTab(name, el){
@@ -2810,6 +3011,7 @@ function goTab(name, el){
   document.getElementById('tab-' + name).classList.add('on');
   if(name === 'rank')     renderLeaderboard();
   if(name === 'admin')    { renderAdminTab(); qlBuildEmpSelect(); }
+  if(name === 'viewrep')  { vrBuildEmpSelect(); vrLoadReport(); }
 }
 
 // ════════════════════════════════════════════
@@ -2834,6 +3036,7 @@ function adminLogout(){
   document.getElementById('tab-report').classList.add('on');
   document.querySelector('.tab:first-child').classList.add('on');
   document.getElementById('analysisTab').style.display = 'none';
+  document.getElementById('viewrepTab').style.display = 'none';
   toast('✓ Đã đăng xuất khỏi khu vực QL', 'ok');
 }
 
@@ -2842,6 +3045,15 @@ function adminLogout(){
 // ════════════════════════════════════════════
 function tryAnalysisTab(el){
   if(adminUnlocked){ goTab('analysis', el); return; }
+  pendingAdminEl = el;
+  document.getElementById('pwdInput').value = '';
+  document.getElementById('pwdErr').textContent = '';
+  document.getElementById('pwdOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('pwdInput').focus(), 150);
+}
+
+function tryViewRepTab(el){
+  if(adminUnlocked){ goTab('viewrep', el); return; }
   pendingAdminEl = el;
   document.getElementById('pwdInput').value = '';
   document.getElementById('pwdErr').textContent = '';
