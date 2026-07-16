@@ -139,6 +139,34 @@ tr.row-done{background:var(--row-done)}
 tr.row-done .cat-name{color:var(--green);font-weight:900}
 tr:active td{background:rgba(26,35,126,.04)}
 
+/* ═══ TABLE COMPACT MODE (siêu thị nhiều môn, vd TGDĐ ≥15 môn) — giảm khoảng cách cột ~30% ═══ */
+.tbl-compact thead tr th{padding:3.5px 3px}
+.tbl-compact td{padding:1px 1.4px}
+.tbl-compact .cat-name{padding-left:1.4px}
+.tbl-compact .row-num{font-size:8px}
+/* nén thêm nội dung bên trong từng dòng để giảm chiều cao dòng */
+.tbl-compact .num-input{width:30px;font-size:11px;padding:0 1px}
+.tbl-compact .pct-val{font-size:10px}
+.tbl-compact .pct-bar{height:2px;margin-top:1px}
+.tbl-compact .star-plus,.tbl-compact .star-minus{font-size:10px}
+.tbl-compact .star-na{font-size:9px}
+.tbl-compact .kq-val{font-size:11px}
+.tbl-compact .zd-pill{width:11px;height:11px;font-size:7.5px}
+.tbl-compact .zd-pills{gap:1.5px}
+.tbl-compact .zd-warn{font-size:7.5px;padding:1px 4px;margin-top:2px}
+.tbl-compact .use-btn,.tbl-compact .ot-btn{padding:0 3px;font-size:8px}
+.tbl-compact .ot-choice{gap:2px}
+.tbl-compact .reset-btn{padding:1px 4px;font-size:8px}
+
+/* ═══ REPORT-CARD COMPACT MODE — nén luôn toolbar/legend/tổng kết/nút Lưu ~30% chiều cao ═══ */
+#repCard.compact-report .rep-toolbar{padding:4px 10px 0}
+#repCard.compact-report .legend-bar .leg-item{padding:5px 5px;font-size:9px}
+#repCard.compact-report .legend-bar .leg-item span{font-size:12px;margin-bottom:1px}
+#repCard.compact-report .summary-strip .sum-cell{padding:8px 6px}
+#repCard.compact-report .summary-strip .sum-lbl{font-size:8px;margin-bottom:2px}
+#repCard.compact-report .summary-strip .sum-val{font-size:17px}
+#repCard.compact-report .submit-btn{padding:9px;margin:9px 20px}
+
 /* category name — 30% nhỏ hơn (12→8.4px) */
 .cat-name{
   font-size:8.5px;font-weight:800;color:var(--text);
@@ -250,6 +278,42 @@ tr.row-done .cat-name{color:var(--green)}
   padding:3px 9px;border-radius:6px;text-transform:uppercase;
   box-shadow:0 0 0 1px rgba(255,255,255,.3);
   animation:pulse-danger 1.4s ease-in-out infinite;
+}
+
+/* Badge cảnh báo MÔN NGUY HIỂM (chuỗi ≥3 ngày chưa đạt 100%) cạnh tiêu đề */
+.hdr-cat-warn-badge{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;font-weight:900;letter-spacing:.3px;
+  color:#fff;background:linear-gradient(135deg,#7c2d12,#c2410c);
+  padding:3px 9px;border-radius:6px;text-transform:uppercase;
+  box-shadow:0 0 0 1px rgba(255,255,255,.3);
+  cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+  user-select:none;
+}
+.hdr-cat-warn-badge:active{opacity:.75}
+.hdr-cat-warn-badge i{font-size:13px}
+.hdr-cat-warn-badge .car{font-size:10px;transition:transform .2s}
+.hdr-cat-warn-badge.open .car{transform:rotate(180deg)}
+
+.cat-warn-panel{
+  display:none;background:#fff7ed;border-bottom:2px solid #fb923c;
+  padding:12px 20px;position:relative;z-index:5
+}
+.cat-warn-panel.on{display:block}
+.cat-warn-panel-title{
+  font-size:11px;font-weight:900;color:#9a3412;text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:8px;display:flex;align-items:center;gap:5px
+}
+.cat-warn-item{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  background:#fff;border:1px solid #fed7aa;border-radius:8px;
+  padding:8px 10px;margin-bottom:6px
+}
+.cat-warn-item:last-child{margin-bottom:0}
+.cat-warn-item .cwi-name{font-size:11px;font-weight:800;color:var(--text)}
+.cat-warn-item .cwi-streak{
+  font-size:11px;font-weight:900;color:#fff;background:#c2410c;
+  padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0
 }
 
 /* ═══ SUMMARY STRIP ═══ */
@@ -502,6 +566,11 @@ tr.row-done .cat-name{color:var(--green)}
   border-bottom:2px solid #b07d00;text-align:center
 }
 .mt-table th.tl{text-align:left}
+.mt-table th.sortable{cursor:pointer;user-select:none;transition:.15s}
+.mt-table th.sortable:hover{background:linear-gradient(135deg,#d99a00,#e6b700)}
+.mt-table th.sortable.sort-active{background:linear-gradient(135deg,#c27f00,#dba500)}
+.mt-sort-arrow{font-size:8px;opacity:.55;margin-left:2px}
+.mt-table th.sort-active .mt-sort-arrow{opacity:1}
 .mt-table td{padding:8px 10px;font-size:12px;border-bottom:1px solid var(--gray-line);text-align:center;vertical-align:middle}
 .mt-table tr:last-child td{border-bottom:none}
 .mt-table tr:nth-child(even) td{background:#f9fafb}
@@ -529,6 +598,9 @@ tr.row-done .cat-name{color:var(--green)}
           <div class="hdr-title-row">
             <div class="hdr-title">BÁO CÁO KẾT QUẢ NGÀY</div>
             <div class="hdr-ot-badge" id="hdrOtBadge" style="display:none" title="">⚠️ Tăng ca ngày mai</div>
+            <div class="hdr-cat-warn-badge" id="hdrCatWarnBadge" style="display:none" onclick="toggleCatWarnPanel()">
+              <i class="ti ti-alert-triangle"></i><span id="hdrCatWarnCount">0</span>&nbsp;môn nguy hiểm<i class="ti ti-chevron-down car"></i>
+            </div>
           </div>
           <div class="hdr-meta" id="hdrMeta">—</div>
         </div>
@@ -556,6 +628,12 @@ tr.row-done .cat-name{color:var(--green)}
         </div>
       </div>
       <div class="sync-row"><span class="dot" id="syncDot"></span><span id="syncTxt">—</span></div>
+    </div>
+
+    <!-- ══ PANEL CHI TIẾT MÔN NGUY HIỂM (chuỗi ≥3 ngày chưa đạt 100%) ══ -->
+    <div class="cat-warn-panel" id="catWarnPanel">
+      <div class="cat-warn-panel-title"><i class="ti ti-alert-triangle"></i>Các môn chưa đạt 100% từ 3 ngày liên tiếp trở lên</div>
+      <div id="catWarnList"></div>
     </div>
 
     <!-- ══ TABS ══ -->
@@ -602,7 +680,7 @@ tr.row-done .cat-name{color:var(--green)}
       <!-- Report card -->
       <div id="repCard" style="display:none">
         <!-- Toolbar -->
-        <div style="display:flex;justify-content:flex-end;padding:8px 12px 0">
+        <div class="rep-toolbar" style="display:flex;justify-content:flex-end;padding:8px 12px 0">
           <button type="button" id="zdModeBtn" onclick="toggleZdMode()" title="Bấm để đổi chế độ Số Ngày"
             style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1px solid var(--gray-line);background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:#374151;white-space:nowrap">
             <i class="ti ti-calendar-stats" style="font-size:13px"></i>
@@ -953,6 +1031,19 @@ tr.row-done .cat-name{color:var(--green)}
             </div>
           </div>
           <div class="adm-card" style="padding:12px 16px;margin-top:12px" id="vrSummaryCard"></div>
+
+          <!-- Xem lại kết quả 5 ngày gần nhất của từng môn -->
+          <div class="adm-card" style="padding:12px 16px;margin-top:12px">
+            <div style="font-size:11px;font-weight:900;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;display:flex;align-items:center;gap:5px">
+              <i class="ti ti-history"></i>Kết quả 5 ngày gần nhất theo môn
+            </div>
+            <div class="tbl-wrap">
+              <table id="vr5dayTable">
+                <thead><tr id="vr5dayThead"></tr></thead>
+                <tbody id="vr5dayBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
         <div id="vrEmpty" style="font-size:11px;color:var(--text-light);text-align:center;padding:30px 0;background:#fff;border:1px dashed var(--gray-line);border-radius:12px">
           <i class="ti ti-clipboard-text" style="font-size:26px;display:block;margin-bottom:8px;color:var(--gray-line)"></i>
@@ -1261,6 +1352,64 @@ function buildEmpSelect(){
 function getCurEmp(){ return EMPS.find(e => e.id === curEmpId) || null; }
 function getCats(dept){ return CATS[dept] || []; }
 
+// ════════════════════════════════════════════
+//  AUTO VIẾT TẮT TÊN MÔN (khi siêu thị có nhiều môn, vd TGDĐ ≥15 môn)
+// ════════════════════════════════════════════
+const CAT_NAME_ABBR_THRESHOLD  = 15; // số môn tối thiểu để bật chế độ rút gọn
+const CAT_NAME_MAX_LEN         = 16; // độ dài tối đa mong muốn sau khi rút gọn
+
+// Từ/cụm từ dài → viết tắt phổ biến. Cụm dài hơn phải đứng trước cụm ngắn hơn chứa nó.
+const CAT_ABBR_MAP = [
+  [/chăm\s*sóc\s*khách\s*hàng/gi, 'CSKH'],
+  [/khách\s*hàng/gi,              'KH'],
+  [/nhân\s*viên/gi,                'NV'],
+  [/quản\s*lý/gi,                  'QL'],
+  [/giám\s*sát/gi,                 'GS'],
+  [/kiểm\s*tra/gi,                 'KT'],
+  [/kiểm\s*kê/gi,                  'KK'],
+  [/checklist/gi,                  'CL'],
+  [/supervisor/gi,                 'SUPV'],
+  [/facebook/gi,                   'FB'],
+  [/messenger/gi,                  'MSG'],
+  [/comment/gi,                    'CMT'],
+  [/thực\s*hiện/gi,                'TH'],
+  [/trả\s*lời/gi,                  'TL'],
+  [/tổng\s*đài/gi,                 'TĐ'],
+  [/điện\s*thoại/gi,               'ĐT'],
+  [/sản\s*phẩm/gi,                 'SP'],
+  [/phụ\s*kiện/gi,                 'PK'],
+  [/voice\s*chéo/gi,               'VC'],
+];
+
+// Từ đệm có thể bỏ bớt nếu tên vẫn còn quá dài sau khi viết tắt
+// (tách theo từ thay vì dùng \b, vì \b không nhận diện đúng ký tự có dấu tiếng Việt)
+const CAT_FILLER_SET = new Set(['và','của','các','cho','là','để','với','từ','theo','tại','trên','những','này','đó']);
+
+function abbreviateCatName(name){
+  if(!name) return name;
+  let out = name;
+  CAT_ABBR_MAP.forEach(([re, rep]) => { out = out.replace(re, rep); });
+  out = out.replace(/\s+/g, ' ').trim();
+
+  if(out.length > CAT_NAME_MAX_LEN){
+    out = out.split(' ').filter(w => !CAT_FILLER_SET.has(w.toLowerCase())).join(' ').trim();
+  }
+  if(out.length > CAT_NAME_MAX_LEN){
+    out = out.slice(0, CAT_NAME_MAX_LEN - 1).trim() + '…';
+  }
+  return out;
+}
+
+// Trả về { display, title } — title chỉ có giá trị (để hiện tooltip tên đầy đủ) khi đã rút gọn
+function formatCatName(name, totalCatsInDept){
+  if(!name) return { display: '', title: '' };
+  if((totalCatsInDept || 0) < CAT_NAME_ABBR_THRESHOLD) return { display: name, title: '' };
+  const abbr = abbreviateCatName(name);
+  return { display: abbr, title: abbr !== name ? name : '' };
+}
+
+function escAttr(s){ return String(s).replace(/"/g, '&quot;'); }
+
 function onEmpChange(){
   curEmpId = document.getElementById('empSel').value || null;
   inputs   = {};
@@ -1358,6 +1507,68 @@ function computeStreak(){
     : '';
 
   box.innerHTML = streakHtml + lateHtml;
+
+  renderCatWarnBadge(emp, dateKey);
+}
+
+// ── Chuỗi ngày chưa đạt 100% theo TỪNG MÔN ──
+// Ngày không có báo cáo được tính là 0% (chưa đạt) → chuỗi vẫn tiếp tục, không bị ngắt.
+function computeCatStreaks(emp, dateKey){
+  const cats = getCats(emp.dept);
+  const result = [];
+  cats.forEach(cat => {
+    let streak = 0;
+    for(let i = 1; i <= 60; i++){
+      const k   = daysBefore(dateKey, i);
+      const rep = (STORED.reports[emp.id] || {})[k];
+      const actual = rep ? (rep[cat.id] || 0) : 0; // không có báo cáo → coi như 0
+      const pct    = getPct(actual, cat.target);
+      if(pct >= 100) break;
+      streak++;
+    }
+    if(streak >= 3) result.push({ name: cat.name, streak });
+  });
+  result.sort((a,b) => b.streak - a.streak);
+  return result;
+}
+
+let catWarnPanelOpen = false;
+let lastCatWarnList  = [];
+
+function renderCatWarnBadge(emp, dateKey){
+  const badge = document.getElementById('hdrCatWarnBadge');
+  const countEl = document.getElementById('hdrCatWarnCount');
+  const listEl = document.getElementById('catWarnList');
+  if(!badge || !emp){ if(badge) badge.style.display = 'none'; return; }
+
+  lastCatWarnList = computeCatStreaks(emp, dateKey);
+
+  if(lastCatWarnList.length){
+    badge.style.display = 'inline-flex';
+    countEl.textContent = lastCatWarnList.length;
+  } else {
+    badge.style.display = 'none';
+    catWarnPanelOpen = false;
+  }
+
+  listEl.innerHTML = lastCatWarnList.map(r =>
+    `<div class="cat-warn-item">
+      <span class="cwi-name">${r.name}</span>
+      <span class="cwi-streak">${r.streak} ngày chưa đạt</span>
+    </div>`
+  ).join('') || '<div style="font-size:11px;color:var(--text-light)">Không có môn nào đáng cảnh báo</div>';
+
+  const panel = document.getElementById('catWarnPanel');
+  panel.classList.toggle('on', catWarnPanelOpen && lastCatWarnList.length > 0);
+  badge.classList.toggle('open', catWarnPanelOpen);
+}
+
+function toggleCatWarnPanel(){
+  catWarnPanelOpen = !catWarnPanelOpen;
+  const panel = document.getElementById('catWarnPanel');
+  const badge = document.getElementById('hdrCatWarnBadge');
+  panel.classList.toggle('on', catWarnPanelOpen && lastCatWarnList.length > 0);
+  badge.classList.toggle('open', catWarnPanelOpen);
 }
 
 // ════════════════════════════════════════════
@@ -1478,6 +1689,10 @@ function renderTable(){
   const tabsH  = (tabsEl ? tabsEl.offsetHeight : 56);
   const thead  = document.getElementById('repThead');
   if(thead) thead.style.top = tabsH + 'px';
+  const repTableEl = document.getElementById('repTable');
+  if(repTableEl) repTableEl.classList.toggle('tbl-compact', cats.length >= CAT_NAME_ABBR_THRESHOLD);
+  const repCardEl = document.getElementById('repCard');
+  if(repCardEl) repCardEl.classList.toggle('compact-report', cats.length >= CAT_NAME_ABBR_THRESHOLD);
   // Sync zdAutoMode với QL setting mỗi khi render
   if(!adminUnlocked){ zdAutoMode = !allowZdManual; }
   if(!allowZdManual){ zdAutoMode = true; } // QL đã tắt "Chế độ Số Ngày" → luôn Auto, kể cả với QL đang mở khoá
@@ -1597,9 +1812,10 @@ function renderTable(){
     const tr = document.createElement('tr');
     if(isDone) tr.className = 'row-done';
 
+    const cn = formatCatName(cat.name, cats.length);
     tr.innerHTML = `
       <td><span class="row-num">${i+1}</span></td>
-      <td class="tl" style="padding-left:4px"><span class="cat-name">${cat.name}</span></td>
+      <td class="tl" style="padding-left:4px"><span class="cat-name"${cn.title ? ` title="${escAttr(cn.title)}"` : ''}>${cn.display}</span></td>
       <td style="font-size:11px;font-weight:800;color:var(--text-mid)">${cat.target}</td>
       <td>
         <input class="num-input" type="number" min="0" inputmode="numeric"
@@ -2282,10 +2498,15 @@ async function captureReport(){
     window.scrollTo(0, 0);
     await new Promise(r => setTimeout(r, 80));
 
-    // 3. Tạm ẩn nút Lưu để không xuất hiện trong ảnh
-    const subBtn = document.getElementById('subBtn');
-    const prevDisplay = subBtn ? subBtn.style.display : '';
-    if(subBtn) subBtn.style.display = 'none';
+    // 3. Tạm ẩn các phần không cần xuất hiện trong ảnh:
+    //    nút Lưu, thanh tab, ô chọn Nhân viên/Ngày báo cáo (kèm banner cảnh báo), dòng "Số Ngày"
+    const subBtn     = document.getElementById('subBtn');
+    const tabsEl     = document.querySelector('.tabs');
+    const selCardEl  = document.querySelector('#tab-report .sel-card');
+    const toolbarEl  = document.querySelector('#tab-report .rep-toolbar');
+    const hideEls    = [subBtn, tabsEl, selCardEl, toolbarEl].filter(Boolean);
+    const prevDisplays = hideEls.map(el => el.style.display);
+    hideEls.forEach(el => { el.style.display = 'none'; });
 
     // 4. Chụp tab-report với đúng chiều cao thực
     const target = document.getElementById('tab-report');
@@ -2302,8 +2523,8 @@ async function captureReport(){
       scrollY:     -window.scrollY
     });
 
-    // 5. Hiện lại nút
-    if(subBtn) subBtn.style.display = prevDisplay;
+    // 5. Hiện lại các phần đã ẩn
+    hideEls.forEach((el, i) => { el.style.display = prevDisplays[i]; });
 
     // 6. Tải ảnh về
     const a    = document.createElement('a');
@@ -2365,6 +2586,40 @@ function renderLeaderboard(){
 // ════════════════════════════════════════════
 //  MÔN THI TAB
 // ════════════════════════════════════════════
+// ── Sort cho bảng "Môn thi đua & Sao thưởng/trừ" — mỗi siêu thị tự nhớ trạng thái sort riêng ──
+let monThiSort = {}; // { [dept]: { col:'name'|'target'|'sp'|'sm', dir:1|-1 } }
+
+function sortMonThiCats(cats, dept){
+  const st = monThiSort[dept];
+  if(!st) return cats;
+  const arr = cats.slice();
+  arr.sort((a, b) => {
+    if(st.col === 'name') return st.dir * String(a.name).localeCompare(String(b.name), 'vi');
+    return st.dir * ((a[st.col] || 0) - (b[st.col] || 0));
+  });
+  return arr;
+}
+
+function toggleMonThiSort(dept, col){
+  const cur = monThiSort[dept];
+  monThiSort[dept] = (cur && cur.col === col) ? { col, dir: -cur.dir } : { col, dir: 1 };
+  renderMonThi();
+}
+
+// Click delegation — bắt sự kiện trên các th.sortable được tạo động
+document.addEventListener('click', e => {
+  const th = e.target.closest('.mt-table th.sortable');
+  if(!th) return;
+  toggleMonThiSort(th.dataset.dept, th.dataset.col);
+});
+
+function mtHeaderCell(dept, col, label, style){
+  const st = monThiSort[dept];
+  const active = st && st.col === col;
+  const arrow = active ? (st.dir === 1 ? '▲' : '▼') : '⇅';
+  return `<th class="sortable${active ? ' sort-active' : ''}${col==='name' ? ' tl' : ''}" style="${style||''}" data-dept="${escAttr(dept)}" data-col="${col}">${label}<span class="mt-sort-arrow">${arrow}</span></th>`;
+}
+
 function renderMonThi(){
   const el = document.getElementById('monthiBody');
   if(!el) return;
@@ -2377,7 +2632,7 @@ function renderMonThi(){
   }
 
   depts.forEach(dept => {
-    const cats = CATS[dept] || [];
+    const cats = sortMonThiCats(CATS[dept] || [], dept);
     const block = document.createElement('div');
     block.className = 'mt-store-block';
 
@@ -2391,10 +2646,10 @@ function renderMonThi(){
         <thead>
           <tr>
             <th style="width:20px">#</th>
-            <th class="tl">Môn thi đua</th>
-            <th style="width:60px">Target</th>
-            <th style="width:70px">⭐ Thưởng</th>
-            <th style="width:70px">⭐ Trừ</th>
+            ${mtHeaderCell(dept, 'name',   'Môn thi đua')}
+            ${mtHeaderCell(dept, 'target', 'Target', 'width:60px')}
+            ${mtHeaderCell(dept, 'sp',     '⭐ Thưởng', 'width:70px')}
+            ${mtHeaderCell(dept, 'sm',     '⭐ Trừ', 'width:70px')}
           </tr>
         </thead>
         <tbody>
@@ -2913,6 +3168,8 @@ function vrLoadReport(){
 
   const tbody = document.getElementById('vrBody');
   tbody.innerHTML = '';
+  const vrTableEl = document.getElementById('vrTable');
+  if(vrTableEl) vrTableEl.classList.toggle('tbl-compact', cats.length >= CAT_NAME_ABBR_THRESHOLD);
 
   let totPlus = 0, totMinus = 0, done = 0, pctSum = 0;
 
@@ -2964,9 +3221,10 @@ function vrLoadReport(){
 
     const tr = document.createElement('tr');
     if(isDone) tr.className = 'row-done';
+    const cn = formatCatName(cat.name, cats.length);
     tr.innerHTML = `
       <td><span class="row-num">${i+1}</span></td>
-      <td class="tl" style="padding-left:4px"><span class="cat-name">${cat.name}</span></td>
+      <td class="tl" style="padding-left:4px"><span class="cat-name"${cn.title ? ` title="${escAttr(cn.title)}"` : ''}>${cn.display}</span></td>
       <td style="font-size:11px;font-weight:800;color:var(--text-mid)">${cat.target}</td>
       <td>${actualH}</td>
       <td>
@@ -2999,6 +3257,41 @@ function vrLoadReport(){
 
   wrap.style.display = 'block';
   empty.style.display = 'none';
+
+  vrRender5Day(emp, cats, date);
+}
+
+// ── Bảng "Kết quả 5 ngày gần nhất theo môn" — hàng = môn, cột = 5 ngày (tính từ ngày đang chọn trở về trước) ──
+function vrRender5Day(emp, cats, dateKey){
+  const thead = document.getElementById('vr5dayThead');
+  const tbody = document.getElementById('vr5dayBody');
+  if(!thead || !tbody) return;
+
+  // 5 ngày: ngày đang chọn + 4 ngày liền trước, xếp cũ → mới (trái → phải)
+  const days = [4,3,2,1,0].map(n => daysBefore(dateKey, n)); // daysBefore(date,0) = chính ngày đó
+  const fmtShort = d => { const p = d.split('-'); return `${p[2]}/${p[1]}`; };
+
+  thead.innerHTML = '<th class="tl" style="width:18%">Môn thi đua</th>' +
+    days.map(d => `<th title="${d}">${fmtShort(d)}</th>`).join('');
+
+  tbody.innerHTML = cats.map(cat => {
+    const cn = formatCatName(cat.name, cats.length);
+    const cells = days.map(d => {
+      const rep = (STORED.reports[emp.id] || {})[d];
+      if(!rep) return '<td><span class="pct-val pz" style="font-size:10px">—</span></td>';
+      const actual = rep[cat.id] || 0;
+      const pct    = getPct(actual, cat.target);
+      const cls    = pct >= 100 ? 'pg' : 'pr';
+      return `<td><span class="pct-val ${cls}" style="font-size:11px">${pct}%</span></td>`;
+    }).join('');
+    return `<tr>
+      <td class="tl" style="padding-left:4px"><span class="cat-name"${cn.title ? ` title="${escAttr(cn.title)}"` : ''}>${cn.display}</span></td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  const vr5El = document.getElementById('vr5dayTable');
+  if(vr5El) vr5El.classList.toggle('tbl-compact', cats.length >= CAT_NAME_ABBR_THRESHOLD);
 }
 
 // ════════════════════════════════════════════
