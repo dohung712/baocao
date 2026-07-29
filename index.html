@@ -74,28 +74,28 @@ body{font-family:'Barlow',system-ui,sans-serif;background:var(--gray-bg);min-hei
 /* ═══ TABS ═══ */
 .tabs{display:flex;background:#fff;border-bottom:2px solid var(--gray-line);position:sticky;top:0;z-index:20;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .tab{
-  flex:1;padding:12px 6px;cursor:pointer;font-size:11px;font-weight:700;
+  flex:1;padding:4px 2px;cursor:pointer;font-size:7px;font-weight:700;
   color:var(--text-light);text-align:center;transition:.2s;
-  border-bottom:3px solid transparent;letter-spacing:.5px;text-transform:uppercase;
+  border-bottom:3px solid transparent;letter-spacing:.4px;text-transform:uppercase;
   position:relative;bottom:-2px
 }
-.tab i{display:block;font-size:18px;margin-bottom:3px}
+.tab i{display:block;font-size:9px;margin-bottom:2px}
 .tab.on{color:var(--blue);border-bottom-color:var(--blue);background:#f4f6ff}
 .pnl{display:none}.pnl.on{display:block}
 
 /* ═══ SELECTOR CARD ═══ */
-.sel-card{background:#fff;padding:16px 20px;border-bottom:1px solid var(--gray-line)}
-.sel-grid{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}
-.sel-group{display:flex;flex-direction:column;gap:6px}
-.sel-label{font-size:10px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.8px}
+.sel-card{background:#fff;padding:6px 8px;border-bottom:1px solid var(--gray-line)}
+.sel-grid{display:grid;grid-template-columns:1fr auto;gap:5px;align-items:end}
+.sel-group{display:flex;flex-direction:column;gap:2px}
+.sel-label{font-size:8px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.8px}
 .sel-control{
-  padding:10px 14px;border:2px solid var(--gray-line);border-radius:10px;
-  font-size:14px;font-weight:600;background:#fff;color:var(--text);
+  padding:4px 6px;border:2px solid var(--gray-line);border-radius:8px;
+  font-size:8px;font-weight:600;background:#fff;color:var(--text);
   font-family:'Barlow',sans-serif;transition:.2s;width:100%
 }
 .sel-control:focus{outline:none;border-color:var(--blue);background:#f4f6ff}
-.stk-box{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
-.stk{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px}
+.stk-box{margin-top:4px;display:flex;gap:3px;flex-wrap:wrap}
+.stk{padding:2px 6px;border-radius:20px;font-size:6px;font-weight:700;display:flex;align-items:center;gap:3px}
 .stk-w{background:var(--orange-bg);color:var(--orange)}
 .stk-d{background:var(--red-bg);color:var(--red)}
 
@@ -104,9 +104,9 @@ body{font-family:'Barlow',system-ui,sans-serif;background:var(--gray-bg);min-hei
   display:flex;gap:0;background:#f7f8ff;
   border-bottom:1px solid var(--gray-line);overflow:hidden
 }
-.leg-item{flex:1;padding:8px 6px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.2px;border-right:1px solid var(--gray-line)}
+.leg-item{flex:1;padding:5px 4px;text-align:center;font-size:8px;font-weight:700;letter-spacing:.2px;border-right:1px solid var(--gray-line)}
 .leg-item:last-child{border-right:none}
-.leg-item span{display:block;font-size:16px;margin-bottom:2px}
+.leg-item span{display:block;font-size:12px;margin-bottom:1px}
 .leg-done{color:var(--green)}.leg-miss{color:var(--text-light)}.leg-use{color:var(--red)}
 
 /* ═══ TABLE ═══ */
@@ -115,13 +115,13 @@ body{font-family:'Barlow',system-ui,sans-serif;background:var(--gray-bg);min-hei
 table{width:100%;border-collapse:collapse;table-layout:auto;min-width:320px}
 
 thead tr th{
-  padding:5px 4px;
+  padding:4px 4px;
   font-size:8.5px;font-weight:900;
   text-transform:uppercase;letter-spacing:.3px;
   white-space:nowrap;text-align:center;
   background:linear-gradient(135deg,#e6a800,#f5c400);
   color:#1a1200;
-  border-bottom:2.5px solid #b07d00;
+  border-bottom:2px solid #b07d00;
   border-right:1px solid rgba(0,0,0,.1)
 }
 thead tr th:last-child{border-right:none}
@@ -131,7 +131,7 @@ td{
   padding:1px 2px;
   border-bottom:1.5px solid #d1d5db;
   text-align:center;vertical-align:middle;
-  font-size:11px
+  font-size:11px;line-height:1.1
 }
 tr:last-child td{border-bottom:none}
 tr.row-done td{border-bottom:1.5px solid #b6d9bc}
@@ -159,29 +159,29 @@ tr:active td{background:rgba(26,35,126,.04)}
 .tbl-compact .reset-btn{padding:1px 4px;font-size:8px}
 
 /* ═══ REPORT-CARD COMPACT MODE — nén luôn toolbar/legend/tổng kết/nút Lưu ~30% chiều cao ═══ */
-#repCard.compact-report .rep-toolbar{padding:4px 10px 0}
-#repCard.compact-report .legend-bar .leg-item{padding:5px 5px;font-size:9px}
-#repCard.compact-report .legend-bar .leg-item span{font-size:12px;margin-bottom:1px}
-#repCard.compact-report .summary-strip .sum-cell{padding:8px 6px}
-#repCard.compact-report .summary-strip .sum-lbl{font-size:8px;margin-bottom:2px}
-#repCard.compact-report .summary-strip .sum-val{font-size:17px}
+#repCard.compact-report .rep-toolbar{padding:3px 8px 0}
+#repCard.compact-report .legend-bar .leg-item{padding:3px 3px;font-size:7px}
+#repCard.compact-report .legend-bar .leg-item span{font-size:9px;margin-bottom:1px}
+#repCard.compact-report .summary-strip .sum-cell{padding:5px 4px}
+#repCard.compact-report .summary-strip .sum-lbl{font-size:7px;margin-bottom:1px}
+#repCard.compact-report .summary-strip .sum-val{font-size:13px}
 #repCard.compact-report .submit-btn{padding:9px;margin:9px 20px}
 
 /* category name — 30% nhỏ hơn (12→8.4px) */
 .cat-name{
   font-size:8.5px;font-weight:800;color:var(--text);
-  white-space:normal;word-break:break-word;
-  text-align:left;display:block;line-height:1.3;
-  padding-left:2px
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-align:left;display:block;line-height:1.1;
+  padding-left:2px;max-width:100px
 }
 tr.row-done .cat-name{color:var(--green)}
 
 /* row-num */
-.row-num{font-size:9px;font-weight:700;color:var(--text-light)}
+.row-num{font-size:8px;font-weight:700;color:var(--text-light);line-height:1}
 
 /* reset button — QL only */
 .reset-btn{
-  padding:2px 5px;border-radius:5px;font-size:9px;font-weight:900;
+  padding:1px 5px;border-radius:5px;font-size:9px;font-weight:900;line-height:1;
   border:1.5px solid #818cf8;cursor:pointer;
   background:#eef2ff;color:#4338ca;
   white-space:nowrap;transition:.15s;
@@ -190,13 +190,12 @@ tr.row-done .cat-name{color:var(--green)}
 }
 .reset-btn:hover:not(:disabled){background:#c7d2fe;border-color:#6366f1}
 .reset-btn:disabled{opacity:.2;cursor:not-allowed}
-.row-num{font-size:11px;font-weight:700;color:var(--text-light)}
 
 /* INPUT — nhỏ lại 20% */
 .num-input{
   width:40px;padding:1px 2px;
   border:1.5px solid var(--gray-line);border-radius:5px;
-  font-size:13px;font-weight:900;text-align:center;
+  font-size:13px;font-weight:900;text-align:center;line-height:1;
   color:var(--text);background:#fff;
   font-family:'Barlow Condensed','Barlow',sans-serif;
   transition:.15s;-webkit-appearance:none;appearance:none;
@@ -207,24 +206,24 @@ tr.row-done .cat-name{color:var(--green)}
 
 /* percent — nhỏ lại 20% */
 .pct-wrap{display:inline-block;min-width:34px}
-.pct-val{font-size:12px;font-weight:900;font-family:'Barlow Condensed',sans-serif}
-.pct-bar{height:3px;background:var(--gray-line);border-radius:2px;margin-top:2px}
+.pct-val{font-size:12px;font-weight:900;font-family:'Barlow Condensed',sans-serif;line-height:1}
+.pct-bar{height:2px;background:var(--gray-line);border-radius:2px;margin-top:1px}
 .pct-fill{height:100%;border-radius:2px;transition:width .4s}
 .pg{color:var(--green)}.po{color:var(--orange)}.pr{color:var(--red)}.pz{color:var(--text-light)}
 
 /* star display — nhỏ lại 20% */
-.star-plus{font-size:12px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--green)}
-.star-minus{font-size:12px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--red)}
+.star-plus{font-size:12px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--green);line-height:1}
+.star-minus{font-size:12px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--red);line-height:1}
 .star-na{font-size:11px;color:var(--text-light)}
 
 /* kq — nhỏ lại 20% */
-.kq-val{font-size:14px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--text)}
+.kq-val{font-size:14px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:var(--text);line-height:1}
 
 /* Số Ngày — 4 pills */
 .zd-pills{display:flex;gap:2px;justify-content:center;align-items:center}
 .zd-pill{
-  width:14px;height:14px;border-radius:3px;
-  font-size:9px;font-weight:900;font-family:'Barlow Condensed',sans-serif;
+  width:12px;height:12px;border-radius:3px;
+  font-size:8px;font-weight:900;font-family:'Barlow Condensed',sans-serif;
   display:flex;align-items:center;justify-content:center;line-height:1
 }
 .zd-off{background:#f3f4f6;color:#9ca3af}
@@ -232,12 +231,12 @@ tr.row-done .cat-name{color:var(--green)}
 .zd-on{background:#dc2626;color:#fff;box-shadow:0 0 0 1.5px #991b1b}
 .zd-warn{
   font-size:9px;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;
-  border-radius:5px;padding:2px 6px;margin-top:3px;line-height:1.4;text-align:center;
+  border-radius:5px;padding:1px 6px;margin-top:2px;line-height:1.2;text-align:center;
   white-space:nowrap;max-width:140px;
 }
 .zd-danger{
   font-size:9px;color:#fff;background:linear-gradient(135deg,#b91c1c,#dc2626);
-  border-radius:5px;padding:3px 6px;margin-top:3px;line-height:1.3;text-align:center;
+  border-radius:5px;padding:2px 6px;margin-top:2px;line-height:1.15;text-align:center;
   white-space:nowrap;max-width:150px;font-weight:800;
   animation:pulse-danger 1.4s ease-in-out infinite;
 }
@@ -245,7 +244,7 @@ tr.row-done .cat-name{color:var(--green)}
 
 /* Dùng sao button — compact */
 .use-btn{
-  padding:1px 4px;border-radius:5px;font-size:9px;font-weight:800;
+  padding:1px 4px;border-radius:5px;font-size:9px;font-weight:800;line-height:1;
   border:1.5px solid var(--gray-line);cursor:pointer;background:#fff;
   color:var(--text-mid);white-space:nowrap;transition:.15s;
   font-family:'Barlow',sans-serif;display:inline-flex;align-items:center;gap:1px;
@@ -256,15 +255,16 @@ tr.row-done .cat-name{color:var(--green)}
 .use-btn:disabled{opacity:.25;cursor:not-allowed}
 .use-btn.ql-locked{background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb;cursor:not-allowed;opacity:.7}
 .use-btn.ql-locked:hover{background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb}
+.ot-choice .use-btn{width:auto;flex:1 1 0;padding:1px 3px;font-size:8px}
 
 /* Tăng ca — mốc Số Ngày = 3, bắt buộc chọn cùng Dùng sao */
-.ot-choice{display:flex;flex-direction:column;gap:3px}
+.ot-choice{display:flex;flex-direction:row;flex-wrap:nowrap;gap:3px;align-items:center;justify-content:center}
 .ot-btn{
-  padding:1px 4px;border-radius:5px;font-size:9px;font-weight:800;
+  padding:1px 3px;border-radius:5px;font-size:8px;font-weight:800;line-height:1;
   border:1.5px solid #93c5fd;cursor:pointer;background:#eff6ff;
   color:#1d4ed8;white-space:nowrap;transition:.15s;
   font-family:'Barlow',sans-serif;display:inline-flex;align-items:center;gap:1px;
-  justify-content:center;width:100%
+  justify-content:center;flex:1 1 0
 }
 .ot-btn:hover{background:#dbeafe;border-color:#3b82f6}
 .ot-btn.active{background:#1d4ed8;color:#fff;border-color:#1d4ed8;font-weight:900;box-shadow:0 0 0 2px rgba(29,78,216,.25)}
@@ -321,10 +321,10 @@ tr.row-done .cat-name{color:var(--green)}
   display:grid;grid-template-columns:repeat(4,1fr);
   background:#fff;border-top:2px solid var(--gray-line)
 }
-.sum-cell{padding:12px 8px;text-align:center;border-right:1px solid var(--gray-line)}
+.sum-cell{padding:7px 5px;text-align:center;border-right:1px solid var(--gray-line)}
 .sum-cell:last-child{border-right:none}
-.sum-lbl{font-size:9px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-.sum-val{font-size:22px;font-weight:900;font-family:'Barlow Condensed',sans-serif;line-height:1}
+.sum-lbl{font-size:8px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px}
+.sum-val{font-size:16px;font-weight:900;font-family:'Barlow Condensed',sans-serif;line-height:1}
 .c-blue{color:#1a69c4}.c-green{color:var(--green)}.c-red{color:var(--red)}.c-gold{color:#c87f00}
 
 /* ═══ BOTTOM RESULT BAR ═══ */
@@ -380,6 +380,57 @@ tr.row-done .cat-name{color:var(--green)}
 .hist-cell .h-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
 .hist-cell .h-val{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:#fff;line-height:1}
 .hist-cell .h-val.hg{color:#69f0ae}.hist-cell .h-val.hr{color:#ff6b6b}.hist-cell .h-val.hy{color:var(--gold)}
+
+/* ═══ CHỈ THU NHỎ 2 KHỐI TRÊN LÚC XUẤT ẢNH (class gắn tạm bởi captureReport) ═══ */
+.export-shrink .result-bar{padding:8px 10px}
+.export-shrink .rb-left .rb-title{font-size:8px;letter-spacing:.6px}
+.export-shrink .rb-left .rb-val{font-size:16px;margin-top:1px}
+.export-shrink .rb-left .rb-val em{font-size:24px}
+.export-shrink .rb-left .rb-sub{font-size:7px;margin-top:2px}
+.export-shrink .rb-right-3line{min-width:90px;padding:6px 8px}
+.export-shrink .rb3-row{gap:6px;padding:2px 0}
+.export-shrink .rb3-lbl{font-size:7px;letter-spacing:.4px}
+.export-shrink .rb3-val{font-size:10px}
+.export-shrink .rb3-row-total{margin-top:2px;padding-top:3px}
+.export-shrink .rb3-val-big{font-size:14px;gap:2px}
+.export-shrink .rb3-val-big i{font-size:11px}
+.export-shrink .hist-wrap{padding:8px 12px 10px}
+.export-shrink .hist-title{font-size:7px;letter-spacing:1.2px;margin-bottom:6px;padding-bottom:4px}
+.export-shrink .hist-grid{gap:4px}
+.export-shrink .hist-cell{padding:5px 4px}
+.export-shrink .hist-cell .h-lbl{font-size:7px;letter-spacing:.3px;margin-bottom:2px}
+.export-shrink .hist-cell .h-val{font-size:13px}
+
+/* ═══ TAB QUY TẮC ═══ */
+.rule-wrap{padding:14px 16px 24px}
+.rule-sec{margin-bottom:16px;background:#fff;border:1px solid var(--gray-line);border-radius:12px;padding:12px 14px}
+.rule-sec h4{
+  font-size:12px;font-weight:900;color:var(--blue);text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:8px;display:flex;align-items:center;gap:6px
+}
+.rule-sec h4 i{font-size:15px}
+.rule-sec p{font-size:12px;color:var(--text);line-height:1.65;margin-bottom:6px}
+.rule-sec p:last-child{margin-bottom:0}
+.rule-sec ul{padding-left:18px;margin:4px 0 8px;font-size:12px;color:var(--text);line-height:1.65}
+.rule-sec ul:last-child{margin-bottom:0}
+.rule-sec li{margin-bottom:3px}
+.rule-badge{
+  display:inline-flex;align-items:center;background:var(--blue);color:#fff;
+  font-weight:800;padding:1px 7px;border-radius:6px;font-size:11px;margin:0 1px
+}
+.rule-badge.gold{background:linear-gradient(135deg,#e6a800,#f5c400);color:#1a1200}
+.rule-badge.red{background:var(--red)}
+.rule-note{
+  background:#fff8e1;border:1px solid #ffe082;border-radius:8px;
+  padding:8px 12px;font-size:11px;color:#7a4b00;margin-top:8px;line-height:1.6
+}
+.rule-note.danger{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.rule-hero{
+  background:linear-gradient(160deg,var(--blue-dark),var(--blue-mid));
+  color:#fff;padding:14px 16px;border-radius:12px;margin-bottom:16px
+}
+.rule-hero div{font-size:11px;opacity:.85;line-height:1.6}
+.rule-hero b{font-size:14px;display:block;margin-bottom:4px}
 
 /* ═══ SUBMIT BUTTON ═══ */
 .submit-btn{
@@ -627,7 +678,13 @@ tr.row-done .cat-name{color:var(--green)}
           <div class="f-val gold" id="hdrStarLK">★ —</div>
         </div>
       </div>
-      <div class="sync-row"><span class="dot" id="syncDot"></span><span id="syncTxt">—</span></div>
+      <div class="sync-row">
+        <span class="dot" id="syncDot"></span><span id="syncTxt">—</span>
+        <button id="refreshDataBtn" onclick="refreshAllData()" title="Tải lại dữ liệu mới nhất từ hệ thống"
+          style="margin-left:8px;background:#fff;border:1px solid var(--gray-line);border-radius:6px;padding:2px 9px;font-size:10.5px;cursor:pointer;color:var(--text-mid);display:inline-flex;align-items:center;gap:3px">
+          <i class="ti ti-refresh" style="font-size:12px"></i>Làm mới
+        </button>
+      </div>
     </div>
 
     <!-- ══ PANEL CHI TIẾT MÔN NGUY HIỂM (chuỗi ≥3 ngày chưa đạt 100%) ══ -->
@@ -646,6 +703,9 @@ tr.row-done .cat-name{color:var(--green)}
       </div>
       <div class="tab" onclick="goTab('monthi',this)">
         <i class="ti ti-list-details"></i>Môn thi
+      </div>
+      <div class="tab" onclick="goTab('rules',this)">
+        <i class="ti ti-book-2"></i>Quy tắc
       </div>
       <div class="tab" id="adminTab" onclick="tryAdminTab(this)">
         <i class="ti ti-shield-lock"></i>QL
@@ -680,12 +740,12 @@ tr.row-done .cat-name{color:var(--green)}
       <!-- Report card -->
       <div id="repCard" style="display:none">
         <!-- Toolbar -->
-        <div class="rep-toolbar" style="display:flex;justify-content:flex-end;padding:8px 12px 0">
+        <div class="rep-toolbar" style="display:flex;justify-content:flex-end;padding:4px 10px 0">
           <button type="button" id="zdModeBtn" onclick="toggleZdMode()" title="Bấm để đổi chế độ Số Ngày"
-            style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1px solid var(--gray-line);background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:#374151;white-space:nowrap">
-            <i class="ti ti-calendar-stats" style="font-size:13px"></i>
+            style="display:flex;align-items:center;gap:3px;padding:3px 7px;border-radius:16px;border:1px solid var(--gray-line);background:#fff;font-size:9px;font-weight:700;cursor:pointer;color:#374151;white-space:nowrap">
+            <i class="ti ti-calendar-stats" style="font-size:11px"></i>
             <span>Số Ngày:</span>
-            <span id="zdModeBtnLabel" style="padding:1px 6px;border-radius:10px;background:#e5e7eb">AUTO</span>
+            <span id="zdModeBtnLabel" style="padding:1px 5px;border-radius:8px;background:#e5e7eb">AUTO</span>
           </button>
         </div>
 
@@ -715,7 +775,7 @@ tr.row-done .cat-name{color:var(--green)}
                 </th>
                 <th style="width:40px" title="% hoàn thành của ngày báo cáo liền trước">KQ<br>Hôm qua</th>
                 <th class="reset-th" style="width:34px;display:none">Reset</th>
-                <th style="width:52px">Dùng sao</th>
+                <th style="width:78px">Dùng sao</th>
               </tr>
             </thead>
             <tbody id="repBody"></tbody>
@@ -813,6 +873,55 @@ tr.row-done .cat-name{color:var(--green)}
       </div>
     </div>
 
+    <!-- ══ TAB QUY TẮC ══ -->
+    <div id="tab-rules" class="pnl">
+      <div class="rule-wrap">
+        <div class="rule-hero">
+          <b>📋 Quy trình & quy tắc chấm điểm</b>
+          <div>Đọc kỹ phần này để hiểu vì sao sao bị cộng/trừ, khi nào bắt buộc chọn Tăng ca hoặc Dùng sao, và cách tránh bị phạt oan.</div>
+        </div>
+
+        <div class="rule-sec">
+          <h4><i class="ti ti-clipboard-check"></i>1. Chấm báo cáo mỗi ngày</h4>
+          <p>Mỗi ngày, nhập <b>Thực tế</b> cho từng môn thi đua rồi bấm <b>Lưu &amp; Xuất ảnh báo cáo</b>. Hệ thống tự tính % đạt = Thực tế ÷ Target.</p>
+          <ul>
+            <li><span class="rule-badge">Đạt ≥100%</span> → được <b>cộng sao</b> theo mức thưởng riêng của từng môn (xem ở tab <b>Môn thi</b>).</li>
+            <li><span class="rule-badge red">Chưa đạt &lt;100%</span> → không cộng, và số ngày liên tiếp chưa đạt của môn đó sẽ tăng thêm 1 (cột <b>Số Ngày</b>).</li>
+          </ul>
+        </div>
+
+        <div class="rule-sec">
+          <h4><i class="ti ti-star"></i>2. Sao lũy kế vs Sao trong tháng</h4>
+          <ul>
+            <li><b>Sao lũy kế</b> (góc trên bên phải màn hình): tổng cộng dồn <b>từ trước tới nay, không bao giờ reset</b> — dùng để xếp hạng và tính lương/thưởng.</li>
+            <li><b>Kiếm tháng</b> / <b>Bị trừ tháng</b> (ở cuối bảng): chỉ tính riêng trong tháng đang xem, <b>tự về 0 khi sang tháng mới</b> — giúp theo dõi phong độ tháng này.</li>
+          </ul>
+        </div>
+
+        <div class="rule-sec">
+          <h4><i class="ti ti-alert-triangle"></i>3. Khi Số Ngày chạm mốc cảnh báo</h4>
+          <p>Khi 1 môn <b>chưa đạt liên tiếp</b> đủ số ngày quy định, hệ thống bắt buộc chọn 1 trong 2 hướng xử lý ngay trên dòng đó, không thể bỏ qua:</p>
+          <ul>
+            <li>Chạm mốc <span class="rule-badge gold" id="ruleOtThresholdTxt">—</span> ngày chưa đạt liên tiếp → phải chọn <b>🕐 Tăng ca</b> (cam kết làm bù) hoặc <b>Dùng sao</b> để trừ trực tiếp.</li>
+            <li>Chạm mốc <span class="rule-badge gold" id="ruleSpThresholdTxt">—</span> ngày <i>Dùng sao</i> liên tiếp → xuất hiện thêm lựa chọn <b>⭐ Trừ sao ×2</b> (mức phạt tăng gấp đôi vì đã lặp lại nhiều lần).</li>
+          </ul>
+          <div class="rule-note">💡 Mốc này do QL cấu hình và có thể thay đổi theo từng giai đoạn — số hiện tại hiển thị ngay phía trên luôn đúng với cấu hình mới nhất.</div>
+        </div>
+
+        <div class="rule-sec">
+          <h4><i class="ti ti-clock-exclamation"></i>4. Nộp báo cáo trễ sau 22h30</h4>
+          <p>Báo cáo phải nộp (bấm Lưu &amp; Xuất ảnh) <b>trước 22h30</b> mỗi ngày. Nộp sau giờ này sẽ <b>tự động bị trừ sao</b>, mức phạt tăng dần theo số lần vi phạm trong tháng:</p>
+          <div id="ruleLatePenaltySteps" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"></div>
+          <div class="rule-note danger">⚠️ Nộp trễ hơn 2 lần trong 1 tuần sẽ bị hiện cảnh báo riêng cho QL theo dõi.</div>
+        </div>
+
+        <div class="rule-sec">
+          <h4><i class="ti ti-camera"></i>5. Xuất ảnh báo cáo</h4>
+          <p>Ảnh xuất ra tự động rút gọn (bỏ thanh tab, ô chọn NV, chú thích quy tắc...) để gọn và dễ gửi Zalo/Group, nhưng vẫn giữ đủ <b>tên NV, ngày, bảng kết quả, tổng sao</b> — không mất dữ liệu quan trọng dù dùng điện thoại màn hình nhỏ.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ TAB QUẢN LÝ ══ -->
     <div id="tab-admin" class="pnl">
       <div class="admin-section">
@@ -894,9 +1003,43 @@ tr.row-done .cat-name{color:var(--green)}
           </div>
         </div>
 
+        <div class="toggle-card">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="t-title">🚨 Cảnh báo Dùng sao liên tiếp</div>
+              <div class="t-sub">Bật → Khi 1 môn CHƯA ĐẠT (100%) liên tiếp chạm đúng mốc đã chọn bên dưới,<br>NV bắt buộc chọn <strong>🕐 Tăng ca ngày mai</strong> hoặc <strong>⭐ Trừ sao ×2</strong> mới lưu được báo cáo<br>Tắt → Không cảnh báo, ẩn toàn bộ lựa chọn này</div>
+              <span class="t-badge" id="spBadge">—</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="spToggle" onchange="onStarPenaltyToggle(this.checked)">
+              <span class="sw-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-sync-txt" id="spToggleSyncTxt">
+            <span class="dot" id="spToggleDot"></span>
+            <span id="spToggleTxt">—</span>
+          </div>
+          <div class="toggle-row" id="spThresholdRow" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--gray-line)">
+            <div class="toggle-info">
+              <div class="t-title" style="font-size:12px">Mốc số ngày CHƯA ĐẠT liên tiếp áp dụng</div>
+              <span class="t-badge" id="spThresholdBadge">—</span>
+            </div>
+            <select id="spThresholdSel" class="sel-control" style="width:70px;text-align:center;padding:8px 4px"
+              onchange="onStarPenaltyThresholdChange(this.value)">
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+          <div class="toggle-sync-txt" id="spThresholdSyncTxt">
+            <span class="dot" id="spThresholdDot"></span>
+            <span id="spThresholdTxt">—</span>
+          </div>
+        </div>
+
         <div style="font-size:10px;color:var(--text-light);padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:14px;line-height:1.5">
           <i class="ti ti-info-circle" style="color:#d97706;margin-right:4px"></i>
-          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
+          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code>, <code>settings.starPenaltyEnabled</code>, <code>settings.starPenaltyThreshold</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
         </div>
 
         <!-- ══ THIẾU BÁO CÁO (THÁNG NÀY) ══ -->
@@ -983,6 +1126,21 @@ tr.row-done .cat-name{color:var(--green)}
           <button class="act-btn" onclick="adminLogout()" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c62828;border-color:#fca5a5;background:#fff5f5">
             <i class="ti ti-logout" style="font-size:15px"></i>Đăng xuất
           </button>
+        </div>
+
+        <!-- ══ DASHBOARD CHECK NHANH — ai đã/chưa nộp trong 1 ngày, tap để xem chi tiết ══ -->
+        <div class="adm-card" style="padding:14px 16px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+            <div style="font-size:11px;font-weight:900;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:5px">
+              <i class="ti ti-list-check"></i>Check nhanh theo ngày
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="date" id="vrDashDateIn" class="sel-control" style="width:140px;padding:6px 8px;font-size:12px" onchange="renderVrDashboard()">
+              <button class="act-btn" onclick="vrDashToday()" style="padding:6px 10px;font-size:11px">Hôm nay</button>
+            </div>
+          </div>
+          <div id="vrDashSummary" style="font-size:12px;margin-bottom:10px"></div>
+          <div id="vrDashGrid"></div>
         </div>
 
         <div class="sel-card" style="border-radius:12px;border:1px solid var(--gray-line);margin-bottom:0">
@@ -1196,7 +1354,7 @@ tr.row-done .cat-name{color:var(--green)}
 // ════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════
-const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyPrfEsFplUwAuF6dqFNRh7iq3JzkSK5MlCuBedMMdk4tOgXiisCHy4K57-f5DJwDuoZQ/exec';
+const FIXED_GAS_URL = 'https://script.google.com/macros/s/AKfycbzT8UejuavdUI-nAsSghKGo25U_H2gCQyWGbmMJ1sHew_jWLmYq2LLwnGJVm2coJTnkPQ/exec';
 const ADMIN_PW      = '2026';
 
 const pad = n => String(n).padStart(2,'0');
@@ -1225,11 +1383,19 @@ let allowZdManual = false; // QL toggle: false=auto, true=NV tự chọn
 let otThreshold   = 3;     // QL thiết lập: mốc Số Ngày (2/3/4) bắt buộc chọn Tăng ca hoặc Dùng sao
 let otFeatureEnabled = true; // QL toggle: bật/tắt toàn bộ tính năng bắt buộc Tăng ca/Dùng sao
 
+// ══ CẢNH BÁO DÙNG SAO LIÊN TIẾP (escalation riêng, độc lập với otThreshold) ══
+let starPenaltyEnabled   = true; // QL toggle: bật/tắt cảnh báo dùng sao (chưa đạt) liên tiếp
+let starPenaltyThreshold = 3;    // QL thiết lập: mốc số ngày CHƯA ĐẠT liên tiếp (3/4/5) kích hoạt cảnh báo
+
 // ════════════════════════════════════════════
 //  SYNC INDICATOR
 // ════════════════════════════════════════════
 function setSync(s, txt){
   document.getElementById('syncDot').className = 'dot ' + s;
+  if(s === 'ok'){
+    const n = new Date();
+    txt = `Đã đồng bộ lúc ${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  }
   document.getElementById('syncTxt').textContent = txt;
 }
 
@@ -1292,6 +1458,12 @@ async function loadAll(){
     if(data.settings && data.settings.otFeatureEnabled !== undefined){
       otFeatureEnabled = data.settings.otFeatureEnabled;
     }
+    if(data.settings && data.settings.starPenaltyEnabled !== undefined){
+      starPenaltyEnabled = data.settings.starPenaltyEnabled;
+    }
+    if(data.settings && data.settings.starPenaltyThreshold !== undefined && [3,4,5].includes(Number(data.settings.starPenaltyThreshold))){
+      starPenaltyThreshold = Number(data.settings.starPenaltyThreshold);
+    }
 
     EMPS.forEach(e => {
       const s = STORED.empStars[e.id];
@@ -1318,6 +1490,34 @@ async function loadAll(){
     console.error('loadAll lỗi chi tiết:', err, err.stack);
     toast('❌ Không tải được: ' + err.message, 'err');
     setSync('err','Lỗi kết nối');
+  }
+}
+
+// ── LÀM MỚI DỮ LIỆU: tải lại từ Sheet ngay khi đang dùng, không cần F5 cả trang ──
+// Giữ nguyên ngày / nhân viên đang xem (loadAll() mặc định luôn reset về "hôm nay",
+// nên ở đây chủ động lưu lại giá trị cũ rồi khôi phục sau khi tải xong).
+async function refreshAllData(){
+  const btn = document.getElementById('refreshDataBtn');
+  const hasUnsavedInput = curEmpId && Object.keys(inputs).length > 0;
+  if(hasUnsavedInput){
+    const ok = confirm('Bạn đang nhập dở báo cáo chưa lưu. Làm mới sẽ mất phần đang nhập dở (báo cáo đã LƯU trước đó thì không mất). Tiếp tục?');
+    if(!ok) return;
+  }
+  const dateInEl = document.getElementById('dateIn');
+  const keepDate = dateInEl ? dateInEl.value : '';
+  if(btn) btn.disabled = true;
+  try {
+    await loadAll();
+    if(dateInEl && keepDate) dateInEl.value = keepDate; // khôi phục ngày đang xem
+    inputs = {};
+    if(curEmpId){ updateEmpHeader(); computeStreak(); renderTable(); }
+    const activePnl = document.querySelector('.pnl.on');
+    if(activePnl && activePnl.id === 'tab-viewrep'){ vrLoadReport(); renderVrDashboard(); }
+    toast('🔄 Đã tải dữ liệu mới nhất', 'ok');
+  } catch(err){
+    toast('Không làm mới được: ' + err.message, 'err');
+  } finally {
+    if(btn) btn.disabled = false;
   }
 }
 
@@ -1400,12 +1600,11 @@ function abbreviateCatName(name){
   return out;
 }
 
-// Trả về { display, title } — title chỉ có giá trị (để hiện tooltip tên đầy đủ) khi đã rút gọn
+// Trả về { display, title } — luôn rút gọn tên môn để không bị xuống dòng; title luôn có tên đầy đủ
 function formatCatName(name, totalCatsInDept){
   if(!name) return { display: '', title: '' };
-  if((totalCatsInDept || 0) < CAT_NAME_ABBR_THRESHOLD) return { display: name, title: '' };
   const abbr = abbreviateCatName(name);
-  return { display: abbr, title: abbr !== name ? name : '' };
+  return { display: abbr, title: name };
 }
 
 function escAttr(s){ return String(s).replace(/"/g, '&quot;'); }
@@ -1455,7 +1654,7 @@ function updateEmpHeader(){
   const cats = getCats(emp.dept);
   let mPlus = 0, mMinus = 0;
   Object.entries(STORED.reports[emp.id] || {}).forEach(([dk, rep]) => {
-    if(!dk.startsWith(monthKey)) return;
+    if(!dk.startsWith(monthKey)) return; // chỉ tính báo cáo trong tháng đang xem → Kiếm/Trừ tự làm mới khi sang tháng mới
     cats.forEach(cat => {
       const actual = rep[cat.id] || 0;
       const hope   = rep['h_' + cat.id] || false;
@@ -1463,6 +1662,7 @@ function updateEmpHeader(){
       if(pct >= 100)    mPlus  += cat.sp;
       else if(hope)     mMinus += cat.sm;
     });
+    mMinus += (rep._latePenalty || 0); // gộp cả phạt nộp trễ vào tổng bị trừ trong tháng
   });
   document.getElementById('histPlus').textContent  = '+' + mPlus  + '⭐';
   document.getElementById('histMinus').textContent = '-' + mMinus + '⭐';
@@ -1628,9 +1828,10 @@ function getZeroDays(empId, catId, dateKey){
   // Quy tắc đếm ngày chưa đạt liên tiếp (tính ngược từ hôm qua), max 6:
   //   - Sang tháng khác (tháng trước)            → DỪNG (tự động reset đầu tháng)
   //   - Không có báo cáo (ngày OFF)              → bỏ qua, KHÔNG đếm, KHÔNG dừng chuỗi
-  //   - Ngày đó NV đã từng TỰ CHỌN số ngày (zd_) → dùng giá trị đó làm điểm neo, dừng quét tiếp
-  //   - Có báo cáo, actual = 0 hoặc chưa đạt      → đếm +1
-  //   - Đạt chỉ tiêu / dùng sao hy vọng / QL reset → dừng chuỗi (reset về 0)
+  //   - Đạt chỉ tiêu / dùng sao hy vọng           → LUÔN dừng chuỗi (ưu tiên tuyệt đối,
+  //     kể cả khi ngày đó còn sót zd_ cũ từ chế độ TỰ CHỌN trước đây)
+  //   - Chưa đạt & ngày đó NV đã từng TỰ CHỌN số ngày (zd_) → dùng làm điểm neo, dừng quét tiếp
+  //   - Có báo cáo, thật sự chưa đạt (actual = 0 hoặc dưới target) → đếm +1
   for(let i = 1; i <= 90; i++){
     if(count >= 6) break;                      // chặn ở mức 6, không đếm thêm
     const k = daysBefore(dateKey, i);
@@ -1638,16 +1839,51 @@ function getZeroDays(empId, catId, dateKey){
     const rep = reps[k];
     if(!rep) continue;                         // ngày OFF → bỏ qua
     if(rep['_reset_' + catId]) break;          // QL reset → dừng
-    // Nếu ngày này NV đã tự chọn số ngày (chế độ MANUAL) → lấy làm điểm neo
+
+    const actual = rep[catId] || 0;
+    const hope   = rep['h_' + catId] || false;
+
+    // ƯU TIÊN TUYỆT ĐỐI: ngày đã ĐẠT chỉ tiêu hoặc đã DÙNG SAO hy vọng → luôn dừng chuỗi,
+    // BẤT KỂ ngày đó có còn sót giá trị zd_ (Số Ngày tự chọn) cũ từ lần trước đang ở chế độ
+    // TỰ CHỌN hay không. (FIX: trước đây zd_ cũ được đọc trước, khiến 1 ngày đã đạt 100%
+    // nhưng còn zd_ cũ vẫn bị tính là "chưa đạt" → Số Ngày nhảy sai qua ngày hôm sau.)
+    if(hope) break;                             // dùng sao hy vọng → coi như đạt, dừng
+    if(target > 0 && Math.round(actual / target * 100) >= 100) break; // đạt → dừng
+
+    // Chỉ khi ngày đó THẬT SỰ chưa đạt: nếu NV đã tự chọn số ngày (chế độ MANUAL) → lấy làm điểm neo
     if(rep['zd_' + catId] !== undefined && rep['zd_' + catId] > 0){
       count += rep['zd_' + catId];
       break;
     }
-    const actual = rep[catId] || 0;
-    const hope   = rep['h_' + catId] || false;
-    if(hope) break;                            // dùng sao hy vọng → coi như đạt, dừng
-    if(target > 0 && Math.round(actual / target * 100) >= 100) break; // đạt → dừng
+
     count++;                                   // chưa đạt (kể cả actual=0) → đếm
+  }
+  return Math.min(count, 6);
+}
+
+// Chuỗi "CHƯA ĐẠT liên tiếp" dành riêng cho tính năng Cảnh báo Dùng sao liên tiếp.
+// Khác getZeroDays(): KHÔNG ngắt chuỗi khi ngày đó đã Dùng sao (hope) hay đã chọn
+// Tăng ca (ot) — chỉ ngắt khi THẬT SỰ đạt ≥100% chỉ tiêu. Ngày OFF (không nộp báo
+// cáo) vẫn được bỏ qua, không ngắt chuỗi — đúng theo cấu hình đã chốt.
+function getStarPenaltyStreak(empId, catId, dateKey){
+  const reps = STORED.reports[empId] || {};
+  const emp2 = EMPS.find(e => e.id === empId);
+  if((reps[dateKey] || {})['_reset_' + catId]) return 0;
+  const cat2      = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
+  const target    = cat2 ? cat2.target : 1;
+  const thisMonth = dateKey.slice(0, 7);
+  let count = 0;
+  for(let i = 1; i <= 90; i++){
+    if(count >= 6) break;
+    const k = daysBefore(dateKey, i);
+    if(k.slice(0, 7) !== thisMonth) break;   // sang tháng trước → dừng (reset đầu tháng)
+    const rep = reps[k];
+    if(!rep) continue;                       // ngày OFF → bỏ qua, KHÔNG ngắt chuỗi
+    if(rep['_reset_' + catId]) break;         // QL reset → dừng
+
+    const actual = rep[catId] || 0;
+    if(target > 0 && Math.round(actual / target * 100) >= 100) break; // đạt → dừng (điều kiện ngắt DUY NHẤT)
+    count++;                                 // chưa đạt (dùng sao hoặc đã chọn tăng ca đều tính) → đếm
   }
   return Math.min(count, 6);
 }
@@ -1722,6 +1958,20 @@ function renderTable(){
     const isDone = pct >= 100;
     if(isDone) done++;
 
+    /* Cảnh báo Dùng sao liên tiếp — mốc riêng (starPenaltyThreshold), tính trên chuỗi
+       CHƯA ĐẠT liên tiếp (bỏ qua ngày OFF & ngày đã chọn Tăng ca, chỉ ngắt khi đạt ≥100%) */
+    const spk           = 'sp_' + cat.id;
+    const spChoice      = inputs[spk] !== undefined ? inputs[spk] : (saved[spk] || '');
+    const spMult        = (spChoice === 'x2') ? 2 : 1;
+    const spPast        = getStarPenaltyStreak(emp.id, cat.id, dateKey);
+    const spStreak      = isDone ? 0 : Math.min(spPast + 1, 6);
+    const needSpChoice  = starPenaltyEnabled && !isDone && spStreak === starPenaltyThreshold;
+
+    /* Nếu HÔM QUA đã chọn "🕐 Tăng ca ngày mai" cho môn này (sp_ = 'ot') → hôm nay
+       BẮT BUỘC tính là Tăng ca (khoá, NV không tắt được), trừ khi hôm nay đã đạt */
+    const yestSaved     = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
+    const forcedOtToday = !isDone && yestSaved[spk] === 'ot';
+
     /* percent cell */
     let pCls = 'pz', pTxt = '—';
     if(actual > 0 || isDone){
@@ -1736,8 +1986,8 @@ function renderTable(){
     if(isDone) spH = `<span class="star-plus">+${cat.sp}</span>`;
 
     let kqH = '<span class="star-na">—</span>';
-    if(isDone)       { totPlus  += cat.sp; kqH = `<span class="star-plus">+${cat.sp}</span>`; }
-    else if(hope)    { totMinus += cat.sm; kqH = `<span class="star-minus">-${cat.sm}</span>`; }
+    if(isDone)                        { totPlus  += cat.sp; kqH = `<span class="star-plus">+${cat.sp}</span>`; }
+    else if(hope && !forcedOtToday)   { totMinus += cat.sm * spMult; kqH = `<span class="star-minus">-${cat.sm * spMult}</span>`; }
 
     /* kq actual value */
     const actualH = actual > 0
@@ -1777,21 +2027,30 @@ function renderTable(){
     /* Tăng ca — bắt buộc chọn khi Số Ngày chạm mốc 3 (chưa đạt & chưa dùng sao) */
     const otk       = 'ot_' + cat.id;
     const otNoteK   = 'otNote_' + cat.id;
-    const otFlag    = inputs[otk]     !== undefined ? inputs[otk]     : (saved[otk]     || false);
+    let   otFlag    = inputs[otk]     !== undefined ? inputs[otk]     : (saved[otk]     || false);
     const needOtChoice = otFeatureEnabled && !isDone && !hope && zdCurrentVal === otThreshold;
 
+    // Nếu hôm qua đã chọn "🕐 Tăng ca ngày mai" (sp_ = 'ot') cho môn này → hôm nay bị khoá thành Tăng ca
+    if(forcedOtToday) otFlag = true;
+
     /* use-star button */
-    // canToggle: QL đã bật allowHope VÀ môn chưa đạt
-    const canToggle = allowHope && !isDone;
+    // canToggle: QL đã bật allowHope VÀ môn chưa đạt VÀ không bị khoá Tăng ca bắt buộc hôm nay
+    const canToggle = allowHope && !isDone && !forcedOtToday;
     const btnCls    = 'use-btn' + (hope ? ' active' : '') + (!allowHope ? ' ql-locked' : '') + (otFlag ? ' ql-locked' : '');
     const btnDis    = (canToggle && !otFlag) ? '' : 'disabled';
     const btnTxt    = !allowHope
       ? `🔒`
-      : hope ? `★ −${cat.sm}` : `⭐−${cat.sm}`;
+      : hope ? `★ −${cat.sm * spMult}` : `⭐−${cat.sm * spMult}`;
 
     /* ô nút cột "Dùng sao" — hiện thêm lựa chọn Tăng ca khi chạm mốc 3 */
     let actionH;
-    if(needOtChoice || otFlag){
+    if(forcedOtToday){
+      actionH = `
+        <div class="ot-choice">
+          <button class="ot-btn active" disabled title="Bắt buộc — hôm qua đã chọn Tăng ca ngày mai do dùng sao liên tiếp">🕐 TC bắt buộc</button>
+          <button class="${btnCls}" data-catid="${cat.id}" disabled>${btnTxt}</button>
+        </div>`;
+    } else if(needOtChoice || otFlag){
       const otBtnCls = 'ot-btn' + (otFlag ? ' active' : '');
       const otBtnTxt = otFlag ? '🕐 Đã tăng ca' : '🕐 Tăng ca';
       actionH = `
@@ -1802,6 +2061,19 @@ function renderTable(){
     } else {
       actionH = `<button class="${btnCls}" data-catid="${cat.id}" ${btnDis}>${btnTxt}</button>`;
     }
+
+    /* ô lựa chọn CẢNH BÁO DÙNG SAO LIÊN TIẾP — hiện khi vừa chạm mốc riêng hoặc đã chọn trước đó */
+    let spChoiceH = '';
+    if(needSpChoice || spChoice){
+      const x2Cls    = 'ot-btn' + (spChoice === 'x2' ? ' active' : '');
+      const nextCls  = 'ot-btn' + (spChoice === 'ot' ? ' active' : '');
+      spChoiceH = `
+        <div class="ot-choice" style="margin-top:4px">
+          <button class="${nextCls}" data-spcatid="${cat.id}" data-spval="ot" title="Bắt buộc Tăng ca vào báo cáo ngày mai">🕐 TC ngày mai</button>
+          <button class="${x2Cls}" data-spcatid="${cat.id}" data-spval="x2" title="Trừ sao gấp đôi (×2) cho hôm nay">⭐ Trừ×2</button>
+        </div>`;
+    }
+    actionH += spChoiceH;
 
     /* reset col — chỉ hiện khi admin đã mở khoá */
     const resetTd = adminUnlocked
@@ -1950,6 +2222,12 @@ document.addEventListener('click', e => {
     toggleOt(otBtn.dataset.otcatid);
     return;
   }
+  // Lựa chọn xử lý Cảnh báo Dùng sao liên tiếp (🕐 Tăng ca ngày mai / ⭐ Trừ sao ×2)
+  const spBtn = e.target.closest('[data-spcatid]');
+  if(spBtn && spBtn.dataset.spcatid && spBtn.dataset.spval){
+    toggleStarPenaltyChoice(spBtn.dataset.spcatid, spBtn.dataset.spval);
+    return;
+  }
   // Reset (chỉ QL)
   const rstBtn = e.target.closest('.reset-btn');
   if(rstBtn && !rstBtn.hasAttribute('disabled') && rstBtn.dataset.reset){
@@ -2069,6 +2347,80 @@ async function onOtThresholdChange(val){
   }
 }
 
+function renderStarPenaltyToggle(){
+  const chk   = document.getElementById('spToggle');
+  const badge = document.getElementById('spBadge');
+  if(!chk || !badge) return;
+  chk.checked = starPenaltyEnabled;
+  badge.textContent = starPenaltyEnabled ? '✅ Đang BẬT — cảnh báo cho tất cả NV' : '🔴 Đang TẮT — không cảnh báo';
+  badge.className = 't-badge ' + (starPenaltyEnabled ? 't-badge-on' : 't-badge-off');
+
+  // Ẩn/mờ khối chọn mốc khi tính năng đang TẮT
+  const row = document.getElementById('spThresholdRow');
+  const sel = document.getElementById('spThresholdSel');
+  if(row) row.style.opacity = starPenaltyEnabled ? '1' : '.4';
+  if(sel) sel.disabled = !starPenaltyEnabled;
+}
+
+function renderStarPenaltyThresholdControl(){
+  const sel   = document.getElementById('spThresholdSel');
+  const badge = document.getElementById('spThresholdBadge');
+  if(!sel || !badge) return;
+  sel.value = String(starPenaltyThreshold);
+  badge.textContent = `✅ Đang áp dụng — mốc ${starPenaltyThreshold} ngày chưa đạt liên tiếp`;
+  badge.className = 't-badge t-badge-on';
+  renderStarPenaltyToggle();
+}
+
+async function onStarPenaltyToggle(val){
+  const prevVal        = starPenaltyEnabled; // lưu lại để revert nếu lỗi
+  starPenaltyEnabled    = val;
+  renderStarPenaltyToggle();
+  renderTable();
+  const dot = document.getElementById('spToggleDot');
+  const txt = document.getElementById('spToggleTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'starPenaltyEnabled', value: val });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'BẬT' : 'TẮT'} cho tất cả nhân viên`;
+    toast(val ? '✅ Đã BẬT cảnh báo Dùng sao liên tiếp cho tất cả NV' : '🔒 Đã TẮT cảnh báo Dùng sao liên tiếp cho tất cả NV', 'ok');
+  } catch(err){
+    starPenaltyEnabled = prevVal;
+    renderStarPenaltyToggle();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
+async function onStarPenaltyThresholdChange(val){
+  const newVal  = parseInt(val);
+  const prevVal = starPenaltyThreshold; // lưu lại để revert nếu lỗi
+  starPenaltyThreshold = newVal;
+  renderStarPenaltyThresholdControl();
+  renderTable();
+  const dot = document.getElementById('spThresholdDot');
+  const txt = document.getElementById('spThresholdTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'starPenaltyThreshold', value: newVal });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — áp dụng mốc ${newVal} ngày cho tất cả nhân viên`;
+    toast(`✅ Đã đặt mốc Cảnh báo Dùng sao liên tiếp = ${newVal} ngày cho tất cả NV`, 'ok');
+  } catch(err){
+    starPenaltyThreshold = prevVal;
+    renderStarPenaltyThresholdControl();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
 async function onZdToggle(val){
   const prevVal = allowZdManual; // lưu lại để revert nếu lỗi
   allowZdManual = val;
@@ -2165,6 +2517,20 @@ function toggleOt(catId){
   showOtNoteModal(catId);
 }
 
+// ════════════════════════════════════════════
+//  CẢNH BÁO DÙNG SAO LIÊN TIẾP — chọn 1 trong 2 hình phạt
+//  (🕐 Tăng ca ngày mai — bắt buộc / ⭐ Trừ sao ×2 — gấp đôi mức trừ sao chuẩn)
+// ════════════════════════════════════════════
+function toggleStarPenaltyChoice(catId, val){
+  const emp = getCurEmp(); if(!emp) return;
+  const spk     = 'sp_' + catId;
+  const dateKey = document.getElementById('dateIn').value;
+  const saved   = (STORED.reports[emp.id] || {})[dateKey] || {};
+  const cur     = inputs[spk] !== undefined ? inputs[spk] : (saved[spk] || '');
+  inputs[spk] = (cur === val) ? '' : val; // bấm lại nút đang chọn → bỏ chọn
+  renderTable();
+}
+
 function showOtNoteModal(catId){
   const emp = getCurEmp(); if(!emp) return;
   const cat = getCats(emp.dept).find(c => c.id === catId);
@@ -2231,6 +2597,36 @@ function showMissingOtModal(missing){
       Các môn dưới đây đã <strong style="color:#dc2626">${otThreshold} ngày liên tiếp chưa đạt</strong>.
       Vui lòng chọn <strong>🕐 Tăng ca</strong> (kèm ghi chú) hoặc <strong>⭐ Dùng sao</strong>
       cho các môn này trước khi lưu &amp; xuất báo cáo.
+    </p>
+    <ul style="font-size:12px;color:#dc2626;font-weight:700;padding-left:18px;max-height:180px;overflow-y:auto;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 10px 10px 26px">
+      ${listH}
+    </ul>`;
+
+  btns.innerHTML = `<button class="act-btn primary" onclick="closeModal()">Đã hiểu, để tôi chọn</button>`;
+
+  bg.classList.add('open');
+}
+
+// ════════════════════════════════════════════
+//  POPUP CẢNH BÁO — DÙNG SAO LIÊN TIẾP CHẠM MỐC (chưa chọn Tăng ca ngày mai / Trừ sao ×2)
+// ════════════════════════════════════════════
+function showMissingSpModal(missing){
+  const bg    = document.getElementById('modalBg');
+  const title = document.getElementById('modalTitle');
+  const body  = document.getElementById('modalBody');
+  const btns  = document.getElementById('modalBtns');
+
+  title.innerHTML = `<span style="color:#dc2626">🚨 Cảnh báo: Dùng sao liên tiếp</span>`;
+
+  const listH = missing.map(name =>
+    `<li style="margin-bottom:4px">${name}</li>`
+  ).join('');
+
+  body.innerHTML = `
+    <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
+      Các môn dưới đây đã <strong style="color:#dc2626">${starPenaltyThreshold} ngày liên tiếp chưa đạt</strong>
+      (không có ngày nào trên 100%). Vui lòng chọn <strong>🕐 Tăng ca ngày mai</strong>
+      (bắt buộc) hoặc <strong>⭐ Trừ sao ×2</strong> cho các môn này trước khi lưu &amp; xuất báo cáo.
     </p>
     <ul style="font-size:12px;color:#dc2626;font-weight:700;padding-left:18px;max-height:180px;overflow-y:auto;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 10px 10px 26px">
       ${listH}
@@ -2353,6 +2749,30 @@ async function submitReport(){
     return;
   }
 
+  // ══ VALIDATION: bắt buộc chọn 🕐 Tăng ca ngày mai / ⭐ Trừ sao ×2 khi chuỗi CHƯA ĐẠT
+  // liên tiếp (tính riêng, không quan tâm hope/ot) chạm đúng mốc starPenaltyThreshold ══
+  const missingSpChoice = [];
+  if(starPenaltyEnabled){
+    cats.forEach(cat => {
+      const actual = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
+      const actualNum = actual === undefined || actual === null || actual === '' ? 0 : actual;
+      const pct = getPct(actualNum, cat.target);
+      if(pct >= 100) return; // đã đạt hôm nay → không cần
+
+      const spk      = 'sp_' + cat.id;
+      const spChoice = inputs[spk] !== undefined ? inputs[spk] : (saved[spk] || '');
+      if(spChoice) return; // đã chọn xử lý
+
+      const past     = getStarPenaltyStreak(emp.id, cat.id, dateKey);
+      const spStreak = Math.min(past + 1, 6);
+      if(spStreak === starPenaltyThreshold) missingSpChoice.push(cat.name);
+    });
+  }
+  if(missingSpChoice.length > 0){
+    showMissingSpModal(missingSpChoice);
+    return;
+  }
+
   const rep  = {};
   let pctSum = 0, totPlus = 0, totMinus = 0, hopeUsed = 0;
   const lines = [];
@@ -2361,20 +2781,40 @@ async function submitReport(){
     const actualRaw = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
     const actual = actualRaw === undefined || actualRaw === null || actualRaw === '' ? 0 : actualRaw;
     const hk     = 'h_' + cat.id;
-    const hope   = inputs[hk]     !== undefined ? inputs[hk]     : (saved[hk]     || false);
+    let   hope   = inputs[hk]     !== undefined ? inputs[hk]     : (saved[hk]     || false);
+    const pct    = getPct(actual, cat.target);
     rep[cat.id]  = actual;
-    rep[hk]      = hope;
     // Save manual zd override if mode is manual
     if(!zdAutoMode && inputs['zd_' + cat.id] !== undefined){
       rep['zd_' + cat.id] = inputs['zd_' + cat.id];
     } else if(saved['zd_' + cat.id] !== undefined){
       rep['zd_' + cat.id] = saved['zd_' + cat.id]; // preserve existing
     }
+
+    // ── Cảnh báo Dùng sao liên tiếp: lấy lựa chọn NV đã chọn hôm nay (nếu có) ──
+    const spk      = 'sp_' + cat.id;
+    const spChoice = inputs[spk] !== undefined ? inputs[spk] : (saved[spk] || '');
+    if(spChoice) rep[spk] = spChoice;
+    // "Trừ sao ×2" tự động coi như đã Dùng sao hôm nay (đó chính là hình phạt), nhân đôi mức trừ
+    if(spChoice === 'x2') hope = true;
+    const spMult = (spChoice === 'x2') ? 2 : 1;
+
     // Lưu lựa chọn Tăng ca (mốc Số Ngày = 3) + ghi chú, nếu có
     const otk     = 'ot_' + cat.id;
     const otNoteK = 'otNote_' + cat.id;
-    const otFlag  = inputs[otk]     !== undefined ? inputs[otk]     : (saved[otk]     || false);
-    const otNote  = inputs[otNoteK] !== undefined ? inputs[otNoteK] : (saved[otNoteK] || '');
+    let   otFlag  = inputs[otk]     !== undefined ? inputs[otk]     : (saved[otk]     || false);
+    let   otNote  = inputs[otNoteK] !== undefined ? inputs[otNoteK] : (saved[otNoteK] || '');
+
+    // Nếu HÔM QUA đã chọn "🕐 Tăng ca ngày mai" (sp_ = 'ot') cho môn này và hôm nay
+    // chưa đạt → BẮT BUỘC hôm nay tính là Tăng ca (kể cả khi NV không tự bấm)
+    const yestSaved = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
+    if(pct < 100 && yestSaved[spk] === 'ot' && !otFlag){
+      otFlag = true;
+      hope   = false; // Tăng ca thay thế cho Dùng sao ngày hôm nay
+      otNote = otNote || '(Tự động — bắt buộc do hôm qua đã chọn Tăng ca ngày mai vì dùng sao liên tiếp)';
+    }
+
+    rep[hk] = hope;
     if(otFlag){
       rep[otk]     = true;
       rep[otNoteK] = otNote;
@@ -2382,11 +2822,11 @@ async function submitReport(){
       rep[otk]     = saved[otk];
       rep[otNoteK] = saved[otNoteK] || '';
     }
-    const pct    = getPct(actual, cat.target);
+
     pctSum      += pct;
     let star = 0;
     if(pct >= 100)    { totPlus  += cat.sp; star =  cat.sp; }
-    else if(hope)     { totMinus += cat.sm; star = -cat.sm; hopeUsed++; }
+    else if(hope)     { const deducted = cat.sm * spMult; totMinus += deducted; star = -deducted; hopeUsed++; }
     lines.push({ name:cat.name, target:cat.target, actual, pct, star });
   });
 
@@ -2469,6 +2909,11 @@ async function submitReport(){
     renderAdminTab();
     // auto screenshot after render settles
     setTimeout(captureReport, 700);
+    // Vào các ngày mốc 5/10/15/20/25 hàng tháng → xuất thêm ảnh
+    // "Kết quả 5 ngày gần nhất theo môn" sau khi ảnh báo cáo ngày đã xong
+    if(isMilestoneDay(dateKey)){
+      setTimeout(() => captureLast5DaysReport(emp.id, dateKey), 1500);
+    }
   } catch(err){
     toast('⚠️ Lỗi: ' + err.message, 'err');
   }
@@ -2481,12 +2926,19 @@ async function submitReport(){
 //  SCREENSHOT
 // ════════════════════════════════════════════
 async function captureReport(){
-  try {
-    const repCard = document.getElementById('repCard');
-    if(!repCard || repCard.style.display === 'none'){
-      toast('Chưa có báo cáo để xuất ảnh', 'err'); return;
-    }
+  const repCard = document.getElementById('repCard');
+  if(!repCard || repCard.style.display === 'none'){
+    toast('Chưa có báo cáo để xuất ảnh', 'err'); return;
+  }
 
+  // Các biến trạng thái cần khôi phục lại sau cùng — khai báo ở ngoài try
+  // để khối finally luôn khôi phục được, kể cả khi có lỗi giữa chừng.
+  let hideEls = [], prevDisplays = [];
+  let appEl = null, prevAppWidth = '', prevAppMaxWidth = '', prevBodyOverflowX = '';
+  let wrapEls = [], prevWrapOverflow = [];
+  let nameDateRow = null;
+
+  try {
     // 1. Đảm bảo đang ở tab báo cáo
     const tabBtns = document.querySelectorAll('.tab');
     let reportTabEl = null;
@@ -2499,34 +2951,80 @@ async function captureReport(){
     await new Promise(r => setTimeout(r, 80));
 
     // 3. Tạm ẩn các phần không cần xuất hiện trong ảnh:
-    //    nút Lưu, thanh tab, ô chọn Nhân viên/Ngày báo cáo (kèm banner cảnh báo), dòng "Số Ngày"
+    //    nút Lưu, thanh tab, ô chọn Nhân viên/Ngày báo cáo (kèm banner cảnh báo),
+    //    dòng "Số Ngày", và dòng chú thích quy tắc (✅/⏳/⭐)
     const subBtn     = document.getElementById('subBtn');
     const tabsEl     = document.querySelector('.tabs');
     const selCardEl  = document.querySelector('#tab-report .sel-card');
     const toolbarEl  = document.querySelector('#tab-report .rep-toolbar');
-    const hideEls    = [subBtn, tabsEl, selCardEl, toolbarEl].filter(Boolean);
-    const prevDisplays = hideEls.map(el => el.style.display);
+    const legendEl   = document.querySelector('#tab-report .legend-bar');
+    hideEls    = [subBtn, tabsEl, selCardEl, toolbarEl, legendEl].filter(Boolean);
+    prevDisplays = hideEls.map(el => el.style.display);
     hideEls.forEach(el => { el.style.display = 'none'; });
 
-    // 4. Chụp tab-report với đúng chiều cao thực
+    // 3a2. Chỉ thu nhỏ khối "Kết quả hôm nay" & "Tóm tắt lịch sử sao" lúc xuất ảnh
+    //      (lúc dùng bình thường 2 khối này giữ nguyên kích thước to)
+    document.getElementById('tab-report').classList.add('export-shrink');
+
+    // 3b. Chèn tạm dòng Tên NV + Ngày báo cáo ở đầu ảnh (khối chọn NV/Ngày đã bị ẩn ở trên
+    //     nên nếu không chèn dòng này, ảnh xuất ra sẽ không còn tên NV/ngày ở đâu cả)
+    const empForExport  = getCurEmp();
+    const dateForExport = document.getElementById('dateIn').value;
+    nameDateRow = document.createElement('div');
+    nameDateRow.id = 'exportNameDateRow';
+    nameDateRow.style.cssText = 'padding:8px 14px;font-size:12px;font-weight:800;color:#1a237e;background:#eef1ff;border-bottom:2px solid #b7c0f0;font-family:Barlow,sans-serif';
+    nameDateRow.textContent = (empForExport ? empForExport.name : '') + '   ·   Ngày ' + dateForExport;
+    repCard.insertBefore(nameDateRow, repCard.firstChild);
+
+    // 4. ÉP khổ xuất ảnh cố định (khớp .app max-width) bất kể máy đang dùng
+    //    → tránh ảnh bị nhỏ/vỡ nét khi NV chụp từ điện thoại màn hình hẹp (<640px).
+    //    Đồng thời tắt tạm overflow-x:auto của bảng — nếu không tắt, phần bảng
+    //    rộng hơn khung nhìn (VD tên môn dài, nút Tăng ca/x2) sẽ bị CẮT MẤT khỏi
+    //    ảnh xuất ra thay vì cuộn ngang như lúc dùng thật.
+    let EXPORT_WIDTH = 640;
+    appEl = document.querySelector('.app');
+    prevAppWidth      = appEl ? appEl.style.width    : '';
+    prevAppMaxWidth   = appEl ? appEl.style.maxWidth : '';
+    prevBodyOverflowX = document.body.style.overflowX;
+    wrapEls = document.querySelectorAll('#tab-report .tbl-wrap');
+    prevWrapOverflow = Array.from(wrapEls).map(el => el.style.overflowX);
+    wrapEls.forEach(el => { el.style.overflowX = 'visible'; });
+    if(appEl){
+      appEl.style.width    = EXPORT_WIDTH + 'px';
+      appEl.style.maxWidth = EXPORT_WIDTH + 'px';
+    }
+    document.body.style.overflowX = 'hidden';
+    await new Promise(r => setTimeout(r, 80)); // chờ layout ổn định ở khổ mới
+
+    // 4b. Nếu nội dung thực tế vẫn rộng hơn khổ chuẩn (bảng bị đẩy rộng do tên
+    //     môn dài / nút dài...), nới khổ đúng bằng chiều rộng thực để không mất chữ.
+    const preCheck = document.getElementById('tab-report');
+    if(preCheck && preCheck.scrollWidth > EXPORT_WIDTH){
+      EXPORT_WIDTH = preCheck.scrollWidth;
+      if(appEl){
+        appEl.style.width    = EXPORT_WIDTH + 'px';
+        appEl.style.maxWidth = EXPORT_WIDTH + 'px';
+      }
+      await new Promise(r => setTimeout(r, 60));
+    }
+
+    // 5. Chụp tab-report với đúng chiều cao/rộng thực, độ nét cao (scale 2.5)
     const target = document.getElementById('tab-report');
+    const shotWidth = Math.max(target.offsetWidth, target.scrollWidth);
     const canvas = await html2canvas(target, {
-      scale:       2,
+      scale:       2.5,
       useCORS:     true,
       allowTaint:  true,
       backgroundColor: '#f0f2f8',
       logging:     false,
-      width:       target.offsetWidth,
+      width:       shotWidth,
       height:      target.scrollHeight,
-      windowWidth: target.offsetWidth,
+      windowWidth: shotWidth,
       scrollX:     0,
       scrollY:     -window.scrollY
     });
 
-    // 5. Hiện lại các phần đã ẩn
-    hideEls.forEach((el, i) => { el.style.display = prevDisplays[i]; });
-
-    // 6. Tải ảnh về
+    // 7. Tải ảnh về
     const a    = document.createElement('a');
     const emp  = getCurEmp();
     const date = document.getElementById('dateIn').value;
@@ -2536,6 +3034,114 @@ async function captureReport(){
     toast('📸 Đã lưu ảnh báo cáo!', 'ok');
   } catch(err){
     toast('Không xuất được ảnh: ' + err.message, 'err');
+  } finally {
+    // 6. Khôi phục khổ thật + hiện lại các phần đã ẩn + xoá dòng tạm
+    //    Luôn chạy dù xuất ảnh thành công hay bị lỗi giữa chừng, để NV
+    //    không bị kẹt giao diện (mất khối chọn NV/tab, khổ ép, dòng tạm...).
+    wrapEls.forEach((el, i) => { el.style.overflowX = prevWrapOverflow[i]; });
+    if(appEl){
+      appEl.style.width    = prevAppWidth;
+      appEl.style.maxWidth = prevAppMaxWidth;
+    }
+    document.body.style.overflowX = prevBodyOverflowX;
+    hideEls.forEach((el, i) => { el.style.display = prevDisplays[i]; });
+    if(nameDateRow && nameDateRow.parentNode) nameDateRow.parentNode.removeChild(nameDateRow);
+    const tabReportEl = document.getElementById('tab-report');
+    if(tabReportEl) tabReportEl.classList.remove('export-shrink');
+  }
+}
+
+// ════════════════════════════════════════════
+//  KẾT QUẢ 5 NGÀY GẦN NHẤT THEO MÔN
+//  (tự động xuất thêm ảnh vào các ngày 5,10,15,20,25 hàng tháng)
+// ════════════════════════════════════════════
+function isMilestoneDay(dateKey){
+  const day = Number((dateKey || '').slice(8, 10));
+  return [5, 10, 15, 20, 25].includes(day);
+}
+
+function fmt5dDate(dateKey){
+  const p = dateKey.split('-'); // yyyy-mm-dd
+  return `${p[2]}/${p[1]}`;
+}
+
+function build5DayCatCard(emp, dateKey){
+  const cats = getCats(emp.dept);
+  // 5 ngày liên tiếp: 4 ngày trước + ngày hiện tại đang xem, xếp cũ → mới
+  const days = [];
+  for(let i = 4; i >= 0; i--) days.push(daysBefore(dateKey, i));
+
+  const headCells = days.map(d => `<th style="padding:6px 3px">${fmt5dDate(d)}</th>`).join('');
+
+  const bodyRows = cats.map(cat => {
+    const cells = days.map(d => {
+      const rep = (STORED.reports[emp.id] || {})[d];
+      if(!rep){
+        return `<td style="padding:4px 3px;color:#9ca3af;font-size:11px">—</td>`;
+      }
+      const actual = rep[cat.id] || 0;
+      const pct    = getPct(actual, cat.target);
+      const color  = pct >= 100 ? '#1e7e34' : (pct >= 70 ? '#e65100' : '#c62828');
+      return `<td style="padding:4px 3px">
+        <div style="font-weight:800;font-size:12px;color:${color}">${pct}%</div>
+        <div style="font-size:8.5px;color:#4b5563;margin-top:1px">${actual}/${cat.target}</div>
+      </td>`;
+    }).join('');
+    return `<tr style="border-bottom:1.5px solid #e4e7f0">
+      <td style="text-align:left;padding:4px 6px;font-size:10px;font-weight:800;color:#111827">${cat.name}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  return `
+    <div id="last5DaysCard" style="position:fixed;top:0;left:-9999px;width:640px;background:#f0f2f8;font-family:'Barlow',system-ui,sans-serif">
+      <div style="background:linear-gradient(160deg,#0d1b6e 0%,#1a237e 50%,#2d3a9e 100%);padding:16px 20px;color:#fff">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase">Kết quả 5 ngày gần nhất theo môn</div>
+        <div style="font-size:11px;opacity:.7;margin-top:4px;letter-spacing:.3px">${emp.name} · ${emp.dept} · Tính đến ngày ${fmt5dDate(dateKey)}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;background:#fff">
+        <thead>
+          <tr style="background:linear-gradient(135deg,#e6a800,#f5c400)">
+            <th style="padding:6px 6px;text-align:left;font-size:9px;font-weight:900;text-transform:uppercase;color:#1a1200">Môn</th>
+            ${headCells}
+          </tr>
+        </thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>`;
+}
+
+async function captureLast5DaysReport(empId, dateKey){
+  try {
+    const emp = EMPS.find(e => e.id === empId);
+    if(!emp) return;
+
+    const wrap = document.createElement('div');
+    wrap.innerHTML = build5DayCatCard(emp, dateKey);
+    document.body.appendChild(wrap);
+    const target = document.getElementById('last5DaysCard');
+
+    await new Promise(r => setTimeout(r, 100));
+
+    const canvas = await html2canvas(target, {
+      scale: 2.5,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#f0f2f8',
+      logging: false,
+      width: target.offsetWidth,
+      height: target.scrollHeight
+    });
+
+    document.body.removeChild(wrap);
+
+    const a = document.createElement('a');
+    a.download = `KQ5Ngay_${emp.name.replace(/\s/g, '_')}_${dateKey}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    toast('📸 Đã xuất thêm ảnh Kết quả 5 ngày gần nhất theo môn!', 'ok');
+  } catch(err){
+    toast('Không xuất được ảnh 5 ngày gần nhất: ' + err.message, 'err');
   }
 }
 
@@ -2933,6 +3539,7 @@ function renderAdminTab(){
   renderHopeToggle();
   renderZdToggle();
   renderOtThresholdControl();
+  renderStarPenaltyThresholdControl();
   renderMissingReports();
   const tbody = document.getElementById('adminEmpBody');
   tbody.innerHTML = '';
@@ -3128,6 +3735,85 @@ async function qlSaveReport(){
 // ════════════════════════════════════════════
 //  TAB "XEM BÁO CÁO" — READ-ONLY, QL xem lại phiếu NV
 // ════════════════════════════════════════════
+// ── DASHBOARD CHECK NHANH: ai đã/chưa nộp trong 1 ngày, tap để nhảy vào chi tiết ──
+function vrDashToday(){
+  const di = document.getElementById('vrDashDateIn');
+  if(!di) return;
+  di.value = todayStr;
+  renderVrDashboard();
+}
+
+function renderVrDashboard(){
+  const di      = document.getElementById('vrDashDateIn');
+  const grid    = document.getElementById('vrDashGrid');
+  const summary = document.getElementById('vrDashSummary');
+  if(!di || !grid || !summary) return;
+  if(!di.value) di.value = todayStr;
+  const date = di.value;
+
+  const rows = EMPS.map(emp => {
+    const rep = (STORED.reports[emp.id] || {})[date];
+    const hasReport = !!rep && Object.keys(rep).length > 0;
+    const cats = getCats(emp.dept);
+    let net = 0, pctSum = 0, cnt = 0;
+    if(hasReport){
+      cats.forEach(cat => {
+        const actual = rep[cat.id] || 0;
+        const hope   = rep['h_' + cat.id] || false;
+        const pct    = getPct(actual, cat.target);
+        pctSum += pct; cnt++;
+        if(pct >= 100)   net += cat.sp;
+        else if(hope)    net -= cat.sm;
+      });
+      net -= (rep._latePenalty || 0);
+    }
+    const avgPct   = cnt ? Math.round(pctSum / cnt) : 0;
+    const isLate   = hasReport && rep._submitTime && rep._submitTime > '22:30';
+    return { emp, hasReport, net, avgPct, submitTime: hasReport ? rep._submitTime : null, isLate };
+  });
+
+  const doneCount = rows.filter(r => r.hasReport).length;
+  const missCount = rows.length - doneCount;
+  summary.innerHTML = `<strong style="color:var(--green)">${doneCount}/${rows.length} đã nộp</strong>` +
+    (missCount > 0 ? ` &nbsp;·&nbsp; <strong style="color:var(--red)">${missCount} chưa nộp</strong>` : ' &nbsp;·&nbsp; <span style="color:var(--green)">Đủ hết!</span>');
+
+  // Chưa nộp lên đầu → dễ xử lý trước; trong cùng nhóm sắp theo bộ phận rồi tên
+  rows.sort((a, b) => {
+    if(a.hasReport !== b.hasReport) return a.hasReport ? 1 : -1;
+    if(a.emp.dept !== b.emp.dept) return a.emp.dept.localeCompare(b.emp.dept);
+    return a.emp.name.localeCompare(b.emp.name);
+  });
+
+  grid.innerHTML = rows.map(r => {
+    const dCls = r.emp.dept.toLowerCase().includes('top') ? 'b-top' : 'b-tgdd';
+    const statusHtml = r.hasReport
+      ? `<span style="color:var(--green);font-weight:800">✅ Đã nộp${r.submitTime ? ' · ' + r.submitTime : ''}</span>${r.isLate ? ' <span style="color:var(--red);font-weight:800">(trễ)</span>' : ''}`
+      : `<span style="color:var(--red);font-weight:800">❌ Chưa nộp</span>`;
+    const netHtml = r.hasReport
+      ? `<span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:${r.net >= 0 ? 'var(--green)' : 'var(--red)'}">${r.net >= 0 ? '+' : ''}${r.net}<i class="ti ti-star-filled" style="font-size:12px;margin-left:1px"></i></span>`
+      : `<span style="font-size:10px;color:var(--text-light);font-weight:700">nhắc NV</span>`;
+    return `
+      <div onclick="vrJumpTo('${r.emp.id}','${date}')" style="cursor:pointer;padding:9px 10px;border:1px solid ${r.hasReport ? 'var(--gray-line)' : '#fca5a5'};border-radius:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;background:${r.hasReport ? '#fff' : '#fff5f5'}">
+        <div>
+          <div style="font-weight:700;font-size:12.5px">${r.emp.name} <span class="badge ${dCls}" style="font-size:8.5px;margin-left:4px;padding:2px 7px">${r.emp.dept}</span></div>
+          <div style="font-size:10.5px;margin-top:3px">${statusHtml}${r.hasReport ? ' · ' + r.avgPct + '% TB' : ''}</div>
+        </div>
+        ${netHtml}
+      </div>`;
+  }).join('');
+}
+
+function vrJumpTo(empId, date){
+  const empSel = document.getElementById('vrEmpSel');
+  const dateIn = document.getElementById('vrDateIn');
+  if(!empSel || !dateIn) return;
+  empSel.value = empId;
+  dateIn.value = date;
+  vrLoadReport();
+  const wrap = document.getElementById('vrWrap');
+  if(wrap) setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+}
+
 function vrBuildEmpSelect(){
   const sel = document.getElementById('vrEmpSel');
   if(!sel) return;
@@ -3271,22 +3957,65 @@ function vrRender5Day(emp, cats, dateKey){
   const days = [4,3,2,1,0].map(n => daysBefore(dateKey, n)); // daysBefore(date,0) = chính ngày đó
   const fmtShort = d => { const p = d.split('-'); return `${p[2]}/${p[1]}`; };
 
-  thead.innerHTML = '<th class="tl" style="width:18%">Môn thi đua</th>' +
-    days.map(d => `<th title="${d}">${fmtShort(d)}</th>`).join('');
+  thead.innerHTML = '<th class="tl" style="width:16%">Môn thi đua</th>' +
+    days.map(d => `<th title="${d}">${fmtShort(d)}</th>`).join('') +
+    '<th style="width:13%" title="Số lần đã dùng sao hy vọng trong 5 ngày này">⭐ Dùng<br>sao</th>' +
+    '<th style="width:12%" title="Chuỗi ngày chưa đạt liên tiếp, tính đến ngày đang chọn">Số Ngày<br>hiện tại</th>' +
+    '<th style="width:13%" title="NV đã chọn Tăng ca / Dùng sao đúng khi Số Ngày chạm mốc bắt buộc chưa">Check<br>Auto</th>';
 
   tbody.innerHTML = cats.map(cat => {
     const cn = formatCatName(cat.name, cats.length);
+    let starUsedCount = 0;
     const cells = days.map(d => {
       const rep = (STORED.reports[emp.id] || {})[d];
       if(!rep) return '<td><span class="pct-val pz" style="font-size:10px">—</span></td>';
       const actual = rep[cat.id] || 0;
       const pct    = getPct(actual, cat.target);
       const cls    = pct >= 100 ? 'pg' : 'pr';
+      if(rep['h_' + cat.id]) starUsedCount++;
       return `<td><span class="pct-val ${cls}" style="font-size:11px">${pct}%</span></td>`;
     }).join('');
+
+    /* Số Ngày hiện tại — chuỗi chưa đạt liên tiếp tính đến ngày đang chọn (dateKey = ngày cuối trong 5 ngày) */
+    const lastRep  = (STORED.reports[emp.id] || {})[dateKey];
+    let curStreak = 0, lastPct = 0, lastHope = false, lastOt = false;
+    if(lastRep){
+      lastPct  = getPct(lastRep[cat.id] || 0, cat.target);
+      lastHope = lastRep['h_' + cat.id] || false;
+      lastOt   = lastRep['ot_' + cat.id] || false;
+      if(lastPct < 100 && !lastHope){
+        const past = getZeroDays(emp.id, cat.id, dateKey);
+        curStreak  = Math.min(past + 1, 6);
+      }
+    }
+    const zdCurH = curStreak > 0
+      ? `<span class="pct-val ${curStreak >= otThreshold ? 'pr' : 'po'}" style="font-size:11px;font-weight:900">${curStreak}</span>`
+      : '<span class="star-na">—</span>';
+
+    /* Check Auto — NV đã chọn Tăng ca/Dùng sao đúng mốc otThreshold chưa (dựa vào ngày đang chọn) */
+    let checkH = '<span class="star-na">—</span>';
+    if(lastRep){
+      if(lastPct >= 100){
+        checkH = `<span class="pct-val pg" style="font-size:11px">✓ Đạt</span>`;
+      } else if(lastHope){
+        checkH = `<span class="pct-val pg" style="font-size:11px">✓ Dùng sao</span>`;
+      } else if(lastOt){
+        checkH = `<span class="pct-val pg" style="font-size:11px">✓ Tăng ca</span>`;
+      } else if(otFeatureEnabled && curStreak === otThreshold){
+        checkH = `<span class="pct-val pr" style="font-size:11px;font-weight:900">✗ Chưa chọn</span>`;
+      }
+    }
+
+    const starH = starUsedCount > 0
+      ? `<span class="star-minus" style="font-size:12px">⭐ ×${starUsedCount}</span>`
+      : '<span class="star-na">0</span>';
+
     return `<tr>
       <td class="tl" style="padding-left:4px"><span class="cat-name"${cn.title ? ` title="${escAttr(cn.title)}"` : ''}>${cn.display}</span></td>
       ${cells}
+      <td>${starH}</td>
+      <td>${zdCurH}</td>
+      <td>${checkH}</td>
     </tr>`;
   }).join('');
 
@@ -3303,8 +4032,34 @@ function goTab(name, el){
   document.querySelectorAll('.pnl').forEach(p => p.classList.remove('on'));
   document.getElementById('tab-' + name).classList.add('on');
   if(name === 'rank')     renderLeaderboard();
+  if(name === 'rules')    renderRulesTab();
   if(name === 'admin')    { renderAdminTab(); qlBuildEmpSelect(); }
-  if(name === 'viewrep')  { vrBuildEmpSelect(); vrLoadReport(); }
+  if(name === 'viewrep')  { vrBuildEmpSelect(); vrLoadReport(); renderVrDashboard(); }
+}
+
+// ════════════════════════════════════════════
+//  TAB QUY TẮC — đổ số liệu động theo cấu hình QL hiện tại
+// ════════════════════════════════════════════
+function renderRulesTab(){
+  const otEl = document.getElementById('ruleOtThresholdTxt');
+  if(otEl) otEl.textContent = otThreshold + ' ngày';
+
+  const spEl = document.getElementById('ruleSpThresholdTxt');
+  if(spEl) spEl.textContent = starPenaltyThreshold + ' ngày';
+
+  const stepsEl = document.getElementById('ruleLatePenaltySteps');
+  if(stepsEl){
+    stepsEl.innerHTML = LATE_PENALTY_STEPS.map((val, i) => {
+      const occ = i + 1;
+      const label = (occ === LATE_PENALTY_STEPS.length)
+        ? `Lần ${occ}+ trong tháng`
+        : `Lần ${occ} trong tháng`;
+      return `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:6px 10px;text-align:center;flex:1;min-width:90px">
+        <div style="font-size:9px;color:#991b1b;font-weight:700;text-transform:uppercase">${label}</div>
+        <div style="font-size:15px;font-weight:900;color:#dc2626;font-family:'Barlow Condensed',sans-serif">−${val}⭐</div>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ════════════════════════════════════════════
@@ -3891,6 +4646,31 @@ async function pollSettings(){
           : '🔒 Quản lý đã TẮT bắt buộc Tăng ca/Dùng sao', 'ok');
       }
       renderOtFeatureToggle();
+    }
+
+    // Kiểm tra starPenaltyEnabled (bật/tắt cảnh báo Dùng sao liên tiếp)
+    if(data.settings.starPenaltyEnabled !== undefined && data.settings.starPenaltyEnabled !== starPenaltyEnabled){
+      starPenaltyEnabled = data.settings.starPenaltyEnabled;
+      changed = true;
+      if(!adminUnlocked){
+        toast(starPenaltyEnabled
+          ? '🚨 Quản lý đã BẬT cảnh báo Dùng sao liên tiếp'
+          : '🔒 Quản lý đã TẮT cảnh báo Dùng sao liên tiếp', 'ok');
+      }
+      renderStarPenaltyToggle();
+    }
+
+    // Kiểm tra starPenaltyThreshold (mốc số ngày chưa đạt liên tiếp)
+    if(data.settings.starPenaltyThreshold !== undefined){
+      const newSp = Number(data.settings.starPenaltyThreshold);
+      if([3,4,5].includes(newSp) && newSp !== starPenaltyThreshold){
+        starPenaltyThreshold = newSp;
+        changed = true;
+        if(!adminUnlocked){
+          toast(`🚨 Quản lý đã đổi mốc Cảnh báo Dùng sao liên tiếp thành ${newSp} ngày`, 'ok');
+        }
+        renderStarPenaltyThresholdControl();
+      }
     }
 
     // Nếu có thay đổi → render lại bảng để cập nhật nút Dùng Sao
