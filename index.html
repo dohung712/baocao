@@ -2977,6 +2977,7 @@ async function submitReport(){
   const rep  = {};
   let pctSum = 0, totPlus = 0, totMinus = 0, hopeUsed = 0;
   const lines = [];
+  const bonus300Cats = []; // môn nào vừa đạt mốc thưởng 1000 sao (2 ngày liên tiếp >300%) trong lần lưu này
 
   cats.forEach(cat => {
     const actualRaw = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
@@ -3024,11 +3025,26 @@ async function submitReport(){
       rep[otNoteK] = saved[otNoteK] || '';
     }
 
+    // ── Thưởng đặc biệt: 2 ngày LIÊN TIẾP (đúng ngày kế nhau, không tính ngày OFF)
+    // đạt >300% → +1000 sao cho môn đó. Sau khi thưởng, chuỗi tự reset về 0, phải
+    // đủ 2 ngày liên tiếp >300% MỚI (tính từ sau lần thưởng trước) mới thưởng tiếp,
+    // không thưởng chồng lấn theo kiểu mỗi ngày >300% liên tục đều tính là 1 cặp mới. ──
+    const s300k     = '_s300_' + cat.id;
+    const b300k     = '_bonus300_' + cat.id;
+    const prevS300  = yestSaved[s300k] || 0;
+    let   newS300   = pct > 300 ? prevS300 + 1 : 0;
+    let   bonus300  = 0;
+    if(newS300 >= 2){ bonus300 = 1000; newS300 = 0; rep[b300k] = true; }
+    else if(saved[b300k]){ bonus300 = 1000; rep[b300k] = true; } // giữ nguyên nếu đang sửa lại đúng ngày đã từng thưởng
+    rep[s300k] = newS300;
+    if(bonus300 > 0 && !saved[b300k]) bonus300Cats.push(cat.name); // chỉ toast khi MỚI đạt, không lặp lại khi sửa lại báo cáo cùng ngày
+
     pctSum      += pct;
     let star = 0;
     if(pct >= 100)    { star = starBonus(cat, pct); totPlus += star; }
     else if(hope)     { const deducted = cat.sm * spMult; totMinus += deducted; star = -deducted; hopeUsed++; }
-    lines.push({ name:cat.name, target:cat.target, actual, pct, star });
+    if(bonus300 > 0)  { star += bonus300; totPlus += bonus300; }
+    lines.push({ name:cat.name, target:cat.target, actual, pct, star, bonus300 });
   });
 
   rep._pct   = Math.round(pctSum / cats.length);
@@ -3064,6 +3080,7 @@ async function submitReport(){
       const oldPct    = getPct(oldActual, cat.target);
       if(oldPct >= 100)   oldPlus  += starBonus(cat, oldPct);
       else if(oldHope)    oldMinus += cat.sm;
+      if(saved['_bonus300_' + cat.id]) oldPlus += 1000; // giữ đúng phần thưởng 1000 sao đã tính trước đó khi sửa lại cùng ngày
     });
     oldNet = oldPlus - oldMinus;
   }
@@ -3098,6 +3115,9 @@ async function submitReport(){
       date:dateKey, rep, lines,
       starsBase:emp.stars, hopeBase:emp.hope, starsNew, hopeNew, net:dayTotalNet
     });
+    if(bonus300Cats.length){
+      toast(`🎉 ${bonus300Cats.join(', ')}: 2 ngày liên tiếp đạt >300% — thưởng +${1000 * bonus300Cats.length} sao!`, 'ok');
+    }
     if(latePenalty > 0){
       toast(`⏰ Nộp trễ sau 22h30! Bị trừ ${latePenalty} sao (lần ${countLateSubmitsThisMonth(emp.id, dateKey, dateKey) + 1} trong tháng). Tổng hôm nay: ${dayTotalNet >= 0 ? '+' : ''}${dayTotalNet} sao`, 'warn');
     } else {
@@ -3948,6 +3968,7 @@ async function qlSaveReport(){
     const oldPct    = getPct(oldActual, cat.target);
     if(oldPct >= 100)  oldPlus  += starBonus(cat, oldPct);
     else if(oldHope)   oldMinus += cat.sm;
+    if(saved['_bonus300_' + cat.id]) oldPlus += 1000; // giữ đúng phần thưởng 1000 sao đã tính trước đó
   });
   const oldNet = oldPlus - oldMinus;
 
@@ -3955,6 +3976,8 @@ async function qlSaveReport(){
   const rep = {};
   let newPlus = 0, newMinus = 0, pctSum = 0;
   const lines = [];
+  const yestSavedQl = (STORED.reports[empId] || {})[daysBefore(date, 1)] || {};
+  const bonus300Cats = [];
   cats.forEach(cat => {
     const inp    = document.querySelector(`[data-ql-cat="${cat.id}"]`);
     const chk    = document.querySelector(`[data-ql-hope="${cat.id}"]`);
@@ -3967,7 +3990,19 @@ async function qlSaveReport(){
     let star = 0;
     if(pct >= 100)  { star = starBonus(cat, pct); newPlus += star; }
     else if(hope)   { newMinus += cat.sm; star = -cat.sm; }
-    lines.push({ name:cat.name, target:cat.target, actual, pct, star });
+
+    // ── Thưởng đặc biệt: 2 ngày liên tiếp >300% → +1000 sao (giống luồng NV tự nộp) ──
+    const s300k    = '_s300_' + cat.id;
+    const b300k    = '_bonus300_' + cat.id;
+    const prevS300 = yestSavedQl[s300k] || 0;
+    let   newS300  = pct > 300 ? prevS300 + 1 : 0;
+    let   bonus300 = 0;
+    if(newS300 >= 2){ bonus300 = 1000; newS300 = 0; rep[b300k] = true; }
+    else if(saved[b300k]){ bonus300 = 1000; rep[b300k] = true; }
+    rep[s300k] = newS300;
+    if(bonus300 > 0){ star += bonus300; newPlus += bonus300; if(!saved[b300k]) bonus300Cats.push(cat.name); }
+
+    lines.push({ name:cat.name, target:cat.target, actual, pct, star, bonus300 });
   });
   rep._pct = Math.round(pctSum / cats.length);
   // Giữ cờ reset
@@ -3991,6 +4026,9 @@ async function qlSaveReport(){
       date, rep, lines,
       starsBase:emp.stars, hopeBase:emp.hope, starsNew, hopeNew:emp.hope, net:newNet
     });
+    if(bonus300Cats.length){
+      toast(`🎉 ${bonus300Cats.join(', ')}: 2 ngày liên tiếp đạt >300% — thưởng +${1000 * bonus300Cats.length} sao!`, 'ok');
+    }
     toast(`✓ Đã sửa! Lũy kế ${emp.name}: ${starsNew} sao (${diff>=0?'+':''}${diff})`, 'ok');
     renderAdminTab();
     renderLeaderboard();
