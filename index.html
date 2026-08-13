@@ -191,6 +191,15 @@ tr.row-done .cat-name{color:var(--green)}
 .reset-btn:hover:not(:disabled){background:#c7d2fe;border-color:#6366f1}
 .reset-btn:disabled{opacity:.2;cursor:not-allowed}
 
+/* Nút "🔍 xem chi tiết cách tính Số Ngày" — không hiện trong ảnh xuất báo cáo (bị ẩn lúc capture) */
+.zd-info-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;margin-top:2px;padding:0;border-radius:50%;
+  border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;
+  font-size:9px;line-height:1;cursor:pointer
+}
+.zd-info-btn:hover{background:#c7d2fe}
+
 /* INPUT — nhỏ lại 20% */
 .num-input{
   width:40px;padding:1px 2px;
@@ -554,6 +563,21 @@ tr.row-done .cat-name{color:var(--green)}
 .form-row input:focus,.form-row select:focus{outline:none;border-color:var(--blue)}
 .modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 
+/* ═══ IMAGE PREVIEW MODAL (xem/tải ảnh báo cáo) ═══ */
+.img-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;align-items:center;justify-content:center;padding:16px}
+.img-modal-bg.open{display:flex}
+.img-modal{background:#fff;border-radius:16px;padding:14px;width:100%;max-width:420px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+.img-modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.img-modal-hdr h3{font-size:14px;font-weight:800;color:var(--text)}
+.img-modal-close{background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--text-light);padding:2px 6px}
+.img-modal-scroll{overflow:auto;border-radius:10px;border:1px solid var(--gray-line);flex:1;min-height:0;background:#f0f2f8}
+.img-modal-scroll img{display:block;width:100%;height:auto}
+.img-modal-hint{font-size:11px;color:var(--text-light);text-align:center;margin:8px 0 4px;line-height:1.5}
+.img-modal-btns{display:flex;gap:8px;margin-top:8px}
+.img-modal-btns button{flex:1;padding:11px;border-radius:10px;border:none;font-weight:800;font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px}
+.img-modal-dl{background:var(--blue,#1a237e);color:#fff}
+.img-modal-cancel{background:#eef0f5;color:var(--text)}
+
 /* ═══ TOAST ═══ */
 .toast{
   color:#fff;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:700;
@@ -809,6 +833,14 @@ tr.row-done .cat-name{color:var(--green)}
           Lưu &amp; Xuất ảnh báo cáo
         </button>
 
+        <!-- Nút tải ảnh báo cáo về thủ công — dùng khi ảnh tự động sau khi Lưu
+             không tải được (thường gặp khi mở link trong app Zalo/Messenger) -->
+        <button class="submit-btn" id="manualDlBtn" onclick="captureReport()"
+          style="background:#eef1ff;color:#1a237e;border:2px solid #b7c0f0;margin-top:8px">
+          <i class="ti ti-download" style="font-size:18px"></i>
+          Tải ảnh báo cáo về
+        </button>
+
         <!-- Result bar -->
         <div class="result-bar" id="resultBar">
           <div class="rb-left">
@@ -886,6 +918,7 @@ tr.row-done .cat-name{color:var(--green)}
           <p>Mỗi ngày, nhập <b>Thực tế</b> cho từng môn thi đua rồi bấm <b>Lưu &amp; Xuất ảnh báo cáo</b>. Hệ thống tự tính % đạt = Thực tế ÷ Target.</p>
           <ul>
             <li><span class="rule-badge">Đạt ≥100%</span> → được <b>cộng sao</b> theo mức thưởng riêng của từng môn (xem ở tab <b>Môn thi</b>).</li>
+            <li><span class="rule-badge gold">Đạt &gt;300%</span> → số sao thưởng được <b>nhân đôi (x2)</b> cho môn đó, thay vì mức thưởng thường.</li>
             <li><span class="rule-badge red">Chưa đạt &lt;100%</span> → không cộng, và số ngày liên tiếp chưa đạt của môn đó sẽ tăng thêm 1 (cột <b>Số Ngày</b>).</li>
           </ul>
         </div>
@@ -918,6 +951,8 @@ tr.row-done .cat-name{color:var(--green)}
         <div class="rule-sec">
           <h4><i class="ti ti-camera"></i>5. Xuất ảnh báo cáo</h4>
           <p>Ảnh xuất ra tự động rút gọn (bỏ thanh tab, ô chọn NV, chú thích quy tắc...) để gọn và dễ gửi Zalo/Group, nhưng vẫn giữ đủ <b>tên NV, ngày, bảng kết quả, tổng sao</b> — không mất dữ liệu quan trọng dù dùng điện thoại màn hình nhỏ.</p>
+          <p>Sau khi lưu, hệ thống <b>tự động tải ảnh về</b>. Nếu máy/trình duyệt (đặc biệt trong app Zalo/Messenger trên iPhone) không tự tải được ảnh, bấm nút <b>📥 Tải ảnh báo cáo về</b> ngay dưới bảng kết quả để tải lại thủ công bất cứ lúc nào.</p>
+          <p>Vào các ngày <b>5, 10, 15, 20, 25, 30</b> hàng tháng, sau khi xuất ảnh báo cáo ngày, hệ thống sẽ tự xuất thêm 1 ảnh <b>"Kết quả 5 ngày gần nhất theo môn"</b>.</p>
         </div>
       </div>
     </div>
@@ -1350,6 +1385,23 @@ tr.row-done .cat-name{color:var(--green)}
   </div>
 </div>
 
+<!-- ══ IMAGE PREVIEW MODAL — xem/tải ảnh báo cáo (fallback khi tự động tải ảnh không hoạt động,
+     ví dụ trong app Zalo/Messenger trên iPhone không hỗ trợ tải file kiểu thẻ <a download>) ══ -->
+<div class="img-modal-bg" id="imgModalBg">
+  <div class="img-modal">
+    <div class="img-modal-hdr">
+      <h3 id="imgModalTitle">Ảnh báo cáo</h3>
+      <button class="img-modal-close" onclick="closeImgModal()">✕</button>
+    </div>
+    <div class="img-modal-scroll"><img id="imgModalImg" src="" alt="Ảnh báo cáo"></div>
+    <div class="img-modal-hint">📌 Nếu bấm nút bên dưới mà máy không tự tải ảnh (thường gặp khi mở link trong app Zalo/Messenger) — hãy <b>nhấn giữ vào ảnh phía trên</b> rồi chọn <b>Lưu ảnh</b>.</div>
+    <div class="img-modal-btns">
+      <button class="img-modal-cancel" onclick="closeImgModal()">Đóng</button>
+      <button class="img-modal-dl" id="imgModalDlBtn" onclick="downloadCanvasImage(lastReportCanvas, lastReportFilename)"><i class="ti ti-download"></i> Tải ảnh về</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════
 //  CONFIG
@@ -1659,7 +1711,7 @@ function updateEmpHeader(){
       const actual = rep[cat.id] || 0;
       const hope   = rep['h_' + cat.id] || false;
       const pct    = cat.target > 0 ? Math.round(actual / cat.target * 100) : 0;
-      if(pct >= 100)    mPlus  += cat.sp;
+      if(pct >= 100)    mPlus  += starBonus(cat, pct);
       else if(hope)     mMinus += cat.sm;
     });
     mMinus += (rep._latePenalty || 0); // gộp cả phạt nộp trễ vào tổng bị trừ trong tháng
@@ -1721,7 +1773,9 @@ function computeCatStreaks(emp, dateKey){
     for(let i = 1; i <= 60; i++){
       const k   = daysBefore(dateKey, i);
       const rep = (STORED.reports[emp.id] || {})[k];
-      const actual = rep ? (rep[cat.id] || 0) : 0; // không có báo cáo → coi như 0
+      if(!rep) continue;                  // ngày OFF (không có báo cáo) → bỏ qua, không tính
+      if(!(cat.id in rep)) continue;       // môn chưa tồn tại vào ngày đó (mới thêm sau này) → bỏ qua, không tính
+      const actual = rep[cat.id] || 0;
       const pct    = getPct(actual, cat.target);
       if(pct >= 100) break;
       streak++;
@@ -1840,6 +1894,13 @@ function getZeroDays(empId, catId, dateKey){
     if(!rep) continue;                         // ngày OFF → bỏ qua
     if(rep['_reset_' + catId]) break;          // QL reset → dừng
 
+    // Môn này CHƯA TỒN TẠI vào ngày đó (VD môn vừa mới thêm sau này, những ngày cũ trước khi
+    // thêm môn thì object báo cáo không hề có field của môn này) → không có gì để so sánh,
+    // coi như "OFF" riêng cho môn này: bỏ qua, KHÔNG đếm, KHÔNG dừng chuỗi, quét tiếp về trước.
+    // (FIX: trước đây `rep[catId] || 0` không phân biệt được "chưa có field" với "có báo cáo
+    // và thực tế = 0", nên môn mới thêm bị tính nhầm TOÀN BỘ lịch sử cũ là "chưa đạt".)
+    if(!(catId in rep)) continue;
+
     const actual = rep[catId] || 0;
     const hope   = rep['h_' + catId] || false;
 
@@ -1850,8 +1911,11 @@ function getZeroDays(empId, catId, dateKey){
     if(hope) break;                             // dùng sao hy vọng → coi như đạt, dừng
     if(target > 0 && Math.round(actual / target * 100) >= 100) break; // đạt → dừng
 
-    // Chỉ khi ngày đó THẬT SỰ chưa đạt: nếu NV đã tự chọn số ngày (chế độ MANUAL) → lấy làm điểm neo
-    if(rep['zd_' + catId] !== undefined && rep['zd_' + catId] > 0){
+    // Chỉ khi ngày đó THẬT SỰ chưa đạt: nếu NV đã tự chọn số ngày (chế độ MANUAL) → lấy làm điểm neo.
+    // Neo này ÁP DỤNG CẢ KHI = 0: NV bấm lại để đưa về 0 nghĩa là chủ động "reset chuỗi" tại đúng
+    // ngày đó — phải dừng quét tại đây (count += 0), KHÔNG được rơi xuống nhánh count++ ở dưới,
+    // nếu không giá trị 0 sẽ bị hiểu nhầm thành "chưa đạt" và chuỗi vẫn tự cộng dồn tiếp (bug cũ).
+    if(rep['zd_' + catId] !== undefined){
       count += rep['zd_' + catId];
       break;
     }
@@ -1861,7 +1925,106 @@ function getZeroDays(empId, catId, dateKey){
   return Math.min(count, 6);
 }
 
-// Chuỗi "CHƯA ĐẠT liên tiếp" dành riêng cho tính năng Cảnh báo Dùng sao liên tiếp.
+// Giống hệt logic getZeroDays() nhưng ghi lại TỪNG BƯỚC quét (ngày, %, có tính hay
+// không, lý do) để QL/NV có thể tự kiểm chứng hệ thống tính đúng hay sai — bấm 🔍
+// cạnh ô Số Ngày để xem. Không hiện trong ảnh xuất báo cáo (nút bị ẩn lúc chụp ảnh).
+function getZeroDaysTrace(empId, catId, dateKey){
+  const reps = STORED.reports[empId] || {};
+  const emp2 = EMPS.find(e => e.id === empId);
+  const cat2 = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
+  const target = cat2 ? cat2.target : 1;
+  const thisMonth = dateKey.slice(0, 7);
+  const trace = [];
+
+  if((reps[dateKey] || {})['_reset_' + catId]){
+    return { count: 0, trace: [{ date: dateKey, note: 'Hôm nay QL đã bấm Reset môn này → Số Ngày = 0', counted: false, stop: true }] };
+  }
+
+  let count = 0;
+  for(let i = 1; i <= 90; i++){
+    if(count >= 6){ trace.push({ cap: true }); break; }
+    const k = daysBefore(dateKey, i);
+    if(k.slice(0, 7) !== thisMonth){
+      trace.push({ date: k, note: 'Sang tháng trước → dừng (Số Ngày tự reset đầu tháng)', counted: false, stop: true });
+      break;
+    }
+    const rep = reps[k];
+    if(!rep){ trace.push({ date: k, note: 'Không có báo cáo (ngày OFF) — bỏ qua, không tính', counted: false, stop: false }); continue; }
+    if(rep['_reset_' + catId]){
+      trace.push({ date: k, note: 'QL đã bấm Reset môn này tại ngày này → dừng quét, không tính các ngày trước đó nữa', counted: false, stop: true });
+      break;
+    }
+    if(!(catId in rep)){
+      trace.push({ date: k, note: 'Môn này chưa tồn tại vào ngày đó (mới thêm sau này) — bỏ qua, không tính', counted: false, stop: false });
+      continue;
+    }
+
+    const actual = rep[catId] || 0;
+    const hope   = rep['h_' + catId] || false;
+    const pct    = target > 0 ? Math.round(actual / target * 100) : 0;
+
+    if(hope){ trace.push({ date: k, pct, note: 'Đã Dùng sao hy vọng — coi như đạt → dừng chuỗi', counted: false, stop: true }); break; }
+    if(pct >= 100){ trace.push({ date: k, pct, note: 'Đã ĐẠT ≥100% chỉ tiêu → dừng chuỗi', counted: false, stop: true }); break; }
+
+    if(rep['zd_' + catId] !== undefined){
+      count += rep['zd_' + catId];
+      trace.push({ date: k, pct, note: `NV tự chọn Số Ngày = ${rep['zd_' + catId]} tại ngày này → dùng làm điểm neo, dừng quét`, counted: true, add: rep['zd_' + catId], stop: true });
+      break;
+    }
+
+    count++;
+    trace.push({ date: k, pct, note: 'Có báo cáo, chưa đạt chỉ tiêu → tính +1', counted: true, add: 1, stop: false });
+  }
+  return { count: Math.min(count, 6), trace };
+}
+
+function showZdBreakdown(catId){
+  const emp = getCurEmp(); if(!emp) return;
+  const dateKey = document.getElementById('dateIn').value;
+  const cat = getCats(emp.dept).find(c => c.id === catId);
+  if(!cat) return;
+
+  const { count, trace } = getZeroDaysTrace(emp.id, catId, dateKey);
+
+  const rowsH = trace.map(t => {
+    if(t.cap) return `<tr><td colspan="4" style="text-align:center;color:#9ca3af;font-style:italic;padding:6px">— đã chặn ở mức tối đa 6, ngừng quét thêm —</td></tr>`;
+    const tickH = t.counted
+      ? `<span style="color:#dc2626;font-weight:900">+${t.add}</span>`
+      : (t.stop ? `<span style="color:#16a34a;font-weight:900">⏹</span>` : `<span style="color:#9ca3af">—</span>`);
+    return `<tr>
+      <td style="padding:6px 8px;font-size:12px;font-weight:700;white-space:nowrap">${t.date}</td>
+      <td style="padding:6px 8px;font-size:12px;text-align:center">${t.pct !== undefined ? t.pct + '%' : '—'}</td>
+      <td style="padding:6px 8px;font-size:13px;text-align:center">${tickH}</td>
+      <td style="padding:6px 8px;font-size:11.5px;color:var(--text-mid);line-height:1.4">${t.note}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modalTitle').innerHTML = `🔍 Chi tiết tính Số Ngày — <span style="color:#4338ca">${cat.name}</span>`;
+  document.getElementById('modalBody').innerHTML = `
+    <div style="font-size:13px;margin-bottom:10px;padding:8px 10px;background:#f3f4f6;border-radius:8px">
+      Hệ thống tính được <b style="color:#dc2626;font-size:15px">${count}</b> ngày chưa đạt liên tiếp
+      (tính lùi từ ngày trước <b>${dateKey}</b>).
+    </div>
+    <div style="max-height:340px;overflow:auto;border:1px solid var(--gray-line);border-radius:8px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="position:sticky;top:0;background:#eef1ff">
+            <th style="padding:6px 8px;font-size:10.5px;text-align:left">Ngày</th>
+            <th style="padding:6px 8px;font-size:10.5px">Kết quả</th>
+            <th style="padding:6px 8px;font-size:10.5px">Tính</th>
+            <th style="padding:6px 8px;font-size:10.5px;text-align:left">Lý do</th>
+          </tr>
+        </thead>
+        <tbody>${rowsH || `<tr><td colspan="4" style="padding:12px;text-align:center;color:#9ca3af">Chưa có dữ liệu trước ngày này</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div style="font-size:10.5px;color:var(--text-light);margin-top:8px;line-height:1.5">
+      📌 Bảng quét NGƯỢC từ ngày trước ${dateKey} về quá khứ, dừng lại ngay khi gặp ngày ĐẠT / Dùng sao / QL Reset / NV tự chọn (điểm neo) / sang tháng trước.
+    </div>`;
+  document.getElementById('modalBtns').innerHTML =
+    `<button class="act-btn primary" onclick="closeModal()">Đóng</button>`;
+  document.getElementById('modalBg').classList.add('open');
+}
 // Khác getZeroDays(): KHÔNG ngắt chuỗi khi ngày đó đã Dùng sao (hope) hay đã chọn
 // Tăng ca (ot) — chỉ ngắt khi THẬT SỰ đạt ≥100% chỉ tiêu. Ngày OFF (không nộp báo
 // cáo) vẫn được bỏ qua, không ngắt chuỗi — đúng theo cấu hình đã chốt.
@@ -1880,6 +2043,7 @@ function getStarPenaltyStreak(empId, catId, dateKey){
     const rep = reps[k];
     if(!rep) continue;                       // ngày OFF → bỏ qua, KHÔNG ngắt chuỗi
     if(rep['_reset_' + catId]) break;         // QL reset → dừng
+    if(!(catId in rep)) continue;             // môn chưa tồn tại vào ngày đó (mới thêm sau này) → bỏ qua
 
     const actual = rep[catId] || 0;
     if(target > 0 && Math.round(actual / target * 100) >= 100) break; // đạt → dừng (điều kiện ngắt DUY NHẤT)
@@ -1893,11 +2057,19 @@ function getStarPenaltyStreak(empId, catId, dateKey){
 // ════════════════════════════════════════════
 function getPct(a, t){ return t > 0 ? Math.round(a / t * 100) : 0; }
 
+// Số sao THƯỞNG thực nhận cho 1 môn khi đã ĐẠT (pct >= 100).
+// Quy tắc: môn nào đạt trên 300% (vượt xa target) → thưởng x2 số sao cấu hình (cat.sp).
+function starBonus(cat, pct){
+  return pct > 300 ? cat.sp * 2 : cat.sp;
+}
+
 // Tìm % hoàn thành của môn (cat) ở NGÀY BÁO CÁO LIỀN TRƯỚC (ngày gần nhất
 // có báo cáo, trước dateKey — không nhất thiết là hôm qua theo lịch nếu có ngày OFF).
 function getPrevDayResult(empId, catId, target, dateKey){
   const reps  = STORED.reports[empId] || {};
-  const dates = Object.keys(reps).filter(d => d < dateKey).sort();
+  // Tìm ngày báo cáo gần nhất TRƯỚC dateKey mà môn này ĐÃ TỒN TẠI (có field catId) — bỏ qua
+  // các ngày cũ từ trước khi môn mới được thêm vào (những ngày đó không có gì để so sánh).
+  const dates = Object.keys(reps).filter(d => d < dateKey && (reps[d] || {})[catId] !== undefined && catId in (reps[d] || {})).sort();
   if(dates.length === 0) return null;
   const lastDate = dates[dates.length - 1];
   const rep    = reps[lastDate] || {};
@@ -1982,11 +2154,12 @@ function renderTable(){
     const bCol = isDone ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
 
     /* star cells */
+    const bonusStar = starBonus(cat, pct);
     let spH = '<span class="star-na">—</span>';
-    if(isDone) spH = `<span class="star-plus">+${cat.sp}</span>`;
+    if(isDone) spH = `<span class="star-plus">+${bonusStar}${pct > 300 ? ' <i class="ti ti-bolt" title="Vượt 300% — thưởng x2"></i>' : ''}</span>`;
 
     let kqH = '<span class="star-na">—</span>';
-    if(isDone)                        { totPlus  += cat.sp; kqH = `<span class="star-plus">+${cat.sp}</span>`; }
+    if(isDone)                        { totPlus  += bonusStar; kqH = `<span class="star-plus">+${bonusStar}${pct > 300 ? ' ⚡x2' : ''}</span>`; }
     else if(hope && !forcedOtToday)   { totMinus += cat.sm * spMult; kqH = `<span class="star-minus">-${cat.sm * spMult}</span>`; }
 
     /* kq actual value */
@@ -2005,7 +2178,7 @@ function renderTable(){
       const past   = getZeroDays(emp.id, cat.id, dateKey);
       const today1 = Math.min(past + 1, 6);
       zdCurrentVal = today1;
-      zdH = buildZdPillsHtml(today1);
+      zdH = buildZdPillsHtml(today1) + `<button class="zd-info-btn" data-zdinfo="${cat.id}" title="Xem chi tiết cách tính">🔍</button>`;
     } else {
       // MANUAL: NV tự chọn bằng các ô bấm (1..6, hiện thêm 5/6 nếu cần)
       const autoVal = Math.min(getZeroDays(emp.id, cat.id, dateKey) + 1, 6); // giá trị tự động tính (không hiện cảnh báo lệch nữa)
@@ -2013,7 +2186,7 @@ function renderTable(){
         ? inputs['zd_' + cat.id]
         : (saved['zd_' + cat.id] || 0);
       zdCurrentVal = manVal;
-      zdH = buildZdPillsHtml(manVal, { clickable:true, catId:cat.id, autoVal });
+      zdH = buildZdPillsHtml(manVal, { clickable:true, catId:cat.id, autoVal }) + `<button class="zd-info-btn" data-zdinfo="${cat.id}" title="Xem hệ thống tự tính ra bao nhiêu">🔍</button>`;
     }
 
     /* Kết Quả Hôm qua — % hoàn thành của ngày báo cáo liền trước (gần nhất trước dateKey) */
@@ -2138,7 +2311,7 @@ function renderTable(){
       const a = saved[cat.id] || 0;
       const pct = getPct(a, cat.target);
       const hopeUsed = saved['h_' + cat.id] || false;
-      if(pct >= 100) prevNet += cat.sp;
+      if(pct >= 100) prevNet += starBonus(cat, pct);
       else if(hopeUsed) prevNet -= cat.sm;
     });
     prevNet -= (saved._latePenalty || 0); // emp.stars hiện tại đã trừ luôn phạt trễ của ngày này (nếu có)
@@ -2243,6 +2416,12 @@ document.addEventListener('click', e => {
     const newVal = (inputs['zd_' + catId] === val) ? 0 : val;
     inputs['zd_' + catId] = newVal;
     renderTable();
+    return;
+  }
+  // 🔍 Xem chi tiết cách tính Số Ngày (breakdown từng ngày)
+  const zdInfoBtn = e.target.closest('.zd-info-btn');
+  if(zdInfoBtn && zdInfoBtn.dataset.zdinfo){
+    showZdBreakdown(zdInfoBtn.dataset.zdinfo);
     return;
   }
 });
@@ -2640,15 +2819,37 @@ function showMissingSpModal(missing){
 // ════════════════════════════════════════════
 //  RESET ZERO DAYS (chỉ QL)
 // ════════════════════════════════════════════
-function resetZeroDays(catId){
+async function resetZeroDays(catId){
   if(!adminUnlocked){ toast('⚠️ Chỉ quản lý mới dùng được!','err'); return; }
   const emp = getCurEmp(); if(!emp) return;
   const dateKey = document.getElementById('dateIn').value;
+
+  // FIX: trước đây hàm này chỉ sửa STORED.reports trong bộ nhớ trình duyệt rồi báo "Đã reset",
+  // nhưng KHÔNG lưu lên Sheet — nên chỉ cần F5 lại trang (hoặc NV mở tool ở máy khác) là số ngày
+  // "nhảy" về giá trị cũ vì server chưa từng nhận được lệnh reset. Giờ merge cờ reset vào đúng
+  // báo cáo đã lưu của ngày đó (giữ nguyên toàn bộ số liệu khác) rồi gọi lưu thật lên Sheet.
+  const existing = (STORED.reports[emp.id] || {})[dateKey] || {};
+  const rep = Object.assign({}, existing, { ['_reset_' + catId]: true });
+
   if(!STORED.reports[emp.id]) STORED.reports[emp.id] = {};
-  if(!STORED.reports[emp.id][dateKey]) STORED.reports[emp.id][dateKey] = {};
-  STORED.reports[emp.id][dateKey]['_reset_' + catId] = true;
-  toast('✓ Đã reset số ngày về 0 cho môn này', 'ok');
+  STORED.reports[emp.id][dateKey] = rep; // cập nhật ngay trên UI trong lúc chờ lưu
   renderTable();
+
+  const btn = document.querySelector(`.reset-btn[data-reset="${catId}"]`);
+  if(btn) btn.disabled = true;
+  try {
+    await gasCall({
+      action:'saveReport', empId:emp.id, empName:emp.name, dept:emp.dept,
+      date:dateKey, rep, lines:[],
+      starsBase:emp.stars, hopeBase:emp.hope, starsNew:emp.stars, hopeNew:emp.hope, net:0
+    });
+    toast('✓ Đã reset Số Ngày về 0 cho môn này (đã lưu lên hệ thống)', 'ok');
+  } catch(err){
+    toast('⚠️ Reset hiện tạm trên màn hình nhưng LƯU LÊN SHEET BỊ LỖI: ' + err.message + ' — vui lòng thử lại, nếu không số ngày sẽ về giá trị cũ khi tải lại trang!', 'err');
+  } finally {
+    if(btn) btn.disabled = false;
+    renderTable();
+  }
 }
 
 // ════════════════════════════════════════════
@@ -2825,7 +3026,7 @@ async function submitReport(){
 
     pctSum      += pct;
     let star = 0;
-    if(pct >= 100)    { totPlus  += cat.sp; star =  cat.sp; }
+    if(pct >= 100)    { star = starBonus(cat, pct); totPlus += star; }
     else if(hope)     { const deducted = cat.sm * spMult; totMinus += deducted; star = -deducted; hopeUsed++; }
     lines.push({ name:cat.name, target:cat.target, actual, pct, star });
   });
@@ -2861,7 +3062,7 @@ async function submitReport(){
       const oldActual = saved[cat.id] || 0;
       const oldHope   = saved['h_' + cat.id] || false;
       const oldPct    = getPct(oldActual, cat.target);
-      if(oldPct >= 100)   oldPlus  += cat.sp;
+      if(oldPct >= 100)   oldPlus  += starBonus(cat, oldPct);
       else if(oldHope)    oldMinus += cat.sm;
     });
     oldNet = oldPlus - oldMinus;
@@ -2909,7 +3110,7 @@ async function submitReport(){
     renderAdminTab();
     // auto screenshot after render settles
     setTimeout(captureReport, 700);
-    // Vào các ngày mốc 5/10/15/20/25 hàng tháng → xuất thêm ảnh
+    // Vào các ngày mốc 5/10/15/20/25/30 hàng tháng → xuất thêm ảnh
     // "Kết quả 5 ngày gần nhất theo môn" sau khi ảnh báo cáo ngày đã xong
     if(isMilestoneDay(dateKey)){
       setTimeout(() => captureLast5DaysReport(emp.id, dateKey), 1500);
@@ -2923,8 +3124,68 @@ async function submitReport(){
 }
 
 // ════════════════════════════════════════════
-//  SCREENSHOT
+//  SCREENSHOT — tải ảnh & xem trước ảnh (fallback)
 // ════════════════════════════════════════════
+// LƯU Ý QUAN TRỌNG (fix lỗi "NV báo cáo xong không ra ảnh"):
+// Trên nhiều điện thoại — đặc biệt khi NV mở link web app từ TRONG app Zalo/
+// Messenger/Facebook (trình duyệt nhúng, iOS) — thẻ <a download> KHÔNG hoạt
+// động: trình duyệt nhúng chặn hoặc bấm không có phản ứng gì, ảnh coi như
+// "biến mất" dù html2canvas đã chụp thành công. Trước đây app chỉ thử tải
+// bằng <a download> nên NV không thấy ảnh đâu mà cũng không có lỗi hiện ra.
+// → Giải pháp: sau khi chụp xong LUÔN hiện ảnh ra trong 1 khung xem trước
+//   ngay trên màn hình (NV luôn "thấy" được ảnh dù tải tự động có lỗi hay
+//   không), kèm nút Tải về + hướng dẫn nhấn giữ ảnh để lưu thủ công.
+let lastReportCanvas   = null;
+let lastReportFilename = 'BaoCao.png';
+
+function closeImgModal(){
+  document.getElementById('imgModalBg').classList.remove('open');
+}
+
+function showImagePreviewModal(canvas, filename, title){
+  lastReportCanvas   = canvas;
+  lastReportFilename = filename;
+  const img = document.getElementById('imgModalImg');
+  img.src = canvas.toDataURL('image/png');
+  document.getElementById('imgModalTitle').textContent = title || 'Ảnh báo cáo';
+  document.getElementById('imgModalBg').classList.add('open');
+}
+
+// Thử tải ảnh về bằng nhiều cách, theo thứ tự ưu tiên độ tin cậy (gọi từ
+// một cú bấm THẬT của NV — nút trong modal hoặc nút "Tải ảnh về thủ công" —
+// để trình duyệt cho phép Share API / tải file hoạt động).
+async function downloadCanvasImage(canvas, filename){
+  let blob = null;
+  try { blob = await new Promise(res => canvas.toBlob(res, 'image/png')); } catch(e){}
+
+  // Cách 1: Web Share API với file — hoạt động ổn định nhất trên di động,
+  // kể cả trong webview Zalo/Messenger (mở ra bảng chia sẻ/lưu ảnh của máy).
+  try {
+    if(blob && navigator.canShare && navigator.share){
+      const file = new File([blob], filename, { type: 'image/png' });
+      if(navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: filename });
+        return true;
+      }
+    }
+  } catch(e){ /* NV bấm Huỷ trên bảng chia sẻ, hoặc máy không hỗ trợ → thử cách khác */ }
+
+  // Cách 2: thẻ <a download> — hoạt động tốt trên desktop & hầu hết Android Chrome.
+  try {
+    const url = blob ? URL.createObjectURL(blob) : canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.download = filename;
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if(blob) setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return true;
+  } catch(e){ /* rơi xuống ảnh xem trước để NV tự lưu thủ công */ }
+
+  return false;
+}
+
 async function captureReport(){
   const repCard = document.getElementById('repCard');
   if(!repCard || repCard.style.display === 'none'){
@@ -2954,11 +3215,13 @@ async function captureReport(){
     //    nút Lưu, thanh tab, ô chọn Nhân viên/Ngày báo cáo (kèm banner cảnh báo),
     //    dòng "Số Ngày", và dòng chú thích quy tắc (✅/⏳/⭐)
     const subBtn     = document.getElementById('subBtn');
+    const manualDlBtn = document.getElementById('manualDlBtn');
     const tabsEl     = document.querySelector('.tabs');
     const selCardEl  = document.querySelector('#tab-report .sel-card');
     const toolbarEl  = document.querySelector('#tab-report .rep-toolbar');
     const legendEl   = document.querySelector('#tab-report .legend-bar');
-    hideEls    = [subBtn, tabsEl, selCardEl, toolbarEl, legendEl].filter(Boolean);
+    const zdInfoBtns = Array.from(document.querySelectorAll('#tab-report .zd-info-btn'));
+    hideEls    = [subBtn, manualDlBtn, tabsEl, selCardEl, toolbarEl, legendEl, ...zdInfoBtns].filter(Boolean);
     prevDisplays = hideEls.map(el => el.style.display);
     hideEls.forEach(el => { el.style.display = 'none'; });
 
@@ -3024,14 +3287,16 @@ async function captureReport(){
       scrollY:     -window.scrollY
     });
 
-    // 7. Tải ảnh về
-    const a    = document.createElement('a');
+    // 7. Tải ảnh về — thử tải tự động, NHƯNG luôn hiện ảnh ra khung xem trước
+    //    ngay sau đó (dù tải tự động có thành công hay không), để NV LUÔN thấy
+    //    được ảnh và có thể tự lưu thủ công (nút Tải về / nhấn giữ ảnh) —
+    //    đây chính là fix cho lỗi "báo cáo xong không ra ảnh".
     const emp  = getCurEmp();
     const date = document.getElementById('dateIn').value;
-    a.download = `BaoCao_${emp ? emp.name.replace(/\s/g,'_') : 'report'}_${date}.png`;
-    a.href     = canvas.toDataURL('image/png');
-    a.click();
-    toast('📸 Đã lưu ảnh báo cáo!', 'ok');
+    const filename = `BaoCao_${emp ? emp.name.replace(/\s/g,'_') : 'report'}_${date}.png`;
+    const downloaded = await downloadCanvasImage(canvas, filename);
+    showImagePreviewModal(canvas, filename, 'Ảnh báo cáo · ' + (emp ? emp.name : '') + ' · ' + date);
+    toast(downloaded ? '📸 Đã lưu ảnh báo cáo! (ảnh cũng đang hiện sẵn để tải lại nếu cần)' : '📸 Ảnh báo cáo đã sẵn sàng — bấm Tải ảnh về hoặc nhấn giữ ảnh để lưu', downloaded ? 'ok' : 'warn');
   } catch(err){
     toast('Không xuất được ảnh: ' + err.message, 'err');
   } finally {
@@ -3053,11 +3318,11 @@ async function captureReport(){
 
 // ════════════════════════════════════════════
 //  KẾT QUẢ 5 NGÀY GẦN NHẤT THEO MÔN
-//  (tự động xuất thêm ảnh vào các ngày 5,10,15,20,25 hàng tháng)
+//  (tự động xuất thêm ảnh vào các ngày 5,10,15,20,25,30 hàng tháng)
 // ════════════════════════════════════════════
 function isMilestoneDay(dateKey){
   const day = Number((dateKey || '').slice(8, 10));
-  return [5, 10, 15, 20, 25].includes(day);
+  return [5, 10, 15, 20, 25, 30].includes(day);
 }
 
 function fmt5dDate(dateKey){
@@ -3135,10 +3400,13 @@ async function captureLast5DaysReport(empId, dateKey){
 
     document.body.removeChild(wrap);
 
-    const a = document.createElement('a');
-    a.download = `KQ5Ngay_${emp.name.replace(/\s/g, '_')}_${dateKey}.png`;
-    a.href = canvas.toDataURL('image/png');
-    a.click();
+    const filename5d = `KQ5Ngay_${emp.name.replace(/\s/g, '_')}_${dateKey}.png`;
+    const downloaded5d = await downloadCanvasImage(canvas, filename5d);
+    // Chỉ tự mở khung xem trước nếu tải tự động thất bại (tránh che mất khung
+    // xem trước ảnh báo cáo ngày vừa hiện trước đó 1.5s).
+    if(!downloaded5d){
+      showImagePreviewModal(canvas, filename5d, 'Kết quả 5 ngày · ' + emp.name + ' · ' + dateKey);
+    }
     toast('📸 Đã xuất thêm ảnh Kết quả 5 ngày gần nhất theo môn!', 'ok');
   } catch(err){
     toast('Không xuất được ảnh 5 ngày gần nhất: ' + err.message, 'err');
@@ -3656,7 +3924,7 @@ function qlPreviewNet(){
     const actual = inp ? (parseInt(inp.value)||0) : 0;
     const hope   = chk ? chk.checked : false;
     const pct    = getPct(actual, cat.target);
-    if(pct >= 100)  plus  += cat.sp;
+    if(pct >= 100)  plus  += starBonus(cat, pct);
     else if(hope)   minus += cat.sm;
   });
   const net = plus - minus;
@@ -3678,7 +3946,7 @@ async function qlSaveReport(){
     const oldActual = saved[cat.id] || 0;
     const oldHope   = saved['h_' + cat.id] || false;
     const oldPct    = getPct(oldActual, cat.target);
-    if(oldPct >= 100)  oldPlus  += cat.sp;
+    if(oldPct >= 100)  oldPlus  += starBonus(cat, oldPct);
     else if(oldHope)   oldMinus += cat.sm;
   });
   const oldNet = oldPlus - oldMinus;
@@ -3697,7 +3965,7 @@ async function qlSaveReport(){
     const pct = getPct(actual, cat.target);
     pctSum += pct;
     let star = 0;
-    if(pct >= 100)  { newPlus  += cat.sp; star =  cat.sp; }
+    if(pct >= 100)  { star = starBonus(cat, pct); newPlus += star; }
     else if(hope)   { newMinus += cat.sm; star = -cat.sm; }
     lines.push({ name:cat.name, target:cat.target, actual, pct, star });
   });
@@ -3762,7 +4030,7 @@ function renderVrDashboard(){
         const hope   = rep['h_' + cat.id] || false;
         const pct    = getPct(actual, cat.target);
         pctSum += pct; cnt++;
-        if(pct >= 100)   net += cat.sp;
+        if(pct >= 100)   net += starBonus(cat, pct);
         else if(hope)    net -= cat.sm;
       });
       net -= (rep._latePenalty || 0);
@@ -3880,11 +4148,12 @@ function vrLoadReport(){
     const bCol = isDone ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
 
     /* Sao+ cell */
-    const spH = isDone ? `<span class="star-plus">+${cat.sp}</span>` : '<span class="star-na">—</span>';
+    const bonusStarVr = starBonus(cat, pct);
+    const spH = isDone ? `<span class="star-plus">+${bonusStarVr}${pct > 300 ? ' ⚡x2' : ''}</span>` : '<span class="star-na">—</span>';
 
     /* Kết quả cell (thay cho nút Dùng sao — chỉ hiển thị, không bấm được) */
     let kqH = '<span class="star-na">—</span>';
-    if(isDone)     { totPlus  += cat.sp; kqH = `<span class="star-plus">+${cat.sp}</span>`; }
+    if(isDone)     { totPlus  += bonusStarVr; kqH = `<span class="star-plus">+${bonusStarVr}${pct > 300 ? ' ⚡x2' : ''}</span>`; }
     else if(hope)  { totMinus += cat.sm; kqH = `<span class="star-minus">⭐ −${cat.sm}</span>`; }
 
     /* Thực tế cell */
