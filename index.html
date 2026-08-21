@@ -807,6 +807,21 @@ tr.row-done .cat-name{color:var(--green)}
         </div>
         </div>
 
+        <!-- Bán thêm sản phẩm khác (ngoài danh mục thi đua) -->
+        <div class="extra-bonus-card" id="extraBonusCard" style="margin:14px 0;padding:14px 16px;background:#fff9f0;border:2px solid #f3d9a0;border-radius:12px">
+          <div style="font-weight:800;font-size:13px;color:#8a5a00;margin-bottom:8px">
+            <i class="ti ti-gift"></i> Bán thêm sản phẩm khác (ngoài danh mục thi đua)
+          </div>
+          <div id="extraBonusStatusWrap" style="margin-bottom:8px"></div>
+          <div id="extraBonusFormWrap">
+            <input type="text" id="extraNoteInp" class="num-input" style="width:100%;margin-bottom:8px;font-size:13px;box-sizing:border-box" placeholder="Ghi chú: tên sản phẩm, số lượng...">
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="extraStarsInp" class="num-input" style="width:90px" placeholder="Số sao" min="1">
+              <button class="act-btn primary" style="flex:1;font-size:12px" onclick="submitExtraBonus()">Gửi đề xuất cho QL</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Summary -->
         <div class="summary-strip">
           <div class="sum-cell">
@@ -839,6 +854,14 @@ tr.row-done .cat-name{color:var(--green)}
           style="background:#eef1ff;color:#1a237e;border:2px solid #b7c0f0;margin-top:8px">
           <i class="ti ti-download" style="font-size:18px"></i>
           Tải ảnh báo cáo về
+        </button>
+
+        <!-- Nút tải thủ công ảnh "Kết quả 5 ngày gần nhất theo môn" — chỉ hiện vào
+             các ngày mốc 5/10/15/20/25/30, dùng khi ảnh tự động không tải được -->
+        <button class="submit-btn" id="manualDl5dBtn" onclick="manualDownload5Days()"
+          style="display:none;background:#fff7e6;color:#8a5a00;border:2px solid #f0d28a;margin-top:8px">
+          <i class="ti ti-download" style="font-size:18px"></i>
+          Tải ảnh Kết quả 5 ngày về
         </button>
 
         <!-- Result bar -->
@@ -918,7 +941,7 @@ tr.row-done .cat-name{color:var(--green)}
           <p>Mỗi ngày, nhập <b>Thực tế</b> cho từng môn thi đua rồi bấm <b>Lưu &amp; Xuất ảnh báo cáo</b>. Hệ thống tự tính % đạt = Thực tế ÷ Target.</p>
           <ul>
             <li><span class="rule-badge">Đạt ≥100%</span> → được <b>cộng sao</b> theo mức thưởng riêng của từng môn (xem ở tab <b>Môn thi</b>).</li>
-            <li><span class="rule-badge gold">Đạt &gt;300%</span> → số sao thưởng được <b>nhân đôi (x2)</b> cho môn đó, thay vì mức thưởng thường.</li>
+            <li><span class="rule-badge gold">Đạt &gt;<span id="ruleX2ThresholdTxt">300</span>%</span> → số sao thưởng được <b>nhân đôi (x2)</b> cho môn đó, thay vì mức thưởng thường (nếu QL đang bật tính năng này).</li>
             <li><span class="rule-badge red">Chưa đạt &lt;100%</span> → không cộng, và số ngày liên tiếp chưa đạt của môn đó sẽ tăng thêm 1 (cột <b>Số Ngày</b>).</li>
           </ul>
         </div>
@@ -1072,6 +1095,40 @@ tr.row-done .cat-name{color:var(--green)}
           </div>
         </div>
 
+        <div class="toggle-card">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="t-title">⚡ Thưởng x2 sao khi vượt ngưỡng %</div>
+              <div class="t-sub">Bật → Môn nào ĐẠT vượt mức % chọn bên dưới (VD &gt;300%) thì số sao thưởng của môn đó được <strong>nhân đôi (x2)</strong><br>Tắt → Luôn thưởng theo mức thường, không nhân đôi dù đạt bao nhiêu %</div>
+              <span class="t-badge" id="x2Badge">—</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="x2Toggle" onchange="onBonusX2Toggle(this.checked)">
+              <span class="sw-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-sync-txt" id="x2ToggleSyncTxt">
+            <span class="dot" id="x2ToggleDot"></span>
+            <span id="x2ToggleTxt">—</span>
+          </div>
+          <div class="toggle-row" id="x2ThresholdRow" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--gray-line)">
+            <div class="toggle-info">
+              <div class="t-title" style="font-size:12px">Mức % vượt để được thưởng x2</div>
+              <span class="t-badge" id="x2ThresholdBadge">—</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input type="number" id="x2ThresholdInp" min="110" max="1000" step="10"
+                class="sel-control" style="width:78px;text-align:center;padding:8px 4px">
+              <span style="font-size:13px;font-weight:800;color:var(--text-mid)">%</span>
+              <button class="act-btn primary" style="padding:8px 10px;font-size:11px" onclick="onBonusX2ThresholdChange()">Lưu</button>
+            </div>
+          </div>
+          <div class="toggle-sync-txt" id="x2ThresholdSyncTxt">
+            <span class="dot" id="x2ThresholdDot"></span>
+            <span id="x2ThresholdTxt">—</span>
+          </div>
+        </div>
+
         <div style="font-size:10px;color:var(--text-light);padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:14px;line-height:1.5">
           <i class="ti ti-info-circle" style="color:#d97706;margin-right:4px"></i>
           <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code>, <code>settings.starPenaltyEnabled</code>, <code>settings.starPenaltyThreshold</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
@@ -1090,6 +1147,11 @@ tr.row-done .cat-name{color:var(--green)}
           </div>
           <div id="missingByEmpWrap"></div>
           <div id="missingByDateWrap" style="display:none"></div>
+        </div>
+
+        <div class="sec-title"><i class="ti ti-gift"></i>Duyệt sao thưởng ngoài danh mục</div>
+        <div class="adm-card" style="padding:14px 16px;margin-bottom:14px">
+          <div id="extraApprovalWrap"></div>
         </div>
 
         <div class="sec-title"><i class="ti ti-users"></i>Sao lũy kế nhân viên</div>
@@ -1135,6 +1197,7 @@ tr.row-done .cat-name{color:var(--green)}
                 <th style="font-size:9px;font-weight:900;padding:5px 4px;background:linear-gradient(135deg,#e6a800,#f5c400);color:#1a1200;border-bottom:2px solid #b07d00;width:52px">Target</th>
                 <th style="font-size:9px;font-weight:900;padding:5px 4px;background:linear-gradient(135deg,#e6a800,#f5c400);color:#1a1200;border-bottom:2px solid #b07d00;width:64px">Thực tế</th>
                 <th style="font-size:9px;font-weight:900;padding:5px 4px;background:linear-gradient(135deg,#e6a800,#f5c400);color:#1a1200;border-bottom:2px solid #b07d00;width:52px">Dùng sao</th>
+                <th style="font-size:9px;font-weight:900;padding:5px 4px;background:linear-gradient(135deg,#e6a800,#f5c400);color:#1a1200;border-bottom:2px solid #b07d00;width:76px">Trừ×2/TC</th>
               </tr></thead>
               <tbody id="qlRepBody"></tbody>
             </table>
@@ -1145,6 +1208,29 @@ tr.row-done .cat-name{color:var(--green)}
           </div>
           <div id="qlRepEmpty" style="font-size:11px;color:var(--text-light);text-align:center;padding:12px 0">
             Chọn nhân viên và ngày để xem báo cáo
+          </div>
+        </div>
+
+        <!-- ══ RESET TOÀN BỘ SỐ NGÀY (MỌI MÔN) CHO 1 NV ══ -->
+        <div class="sec-title" style="margin-top:18px"><i class="ti ti-refresh"></i>Reset toàn bộ Số Ngày</div>
+        <div class="adm-card" style="padding:14px 16px">
+          <p style="font-size:11px;color:var(--text-light);margin-bottom:12px;line-height:1.5">
+            Đưa <strong>Số Ngày chưa đạt liên tiếp</strong> của <strong>TẤT CẢ môn</strong> thuộc nhân viên
+            được chọn về lại <strong>0</strong> — chỉ áp dụng cho <strong>hôm nay</strong>, giống hệt bấm
+            nút ↺0 ở từng môn trong bảng báo cáo nhưng làm 1 lần cho cả NV. Không đổi Sao lũy kế, số
+            lượng đã báo cáo, Dùng sao, hay bất kỳ dữ liệu nào khác của nhân viên.
+          </p>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end">
+            <div>
+              <div class="sel-label" style="margin-bottom:5px">Nhân viên</div>
+              <select id="resetAllEmpSel" class="sel-control">
+                <option value="">— Chọn nhân viên —</option>
+              </select>
+            </div>
+            <button class="act-btn" id="resetAllBtn" style="background:#fef2f2;color:#dc2626;border:2px solid #fecaca;white-space:nowrap;padding:10px 14px"
+              onclick="resetAllZeroDaysForEmp()">
+              <i class="ti ti-refresh"></i> Reset tất cả Số Ngày
+            </button>
           </div>
         </div>
 
@@ -1439,6 +1525,10 @@ let otFeatureEnabled = true; // QL toggle: bật/tắt toàn bộ tính năng b�
 let starPenaltyEnabled   = true; // QL toggle: bật/tắt cảnh báo dùng sao (chưa đạt) liên tiếp
 let starPenaltyThreshold = 3;    // QL thiết lập: mốc số ngày CHƯA ĐẠT liên tiếp (3/4/5) kích hoạt cảnh báo
 
+// ══ THƯỞNG X2 SAO KHI VƯỢT NGƯỠNG % (mặc định >300%) ══
+let bonusX2Enabled   = true; // QL toggle: bật/tắt tính năng thưởng x2 sao khi vượt ngưỡng
+let bonusX2Threshold = 300;  // QL thiết lập: mức % (VD 200/300/400) để kích hoạt thưởng x2
+
 // ════════════════════════════════════════════
 //  SYNC INDICATOR
 // ════════════════════════════════════════════
@@ -1515,6 +1605,12 @@ async function loadAll(){
     }
     if(data.settings && data.settings.starPenaltyThreshold !== undefined && [3,4,5].includes(Number(data.settings.starPenaltyThreshold))){
       starPenaltyThreshold = Number(data.settings.starPenaltyThreshold);
+    }
+    if(data.settings && data.settings.bonusX2Enabled !== undefined){
+      bonusX2Enabled = data.settings.bonusX2Enabled;
+    }
+    if(data.settings && data.settings.bonusX2Threshold !== undefined && Number(data.settings.bonusX2Threshold) > 100){
+      bonusX2Threshold = Number(data.settings.bonusX2Threshold);
     }
 
     EMPS.forEach(e => {
@@ -1602,6 +1698,9 @@ function buildEmpSelect(){
 }
 
 function getCurEmp(){ return EMPS.find(e => e.id === curEmpId) || null; }
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function getCats(dept){ return CATS[dept] || []; }
 
 // ════════════════════════════════════════════
@@ -2060,7 +2159,7 @@ function getPct(a, t){ return t > 0 ? Math.round(a / t * 100) : 0; }
 // Số sao THƯỞNG thực nhận cho 1 môn khi đã ĐẠT (pct >= 100).
 // Quy tắc: môn nào đạt trên 300% (vượt xa target) → thưởng x2 số sao cấu hình (cat.sp).
 function starBonus(cat, pct){
-  return pct > 300 ? cat.sp * 2 : cat.sp;
+  return (bonusX2Enabled && pct > bonusX2Threshold) ? cat.sp * 2 : cat.sp;
 }
 
 // Tìm % hoàn thành của môn (cat) ở NGÀY BÁO CÁO LIỀN TRƯỚC (ngày gần nhất
@@ -2085,6 +2184,10 @@ function renderTable(){
   const dateKey = document.getElementById('dateIn').value;
   const saved   = (STORED.reports[emp.id] || {})[dateKey] || {};
   const tbody   = document.getElementById('repBody');
+
+  // Chỉ hiện nút tải thủ công "Kết quả 5 ngày" vào đúng các ngày mốc
+  const dl5Btn = document.getElementById('manualDl5dBtn');
+  if(dl5Btn) dl5Btn.style.display = isMilestoneDay(dateKey) ? '' : 'none';
 
   // Hiện/ẩn cột Reset theo quyền QL
   document.querySelectorAll('.reset-th,.reset-td').forEach(el => {
@@ -2155,11 +2258,12 @@ function renderTable(){
 
     /* star cells */
     const bonusStar = starBonus(cat, pct);
+    const isX2Bonus = bonusX2Enabled && pct > bonusX2Threshold;
     let spH = '<span class="star-na">—</span>';
-    if(isDone) spH = `<span class="star-plus">+${bonusStar}${pct > 300 ? ' <i class="ti ti-bolt" title="Vượt 300% — thưởng x2"></i>' : ''}</span>`;
+    if(isDone) spH = `<span class="star-plus">+${bonusStar}${isX2Bonus ? ` <i class="ti ti-bolt" title="Vượt ${bonusX2Threshold}% — thưởng x2"></i>` : ''}</span>`;
 
     let kqH = '<span class="star-na">—</span>';
-    if(isDone)                        { totPlus  += bonusStar; kqH = `<span class="star-plus">+${bonusStar}${pct > 300 ? ' ⚡x2' : ''}</span>`; }
+    if(isDone)                        { totPlus  += bonusStar; kqH = `<span class="star-plus">+${bonusStar}${isX2Bonus ? ' ⚡x2' : ''}</span>`; }
     else if(hope && !forcedOtToday)   { totMinus += cat.sm * spMult; kqH = `<span class="star-minus">-${cat.sm * spMult}</span>`; }
 
     /* kq actual value */
@@ -2248,9 +2352,20 @@ function renderTable(){
     }
     actionH += spChoiceH;
 
-    /* reset col — chỉ hiện khi admin đã mở khoá */
+    /* reset col — chỉ hiện khi admin đã mở khoá, VÀ chỉ cho phép reset khi đang xem
+       ĐÚNG NGÀY HÔM NAY (todayStr). Số Ngày là chuỗi đếm tính đến HÔM NAY — nếu QL
+       lỡ đang xem một ngày cũ (VD hôm qua, hoặc vài ngày trước) và bấm Reset, cờ
+       reset sẽ bị gắn vào ĐÚNG NGÀY CŨ đó thay vì hôm nay. Vì thuật toán getZeroDays()
+       quét ngược từ hôm nay và chỉ DỪNG khi gặp cờ reset, nếu giữa ngày reset (cũ) và
+       hôm nay vẫn còn ngày chưa đạt thì Số Ngày hiển thị HÔM NAY sẽ KHÔNG về 0 — QL
+       tưởng đã reset xong nhưng thực ra chỉ cắt bớt 1 phần streak. Đây chính là lý do
+       "reset cho NV này thì cập nhật, NV khác thì không" (tuỳ QL đang xem ngày nào của
+       từng NV lúc bấm Reset). → Khoá nút khi không phải hôm nay để tránh reset nhầm ngày. */
+    const isTodayView = dateKey === todayStr;
     const resetTd = adminUnlocked
-      ? `<td class="reset-td"><button class="reset-btn" data-reset="${cat.id}" title="Reset">↺0</button></td>`
+      ? (isTodayView
+          ? `<td class="reset-td"><button class="reset-btn" data-reset="${cat.id}" title="Reset">↺0</button></td>`
+          : `<td class="reset-td"><button class="reset-btn" data-reset="${cat.id}" disabled title="Chỉ reset được khi đang xem HÔM NAY (${todayStr}) — chuyển ngày về hôm nay rồi mới Reset, nếu không Số Ngày sẽ không về 0 đúng như mong đợi">↺0</button></td>`)
       : `<td class="reset-td" style="display:none"></td>`;
 
     /* build row */
@@ -2369,6 +2484,7 @@ function renderTable(){
     if(lateRow)    lateRow.style.display = 'none';
     if(lateBanner) lateBanner.style.display = 'none';
   }
+  renderExtraBonusWidget();
 }
 
 /* ── Event delegation for table inputs & buttons ── */
@@ -2600,6 +2716,88 @@ async function onStarPenaltyThresholdChange(val){
   }
 }
 
+// ── Thưởng x2 sao khi vượt ngưỡng % (mặc định >300%) ──
+function renderBonusX2Toggle(){
+  const chk   = document.getElementById('x2Toggle');
+  const badge = document.getElementById('x2Badge');
+  if(!chk || !badge) return;
+  chk.checked = bonusX2Enabled;
+  badge.textContent = bonusX2Enabled ? '✅ Đang BẬT — áp dụng cho tất cả NV' : '🔴 Đang TẮT — không thưởng x2';
+  badge.className = 't-badge ' + (bonusX2Enabled ? 't-badge-on' : 't-badge-off');
+
+  // Ẩn/mờ khối chọn ngưỡng % khi tính năng đang TẮT
+  const row = document.getElementById('x2ThresholdRow');
+  const inp = document.getElementById('x2ThresholdInp');
+  if(row) row.style.opacity = bonusX2Enabled ? '1' : '.4';
+  if(inp) inp.disabled = !bonusX2Enabled;
+}
+
+function renderBonusX2ThresholdControl(){
+  const inp   = document.getElementById('x2ThresholdInp');
+  const badge = document.getElementById('x2ThresholdBadge');
+  if(!inp || !badge) return;
+  inp.value = String(bonusX2Threshold);
+  badge.textContent = `✅ Đang áp dụng — vượt ${bonusX2Threshold}%`;
+  badge.className = 't-badge t-badge-on';
+  renderBonusX2Toggle();
+}
+
+async function onBonusX2Toggle(val){
+  const prevVal   = bonusX2Enabled; // lưu lại để revert nếu lỗi
+  bonusX2Enabled  = val;
+  renderBonusX2Toggle();
+  renderTable();
+  const dot = document.getElementById('x2ToggleDot');
+  const txt = document.getElementById('x2ToggleTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'bonusX2Enabled', value: val });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'BẬT' : 'TẮT'} cho tất cả nhân viên`;
+    toast(val ? '✅ Đã BẬT thưởng x2 sao cho tất cả NV' : '🔒 Đã TẮT thưởng x2 sao cho tất cả NV', 'ok');
+  } catch(err){
+    bonusX2Enabled = prevVal;
+    renderBonusX2Toggle();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
+async function onBonusX2ThresholdChange(){
+  const inp = document.getElementById('x2ThresholdInp');
+  if(!inp) return;
+  const newVal = parseInt(inp.value);
+  if(!newVal || newVal < 101){
+    toast('⚠️ Mức % phải lớn hơn 100 (vì 100% đã là ĐẠT, phải vượt hơn mới thưởng x2)', 'err');
+    inp.value = String(bonusX2Threshold);
+    return;
+  }
+  const prevVal = bonusX2Threshold; // lưu lại để revert nếu lỗi
+  bonusX2Threshold = newVal;
+  renderBonusX2ThresholdControl();
+  renderTable();
+  const dot = document.getElementById('x2ThresholdDot');
+  const txt = document.getElementById('x2ThresholdTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'bonusX2Threshold', value: newVal });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — áp dụng mức vượt ${newVal}% cho tất cả nhân viên`;
+    toast(`✅ Đã đặt ngưỡng Thưởng x2 sao = vượt ${newVal}% cho tất cả NV`, 'ok');
+  } catch(err){
+    bonusX2Threshold = prevVal;
+    renderBonusX2ThresholdControl();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
 async function onZdToggle(val){
   const prevVal = allowZdManual; // lưu lại để revert nếu lỗi
   allowZdManual = val;
@@ -2824,6 +3022,13 @@ async function resetZeroDays(catId){
   const emp = getCurEmp(); if(!emp) return;
   const dateKey = document.getElementById('dateIn').value;
 
+  // Chặn reset khi không phải hôm nay — xem giải thích chi tiết ở nơi render nút Reset
+  // (renderTable). Reset trên ngày cũ khiến Số Ngày hôm nay không thực sự về 0.
+  if(dateKey !== todayStr){
+    toast('⚠️ Chỉ reset được khi đang xem HÔM NAY (' + todayStr + '). Hãy chuyển ngày về hôm nay rồi thử lại.', 'err');
+    return;
+  }
+
   // FIX: trước đây hàm này chỉ sửa STORED.reports trong bộ nhớ trình duyệt rồi báo "Đã reset",
   // nhưng KHÔNG lưu lên Sheet — nên chỉ cần F5 lại trang (hoặc NV mở tool ở máy khác) là số ngày
   // "nhảy" về giá trị cũ vì server chưa từng nhận được lệnh reset. Giờ merge cờ reset vào đúng
@@ -2849,6 +3054,79 @@ async function resetZeroDays(catId){
   } finally {
     if(btn) btn.disabled = false;
     renderTable();
+  }
+}
+
+// ════════════════════════════════════════════
+//  RESET TOÀN BỘ SỐ NGÀY (MỌI MÔN) CHO 1 NHÂN VIÊN (chỉ QL) — tab Admin
+// ════════════════════════════════════════════
+// Giống hệt nút ↺0 từng môn (resetZeroDays) nhưng làm 1 lần cho TẤT CẢ môn thi đua
+// của nhân viên được chọn, không cần vào từng dòng bấm từng nút. Chỉ set cờ
+// `_reset_<catId> = true` merge vào ĐÚNG báo cáo hôm nay (luôn ép về todayStr, không
+// phụ thuộc ngày đang xem ở tab khác — tránh đúng lỗi reset nhầm ngày đã sửa ở
+// resetZeroDays) — KHÔNG đụng tới bất kỳ field nào khác (số liệu đã báo cáo, Dùng
+// sao, Trừ×2, Sao lũy kế...) nên không ảnh hưởng dữ liệu khác của nhân viên.
+function resetAllZeroDaysForEmp(){
+  if(!adminUnlocked){ toast('⚠️ Chỉ quản lý mới dùng được!','err'); return; }
+  const empId = document.getElementById('resetAllEmpSel').value;
+  if(!empId){ toast('Vui lòng chọn nhân viên!','err'); return; }
+  const emp = EMPS.find(e => e.id === empId); if(!emp) return;
+  const cats = getCats(emp.dept);
+  if(!cats.length){ toast('Nhân viên này không có môn thi đua nào!','err'); return; }
+
+  // Xác nhận trước khi thực hiện — đây là thao tác ảnh hưởng nhiều môn cùng lúc
+  const bg    = document.getElementById('modalBg');
+  const title = document.getElementById('modalTitle');
+  const body  = document.getElementById('modalBody');
+  const btns  = document.getElementById('modalBtns');
+
+  title.innerHTML = `<span style="color:#dc2626">↺ Reset toàn bộ Số Ngày</span>`;
+  body.innerHTML = `
+    <p style="font-size:13px;color:var(--text-mid);line-height:1.5">
+      Xác nhận đưa <strong>Số Ngày</strong> của <strong>${cats.length} môn</strong> thuộc
+      <strong style="color:#1a237e">${emp.name}</strong> về lại <strong>0</strong>, áp dụng cho
+      hôm nay (${todayStr})?
+    </p>
+    <p style="font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.5">
+      Sao lũy kế, số liệu đã báo cáo, Dùng sao và các dữ liệu khác của nhân viên
+      <strong>không</strong> bị ảnh hưởng.
+    </p>`;
+  btns.innerHTML = `
+    <button class="act-btn" onclick="closeModal()">Huỷ</button>
+    <button class="act-btn primary" onclick="closeModal();confirmResetAllZeroDays('${empId}')">Xác nhận Reset</button>`;
+  bg.classList.add('open');
+}
+
+async function confirmResetAllZeroDays(empId){
+  const emp = EMPS.find(e => e.id === empId); if(!emp) return;
+  const cats = getCats(emp.dept);
+  const dateKey = todayStr; // luôn reset cho HÔM NAY, không phụ thuộc ngày đang xem ở tab khác
+
+  const existing = (STORED.reports[emp.id] || {})[dateKey] || {};
+  const rep = Object.assign({}, existing); // giữ nguyên mọi field khác, chỉ thêm cờ reset
+  cats.forEach(cat => { rep['_reset_' + cat.id] = true; });
+
+  if(!STORED.reports[emp.id]) STORED.reports[emp.id] = {};
+  STORED.reports[emp.id][dateKey] = rep;
+  if(curEmpId === emp.id) renderTable(); // cập nhật ngay UI nếu đang xem đúng NV này ở tab báo cáo
+
+  const btn = document.getElementById('resetAllBtn');
+  if(btn) btn.disabled = true;
+  try {
+    await gasCall({
+      action:'saveReport', empId:emp.id, empName:emp.name, dept:emp.dept,
+      date:dateKey, rep, lines:[],
+      starsBase:emp.stars, hopeBase:emp.hope, starsNew:emp.stars, hopeNew:emp.hope, net:0
+    });
+    toast(`✓ Đã reset Số Ngày tất cả ${cats.length} môn cho ${emp.name} (đã lưu lên hệ thống)`, 'ok');
+  } catch(err){
+    toast('⚠️ Reset hiện tạm trên màn hình nhưng LƯU LÊN SHEET BỊ LỖI: ' + err.message + ' — vui lòng thử lại, nếu không Số Ngày sẽ về giá trị cũ khi tải lại trang!', 'err');
+  } finally {
+    if(btn) btn.disabled = false;
+    // Nếu đang mở đúng NV này ở màn Sửa báo cáo hôm nay thì làm mới luôn để khớp dữ liệu
+    if(document.getElementById('qlEmpSel')?.value === empId && document.getElementById('qlDateIn')?.value === dateKey){
+      qlLoadReport();
+    }
   }
 }
 
@@ -3088,8 +3366,8 @@ async function submitReport(){
   const starsNew = Math.max(0, emp.stars - oldNet + net + oldLatePenalty - latePenalty);
   const hopeNew  = emp.hope; // không giới hạn sao hy vọng
 
-  // Giữ lại cờ reset của QL
-  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_')) rep[k] = saved[k]; });
+  // Giữ lại cờ reset của QL + đề xuất/duyệt "Bán thêm khác" (không bị mất khi nộp lại báo cáo)
+  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_') || k.startsWith('extra')) rep[k] = saved[k]; });
 
   if(!STORED.reports[emp.id]) STORED.reports[emp.id] = {};
   STORED.reports[emp.id][dateKey] = rep;
@@ -3236,12 +3514,13 @@ async function captureReport(){
     //    dòng "Số Ngày", và dòng chú thích quy tắc (✅/⏳/⭐)
     const subBtn     = document.getElementById('subBtn');
     const manualDlBtn = document.getElementById('manualDlBtn');
+    const manualDl5dBtn = document.getElementById('manualDl5dBtn');
     const tabsEl     = document.querySelector('.tabs');
     const selCardEl  = document.querySelector('#tab-report .sel-card');
     const toolbarEl  = document.querySelector('#tab-report .rep-toolbar');
     const legendEl   = document.querySelector('#tab-report .legend-bar');
     const zdInfoBtns = Array.from(document.querySelectorAll('#tab-report .zd-info-btn'));
-    hideEls    = [subBtn, manualDlBtn, tabsEl, selCardEl, toolbarEl, legendEl, ...zdInfoBtns].filter(Boolean);
+    hideEls    = [subBtn, manualDlBtn, manualDl5dBtn, tabsEl, selCardEl, toolbarEl, legendEl, ...zdInfoBtns].filter(Boolean);
     prevDisplays = hideEls.map(el => el.style.display);
     hideEls.forEach(el => { el.style.display = 'none'; });
 
@@ -3422,15 +3701,28 @@ async function captureLast5DaysReport(empId, dateKey){
 
     const filename5d = `KQ5Ngay_${emp.name.replace(/\s/g, '_')}_${dateKey}.png`;
     const downloaded5d = await downloadCanvasImage(canvas, filename5d);
-    // Chỉ tự mở khung xem trước nếu tải tự động thất bại (tránh che mất khung
-    // xem trước ảnh báo cáo ngày vừa hiện trước đó 1.5s).
-    if(!downloaded5d){
-      showImagePreviewModal(canvas, filename5d, 'Kết quả 5 ngày · ' + emp.name + ' · ' + dateKey);
-    }
-    toast('📸 Đã xuất thêm ảnh Kết quả 5 ngày gần nhất theo môn!', 'ok');
+    // LUÔN mở khung xem trước (giống captureReport) — KHÔNG dựa vào kết quả
+    // downloaded5d để quyết định, vì trên webview Zalo/Messenger (iOS) thẻ
+    // <a download> bấm "thành công" (không lỗi) nhưng ảnh không thực sự được
+    // lưu, nên downloaded5d vẫn trả về true dù NV không hề nhận được ảnh.
+    // → Trước đây modal chỉ mở khi downloaded5d===false nên đúng những NV bị
+    //   lỗi âm thầm này lại KHÔNG thấy modal/nút tải thủ công. Đây là nguyên
+    //   nhân chính của lỗi "không tải được ảnh 5 ngày, không có nút tải lại".
+    showImagePreviewModal(canvas, filename5d, 'Kết quả 5 ngày · ' + emp.name + ' · ' + dateKey);
+    toast(downloaded5d ? '📸 Đã xuất thêm ảnh Kết quả 5 ngày! (ảnh cũng đang hiện sẵn để tải lại nếu cần)' : '📸 Ảnh Kết quả 5 ngày đã sẵn sàng — bấm Tải ảnh về hoặc nhấn giữ ảnh để lưu', downloaded5d ? 'ok' : 'warn');
   } catch(err){
     toast('Không xuất được ảnh 5 ngày gần nhất: ' + err.message, 'err');
   }
+}
+
+// Nút thủ công (chỉ hiện vào ngày mốc 5/10/15/20/25/30): cho phép NV tự xuất
+// lại ảnh "Kết quả 5 ngày gần nhất theo môn" bất cứ lúc nào, kể cả khi đã lỡ
+// đóng modal xem trước hoặc tải tự động không thành công lúc Lưu báo cáo.
+function manualDownload5Days(){
+  const emp = getCurEmp();
+  const dateKey = document.getElementById('dateIn').value;
+  if(!emp || !dateKey) return;
+  captureLast5DaysReport(emp.id, dateKey);
 }
 
 // ════════════════════════════════════════════
@@ -3828,7 +4120,9 @@ function renderAdminTab(){
   renderZdToggle();
   renderOtThresholdControl();
   renderStarPenaltyThresholdControl();
+  renderBonusX2ThresholdControl();
   renderMissingReports();
+  renderExtraApprovals();
   const tbody = document.getElementById('adminEmpBody');
   tbody.innerHTML = '';
   EMPS.forEach(e => {
@@ -3842,6 +4136,157 @@ function renderAdminTab(){
       <td><button class="act-btn primary" style="font-size:11px;padding:5px 10px" onclick="saveEmpStars('${e.id}')">Lưu</button></td>`;
     tbody.appendChild(tr);
   });
+}
+
+// ════════════════════════════════════════════
+//  BÁN THÊM SẢN PHẨM KHÁC (NGOÀI DANH MỤC) — NV đề xuất, QL duyệt
+//  Lưu gộp theo NGÀY trong field rep.extraNote/extraProposed/extraStatus/extraApproved.
+//  Không cộng vào sao ngay khi NV gửi — chỉ cộng khi QL bấm "Duyệt" (qlDecideExtra).
+// ════════════════════════════════════════════
+function renderExtraBonusWidget(){
+  const emp = getCurEmp();
+  const statusWrap = document.getElementById('extraBonusStatusWrap');
+  const formWrap    = document.getElementById('extraBonusFormWrap');
+  if(!emp || !statusWrap || !formWrap) return;
+
+  const dateKey = document.getElementById('dateIn').value;
+  const saved   = (STORED.reports[emp.id] || {})[dateKey] || {};
+  const status  = saved.extraStatus;
+
+  if(status === 'approved'){
+    statusWrap.innerHTML = `<div style="font-size:12px;font-weight:700;color:#16a34a">✅ QL đã duyệt: ${escapeHtml(saved.extraNote || '')} — +${saved.extraApproved || 0} sao</div>`;
+    formWrap.style.display = 'none';
+    return;
+  }
+
+  formWrap.style.display = '';
+  if(status === 'pending'){
+    statusWrap.innerHTML = `<div style="font-size:12px;font-weight:700;color:#b45309">⏳ Đang chờ QL duyệt (đề xuất +${saved.extraProposed || 0} sao) — có thể sửa lại rồi gửi lại bên dưới</div>`;
+  } else if(status === 'rejected'){
+    statusWrap.innerHTML = `<div style="font-size:12px;font-weight:700;color:#c62828">❌ QL đã từ chối đề xuất trước — có thể gửi lại đề xuất mới bên dưới</div>`;
+  } else {
+    statusWrap.innerHTML = '';
+  }
+
+  const noteInp  = document.getElementById('extraNoteInp');
+  const starsInp = document.getElementById('extraStarsInp');
+  if(document.activeElement !== noteInp)  noteInp.value  = saved.extraNote || '';
+  if(document.activeElement !== starsInp) starsInp.value = saved.extraProposed || '';
+}
+
+async function submitExtraBonus(){
+  const emp = getCurEmp(); if(!emp) return;
+  const dateKey = document.getElementById('dateIn').value;
+  const note  = (document.getElementById('extraNoteInp').value || '').trim();
+  const stars = parseInt(document.getElementById('extraStarsInp').value) || 0;
+  if(!note){ toast('Nhập ghi chú (tên sản phẩm, số lượng)!', 'err'); return; }
+  if(stars <= 0){ toast('Nhập số sao đề xuất lớn hơn 0!', 'err'); return; }
+
+  const saved = (STORED.reports[emp.id] || {})[dateKey] || {};
+  const rep = Object.assign({}, saved, {
+    extraNote:     note,
+    extraProposed: stars,
+    extraStatus:   'pending'
+  });
+
+  if(!STORED.reports[emp.id]) STORED.reports[emp.id] = {};
+  STORED.reports[emp.id][dateKey] = rep;
+
+  try {
+    await gasCall({
+      action:'saveReport', empId:emp.id, empName:emp.name, dept:emp.dept,
+      date:dateKey, rep, lines:[],
+      starsBase:emp.stars, hopeBase:emp.hope, starsNew:emp.stars, hopeNew:emp.hope, net:0
+    });
+    toast('✓ Đã gửi đề xuất cho QL duyệt!', 'ok');
+    renderExtraBonusWidget();
+  } catch(err){
+    toast('⚠️ Lỗi: ' + err.message, 'err');
+  }
+}
+
+// ── QL: danh sách đề xuất đang chờ duyệt, gộp từ toàn bộ NV/ngày ──
+function renderExtraApprovals(){
+  const wrap = document.getElementById('extraApprovalWrap');
+  if(!wrap) return;
+  const items = [];
+  EMPS.forEach(emp => {
+    const reps = STORED.reports[emp.id] || {};
+    Object.keys(reps).forEach(date => {
+      const r = reps[date];
+      if(r && r.extraStatus === 'pending'){
+        items.push({ empId: emp.id, empName: emp.name, dept: emp.dept, date, note: r.extraNote, proposed: r.extraProposed });
+      }
+    });
+  });
+  items.sort((a,b) => b.date.localeCompare(a.date));
+
+  if(items.length === 0){
+    wrap.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-light);font-size:12px">Không có đề xuất nào đang chờ duyệt.</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(it => `
+    <div class="extra-approval-row" style="border:1px solid var(--gray-line);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-weight:800;font-size:13px">${escapeHtml(it.empName)} <span style="font-weight:500;color:var(--text-light);font-size:11px">(${it.dept} · ${it.date})</span></div>
+      <div style="font-size:12px;color:var(--text-mid);margin:4px 0">${escapeHtml(it.note || '')}</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+        <input type="number" class="num-input" style="width:80px" id="extraStarsEdit_${it.empId}_${it.date}" value="${it.proposed}" min="1">
+        <button class="act-btn primary" style="flex:1;font-size:12px;background:#16a34a;color:#fff;border-color:#16a34a" onclick="qlDecideExtra('${it.empId}','${it.date}','approved')">✓ Duyệt</button>
+        <button class="act-btn" style="flex:1;font-size:12px;color:#c62828;border-color:#fca5a5" onclick="qlDecideExtra('${it.empId}','${it.date}','rejected')">✕ Từ chối</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function qlDecideExtra(empId, date, decision){
+  const emp = EMPS.find(e => e.id === empId); if(!emp) return;
+  const saved = (STORED.reports[empId] || {})[date] || {};
+  if(saved.extraStatus !== 'pending'){
+    toast('Đề xuất này đã được xử lý rồi!', 'err');
+    renderExtraApprovals();
+    return;
+  }
+
+  const rep = Object.assign({}, saved);
+  const starsBefore = emp.stars;
+  let starsNew = starsBefore;
+
+  if(decision === 'approved'){
+    const inp = document.getElementById(`extraStarsEdit_${empId}_${date}`);
+    const approvedStars = Math.max(1, parseInt(inp ? inp.value : saved.extraProposed) || 0);
+    rep.extraStatus     = 'approved';
+    rep.extraApproved   = approvedStars;
+    rep.extraApprovedAt = new Date().toLocaleString('vi-VN');
+    starsNew = starsBefore + approvedStars;
+  } else {
+    rep.extraStatus     = 'rejected';
+    rep.extraApproved   = 0;
+    rep.extraApprovedAt = new Date().toLocaleString('vi-VN');
+  }
+
+  if(!STORED.reports[empId]) STORED.reports[empId] = {};
+  STORED.reports[empId][date] = rep;
+  const idx = EMPS.findIndex(e => e.id === empId);
+  EMPS[idx].stars = starsNew;
+  if(!STORED.empStars[empId]) STORED.empStars[empId] = {};
+  STORED.empStars[empId].stars = starsNew;
+
+  try {
+    await gasCall({
+      action:'saveReport', empId, empName:emp.name, dept:emp.dept,
+      date, rep, lines:[],
+      starsBase:starsBefore, hopeBase:emp.hope, starsNew, hopeNew:emp.hope, net: starsNew - starsBefore
+    });
+    toast(decision === 'approved'
+      ? `✓ Đã duyệt +${rep.extraApproved} sao cho ${emp.name}`
+      : `✓ Đã từ chối đề xuất của ${emp.name}`, 'ok');
+    renderExtraApprovals();
+    updateEmpHeader();
+    renderLeaderboard();
+    renderAdminTab();
+  } catch(err){
+    toast('⚠️ Lỗi: ' + err.message, 'err');
+  }
 }
 
 async function saveEmpStars(empId){
@@ -3870,7 +4315,17 @@ async function saveEmpStars(empId){
 //  QL — SỬA BÁO CÁO NHÂN VIÊN
 // ════════════════════════════════════════════
 function qlBuildEmpSelect(){
-  const sel = document.getElementById('qlEmpSel');
+  buildEmpSelectInto('qlEmpSel');
+  buildEmpSelectInto('resetAllEmpSel');
+  // Mặc định ngày hôm nay
+  const di = document.getElementById('qlDateIn');
+  if(di && !di.value) di.value = todayStr;
+}
+
+// Đổ danh sách NV (nhóm theo siêu thị) vào 1 thẻ <select> bất kỳ theo id — dùng chung
+// cho các dropdown chọn nhân viên trong tab Admin (Sửa báo cáo, Reset toàn bộ Số Ngày...).
+function buildEmpSelectInto(selectId){
+  const sel = document.getElementById(selectId);
   if(!sel) return;
   sel.innerHTML = '<option value="">— Chọn nhân viên —</option>';
   const depts = [...new Set(EMPS.map(e => e.dept))];
@@ -3885,9 +4340,6 @@ function qlBuildEmpSelect(){
     });
     sel.appendChild(grp);
   });
-  // Mặc định ngày hôm nay
-  const di = document.getElementById('qlDateIn');
-  if(di && !di.value) di.value = todayStr;
 }
 
 function qlLoadReport(){
@@ -3910,6 +4362,7 @@ function qlLoadReport(){
   cats.forEach(cat => {
     const actual = saved[cat.id] || 0;
     const hope   = saved['h_' + cat.id] || false;
+    const spChoice = saved['sp_' + cat.id] || '';
     const pct    = getPct(actual, cat.target);
     const isDone = pct >= 100;
     const tr = document.createElement('tr');
@@ -3924,6 +4377,14 @@ function qlLoadReport(){
       <td style="text-align:center;padding:3px 4px">
         <input type="checkbox" data-ql-hope="${cat.id}" ${hope?'checked':''} ${isDone?'disabled':''} onchange="qlPreviewNet()"
           style="width:16px;height:16px;cursor:pointer;accent-color:var(--orange)">
+      </td>
+      <td style="text-align:center;padding:3px 4px">
+        <select data-ql-sp="${cat.id}" ${isDone?'disabled':''} onchange="qlPreviewNet()"
+          style="font-size:10px;padding:2px 4px;border-radius:6px;border:1px solid var(--gray-line)">
+          <option value="" ${spChoice===''?'selected':''}>—</option>
+          <option value="x2" ${spChoice==='x2'?'selected':''}>⭐ Trừ×2</option>
+          <option value="ot" ${spChoice==='ot'?'selected':''}>🕐 TC ngày mai</option>
+        </select>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -3941,11 +4402,15 @@ function qlPreviewNet(){
   cats.forEach(cat => {
     const inp  = document.querySelector(`[data-ql-cat="${cat.id}"]`);
     const chk  = document.querySelector(`[data-ql-hope="${cat.id}"]`);
+    const spEl = document.querySelector(`[data-ql-sp="${cat.id}"]`);
     const actual = inp ? (parseInt(inp.value)||0) : 0;
-    const hope   = chk ? chk.checked : false;
+    let   hope   = chk ? chk.checked : false;
+    const spChoice = spEl ? spEl.value : '';
+    if(spChoice === 'x2') hope = true; // Trừ×2 luôn kéo theo Dùng sao, giống luồng NV tự nộp
+    const spMult = (spChoice === 'x2') ? 2 : 1;
     const pct    = getPct(actual, cat.target);
     if(pct >= 100)  plus  += starBonus(cat, pct);
-    else if(hope)   minus += cat.sm;
+    else if(hope)   minus += cat.sm * spMult;
   });
   const net = plus - minus;
   const el  = document.getElementById('qlNetPreview');
@@ -3965,9 +4430,11 @@ async function qlSaveReport(){
   cats.forEach(cat => {
     const oldActual = saved[cat.id] || 0;
     const oldHope   = saved['h_' + cat.id] || false;
+    const oldSpChoice = saved['sp_' + cat.id] || '';
+    const oldSpMult = (oldSpChoice === 'x2') ? 2 : 1;
     const oldPct    = getPct(oldActual, cat.target);
     if(oldPct >= 100)  oldPlus  += starBonus(cat, oldPct);
-    else if(oldHope)   oldMinus += cat.sm;
+    else if(oldHope)   oldMinus += cat.sm * oldSpMult;
     if(saved['_bonus300_' + cat.id]) oldPlus += 1000; // giữ đúng phần thưởng 1000 sao đã tính trước đó
   });
   const oldNet = oldPlus - oldMinus;
@@ -3981,15 +4448,23 @@ async function qlSaveReport(){
   cats.forEach(cat => {
     const inp    = document.querySelector(`[data-ql-cat="${cat.id}"]`);
     const chk    = document.querySelector(`[data-ql-hope="${cat.id}"]`);
+    const spEl   = document.querySelector(`[data-ql-sp="${cat.id}"]`);
     const actual = inp ? (parseInt(inp.value)||0) : (saved[cat.id]||0);
-    const hope   = chk ? chk.checked : (saved['h_'+cat.id]||false);
+    let   hope   = chk ? chk.checked : (saved['h_'+cat.id]||false);
+    // FIX: giữ/lấy lựa chọn "⭐ Trừ×2 / 🕐 Tăng ca ngày mai" (sp_<catId>) — trước đây màn
+    // Sửa báo cáo không đọc field này nên mỗi lần QL lưu lại là cờ Trừ×2 bị XOÁ MẤT và
+    // mức trừ sao tự động quay về 1x thường (đây chính là lỗi "Trừ×2 chưa bị trừ sao").
+    const spChoice = spEl ? spEl.value : (saved['sp_'+cat.id] || '');
+    if(spChoice) rep['sp_'+cat.id] = spChoice;
+    if(spChoice === 'x2') hope = true; // Trừ×2 luôn kéo theo Dùng sao, giống luồng NV tự nộp
+    const spMult = (spChoice === 'x2') ? 2 : 1;
     rep[cat.id]       = actual;
     rep['h_'+cat.id]  = hope;
     const pct = getPct(actual, cat.target);
     pctSum += pct;
     let star = 0;
     if(pct >= 100)  { star = starBonus(cat, pct); newPlus += star; }
-    else if(hope)   { newMinus += cat.sm; star = -cat.sm; }
+    else if(hope)   { const deducted = cat.sm * spMult; newMinus += deducted; star = -deducted; }
 
     // ── Thưởng đặc biệt: 2 ngày liên tiếp >300% → +1000 sao (giống luồng NV tự nộp) ──
     const s300k    = '_s300_' + cat.id;
@@ -4005,8 +4480,8 @@ async function qlSaveReport(){
     lines.push({ name:cat.name, target:cat.target, actual, pct, star, bonus300 });
   });
   rep._pct = Math.round(pctSum / cats.length);
-  // Giữ cờ reset
-  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_')) rep[k] = saved[k]; });
+  // Giữ cờ reset + đề xuất/duyệt "Bán thêm khác"
+  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_') || k.startsWith('extra')) rep[k] = saved[k]; });
 
   const newNet   = newPlus - newMinus;
   const diff     = newNet - oldNet;           // chênh lệch so với báo cáo cũ
@@ -4187,11 +4662,12 @@ function vrLoadReport(){
 
     /* Sao+ cell */
     const bonusStarVr = starBonus(cat, pct);
-    const spH = isDone ? `<span class="star-plus">+${bonusStarVr}${pct > 300 ? ' ⚡x2' : ''}</span>` : '<span class="star-na">—</span>';
+    const isX2BonusVr = bonusX2Enabled && pct > bonusX2Threshold;
+    const spH = isDone ? `<span class="star-plus">+${bonusStarVr}${isX2BonusVr ? ' ⚡x2' : ''}</span>` : '<span class="star-na">—</span>';
 
     /* Kết quả cell (thay cho nút Dùng sao — chỉ hiển thị, không bấm được) */
     let kqH = '<span class="star-na">—</span>';
-    if(isDone)     { totPlus  += bonusStarVr; kqH = `<span class="star-plus">+${bonusStarVr}${pct > 300 ? ' ⚡x2' : ''}</span>`; }
+    if(isDone)     { totPlus  += bonusStarVr; kqH = `<span class="star-plus">+${bonusStarVr}${isX2BonusVr ? ' ⚡x2' : ''}</span>`; }
     else if(hope)  { totMinus += cat.sm; kqH = `<span class="star-minus">⭐ −${cat.sm}</span>`; }
 
     /* Thực tế cell */
@@ -4353,6 +4829,11 @@ function renderRulesTab(){
 
   const spEl = document.getElementById('ruleSpThresholdTxt');
   if(spEl) spEl.textContent = starPenaltyThreshold + ' ngày';
+
+  const x2El = document.getElementById('ruleX2ThresholdTxt');
+  if(x2El) x2El.textContent = bonusX2Threshold;
+  const x2Li = x2El ? x2El.closest('li') : null;
+  if(x2Li) x2Li.style.display = bonusX2Enabled ? '' : 'none'; // ẩn hẳn quy tắc nếu QL đã tắt tính năng
 
   const stepsEl = document.getElementById('ruleLatePenaltySteps');
   if(stepsEl){
@@ -4977,6 +5458,33 @@ async function pollSettings(){
           toast(`🚨 Quản lý đã đổi mốc Cảnh báo Dùng sao liên tiếp thành ${newSp} ngày`, 'ok');
         }
         renderStarPenaltyThresholdControl();
+      }
+    }
+
+    // Kiểm tra bonusX2Enabled (bật/tắt thưởng x2 sao khi vượt ngưỡng %)
+    if(data.settings.bonusX2Enabled !== undefined && data.settings.bonusX2Enabled !== bonusX2Enabled){
+      bonusX2Enabled = data.settings.bonusX2Enabled;
+      changed = true;
+      if(!adminUnlocked){
+        toast(bonusX2Enabled
+          ? '⚡ Quản lý đã BẬT thưởng x2 sao khi vượt ngưỡng %'
+          : '🔒 Quản lý đã TẮT thưởng x2 sao khi vượt ngưỡng %', 'ok');
+      }
+      renderBonusX2Toggle();
+      if(document.getElementById('tab-rules').classList.contains('on')) renderRulesTab();
+    }
+
+    // Kiểm tra bonusX2Threshold (mức % để được thưởng x2)
+    if(data.settings.bonusX2Threshold !== undefined){
+      const newX2 = Number(data.settings.bonusX2Threshold);
+      if(newX2 > 100 && newX2 !== bonusX2Threshold){
+        bonusX2Threshold = newX2;
+        changed = true;
+        if(!adminUnlocked){
+          toast(`⚡ Quản lý đã đổi mức Thưởng x2 sao thành vượt ${newX2}%`, 'ok');
+        }
+        renderBonusX2ThresholdControl();
+        if(document.getElementById('tab-rules').classList.contains('on')) renderRulesTab();
       }
     }
 
