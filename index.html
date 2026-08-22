@@ -962,6 +962,7 @@ tr.row-done .cat-name{color:var(--green)}
             <li>Chạm mốc <span class="rule-badge gold" id="ruleSpThresholdTxt">—</span> ngày <i>Dùng sao</i> liên tiếp → xuất hiện thêm lựa chọn <b>⭐ Trừ sao ×2</b> (mức phạt tăng gấp đôi vì đã lặp lại nhiều lần).</li>
           </ul>
           <div class="rule-note">💡 Mốc này do QL cấu hình và có thể thay đổi theo từng giai đoạn — số hiện tại hiển thị ngay phía trên luôn đúng với cấu hình mới nhất.</div>
+          <div class="rule-note">🔓 Nếu đã chọn "Tăng ca ngày mai", hôm sau nút sẽ <b>khoá cứng</b> thành "TC bắt buộc" cho tới khi đạt target. QL có thể bấm <b>🔓 Gỡ khoá</b> ngay trên dòng đó để huỷ khoá riêng cho hôm nay nếu cần (ví dụ: NV có lý do chính đáng không thể tăng ca).</div>
         </div>
 
         <div class="rule-sec">
@@ -976,6 +977,25 @@ tr.row-done .cat-name{color:var(--green)}
           <p>Ảnh xuất ra tự động rút gọn (bỏ thanh tab, ô chọn NV, chú thích quy tắc...) để gọn và dễ gửi Zalo/Group, nhưng vẫn giữ đủ <b>tên NV, ngày, bảng kết quả, tổng sao</b> — không mất dữ liệu quan trọng dù dùng điện thoại màn hình nhỏ.</p>
           <p>Sau khi lưu, hệ thống <b>tự động tải ảnh về</b>. Nếu máy/trình duyệt (đặc biệt trong app Zalo/Messenger trên iPhone) không tự tải được ảnh, bấm nút <b>📥 Tải ảnh báo cáo về</b> ngay dưới bảng kết quả để tải lại thủ công bất cứ lúc nào.</p>
           <p>Vào các ngày <b>5, 10, 15, 20, 25, 30</b> hàng tháng, sau khi xuất ảnh báo cáo ngày, hệ thống sẽ tự xuất thêm 1 ảnh <b>"Kết quả 5 ngày gần nhất theo môn"</b>.</p>
+        </div>
+
+        <div class="rule-sec">
+          <h4><i class="ti ti-bolt"></i>6. Thưởng đặc biệt — 2 ngày liên tiếp đạt trên 300%</h4>
+          <p>Nếu 1 môn đạt <b>trên 300%</b> ở <b>2 ngày liên tiếp</b> (đúng ngày kế nhau, không tính ngày nghỉ xen giữa), môn đó được <b>thưởng thêm +1000 sao</b> — cộng thêm vào mức thưởng x2 bình thường của ngày, không thay thế.</p>
+          <ul>
+            <li>Thưởng tự động cộng luôn khi lưu báo cáo ngày thứ 2 đủ điều kiện, không cần QL duyệt.</li>
+            <li>Sau khi được thưởng, chuỗi tự reset về 0 — phải đạt <b>lại từ đầu 2 ngày liên tiếp mới</b> (tính từ sau lần thưởng trước) mới được thưởng tiếp, không tính chồng lấn theo kiểu mỗi ngày &gt;300% liên tục đều được +1000.</li>
+          </ul>
+        </div>
+
+        <div class="rule-sec">
+          <h4><i class="ti ti-gift"></i>7. Bán thêm sản phẩm khác (ngoài danh mục thi đua)</h4>
+          <p>Nhân viên bán được sản phẩm <b>không nằm trong danh mục thi đua</b> vẫn có thể được thưởng sao, thông qua quy trình đề xuất — duyệt:</p>
+          <ul>
+            <li>NV nhập <b>ghi chú</b> (tên sản phẩm, số lượng) + <b>số sao mong muốn</b>, bấm <b>"Gửi đề xuất cho QL"</b> ngay dưới bảng thi đua. Chưa cộng sao ngay lúc này.</li>
+            <li>QL vào tab <b>QL</b> → mục <b>"Duyệt sao thưởng ngoài danh mục"</b>, xem đề xuất, có thể <b>sửa lại số sao</b> trước khi bấm <b>✓ Duyệt</b> hoặc <b>✕ Từ chối</b>.</li>
+            <li>Khi được duyệt, số sao <b>cộng thẳng</b> vào tổng sao thi đua của NV, hiện trên bảng xếp hạng như sao bình thường. Không giới hạn số sao tối đa mỗi lần — QL tự cân nhắc khi duyệt.</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -2243,9 +2263,11 @@ function renderTable(){
     const needSpChoice  = starPenaltyEnabled && !isDone && spStreak === starPenaltyThreshold;
 
     /* Nếu HÔM QUA đã chọn "🕐 Tăng ca ngày mai" cho môn này (sp_ = 'ot') → hôm nay
-       BẮT BUỘC tính là Tăng ca (khoá, NV không tắt được), trừ khi hôm nay đã đạt */
+       BẮT BUỘC tính là Tăng ca (khoá, NV không tắt được), trừ khi hôm nay đã đạt
+       HOẶC QL đã bấm "Gỡ khoá" riêng cho môn/ngày này (_unlockOt_<catId>) */
     const yestSaved     = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
-    const forcedOtToday = !isDone && yestSaved[spk] === 'ot';
+    const otUnlocked    = !!saved['_unlockOt_' + cat.id];
+    const forcedOtToday = !isDone && yestSaved[spk] === 'ot' && !otUnlocked;
 
     /* percent cell */
     let pCls = 'pz', pTxt = '—';
@@ -2320,23 +2342,36 @@ function renderTable(){
       : hope ? `★ −${cat.sm * spMult}` : `⭐−${cat.sm * spMult}`;
 
     /* ô nút cột "Dùng sao" — hiện thêm lựa chọn Tăng ca khi chạm mốc 3 */
+    const otNoteVal = inputs[otNoteK] !== undefined ? inputs[otNoteK] : (saved[otNoteK] || '');
+    const otNoteVisibleH = otNoteVal
+      ? `<div style="margin-top:3px;font-size:9px;color:#9a3412;font-weight:700;line-height:1.3;text-align:left;max-width:140px">📝 ${escapeHtml(otNoteVal)}</div>`
+      : '';
     let actionH;
     if(forcedOtToday){
+      const unlockBtnH = adminUnlocked
+        ? `<button class="reset-btn" style="margin-top:4px;font-size:10px" onclick="unlockOtForCat('${cat.id}')" title="QL gỡ khoá Tăng ca bắt buộc riêng cho môn này hôm nay">🔓 Gỡ khoá (QL)</button>`
+        : '';
       actionH = `
         <div class="ot-choice">
           <button class="ot-btn active" disabled title="Bắt buộc — hôm qua đã chọn Tăng ca ngày mai do dùng sao liên tiếp">🕐 TC bắt buộc</button>
           <button class="${btnCls}" data-catid="${cat.id}" disabled>${btnTxt}</button>
-        </div>`;
+          ${unlockBtnH}
+        </div>
+        ${otNoteVisibleH}`;
     } else if(needOtChoice || otFlag){
       const otBtnCls = 'ot-btn' + (otFlag ? ' active' : '');
       const otBtnTxt = otFlag ? '🕐 Đã tăng ca' : '🕐 Tăng ca';
+      const unlockedBadgeH = otUnlocked ? `<div style="font-size:10px;color:#16a34a;margin-top:2px">🔓 QL đã gỡ khoá hôm nay</div>` : '';
       actionH = `
         <div class="ot-choice">
           <button class="${otBtnCls}" data-otcatid="${cat.id}">${otBtnTxt}</button>
           <button class="${btnCls}" data-catid="${cat.id}" ${btnDis}>${btnTxt}</button>
-        </div>`;
+          ${unlockedBadgeH}
+        </div>
+        ${otFlag ? otNoteVisibleH : ''}`;
     } else {
-      actionH = `<button class="${btnCls}" data-catid="${cat.id}" ${btnDis}>${btnTxt}</button>`;
+      const unlockedBadgeH = otUnlocked ? `<div style="font-size:10px;color:#16a34a;margin-top:2px">🔓 QL đã gỡ khoá hôm nay</div>` : '';
+      actionH = `<button class="${btnCls}" data-catid="${cat.id}" ${btnDis}>${btnTxt}</button>${unlockedBadgeH}`;
     }
 
     /* ô lựa chọn CẢNH BÁO DÙNG SAO LIÊN TIẾP — hiện khi vừa chạm mốc riêng hoặc đã chọn trước đó */
@@ -2344,11 +2379,15 @@ function renderTable(){
     if(needSpChoice || spChoice){
       const x2Cls    = 'ot-btn' + (spChoice === 'x2' ? ' active' : '');
       const nextCls  = 'ot-btn' + (spChoice === 'ot' ? ' active' : '');
+      const spWarnH  = spChoice === 'ot'
+        ? `<div style="margin-top:3px;font-size:9px;color:#c2410c;font-weight:800;line-height:1.3;text-align:left;max-width:150px">⚠️ NGÀY MAI môn này sẽ tự khoá Tăng ca bắt buộc nếu chưa đạt — không dùng sao được nữa</div>`
+        : '';
       spChoiceH = `
         <div class="ot-choice" style="margin-top:4px">
           <button class="${nextCls}" data-spcatid="${cat.id}" data-spval="ot" title="Bắt buộc Tăng ca vào báo cáo ngày mai">🕐 TC ngày mai</button>
           <button class="${x2Cls}" data-spcatid="${cat.id}" data-spval="x2" title="Trừ sao gấp đôi (×2) cho hôm nay">⭐ Trừ×2</button>
-        </div>`;
+        </div>
+        ${spWarnH}`;
     }
     actionH += spChoiceH;
 
@@ -2904,7 +2943,17 @@ function toggleStarPenaltyChoice(catId, val){
   const dateKey = document.getElementById('dateIn').value;
   const saved   = (STORED.reports[emp.id] || {})[dateKey] || {};
   const cur     = inputs[spk] !== undefined ? inputs[spk] : (saved[spk] || '');
-  inputs[spk] = (cur === val) ? '' : val; // bấm lại nút đang chọn → bỏ chọn
+  const newVal  = (cur === val) ? '' : val; // bấm lại nút đang chọn → bỏ chọn
+
+  // Chọn "TC ngày mai" là cam kết bị khoá cứng Tăng ca bắt buộc NGÀY MAI nếu chưa đạt
+  // → cần xác nhận rõ để NV không bấm nhầm/không đọc kỹ hậu quả.
+  if(newVal === 'ot'){
+    const cat = getCats(emp.dept).find(c => c.id === catId);
+    const ok = confirm(`Xác nhận chọn "Tăng ca ngày mai" cho môn "${cat ? cat.name : ''}"?\n\nNGÀY MAI, nếu môn này vẫn chưa đạt, hệ thống sẽ TỰ ĐỘNG khoá thành Tăng ca bắt buộc — bạn sẽ KHÔNG dùng sao được cho môn này nữa cho tới khi đạt target.`);
+    if(!ok) return;
+  }
+
+  inputs[spk] = newVal;
   renderTable();
 }
 
@@ -3017,6 +3066,42 @@ function showMissingSpModal(missing){
 // ════════════════════════════════════════════
 //  RESET ZERO DAYS (chỉ QL)
 // ════════════════════════════════════════════
+// ════════════════════════════════════════════
+//  GỠ KHOÁ "TĂNG CA BẮT BUỘC" RIÊNG CHO 1 MÔN/NV — chỉ QL, chỉ áp dụng cho HÔM NAY
+//  (khác Reset Số Ngày: khoá này đến từ lựa chọn "Tăng ca ngày mai" của HÔM QUA,
+//  không phải từ Số Ngày, nên phải gỡ bằng cờ riêng _unlockOt_<catId>)
+// ════════════════════════════════════════════
+async function unlockOtForCat(catId){
+  if(!adminUnlocked){ toast('⚠️ Chỉ quản lý mới dùng được!','err'); return; }
+  const emp = getCurEmp(); if(!emp) return;
+  const dateKey = document.getElementById('dateIn').value;
+
+  if(dateKey !== todayStr){
+    toast('⚠️ Chỉ gỡ khoá được khi đang xem HÔM NAY (' + todayStr + ').', 'err');
+    return;
+  }
+
+  const existing = (STORED.reports[emp.id] || {})[dateKey] || {};
+  const rep = Object.assign({}, existing, { ['_unlockOt_' + catId]: true });
+
+  if(!STORED.reports[emp.id]) STORED.reports[emp.id] = {};
+  STORED.reports[emp.id][dateKey] = rep;
+  renderTable();
+
+  try {
+    await gasCall({
+      action:'saveReport', empId:emp.id, empName:emp.name, dept:emp.dept,
+      date:dateKey, rep, lines:[],
+      starsBase:emp.stars, hopeBase:emp.hope, starsNew:emp.stars, hopeNew:emp.hope, net:0
+    });
+    toast('✓ Đã gỡ khoá Tăng ca bắt buộc cho môn này hôm nay!', 'ok');
+  } catch(err){
+    toast('⚠️ Gỡ khoá tạm trên màn hình nhưng LƯU LÊN SHEET BỊ LỖI: ' + err.message, 'err');
+  } finally {
+    renderTable();
+  }
+}
+
 async function resetZeroDays(catId){
   if(!adminUnlocked){ toast('⚠️ Chỉ quản lý mới dùng được!','err'); return; }
   const emp = getCurEmp(); if(!emp) return;
@@ -3367,7 +3452,7 @@ async function submitReport(){
   const hopeNew  = emp.hope; // không giới hạn sao hy vọng
 
   // Giữ lại cờ reset của QL + đề xuất/duyệt "Bán thêm khác" (không bị mất khi nộp lại báo cáo)
-  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_') || k.startsWith('extra')) rep[k] = saved[k]; });
+  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_') || k.startsWith('_unlockOt_') || k.startsWith('extra')) rep[k] = saved[k]; });
 
   if(!STORED.reports[emp.id]) STORED.reports[emp.id] = {};
   STORED.reports[emp.id][dateKey] = rep;
@@ -4481,7 +4566,7 @@ async function qlSaveReport(){
   });
   rep._pct = Math.round(pctSum / cats.length);
   // Giữ cờ reset + đề xuất/duyệt "Bán thêm khác"
-  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_') || k.startsWith('extra')) rep[k] = saved[k]; });
+  Object.keys(saved).forEach(k => { if(k.startsWith('_reset_') || k.startsWith('_unlockOt_') || k.startsWith('extra')) rep[k] = saved[k]; });
 
   const newNet   = newPlus - newMinus;
   const diff     = newNet - oldNet;           // chênh lệch so với báo cáo cũ
@@ -4705,7 +4790,7 @@ function vrLoadReport(){
       <td>${spH}</td>
       <td>${zdH}</td>
       <td>${prevH}</td>
-      <td>${kqH}${ot ? `<div style="margin-top:3px;font-size:9px;color:#9a3412;font-weight:700" title="${otNote||''}">🕐 Tăng ca</div>` : ''}</td>`;
+      <td>${kqH}${ot ? `<div style="margin-top:3px;font-size:9px;color:#9a3412;font-weight:700">🕐 Tăng ca</div>${otNote ? `<div style="margin-top:2px;font-size:9px;color:#9a3412;font-weight:600;text-align:left;max-width:140px">📝 ${escapeHtml(otNote)}</div>` : ''}` : ''}</td>`;
     tbody.appendChild(tr);
   });
 
