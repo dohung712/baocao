@@ -936,6 +936,8 @@ tr.row-done .cat-name{color:var(--green)}
           <div>Đọc kỹ phần này để hiểu vì sao sao bị cộng/trừ, khi nào bắt buộc chọn Tăng ca hoặc Dùng sao, và cách tránh bị phạt oan.</div>
         </div>
 
+        <button class="act-btn primary" id="rulesExportBtn" style="width:100%;margin-bottom:14px" onclick="captureRulesImage()">📸 Xuất ảnh Quy tắc</button>
+
         <div class="rule-sec">
           <h4><i class="ti ti-clipboard-check"></i>1. Chấm báo cáo mỗi ngày</h4>
           <p>Mỗi ngày, nhập <b>Thực tế</b> cho từng môn thi đua rồi bấm <b>Lưu &amp; Xuất ảnh báo cáo</b>. Hệ thống tự tính % đạt = Thực tế ÷ Target.</p>
@@ -955,14 +957,31 @@ tr.row-done .cat-name{color:var(--green)}
         </div>
 
         <div class="rule-sec">
-          <h4><i class="ti ti-alert-triangle"></i>3. Khi Số Ngày chạm mốc cảnh báo</h4>
-          <p>Khi 1 môn <b>chưa đạt liên tiếp</b> đủ số ngày quy định, hệ thống bắt buộc chọn 1 trong 2 hướng xử lý ngay trên dòng đó, không thể bỏ qua:</p>
+          <h4><i class="ti ti-alert-triangle"></i>3. Khi chạm mốc cảnh báo — bắt buộc Tăng ca</h4>
+          <p>Có <b>3 mốc cảnh báo</b>, mỗi mốc dựa trên 1 điều kiện khác nhau, <b>hoàn toàn độc lập</b> với nhau — mốc nào chạm thì xử lý mốc đó, không liên quan tới 2 mốc còn lại:</p>
+
+          <div style="background:#f8fafc;border:1px solid var(--gray-line);border-radius:10px;padding:10px 12px;margin:10px 0">
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <tr style="text-align:left;color:var(--text-light)"><th style="padding:4px 6px">Mốc</th><th style="padding:4px 6px">Điều kiện chạm mốc</th><th style="padding:4px 6px">Phải làm gì</th></tr>
+              <tr><td style="padding:4px 6px;font-weight:800">1</td><td style="padding:4px 6px"><span class="rule-badge gold" id="ruleOtThresholdTxt">—</span> ngày chưa đạt liên tiếp</td><td style="padding:4px 6px">Chọn 🕐 Tăng ca <i>hoặc</i> ⭐ Dùng sao</td></tr>
+              <tr><td style="padding:4px 6px;font-weight:800">2</td><td style="padding:4px 6px"><span class="rule-badge gold" id="ruleSpThresholdTxt">—</span> ngày <i>Dùng sao</i> liên tiếp</td><td style="padding:4px 6px">Chọn 🕐 TC ngày mai <i>hoặc</i> ⭐ Trừ×2</td></tr>
+              <tr><td style="padding:4px 6px;font-weight:800">3</td><td style="padding:4px 6px">Môn trừ &gt;300 sao + <b>7 ngày</b> chưa đạt liên tiếp</td><td style="padding:4px 6px"><b>Tự động khoá</b> 🕐 Tăng ca — không có lựa chọn khác</td></tr>
+            </table>
+          </div>
+
+          <p><b>Mốc 1</b> — chạm <span class="rule-badge gold">—</span> ngày chưa đạt liên tiếp (chưa dùng sao ngày nào): bắt buộc chọn <b>🕐 Tăng ca</b> (phải nhập rõ tăng ca làm gì để bù) hoặc <b>⭐ Dùng sao</b> ngay hôm đó — cả 2 đều là lựa chọn hợp lệ, tự do chọn.</p>
+
+          <p><b>Mốc 2</b> — chạm <span class="rule-badge gold">—</span> ngày <i>Dùng sao</i> liên tiếp (đã lặp lại dùng sao nhiều ngày): bắt buộc chọn đúng 1 trong 2, nút "⭐ Dùng sao" bình thường sẽ tự khoá mờ, không dùng được nữa:</p>
           <ul>
-            <li>Chạm mốc <span class="rule-badge gold" id="ruleOtThresholdTxt">—</span> ngày chưa đạt liên tiếp → phải chọn <b>🕐 Tăng ca</b> (cam kết làm bù) hoặc <b>Dùng sao</b> để trừ trực tiếp.</li>
-            <li>Chạm mốc <span class="rule-badge gold" id="ruleSpThresholdTxt">—</span> ngày <i>Dùng sao</i> liên tiếp → xuất hiện thêm lựa chọn <b>⭐ Trừ sao ×2</b> (mức phạt tăng gấp đôi vì đã lặp lại nhiều lần).</li>
+            <li><b>🕐 TC ngày mai</b> — cam kết tăng ca bù vào <b>ngày mai</b>. Hệ thống hỏi xác nhận lại 1 lần, in cảnh báo nổi bật ngay trên báo cáo hôm nay để nhắc trước. <u>Chỉ lựa chọn này</u> mới khiến <b>ngày mai</b> bị khoá cứng thành "TC bắt buộc" nếu vẫn chưa đạt.</li>
+            <li><b>⭐ Trừ×2</b> — chấp nhận trừ sao gấp đôi mức thường ngay hôm nay, không ảnh hưởng gì tới ngày mai.</li>
           </ul>
-          <div class="rule-note">💡 Mốc này do QL cấu hình và có thể thay đổi theo từng giai đoạn — số hiện tại hiển thị ngay phía trên luôn đúng với cấu hình mới nhất.</div>
-          <div class="rule-note">🔓 Nếu đã chọn "Tăng ca ngày mai", hôm sau nút sẽ <b>khoá cứng</b> thành "TC bắt buộc" cho tới khi đạt target. QL có thể bấm <b>🔓 Gỡ khoá</b> ngay trên dòng đó để huỷ khoá riêng cho hôm nay nếu cần (ví dụ: NV có lý do chính đáng không thể tăng ca).</div>
+          <p>Có thể đổi qua lại giữa 2 lựa chọn thoải mái trước khi bấm Lưu.</p>
+
+          <p><b>Mốc 3 (mới)</b> — chỉ áp dụng cho <b>môn có mức trừ sao trên 300</b>: nếu nhân viên <b>7 ngày liên tiếp không về trên 100%</b>, hệ thống <b>tự động khoá Tăng ca bắt buộc ngay hôm đó</b> — <b>không có lựa chọn Dùng sao</b> nữa (khác Mốc 1/2, đây không phải lựa chọn mà là ép buộc). Chỉ cần bấm nút <b>🚨 TC bắt buộc</b> và nhập rõ ghi chú tăng ca bù cho ngày hôm sau là xong, không cần chờ chạm Mốc 1/2 trước.</p>
+
+          <div class="rule-note">💡 Mốc 1 và Mốc 2 do QL cấu hình riêng, có thể thay đổi theo từng giai đoạn — số hiện tại hiển thị ngay phía trên luôn đúng với cấu hình mới nhất. Mốc 3 (trừ &gt;300 sao, 7 ngày) là mốc cố định, áp dụng cho mọi giai đoạn.</div>
+          <div class="rule-note">🔓 Bị khoá "TC bắt buộc" (do Mốc 2 hoặc Mốc 3) — QL đều có thể bấm <b>🔓 Gỡ khoá</b> ngay trên dòng đó để huỷ khoá riêng cho hôm nay nếu cần (ví dụ: NV có lý do chính đáng không thể tăng ca).</div>
         </div>
 
         <div class="rule-sec">
@@ -1989,7 +2008,8 @@ function buildZdPillsHtml(today1, opts){
   return `<div class="zd-pills">${pillsH}</div>${dangerH}`;
 }
 
-function getZeroDays(empId, catId, dateKey){
+function getZeroDays(empId, catId, dateKey, cap){
+  cap = cap || 6;
   const reps = STORED.reports[empId] || {};
   const emp2 = EMPS.find(e => e.id === empId);
   // Nếu hôm nay có cờ reset → 0
@@ -1998,7 +2018,7 @@ function getZeroDays(empId, catId, dateKey){
   const target    = cat2 ? cat2.target : 1;
   const thisMonth = dateKey.slice(0, 7); // 'YYYY-MM' — chỉ đếm trong tháng hiện tại
   let count = 0;
-  // Quy tắc đếm ngày chưa đạt liên tiếp (tính ngược từ hôm qua), max 6:
+  // Quy tắc đếm ngày chưa đạt liên tiếp (tính ngược từ hôm qua), max = cap (mặc định 6):
   //   - Sang tháng khác (tháng trước)            → DỪNG (tự động reset đầu tháng)
   //   - Không có báo cáo (ngày OFF)              → bỏ qua, KHÔNG đếm, KHÔNG dừng chuỗi
   //   - Đạt chỉ tiêu / dùng sao hy vọng           → LUÔN dừng chuỗi (ưu tiên tuyệt đối,
@@ -2006,7 +2026,7 @@ function getZeroDays(empId, catId, dateKey){
   //   - Chưa đạt & ngày đó NV đã từng TỰ CHỌN số ngày (zd_) → dùng làm điểm neo, dừng quét tiếp
   //   - Có báo cáo, thật sự chưa đạt (actual = 0 hoặc dưới target) → đếm +1
   for(let i = 1; i <= 90; i++){
-    if(count >= 6) break;                      // chặn ở mức 6, không đếm thêm
+    if(count >= cap) break;                    // chặn ở mức cap, không đếm thêm
     const k = daysBefore(dateKey, i);
     if(k.slice(0, 7) !== thisMonth) break;     // sang tháng trước → dừng (reset đầu tháng)
     const rep = reps[k];
@@ -2041,13 +2061,14 @@ function getZeroDays(empId, catId, dateKey){
 
     count++;                                   // chưa đạt (kể cả actual=0) → đếm
   }
-  return Math.min(count, 6);
+  return Math.min(count, cap);
 }
 
 // Giống hệt logic getZeroDays() nhưng ghi lại TỪNG BƯỚC quét (ngày, %, có tính hay
 // không, lý do) để QL/NV có thể tự kiểm chứng hệ thống tính đúng hay sai — bấm 🔍
 // cạnh ô Số Ngày để xem. Không hiện trong ảnh xuất báo cáo (nút bị ẩn lúc chụp ảnh).
-function getZeroDaysTrace(empId, catId, dateKey){
+function getZeroDaysTrace(empId, catId, dateKey, cap){
+  cap = cap || 6;
   const reps = STORED.reports[empId] || {};
   const emp2 = EMPS.find(e => e.id === empId);
   const cat2 = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
@@ -2061,7 +2082,7 @@ function getZeroDaysTrace(empId, catId, dateKey){
 
   let count = 0;
   for(let i = 1; i <= 90; i++){
-    if(count >= 6){ trace.push({ cap: true }); break; }
+    if(count >= cap){ trace.push({ cap: true }); break; }
     const k = daysBefore(dateKey, i);
     if(k.slice(0, 7) !== thisMonth){
       trace.push({ date: k, note: 'Sang tháng trước → dừng (Số Ngày tự reset đầu tháng)', counted: false, stop: true });
@@ -2094,51 +2115,115 @@ function getZeroDaysTrace(empId, catId, dateKey){
     count++;
     trace.push({ date: k, pct, note: 'Có báo cáo, chưa đạt chỉ tiêu → tính +1', counted: true, add: 1, stop: false });
   }
-  return { count: Math.min(count, 6), trace };
+  return { count: Math.min(count, cap), trace, cap };
 }
 
-function showZdBreakdown(catId){
+// Lịch sử "thẳng" N ngày gần nhất — KHÔNG dừng sớm như getZeroDaysTrace (bảng đó
+// dùng để giải thích Số Ngày THẬT, có dừng khi gặp ĐẠT/Dùng sao/Reset...). Bảng này
+// chỉ đơn giản liệt kê đúng N ngày liền kề, mỗi ngày hiện rõ đạt hay chưa, có dùng
+// sao không, và số sao bị trừ/được cộng thực tế của đúng ngày đó.
+function getZdPlainHistory(empId, catId, dateKey, n){
+  const reps  = STORED.reports[empId] || {};
+  const emp2  = EMPS.find(e => e.id === empId);
+  const cat2  = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
+  const target = cat2 ? cat2.target : 1;
+  const rows = [];
+  for(let i = 1; i <= n; i++){
+    const k   = daysBefore(dateKey, i);
+    const rep = reps[k];
+    if(!rep){ rows.push({ date: k, status: 'off' }); continue; }
+    if(!(catId in rep)){ rows.push({ date: k, status: 'notexist' }); continue; }
+
+    const actual = rep[catId] || 0;
+    const hope   = rep['h_' + catId] || false;
+    const pct    = target > 0 ? Math.round(actual / target * 100) : 0;
+    const isDone = pct >= 100;
+    const spChoice = rep['sp_' + catId] || '';
+    const spMult   = spChoice === 'x2' ? 2 : 1;
+    const otFlag   = !!rep['ot_' + catId];
+
+    let starDelta = 0, status;
+    if(isDone){
+      starDelta = cat2 ? starBonus(cat2, pct) : 0;
+      status = 'done';
+    } else if(otFlag && !hope){
+      starDelta = 0;
+      status = 'ot';
+    } else if(hope){
+      starDelta = -((cat2 ? cat2.sm : 0) * spMult);
+      status = 'hope';
+    } else {
+      starDelta = 0;
+      status = 'missed'; // chưa đạt, chưa dùng sao, chưa tăng ca — thường là chưa nộp xong hoặc bỏ trống
+    }
+    rows.push({ date: k, actual, target, pct, status, starDelta, spMult });
+  }
+  return rows;
+}
+
+function showZdBreakdown(catId, cap){
+  cap = cap || 6;
   const emp = getCurEmp(); if(!emp) return;
   const dateKey = document.getElementById('dateIn').value;
   const cat = getCats(emp.dept).find(c => c.id === catId);
   if(!cat) return;
 
-  const { count, trace } = getZeroDaysTrace(emp.id, catId, dateKey);
+  const { count } = getZeroDaysTrace(emp.id, catId, dateKey, 6); // Số Ngày THẬT (luôn cap 6, đúng như ngoài bảng)
+  const rows = getZdPlainHistory(emp.id, catId, dateKey, cap);
 
-  const rowsH = trace.map(t => {
-    if(t.cap) return `<tr><td colspan="4" style="text-align:center;color:#9ca3af;font-style:italic;padding:6px">— đã chặn ở mức tối đa 6, ngừng quét thêm —</td></tr>`;
-    const tickH = t.counted
-      ? `<span style="color:#dc2626;font-weight:900">+${t.add}</span>`
-      : (t.stop ? `<span style="color:#16a34a;font-weight:900">⏹</span>` : `<span style="color:#9ca3af">—</span>`);
+  const rowsH = rows.map(r => {
+    if(r.status === 'off'){
+      return `<tr><td style="padding:6px 8px;font-size:12px;font-weight:700;white-space:nowrap">${r.date}</td><td colspan="3" style="padding:6px 8px;font-size:11.5px;color:#9ca3af;text-align:center">Không có báo cáo (ngày OFF)</td></tr>`;
+    }
+    if(r.status === 'notexist'){
+      return `<tr><td style="padding:6px 8px;font-size:12px;font-weight:700;white-space:nowrap">${r.date}</td><td colspan="3" style="padding:6px 8px;font-size:11.5px;color:#9ca3af;text-align:center">Môn chưa tồn tại vào ngày đó</td></tr>`;
+    }
+    const kqMap = {
+      done:    `<span style="color:#16a34a;font-weight:900">✅ Đạt</span>`,
+      hope:    `<span style="color:#dc2626;font-weight:900">⭐ Dùng sao</span>`,
+      ot:      `<span style="color:#1d4ed8;font-weight:900">🕐 Tăng ca</span>`,
+      missed:  `<span style="color:#b45309;font-weight:900">⚠️ Chưa đạt</span>`,
+    };
+    const starH = r.starDelta > 0
+      ? `<span style="color:#16a34a;font-weight:900">+${r.starDelta}</span>`
+      : r.starDelta < 0
+        ? `<span style="color:#dc2626;font-weight:900">${r.starDelta}${r.spMult === 2 ? ' (×2)' : ''}</span>`
+        : `<span style="color:#9ca3af">0</span>`;
     return `<tr>
-      <td style="padding:6px 8px;font-size:12px;font-weight:700;white-space:nowrap">${t.date}</td>
-      <td style="padding:6px 8px;font-size:12px;text-align:center">${t.pct !== undefined ? t.pct + '%' : '—'}</td>
-      <td style="padding:6px 8px;font-size:13px;text-align:center">${tickH}</td>
-      <td style="padding:6px 8px;font-size:11.5px;color:var(--text-mid);line-height:1.4">${t.note}</td>
+      <td style="padding:6px 8px;font-size:12px;font-weight:700;white-space:nowrap">${r.date}</td>
+      <td style="padding:6px 8px;font-size:12px;text-align:center">${r.actual}/${r.target} (${r.pct}%)</td>
+      <td style="padding:6px 8px;font-size:12px;text-align:center">${kqMap[r.status]}</td>
+      <td style="padding:6px 8px;font-size:13px;text-align:center">${starH}</td>
     </tr>`;
   }).join('');
 
-  document.getElementById('modalTitle').innerHTML = `🔍 Chi tiết tính Số Ngày — <span style="color:#4338ca">${cat.name}</span>`;
+  const capTabsH = [3, 5, 7, 10].map(n => `
+    <button class="act-btn${n === cap ? ' primary' : ''}" style="flex:1;font-size:12px;padding:6px 4px"
+      onclick="showZdBreakdown('${catId}', ${n})">${n} ngày</button>
+  `).join('');
+
+  document.getElementById('modalTitle').innerHTML = `🔍 Lịch sử ${cap} ngày — <span style="color:#4338ca">${cat.name}</span>`;
   document.getElementById('modalBody').innerHTML = `
+    <div style="display:flex;gap:6px;margin-bottom:10px">${capTabsH}</div>
     <div style="font-size:13px;margin-bottom:10px;padding:8px 10px;background:#f3f4f6;border-radius:8px">
-      Hệ thống tính được <b style="color:#dc2626;font-size:15px">${count}</b> ngày chưa đạt liên tiếp
-      (tính lùi từ ngày trước <b>${dateKey}</b>).
+      Số Ngày chưa đạt liên tiếp <b>THẬT</b> đang áp dụng (mốc quy tắc): <b style="color:#dc2626;font-size:15px">${count}</b> —
+      còn bảng dưới đây là lịch sử <b>${cap} ngày liền kề</b> gần nhất, xem đủ để đối chiếu, không dừng sớm.
     </div>
     <div style="max-height:340px;overflow:auto;border:1px solid var(--gray-line);border-radius:8px">
       <table style="width:100%;border-collapse:collapse">
         <thead>
           <tr style="position:sticky;top:0;background:#eef1ff">
             <th style="padding:6px 8px;font-size:10.5px;text-align:left">Ngày</th>
+            <th style="padding:6px 8px;font-size:10.5px">Thực tế/Target</th>
             <th style="padding:6px 8px;font-size:10.5px">Kết quả</th>
-            <th style="padding:6px 8px;font-size:10.5px">Tính</th>
-            <th style="padding:6px 8px;font-size:10.5px;text-align:left">Lý do</th>
+            <th style="padding:6px 8px;font-size:10.5px">Sao</th>
           </tr>
         </thead>
         <tbody>${rowsH || `<tr><td colspan="4" style="padding:12px;text-align:center;color:#9ca3af">Chưa có dữ liệu trước ngày này</td></tr>`}</tbody>
       </table>
     </div>
     <div style="font-size:10.5px;color:var(--text-light);margin-top:8px;line-height:1.5">
-      📌 Bảng quét NGƯỢC từ ngày trước ${dateKey} về quá khứ, dừng lại ngay khi gặp ngày ĐẠT / Dùng sao / QL Reset / NV tự chọn (điểm neo) / sang tháng trước.
+      📌 Bảng này liệt kê đủ ${cap} ngày liền kề trước ${dateKey}, không dừng sớm dù có ngày đã đạt/dùng sao — chỉ để đối chiếu. Số Ngày THẬT dùng để xét các mốc bắt buộc Tăng ca vẫn tính theo quy tắc dừng sớm (xem ô tóm tắt phía trên).
     </div>`;
   document.getElementById('modalBtns').innerHTML =
     `<button class="act-btn primary" onclick="closeModal()">Đóng</button>`;
@@ -2248,7 +2333,7 @@ function renderTable(){
     const actual = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id]; // có thể là undefined = chưa nhập
     const actualNum = actual === undefined || actual === null || actual === '' ? 0 : actual; // dùng cho tính toán
     const hk     = 'h_' + cat.id;
-    const hope   = inputs[hk]     !== undefined ? inputs[hk]     : (saved[hk]     || false);
+    let   hope   = inputs[hk]     !== undefined ? inputs[hk]     : (saved[hk]     || false);
     const pct    = getPct(actualNum, cat.target);
     const isDone = pct >= 100;
     if(isDone) done++;
@@ -2258,6 +2343,9 @@ function renderTable(){
     const spk           = 'sp_' + cat.id;
     const spChoice      = inputs[spk] !== undefined ? inputs[spk] : (saved[spk] || '');
     const spMult        = (spChoice === 'x2') ? 2 : 1;
+    // "Trừ sao ×2" tự động coi như đã Dùng sao hôm nay (đó chính là hình phạt) — khớp với
+    // logic thật khi lưu (submitReport), để bảng xem trước không hiển thị sai "không trừ gì".
+    if(spChoice === 'x2') hope = true;
     const spPast        = getStarPenaltyStreak(emp.id, cat.id, dateKey);
     const spStreak      = isDone ? 0 : Math.min(spPast + 1, 6);
     const needSpChoice  = starPenaltyEnabled && !isDone && spStreak === starPenaltyThreshold;
@@ -2268,6 +2356,14 @@ function renderTable(){
     const yestSaved     = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
     const otUnlocked    = !!saved['_unlockOt_' + cat.id];
     const forcedOtToday = !isDone && yestSaved[spk] === 'ot' && !otUnlocked;
+
+    /* MỐC 3 — độc lập hoàn toàn với Mốc 1/2: môn có mức trừ sao cao (>300) VÀ nhân viên
+       chưa đạt liên tiếp đủ 7 ngày → tự động khoá Tăng ca bắt buộc ngay hôm nay, KHÔNG
+       cho dùng sao (không phải lựa chọn, là ép buộc), bắt buộc nhập ghi chú tăng ca hôm
+       sau (dùng chung field ot_/otNote_ với Mốc 1). QL vẫn gỡ khoá riêng được như Mốc 2. */
+    const moc3Past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+    const moc3Streak = Math.min(moc3Past + 1, 7);
+    const moc3Forced = !isDone && cat.sm > 300 && moc3Streak >= 7 && !otUnlocked;
 
     /* percent cell */
     let pCls = 'pz', pTxt = '—';
@@ -2285,8 +2381,8 @@ function renderTable(){
     if(isDone) spH = `<span class="star-plus">+${bonusStar}${isX2Bonus ? ` <i class="ti ti-bolt" title="Vượt ${bonusX2Threshold}% — thưởng x2"></i>` : ''}</span>`;
 
     let kqH = '<span class="star-na">—</span>';
-    if(isDone)                        { totPlus  += bonusStar; kqH = `<span class="star-plus">+${bonusStar}${isX2Bonus ? ' ⚡x2' : ''}</span>`; }
-    else if(hope && !forcedOtToday)   { totMinus += cat.sm * spMult; kqH = `<span class="star-minus">-${cat.sm * spMult}</span>`; }
+    if(isDone)                                        { totPlus  += bonusStar; kqH = `<span class="star-plus">+${bonusStar}${isX2Bonus ? ' ⚡x2' : ''}</span>`; }
+    else if(hope && !forcedOtToday && !moc3Forced)    { totMinus += cat.sm * spMult; kqH = `<span class="star-minus">-${cat.sm * spMult}</span>`; }
 
     /* kq actual value */
     const actualH = actual > 0
@@ -2331,12 +2427,18 @@ function renderTable(){
 
     // Nếu hôm qua đã chọn "🕐 Tăng ca ngày mai" (sp_ = 'ot') cho môn này → hôm nay bị khoá thành Tăng ca
     if(forcedOtToday) otFlag = true;
+    // MỐC 3 — chưa đạt 7 ngày liên tiếp + môn trừ sao >300 → cũng ép otFlag=true, không cho dùng sao
+    if(moc3Forced) otFlag = true;
 
     /* use-star button */
     // canToggle: QL đã bật allowHope VÀ môn chưa đạt VÀ không bị khoá Tăng ca bắt buộc hôm nay
+    // spGateActive: đã chạm Mốc 2 (Dùng sao liên tiếp) → nút Dùng sao thường không còn là
+    // lựa chọn hợp lệ độc lập nữa, bắt buộc chọn 1 trong 2 nút bên dưới (TC ngày mai / Trừ×2)
+    const spGateActive = needSpChoice || !!spChoice;
     const canToggle = allowHope && !isDone && !forcedOtToday;
-    const btnCls    = 'use-btn' + (hope ? ' active' : '') + (!allowHope ? ' ql-locked' : '') + (otFlag ? ' ql-locked' : '');
-    const btnDis    = (canToggle && !otFlag) ? '' : 'disabled';
+    const btnCls    = 'use-btn' + (hope ? ' active' : '') + (!allowHope ? ' ql-locked' : '') + (otFlag ? ' ql-locked' : '') + (spGateActive ? ' ql-locked' : '');
+    const btnDis    = (canToggle && !otFlag && !spGateActive) ? '' : 'disabled';
+    const btnTitle  = spGateActive ? ' title="Đã chạm mốc cảnh báo Dùng sao liên tiếp — chọn 🕐 Tăng ca ngày mai hoặc ⭐ Trừ×2 bên dưới, không dùng nút này được nữa"' : '';
     const btnTxt    = !allowHope
       ? `🔒`
       : hope ? `★ −${cat.sm * spMult}` : `⭐−${cat.sm * spMult}`;
@@ -2347,14 +2449,27 @@ function renderTable(){
       ? `<div style="margin-top:3px;font-size:9px;color:#9a3412;font-weight:700;line-height:1.3;text-align:left;max-width:140px">📝 ${escapeHtml(otNoteVal)}</div>`
       : '';
     let actionH;
-    if(forcedOtToday){
+    if(moc3Forced){
+      const unlockBtnH = adminUnlocked
+        ? `<button class="reset-btn" style="margin-top:4px;font-size:10px" onclick="unlockOtForCat('${cat.id}')" title="QL gỡ khoá Tăng ca bắt buộc riêng cho môn này hôm nay">🔓 Gỡ khoá (QL)</button>`
+        : '';
+      const noteMissingH = otNoteVal
+        ? ''
+        : `<div style="margin-top:3px;font-size:9px;color:#b91c1c;font-weight:800">⚠️ Bắt buộc bấm nút và nhập ghi chú tăng ca hôm sau!</div>`;
+      actionH = `
+        <div class="ot-choice">
+          <button class="ot-btn active" onclick="showOtNoteModal('${cat.id}')" title="Bắt buộc — 7 ngày liên tiếp chưa đạt, môn trừ sao >300">🚨 TC bắt buộc</button>
+          ${unlockBtnH}
+        </div>
+        ${otNoteVisibleH}${noteMissingH}`;
+    } else if(forcedOtToday){
       const unlockBtnH = adminUnlocked
         ? `<button class="reset-btn" style="margin-top:4px;font-size:10px" onclick="unlockOtForCat('${cat.id}')" title="QL gỡ khoá Tăng ca bắt buộc riêng cho môn này hôm nay">🔓 Gỡ khoá (QL)</button>`
         : '';
       actionH = `
         <div class="ot-choice">
           <button class="ot-btn active" disabled title="Bắt buộc — hôm qua đã chọn Tăng ca ngày mai do dùng sao liên tiếp">🕐 TC bắt buộc</button>
-          <button class="${btnCls}" data-catid="${cat.id}" disabled>${btnTxt}</button>
+          <button class="${btnCls}" data-catid="${cat.id}" disabled${btnTitle}>${btnTxt}</button>
           ${unlockBtnH}
         </div>
         ${otNoteVisibleH}`;
@@ -2365,23 +2480,24 @@ function renderTable(){
       actionH = `
         <div class="ot-choice">
           <button class="${otBtnCls}" data-otcatid="${cat.id}">${otBtnTxt}</button>
-          <button class="${btnCls}" data-catid="${cat.id}" ${btnDis}>${btnTxt}</button>
+          <button class="${btnCls}" data-catid="${cat.id}" ${btnDis}${btnTitle}>${btnTxt}</button>
           ${unlockedBadgeH}
         </div>
         ${otFlag ? otNoteVisibleH : ''}`;
     } else {
       const unlockedBadgeH = otUnlocked ? `<div style="font-size:10px;color:#16a34a;margin-top:2px">🔓 QL đã gỡ khoá hôm nay</div>` : '';
-      actionH = `<button class="${btnCls}" data-catid="${cat.id}" ${btnDis}>${btnTxt}</button>${unlockedBadgeH}`;
+      actionH = `<button class="${btnCls}" data-catid="${cat.id}" ${btnDis}${btnTitle}>${btnTxt}</button>${unlockedBadgeH}`;
     }
 
-    /* ô lựa chọn CẢNH BÁO DÙNG SAO LIÊN TIẾP — hiện khi vừa chạm mốc riêng hoặc đã chọn trước đó */
+    /* ô lựa chọn CẢNH BÁO DÙNG SAO LIÊN TIẾP — hiện khi vừa chạm mốc riêng hoặc đã chọn trước đó
+       (không hiện nếu Mốc 3 đang khoá — Mốc 3 có mức ưu tiên cao nhất, không dùng sao được nữa) */
     let spChoiceH = '';
-    if(needSpChoice || spChoice){
+    if(!moc3Forced && (needSpChoice || spChoice)){
       const x2Cls    = 'ot-btn' + (spChoice === 'x2' ? ' active' : '');
       const nextCls  = 'ot-btn' + (spChoice === 'ot' ? ' active' : '');
       const spWarnH  = spChoice === 'ot'
         ? `<div style="margin-top:3px;font-size:9px;color:#c2410c;font-weight:800;line-height:1.3;text-align:left;max-width:150px">⚠️ NGÀY MAI môn này sẽ tự khoá Tăng ca bắt buộc nếu chưa đạt — không dùng sao được nữa</div>`
-        : '';
+        : `<div style="margin-top:3px;font-size:9px;color:#9a3412;font-weight:700;line-height:1.3;text-align:left;max-width:150px">☝️ Bắt buộc chọn 1 trong 2 — nút "⭐ Dùng sao" bình thường không dùng được nữa</div>`;
       spChoiceH = `
         <div class="ot-choice" style="margin-top:4px">
           <button class="${nextCls}" data-spcatid="${cat.id}" data-spval="ot" title="Bắt buộc Tăng ca vào báo cáo ngày mai">🕐 TC ngày mai</button>
@@ -3064,6 +3180,37 @@ function showMissingSpModal(missing){
 }
 
 // ════════════════════════════════════════════
+//  POPUP CẢNH BÁO — MỐC 3: môn trừ sao >300, chưa đạt 7 ngày liên tiếp, chưa nhập ghi chú tăng ca
+// ════════════════════════════════════════════
+function showMissingMoc3Modal(missing){
+  const bg    = document.getElementById('modalBg');
+  const title = document.getElementById('modalTitle');
+  const body  = document.getElementById('modalBody');
+  const btns  = document.getElementById('modalBtns');
+
+  title.innerHTML = `<span style="color:#dc2626">🚨 Bắt buộc Tăng ca — Mốc 3</span>`;
+
+  const listH = missing.map(name =>
+    `<li style="margin-bottom:4px">${name}</li>`
+  ).join('');
+
+  body.innerHTML = `
+    <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
+      Các môn dưới đây trừ sao <strong style="color:#dc2626">trên 300</strong> mỗi lần và đã
+      <strong style="color:#dc2626">7 ngày liên tiếp chưa đạt</strong> (không dùng sao được nữa).
+      Bấm nút <strong>🚨 TC bắt buộc</strong> và nhập rõ <strong>ghi chú tăng ca hôm sau</strong>
+      cho các môn này trước khi lưu &amp; xuất báo cáo.
+    </p>
+    <ul style="font-size:12px;color:#dc2626;font-weight:700;padding-left:18px;max-height:180px;overflow-y:auto;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 10px 10px 26px">
+      ${listH}
+    </ul>`;
+
+  btns.innerHTML = `<button class="act-btn primary" onclick="closeModal()">Đã hiểu, để tôi nhập</button>`;
+
+  bg.classList.add('open');
+}
+
+// ════════════════════════════════════════════
 //  RESET ZERO DAYS (chỉ QL)
 // ════════════════════════════════════════════
 // ════════════════════════════════════════════
@@ -3337,6 +3484,33 @@ async function submitReport(){
     return;
   }
 
+  // ══ VALIDATION: MỐC 3 — môn trừ sao >300 + chưa đạt liên tiếp đủ 7 ngày →
+  // bắt buộc đã bấm "🚨 TC bắt buộc" và nhập ghi chú tăng ca hôm sau (dùng chung field
+  // ot_/otNote_ với Mốc 1). Độc lập, không phụ thuộc otFeatureEnabled/starPenaltyEnabled. ══
+  const missingMoc3Note = [];
+  cats.forEach(cat => {
+    const actual = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
+    const actualNum = actual === undefined || actual === null || actual === '' ? 0 : actual;
+    const pct = getPct(actualNum, cat.target);
+    if(pct >= 100) return; // đã đạt hôm nay → không cần
+    if(cat.sm <= 300) return; // môn trừ sao không cao → không áp dụng Mốc 3
+
+    const otUnlocked = !!saved['_unlockOt_' + cat.id];
+    if(otUnlocked) return; // QL đã gỡ khoá riêng cho hôm nay
+
+    const past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+    const streak = Math.min(past + 1, 7);
+    if(streak < 7) return;
+
+    const otNoteK = 'otNote_' + cat.id;
+    const otNote  = inputs[otNoteK] !== undefined ? inputs[otNoteK] : (saved[otNoteK] || '');
+    if(!otNote) missingMoc3Note.push(cat.name);
+  });
+  if(missingMoc3Note.length > 0){
+    showMissingMoc3Modal(missingMoc3Note);
+    return;
+  }
+
   const rep  = {};
   let pctSum = 0, totPlus = 0, totMinus = 0, hopeUsed = 0;
   const lines = [];
@@ -3377,6 +3551,18 @@ async function submitReport(){
       otFlag = true;
       hope   = false; // Tăng ca thay thế cho Dùng sao ngày hôm nay
       otNote = otNote || '(Tự động — bắt buộc do hôm qua đã chọn Tăng ca ngày mai vì dùng sao liên tiếp)';
+    }
+
+    // MỐC 3 — môn trừ sao >300 + chưa đạt liên tiếp đủ 7 ngày → bắt buộc Tăng ca, không
+    // cho dùng sao (validation phía trên đã chặn nếu chưa có ghi chú, nên otNote chắc chắn có)
+    const otUnlockedM3 = !!saved['_unlockOt_' + cat.id];
+    if(pct < 100 && cat.sm > 300 && !otUnlockedM3){
+      const m3Past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+      const m3Streak = Math.min(m3Past + 1, 7);
+      if(m3Streak >= 7){
+        otFlag = true;
+        hope   = false;
+      }
     }
 
     rep[hk] = hope;
@@ -3567,6 +3753,79 @@ async function downloadCanvasImage(canvas, filename){
   } catch(e){ /* rơi xuống ảnh xem trước để NV tự lưu thủ công */ }
 
   return false;
+}
+
+// ════════════════════════════════════════════
+//  XUẤT ẢNH TAB QUY TẮC — để NV/QL gửi Zalo/nhóm đọc offline, khỏi mở lại app
+// ════════════════════════════════════════════
+async function captureRulesImage(){
+  const target = document.getElementById('tab-rules');
+  if(!target){ toast('Không tìm thấy nội dung Quy tắc để xuất ảnh', 'err'); return; }
+
+  const exportBtn = document.getElementById('rulesExportBtn');
+  let appEl = null, prevAppWidth = '', prevAppMaxWidth = '', prevBodyOverflowX = '';
+  let prevBtnDisplay = '';
+  let tabsEl = null, prevTabsDisplay = '';
+
+  try {
+    // 1. Đảm bảo đang ở tab Quy tắc
+    const tabBtns = document.querySelectorAll('.tab');
+    let rulesTabEl = null;
+    tabBtns.forEach(t => { if((t.getAttribute('onclick')||'').includes("'rules'")) rulesTabEl = t; });
+    if(rulesTabEl) goTab('rules', rulesTabEl);
+    await new Promise(r => setTimeout(r, 120));
+    window.scrollTo(0, 0);
+    await new Promise(r => setTimeout(r, 80));
+
+    // 2. Tạm ẩn thanh tab + chính nút Xuất ảnh (không cần xuất hiện trong ảnh)
+    tabsEl = document.querySelector('.tabs');
+    if(exportBtn){ prevBtnDisplay = exportBtn.style.display; exportBtn.style.display = 'none'; }
+    prevTabsDisplay = tabsEl ? tabsEl.style.display : '';
+    if(tabsEl) tabsEl.style.display = 'none';
+
+    // 3. Ép khổ cố định 640px giống ảnh báo cáo, tránh vỡ nét khi chụp từ điện thoại
+    let EXPORT_WIDTH = 640;
+    appEl = document.querySelector('.app');
+    prevAppWidth      = appEl ? appEl.style.width    : '';
+    prevAppMaxWidth   = appEl ? appEl.style.maxWidth : '';
+    prevBodyOverflowX = document.body.style.overflowX;
+    if(appEl){
+      appEl.style.width    = EXPORT_WIDTH + 'px';
+      appEl.style.maxWidth = EXPORT_WIDTH + 'px';
+    }
+    document.body.style.overflowX = 'hidden';
+    await new Promise(r => setTimeout(r, 80));
+
+    // 4. Chụp
+    const shotWidth = Math.max(target.offsetWidth, target.scrollWidth);
+    const canvas = await html2canvas(target, {
+      scale:       2.5,
+      useCORS:     true,
+      allowTaint:  true,
+      backgroundColor: '#f0f2f8',
+      logging:     false,
+      width:       shotWidth,
+      height:      target.scrollHeight,
+      windowWidth: shotWidth,
+      scrollX:     0,
+      scrollY:     -window.scrollY
+    });
+
+    const filename = `QuyTac_ThiDua_${todayStr}.png`;
+    const downloaded = await downloadCanvasImage(canvas, filename);
+    showImagePreviewModal(canvas, filename, 'Ảnh Quy tắc thi đua');
+    toast(downloaded ? '📸 Đã lưu ảnh Quy tắc!' : '📸 Ảnh Quy tắc đã sẵn sàng — bấm Tải ảnh về hoặc nhấn giữ ảnh để lưu', downloaded ? 'ok' : 'warn');
+  } catch(err){
+    toast('Không xuất được ảnh: ' + err.message, 'err');
+  } finally {
+    if(appEl){
+      appEl.style.width    = prevAppWidth;
+      appEl.style.maxWidth = prevAppMaxWidth;
+    }
+    document.body.style.overflowX = prevBodyOverflowX;
+    if(tabsEl) tabsEl.style.display = prevTabsDisplay;
+    if(exportBtn) exportBtn.style.display = prevBtnDisplay;
+  }
 }
 
 async function captureReport(){
