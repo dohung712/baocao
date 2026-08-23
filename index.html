@@ -3414,7 +3414,10 @@ async function submitReport(){
       const actual = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
       const actualNum = actual === undefined || actual === null || actual === '' ? 0 : actual;
       const hk   = 'h_' + cat.id;
-      const hope = inputs[hk] !== undefined ? inputs[hk] : (saved[hk] || false);
+      let   hope = inputs[hk] !== undefined ? inputs[hk] : (saved[hk] || false);
+      const spk0      = 'sp_' + cat.id;
+      const spChoice0 = inputs[spk0] !== undefined ? inputs[spk0] : (saved[spk0] || '');
+      if(spChoice0 === 'x2') hope = true;
       const pct  = getPct(actualNum, cat.target);
       if(pct >= 100 || hope) return; // đạt hoặc đã dùng sao hy vọng → không cần chọn số ngày
       const zdVal = inputs['zd_' + cat.id] !== undefined ? inputs['zd_' + cat.id] : (saved['zd_' + cat.id] || 0);
@@ -3438,7 +3441,10 @@ async function submitReport(){
     if(pct >= 100) return; // đã đạt
 
     const hk   = 'h_' + cat.id;
-    const hope = inputs[hk] !== undefined ? inputs[hk] : (saved[hk] || false);
+    let   hope = inputs[hk] !== undefined ? inputs[hk] : (saved[hk] || false);
+    const spk0      = 'sp_' + cat.id;
+    const spChoice0 = inputs[spk0] !== undefined ? inputs[spk0] : (saved[spk0] || '');
+    if(spChoice0 === 'x2') hope = true; // Trừ×2 luôn kéo theo Dùng sao, giống luồng NV tự nộp
     if(hope) return; // đã dùng sao
 
     const otk    = 'ot_' + cat.id;
