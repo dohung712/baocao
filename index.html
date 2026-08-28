@@ -1098,6 +1098,21 @@ tr.row-done .cat-name{color:var(--green)}
             <span class="dot" id="otThresholdDot"></span>
             <span id="otThresholdTxt">—</span>
           </div>
+          <div class="toggle-row" id="autoOtChoiceRow" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--gray-line)">
+            <div class="toggle-info">
+              <div class="t-title" style="font-size:12px">🤖 Tự động lựa chọn hộ NV</div>
+              <div class="t-sub">Bật → Khi chạm mốc bắt buộc, hệ thống tự điền sẵn lựa chọn:<br>còn sao → tự chọn ⭐ Dùng sao; hết sao (0 sao) → tự chọn 🕐 Tăng ca<br>NV vẫn xem/đổi lại được trước khi lưu báo cáo<br>Tắt → NV phải tự bấm chọn như trước</div>
+              <span class="t-badge" id="autoOtChoiceBadge">—</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="autoOtChoiceToggle" onchange="onAutoOtChoiceToggle(this.checked)">
+              <span class="sw-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-sync-txt" id="autoOtChoiceSyncTxt">
+            <span class="dot" id="autoOtChoiceDot"></span>
+            <span id="autoOtChoiceTxt">—</span>
+          </div>
         </div>
 
         <div class="toggle-card">
@@ -1170,7 +1185,7 @@ tr.row-done .cat-name{color:var(--green)}
 
         <div style="font-size:10px;color:var(--text-light);padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:14px;line-height:1.5">
           <i class="ti ti-info-circle" style="color:#d97706;margin-right:4px"></i>
-          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code>, <code>settings.starPenaltyEnabled</code>, <code>settings.starPenaltyThreshold</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
+          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code>, <code>settings.starPenaltyEnabled</code>, <code>settings.starPenaltyThreshold</code>, <code>settings.autoOtChoiceEnabled</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
         </div>
 
         <!-- ══ THIẾU BÁO CÁO (THÁNG NÀY) ══ -->
@@ -1564,6 +1579,12 @@ let otFeatureEnabled = true; // QL toggle: bật/tắt toàn bộ tính năng b�
 let starPenaltyEnabled   = true; // QL toggle: bật/tắt cảnh báo dùng sao (chưa đạt) liên tiếp
 let starPenaltyThreshold = 3;    // QL thiết lập: mốc số ngày CHƯA ĐẠT liên tiếp (3/4/5) kích hoạt cảnh báo
 
+// ══ TỰ ĐỘNG CHỌN "TĂNG CA / DÙNG SAO" khi chạm mốc bắt buộc (otThreshold) ══
+// QL toggle: bật/tắt tự động lựa chọn hộ NV — còn sao thì tự chọn Dùng sao,
+// hết sao (0 sao) thì tự chọn Tăng ca. Chỉ ĐIỀN SẴN giá trị mặc định vào
+// `inputs`, KHÔNG khoá cứng — NV vẫn có thể tự bấm đổi lại trước khi lưu.
+let autoOtChoiceEnabled = false; // Mặc định TẮT, QL bật khi cần
+
 // ══ THƯỞNG X2 SAO KHI VƯỢT NGƯỠNG % (mặc định >300%) ══
 let bonusX2Enabled   = true; // QL toggle: bật/tắt tính năng thưởng x2 sao khi vượt ngưỡng
 let bonusX2Threshold = 300;  // QL thiết lập: mức % (VD 200/300/400) để kích hoạt thưởng x2
@@ -1650,6 +1671,9 @@ async function loadAll(){
     }
     if(data.settings && data.settings.bonusX2Threshold !== undefined && Number(data.settings.bonusX2Threshold) > 100){
       bonusX2Threshold = Number(data.settings.bonusX2Threshold);
+    }
+    if(data.settings && data.settings.autoOtChoiceEnabled !== undefined){
+      autoOtChoiceEnabled = data.settings.autoOtChoiceEnabled;
     }
 
     EMPS.forEach(e => {
@@ -2282,6 +2306,70 @@ function getPrevDayResult(empId, catId, target, dateKey){
   return { pct, date: lastDate, isDone: pct >= 100 };
 }
 
+// ════════════════════════════════════════════
+//  TỰ ĐỘNG CHỌN "TĂNG CA / DÙNG SAO" khi chạm mốc bắt buộc (otThreshold)
+//  QL bật/tắt qua autoOtChoiceEnabled. Quy tắc: còn sao (emp.stars > 0) →
+//  tự chọn ⭐ Dùng sao; hết sao (0 sao) → tự chọn 🕐 Tăng ca (kèm ghi chú
+//  tự động, vì không có NV bấm để nhập ghi chú thủ công qua modal).
+//  Đây chỉ là GIÁ TRỊ MẶC ĐỊNH điền sẵn vào `inputs` — KHÔNG khoá cứng,
+//  NV vẫn tự bấm đổi lại được trước khi lưu báo cáo. Chỉ áp dụng cho
+//  đúng (NV+ngày+môn) CHƯA có lựa chọn nào (chưa lưu, chưa tự bấm) —
+//  không bao giờ ghi đè lựa chọn đã có sẵn.
+// ════════════════════════════════════════════
+function applyAutoOtChoice(emp, cats, dateKey, saved){
+  if(!autoOtChoiceEnabled || !otFeatureEnabled) return;
+
+  cats.forEach(cat => {
+    const hk      = 'h_'      + cat.id;
+    const otk     = 'ot_'     + cat.id;
+    const otNoteK = 'otNote_' + cat.id;
+
+    // Đã có lựa chọn (đã lưu trước đó, hoặc NV vừa tự bấm) → không đụng vào
+    if(inputs[hk] !== undefined || inputs[otk] !== undefined) return;
+    if(saved[hk]  !== undefined || saved[otk]  !== undefined) return;
+
+    const actual    = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
+    const actualNum = actual === undefined || actual === null || actual === '' ? 0 : actual;
+    const isDone    = getPct(actualNum, cat.target) >= 100;
+    if(isDone) return; // đã đạt, không cần chọn gì
+
+    // Môn đã bị khoá cứng bởi Mốc 2 (hôm qua chọn "TC ngày mai") hoặc Mốc 3
+    // (7 ngày liên tiếp chưa đạt + môn trừ sao >300) → không can thiệp, để
+    // luồng khoá cứng hiện có tự xử lý như bình thường.
+    const yestSaved  = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
+    const otUnlocked = !!saved['_unlockOt_' + cat.id];
+    if(yestSaved['sp_' + cat.id] === 'ot' && !otUnlocked) return; // forcedOtToday
+    if(cat.sm > 300 && !otUnlocked){
+      const m3Past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+      const m3Streak = Math.min(m3Past + 1, 7);
+      if(m3Streak >= 7) return; // moc3Forced
+    }
+
+    // Tính Số Ngày hiện tại — mirror đúng logic zdCurrentVal trong vòng lặp render chính
+    let zdCurrentVal;
+    if(zdAutoMode || !allowZdManual){
+      const past = getZeroDays(emp.id, cat.id, dateKey);
+      zdCurrentVal = Math.min(past + 1, 6);
+    } else {
+      zdCurrentVal = inputs['zd_' + cat.id] !== undefined
+        ? inputs['zd_' + cat.id]
+        : (saved['zd_' + cat.id] || 0);
+    }
+
+    const needOtChoice = zdCurrentVal === otThreshold;
+    if(!needOtChoice) return;
+
+    // ĐÃ CHẠM MỐC — tự động chọn hộ: còn sao → Dùng sao; hết sao → Tăng ca
+    if(emp.stars > 0){
+      inputs[hk] = true;
+    } else {
+      inputs[otk]     = true;
+      inputs[otNoteK] = `[Tự động] Hệ thống tự chọn Tăng ca do NV đã hết sao — mốc ${otThreshold} ngày chưa đạt liên tiếp cho môn "${cat.name}".`;
+    }
+    inputs['_autoOtChoice_' + cat.id] = true; // đánh dấu để hiển thị badge minh bạch, KHÔNG gửi lên server
+  });
+}
+
 function renderTable(){
   const emp = getCurEmp();
   if(!emp) return;
@@ -2326,6 +2414,11 @@ function renderTable(){
     zdBtnLbl.style.color = zdAutoMode ? '' : '#4a2e00';
   }
   tbody.innerHTML = '';
+
+  // Tự động điền sẵn lựa chọn Tăng ca/Dùng sao cho các môn vừa chạm mốc bắt buộc
+  // (chỉ chạy khi QL đã bật autoOtChoiceEnabled) — PHẢI chạy TRƯỚC vòng lặp chính
+  // bên dưới để totPlus/totMinus và các cột hiển thị tính đúng ngay từ đầu.
+  applyAutoOtChoice(emp, cats, dateKey, saved);
 
   let totPlus = 0, totMinus = 0, done = 0;
 
@@ -2486,7 +2579,10 @@ function renderTable(){
         ${otFlag ? otNoteVisibleH : ''}`;
     } else {
       const unlockedBadgeH = otUnlocked ? `<div style="font-size:10px;color:#16a34a;margin-top:2px">🔓 QL đã gỡ khoá hôm nay</div>` : '';
-      actionH = `<button class="${btnCls}" data-catid="${cat.id}" ${btnDis}${btnTitle}>${btnTxt}</button>${unlockedBadgeH}`;
+      const autoChoiceBadgeH = (inputs['_autoOtChoice_' + cat.id] && hope)
+        ? `<div style="font-size:9px;color:#7c3aed;margin-top:2px;font-weight:700">🤖 Tự động chọn — có thể đổi lại</div>`
+        : '';
+      actionH = `<button class="${btnCls}" data-catid="${cat.id}" ${btnDis}${btnTitle}>${btnTxt}</button>${unlockedBadgeH}${autoChoiceBadgeH}`;
     }
 
     /* ô lựa chọn CẢNH BÁO DÙNG SAO LIÊN TIẾP — hiện khi vừa chạm mốc riêng hoặc đã chọn trước đó
@@ -2790,6 +2886,40 @@ async function onOtThresholdChange(val){
     // Revert vì server chưa lưu được — tránh lệch UI/server
     otThreshold = prevVal;
     renderOtThresholdControl();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
+function renderAutoOtChoiceToggle(){
+  const chk   = document.getElementById('autoOtChoiceToggle');
+  const badge = document.getElementById('autoOtChoiceBadge');
+  if(!chk || !badge) return;
+  chk.checked = autoOtChoiceEnabled;
+  badge.textContent = autoOtChoiceEnabled ? '✅ Đang BẬT — tự chọn hộ cho tất cả NV' : '🔴 Đang TẮT — NV tự bấm chọn';
+  badge.className = 't-badge ' + (autoOtChoiceEnabled ? 't-badge-on' : 't-badge-off');
+}
+
+async function onAutoOtChoiceToggle(val){
+  const prevVal        = autoOtChoiceEnabled; // lưu lại để revert nếu lỗi
+  autoOtChoiceEnabled  = val;
+  renderAutoOtChoiceToggle();
+  renderTable();
+  const dot = document.getElementById('autoOtChoiceDot');
+  const txt = document.getElementById('autoOtChoiceTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'autoOtChoiceEnabled', value: val });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'BẬT' : 'TẮT'} cho tất cả nhân viên`;
+    toast(val ? '✅ Đã BẬT tự động lựa chọn Tăng ca/Dùng sao cho tất cả NV' : '🔒 Đã TẮT tự động lựa chọn Tăng ca/Dùng sao cho tất cả NV', 'ok');
+  } catch(err){
+    // Revert vì server chưa lưu được — tránh lệch UI/server
+    autoOtChoiceEnabled = prevVal;
+    renderAutoOtChoiceToggle();
     renderTable();
     if(dot) dot.className = 'dot err';
     if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
@@ -4494,6 +4624,7 @@ function renderAdminTab(){
   renderHopeToggle();
   renderZdToggle();
   renderOtThresholdControl();
+  renderAutoOtChoiceToggle();
   renderStarPenaltyThresholdControl();
   renderBonusX2ThresholdControl();
   renderMissingReports();
@@ -5861,6 +5992,18 @@ async function pollSettings(){
         renderBonusX2ThresholdControl();
         if(document.getElementById('tab-rules').classList.contains('on')) renderRulesTab();
       }
+    }
+
+    // Kiểm tra autoOtChoiceEnabled (bật/tắt tự động lựa chọn hộ Tăng ca/Dùng sao)
+    if(data.settings.autoOtChoiceEnabled !== undefined && data.settings.autoOtChoiceEnabled !== autoOtChoiceEnabled){
+      autoOtChoiceEnabled = data.settings.autoOtChoiceEnabled;
+      changed = true;
+      if(!adminUnlocked){
+        toast(autoOtChoiceEnabled
+          ? '🤖 Quản lý đã BẬT tự động lựa chọn Tăng ca/Dùng sao'
+          : '🔒 Quản lý đã TẮT tự động lựa chọn Tăng ca/Dùng sao', 'ok');
+      }
+      renderAutoOtChoiceToggle();
     }
 
     // Nếu có thay đổi → render lại bảng để cập nhật nút Dùng Sao
