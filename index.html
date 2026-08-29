@@ -489,6 +489,9 @@ tr.row-done .cat-name{color:var(--green)}
 /* ═══ ADMIN ═══ */
 .admin-section{padding:14px 20px}
 .sec-title{font-size:11px;font-weight:800;color:var(--text-mid);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.grp-title{font-size:11px;font-weight:800;color:var(--blue-mid);margin:16px 0 8px;padding-left:2px;border-left:3px solid var(--blue-mid);padding-left:8px;display:flex;align-items:center;gap:5px}
+.grp-title:first-of-type{margin-top:4px}
+.grp-note{font-size:10.5px;color:var(--text-mid);background:var(--gray-bg);border:1px dashed var(--gray-line);border-radius:8px;padding:8px 10px;margin:6px 0 4px;line-height:1.5}
 .adm-card{background:#fff;border-radius:12px;border:1px solid var(--gray-line);overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
 .act-btn{padding:7px 14px;border:2px solid var(--gray-line);border-radius:8px;font-size:12px;cursor:pointer;background:#fff;color:var(--text);font-family:'Barlow',sans-serif;font-weight:700;transition:.15s}
 .act-btn.primary{background:linear-gradient(135deg,var(--blue),var(--blue-mid));color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(26,35,126,.25)}
@@ -1066,6 +1069,11 @@ tr.row-done .cat-name{color:var(--green)}
 
         <!-- ══ TOGGLE DÙNG SAO ══ -->
         <div class="sec-title"><i class="ti ti-toggle-right"></i>Điều khiển tính năng</div>
+
+        <!-- Nhóm 1 — NỀN TẢNG: 2 công tắc này quyết định "Dùng sao" có tồn tại hay không và
+             "Số Ngày" (chuỗi chưa đạt) được tính kiểu Auto hay NV tự chọn. Đây là điều kiện
+             tiên quyết cho toàn bộ Mốc 1/2/3 bên dưới nên luôn đặt lên đầu. -->
+        <div class="grp-title"><i class="ti ti-puzzle"></i>Nhóm nền tảng</div>
         <div class="toggle-card">
           <div class="toggle-row">
             <div class="toggle-info">
@@ -1101,10 +1109,13 @@ tr.row-done .cat-name{color:var(--green)}
           </div>
         </div>
 
+        <!-- Nhóm 2 — MỐC BẮT BUỘC: Mốc 1 → Mốc 2 → (Mốc 3 cố định, không có công tắc) theo đúng
+             thứ tự leo thang thực tế: chưa đạt liên tiếp → dùng sao liên tiếp → khoá cứng TC. -->
+        <div class="grp-title"><i class="ti ti-alert-triangle"></i>Nhóm Mốc bắt buộc (leo thang 1 → 2 → 3)</div>
         <div class="toggle-card">
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="t-title">🕐 Bắt buộc "Tăng ca / Dùng sao"</div>
+              <div class="t-title">🕐 Mốc 1 — Bắt buộc "Tăng ca / Dùng sao"</div>
               <div class="t-sub">Bật → Khi Số Ngày chưa đạt liên tiếp chạm mốc đã chọn, NV bắt buộc<br>chọn 🕐 Tăng ca (ghi chú) hoặc ⭐ Dùng sao mới lưu được báo cáo<br>Tắt → Không bắt buộc, ẩn toàn bộ lựa chọn này</div>
               <span class="t-badge" id="otFeatureBadge">—</span>
             </div>
@@ -1138,7 +1149,7 @@ tr.row-done .cat-name{color:var(--green)}
         <div class="toggle-card">
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="t-title">🚨 Cảnh báo Dùng sao liên tiếp</div>
+              <div class="t-title">🚨 Mốc 2 — Cảnh báo Dùng sao liên tiếp</div>
               <div class="t-sub">Bật → Khi 1 môn CHƯA ĐẠT (100%) liên tiếp chạm đúng mốc đã chọn bên dưới,<br>NV bắt buộc chọn <strong>🕐 Tăng ca ngày mai</strong> hoặc <strong>⭐ Trừ sao ×2</strong> mới lưu được báo cáo<br>Tắt → Không cảnh báo, ẩn toàn bộ lựa chọn này</div>
               <span class="t-badge" id="spBadge">—</span>
             </div>
@@ -1169,6 +1180,15 @@ tr.row-done .cat-name{color:var(--green)}
           </div>
         </div>
 
+        <div class="grp-note">
+          🔒 <b>Mốc 3</b> (môn trừ sao &gt;300, 7 ngày liên tiếp chưa đạt) <b>không có công tắc bật/tắt</b> —
+          đây là mốc cố định, luôn áp dụng bất kể Mốc 1/2 ở trên đang Bật hay Tắt. Tắt Mốc 1 &amp; 2 sẽ
+          <b>không</b> tắt được Mốc 3.
+        </div>
+
+        <!-- Nhóm 3 — HỖ TRỢ TỰ ĐỘNG: phụ thuộc trực tiếp vào Mốc 1 & 2 ở trên (tự điền lựa chọn khi
+             chạm mốc) nên phải đặt SAU 2 mốc đó, không thể đặt trước. -->
+        <div class="grp-title"><i class="ti ti-robot"></i>Nhóm hỗ trợ tự động</div>
         <div class="toggle-card">
           <div class="toggle-row">
             <div class="toggle-info">
@@ -1187,6 +1207,9 @@ tr.row-done .cat-name{color:var(--green)}
           </div>
         </div>
 
+        <!-- Nhóm 4 — THƯỞNG: hoàn toàn độc lập với hệ Mốc phạt ở trên (không dùng chung streak/hope),
+             đặt tách riêng cuối cùng để tránh gây hiểu nhầm là liên quan tới Mốc 1/2/3. -->
+        <div class="grp-title"><i class="ti ti-award"></i>Nhóm thưởng (độc lập với hệ Mốc)</div>
         <div class="toggle-card">
           <div class="toggle-row">
             <div class="toggle-info">
