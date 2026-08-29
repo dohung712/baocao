@@ -1150,7 +1150,7 @@ tr.row-done .cat-name{color:var(--green)}
           <div class="toggle-row">
             <div class="toggle-info">
               <div class="t-title">🚨 Mốc 2 — Cảnh báo Dùng sao liên tiếp</div>
-              <div class="t-sub">Bật → Khi 1 môn CHƯA ĐẠT (100%) liên tiếp chạm đúng mốc đã chọn bên dưới,<br>NV bắt buộc chọn <strong>🕐 Tăng ca ngày mai</strong> hoặc <strong>⭐ Trừ sao ×2</strong> mới lưu được báo cáo<br>Tắt → Không cảnh báo, ẩn toàn bộ lựa chọn này</div>
+              <div class="t-sub">Bật → Khi 1 môn CHƯA ĐẠT (100%) liên tiếp chạm đúng mốc đã chọn bên dưới,<br>NV bắt buộc chọn <strong>🕐 Tăng ca ngày mai</strong> hoặc <strong>⭐ Trừ sao ×2</strong> mới lưu được báo cáo.<br>Hệ thống <strong>tự điền sẵn</strong> luôn (còn sao → Trừ×2, hết sao → TC ngày mai) ngay khi BẬT công tắc này — không cần bật thêm "Tự động lựa chọn hộ NV".<br>Tắt → Không cảnh báo, ẩn toàn bộ lựa chọn này</div>
               <span class="t-badge" id="spBadge">—</span>
             </div>
             <label class="sw">
@@ -1193,7 +1193,7 @@ tr.row-done .cat-name{color:var(--green)}
           <div class="toggle-row">
             <div class="toggle-info">
               <div class="t-title">🤖 Tự động lựa chọn hộ NV</div>
-              <div class="t-sub">Bật → Áp dụng cho CẢ 2 mốc bắt buộc ở trên (🕐 Tăng ca/Dùng sao<br>VÀ 🚨 Cảnh báo dùng sao liên tiếp): khi chạm mốc, hệ thống tự điền<br>sẵn — còn sao → tự chọn ⭐ Dùng sao / ⭐ Trừ×2; hết sao (0 sao)<br>→ tự chọn 🕐 Tăng ca / 🕐 TC ngày mai. NV vẫn xem/đổi lại được<br>trước khi lưu báo cáo<br>Tắt → NV phải tự bấm chọn như trước cho cả 2 mốc</div>
+              <div class="t-sub">Bật → Áp dụng cho <strong>Mốc 1 (🕐 Tăng ca/Dùng sao)</strong>: khi chạm mốc,<br>hệ thống tự điền sẵn — còn sao → tự chọn ⭐ Dùng sao; hết sao (0 sao)<br>→ tự chọn 🕐 Tăng ca. NV vẫn xem/đổi lại được trước khi lưu báo cáo.<br>Riêng <strong>Mốc 2 (🚨 Cảnh báo dùng sao liên tiếp)</strong> đã tự điền sẵn ngay<br>khi Mốc 2 đang BẬT, không phụ thuộc công tắc này (bật 1 trong 2 là đủ).<br>Tắt → NV phải tự bấm chọn cho Mốc 1 như trước</div>
               <span class="t-badge" id="autoOtChoiceBadge">—</span>
             </div>
             <label class="sw">
@@ -2524,7 +2524,6 @@ function getPrevDayResult(empId, catId, target, dateKey){
 //  TỰ ĐỘNG CHỌN HỘ khi chạm mốc bắt buộc — áp dụng CẢ 2 mốc:
 //    Mốc 1 (otThreshold)         : ⭐ Dùng sao  ⇄  🕐 Tăng ca
 //    Mốc 2 (starPenaltyThreshold): ⭐ Trừ sao ×2 ⇄  🕐 TC ngày mai
-//  QL bật/tắt qua autoOtChoiceEnabled (dùng chung 1 công tắc cho cả 2 mốc).
 //  Quy tắc: còn sao (emp.stars > 0) → tự chọn phương án DÙNG SAO/TRỪ SAO;
 //  hết sao (emp.stars === 0) → tự chọn phương án TĂNG CA (kèm ghi chú tự
 //  động cho Mốc 1, vì không có NV bấm để nhập ghi chú thủ công qua modal).
@@ -2532,10 +2531,19 @@ function getPrevDayResult(empId, catId, target, dateKey){
 //  NV vẫn tự bấm đổi lại được trước khi lưu báo cáo. Chỉ áp dụng cho
 //  đúng (NV+ngày+môn) CHƯA có lựa chọn nào (chưa lưu, chưa tự bấm) —
 //  không bao giờ ghi đè lựa chọn đã có sẵn.
+//
+//  ĐIỀU KIỆN BẬT — MỖI MỐC RIÊNG (không còn dùng chung 1 gate như trước):
+//    • Mốc 1: cần autoOtChoiceEnabled VÀ otFeatureEnabled (AND — giữ nguyên).
+//    • Mốc 2: chỉ cần starPenaltyEnabled — tự động chọn ngay cả khi
+//      autoOtChoiceEnabled đang TẮT (đổi AND → OR theo yêu cầu QL: bật
+//      1 trong 2 công tắc "Cảnh báo Dùng sao liên tiếp" / "Tự động lựa
+//      chọn hộ NV" là đủ để tự điền sẵn cho Mốc 2). Vì Mốc 2 vốn không
+//      tồn tại/không hiển thị nếu starPenaltyEnabled tắt (xem needSpChoice
+//      trong renderTable), điều kiện rút gọn còn đúng starPenaltyEnabled;
+//      bật thêm autoOtChoiceEnabled cùng lúc vẫn hoạt động bình thường,
+//      không đổi kết quả.
 // ════════════════════════════════════════════
 function applyAutoOtChoice(emp, cats, dateKey, saved){
-  if(!autoOtChoiceEnabled) return;
-
   cats.forEach(cat => {
     const hk      = 'h_'      + cat.id;
     const otk     = 'ot_'     + cat.id;
@@ -2573,7 +2581,7 @@ function applyAutoOtChoice(emp, cats, dateKey, saved){
           ? inputs['zd_' + cat.id]
           : (saved['zd_' + cat.id] || 0);
       }
-      if(otFeatureEnabled && zdCurrentVal === otThreshold){
+      if(autoOtChoiceEnabled && otFeatureEnabled && zdCurrentVal === otThreshold){
         if(emp.stars > 0){
           inputs[hk] = true;
         } else {
@@ -2585,7 +2593,9 @@ function applyAutoOtChoice(emp, cats, dateKey, saved){
     }
 
     // ── MỐC 2: Trừ sao ×2 ⇄ TC ngày mai (dựa trên chuỗi CHƯA ĐẠT riêng, độc lập Mốc 1)
-    //    Từ mốc trở đi (>=) vẫn tiếp tục bắt chọn mỗi ngày nếu NV chưa tự bấm chọn ──
+    //    Từ mốc trở đi (>=) vẫn tiếp tục bắt chọn mỗi ngày nếu NV chưa tự bấm chọn.
+    //    CHỈ cần starPenaltyEnabled — KHÔNG còn bắt buộc autoOtChoiceEnabled cũng bật
+    //    (OR: bật 1 trong 2 công tắc là tự điền chọn cho Mốc 2) ──
     if(inputs[spk] === undefined && saved[spk] === undefined){
       const spPast   = getStarPenaltyStreak(emp.id, cat.id, dateKey);
       const spStreak = Math.min(spPast + 1, 6);
@@ -2642,9 +2652,11 @@ function renderTable(){
   }
   tbody.innerHTML = '';
 
-  // Tự động điền sẵn lựa chọn Tăng ca/Dùng sao cho các môn vừa chạm mốc bắt buộc
-  // (chỉ chạy khi QL đã bật autoOtChoiceEnabled) — PHẢI chạy TRƯỚC vòng lặp chính
-  // bên dưới để totPlus/totMinus và các cột hiển thị tính đúng ngay từ đầu.
+  // Tự động điền sẵn lựa chọn Tăng ca/Dùng sao cho các môn vừa chạm mốc bắt buộc.
+  // Mốc 1 chạy khi (autoOtChoiceEnabled AND otFeatureEnabled) đều bật; Mốc 2 chạy khi
+  // starPenaltyEnabled bật (không cần autoOtChoiceEnabled cũng bật — xem giải thích
+  // trong applyAutoOtChoice). PHẢI chạy TRƯỚC vòng lặp chính bên dưới để totPlus/
+  // totMinus và các cột hiển thị tính đúng ngay từ đầu.
   applyAutoOtChoice(emp, cats, dateKey, saved);
 
   let totPlus = 0, totMinus = 0, done = 0;
@@ -3128,7 +3140,7 @@ function renderAutoOtChoiceToggle(){
   const badge = document.getElementById('autoOtChoiceBadge');
   if(!chk || !badge) return;
   chk.checked = autoOtChoiceEnabled;
-  badge.textContent = autoOtChoiceEnabled ? '✅ Đang BẬT — tự chọn hộ cho tất cả NV (cả 2 mốc)' : '🔴 Đang TẮT — NV tự bấm chọn';
+  badge.textContent = autoOtChoiceEnabled ? '✅ Đang BẬT — tự chọn hộ Mốc 1 cho tất cả NV (Mốc 2 tự chọn theo công tắc riêng)' : '🔴 Đang TẮT — NV tự bấm chọn Mốc 1';
   badge.className = 't-badge ' + (autoOtChoiceEnabled ? 't-badge-on' : 't-badge-off');
 }
 
