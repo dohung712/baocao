@@ -772,6 +772,15 @@ tr.row-done .cat-name{color:var(--green)}
 
       <!-- ══ TRẠNG THÁI CHƯA CHỌN NHÂN VIÊN — gợi ý nhanh trước khi vào báo cáo ══ -->
       <div id="reportEmptyState">
+        <!-- ⚡ MÔN ĐANG THƯỞNG X2 SAO HÔM NAY — hiện NGAY TRƯỚC khi chọn NV để tạo động lực
+             đẩy số, chỉ hiện các môn đang thực sự bật x2 (theo cấu hình từng siêu thị của QL) -->
+        <div class="adm-card" id="x2HighlightCard" style="margin-bottom:14px;padding:14px;display:none;background:linear-gradient(135deg,#fffbeb,#fff8e1);border:1px solid var(--gold-border)">
+          <div style="font-size:11px;font-weight:800;color:#7a5b00;margin-bottom:8px;display:flex;align-items:center;gap:5px">
+            <i class="ti ti-bolt" style="color:#f59e0b"></i>MÔN ĐANG THƯỞNG X2 SAO HÔM NAY
+          </div>
+          <div id="x2HighlightBody"></div>
+        </div>
+
         <div class="lb-wrap" style="margin-bottom:14px">
           <div class="lb-hdr">
             <div class="lh-title"><i class="ti ti-trophy" style="color:var(--gold)"></i>Top 5 sao nhiều nhất</div>
@@ -798,6 +807,7 @@ tr.row-done .cat-name{color:var(--green)}
           👆 Chọn tên của bạn ở trên để bắt đầu báo cáo
         </div>
       </div>
+
 
       <!-- Report card -->
       <div id="repCard" style="display:none">
@@ -981,7 +991,7 @@ tr.row-done .cat-name{color:var(--green)}
           <p>Mỗi ngày, nhập <b>Thực tế</b> cho từng môn thi đua rồi bấm <b>Lưu &amp; Xuất ảnh báo cáo</b>. Hệ thống tự tính % đạt = Thực tế ÷ Target.</p>
           <ul>
             <li><span class="rule-badge">Đạt ≥100%</span> → được <b>cộng sao</b> theo mức thưởng riêng của từng môn (xem ở tab <b>Môn thi</b>).</li>
-            <li><span class="rule-badge gold">Đạt &gt;<span id="ruleX2ThresholdTxt">300</span>%</span> → số sao thưởng được <b>nhân đôi (x2)</b> cho môn đó, thay vì mức thưởng thường (nếu QL đang bật tính năng này).</li>
+            <li><span class="rule-badge gold">Đạt &gt;<span id="ruleX2ThresholdTxt">300</span>%</span> → số sao thưởng được <b>nhân đôi (x2)</b> cho môn đó, thay vì mức thưởng thường (nếu QL đang bật tính năng này). QL có thể giới hạn chỉ áp dụng cho một số môn nhất định của từng siêu thị — xem trang chủ (trước khi chọn nhân viên) để biết chính xác môn nào đang được x2 hôm nay.</li>
             <li><span class="rule-badge red">Chưa đạt &lt;100%</span> → không cộng, và số ngày liên tiếp chưa đạt của môn đó sẽ tăng thêm 1 (cột <b>Số Ngày</b>).</li>
           </ul>
         </div>
@@ -1150,7 +1160,7 @@ tr.row-done .cat-name{color:var(--green)}
           <div class="toggle-row">
             <div class="toggle-info">
               <div class="t-title">🚨 Mốc 2 — Cảnh báo Dùng sao liên tiếp</div>
-              <div class="t-sub">Bật → Khi 1 môn CHƯA ĐẠT (100%) liên tiếp chạm đúng mốc đã chọn bên dưới,<br>NV bắt buộc chọn <strong>🕐 Tăng ca ngày mai</strong> hoặc <strong>⭐ Trừ sao ×2</strong> mới lưu được báo cáo.<br>Hệ thống <strong>tự điền sẵn</strong> luôn (còn sao → Trừ×2, hết sao → TC ngày mai) ngay khi BẬT công tắc này — không cần bật thêm "Tự động lựa chọn hộ NV".<br>Tắt → Không cảnh báo, ẩn toàn bộ lựa chọn này</div>
+              <div class="t-sub">Bật → Khi 1 môn CHƯA ĐẠT (100%) liên tiếp chạm đúng mốc đã chọn bên dưới,<br>NV bắt buộc chọn <strong>🕐 Tăng ca ngày mai</strong> hoặc <strong>⭐ Trừ sao ×2</strong> mới lưu được báo cáo<br>Tắt → Không cảnh báo, ẩn toàn bộ lựa chọn này</div>
               <span class="t-badge" id="spBadge">—</span>
             </div>
             <label class="sw">
@@ -1172,6 +1182,11 @@ tr.row-done .cat-name{color:var(--green)}
               <option value="3">3</option>
               <option value="4">4</option>
               <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
             </select>
           </div>
           <div class="toggle-sync-txt" id="spThresholdSyncTxt">
@@ -1193,7 +1208,7 @@ tr.row-done .cat-name{color:var(--green)}
           <div class="toggle-row">
             <div class="toggle-info">
               <div class="t-title">🤖 Tự động lựa chọn hộ NV</div>
-              <div class="t-sub">Bật → Áp dụng cho <strong>Mốc 1 (🕐 Tăng ca/Dùng sao)</strong>: khi chạm mốc,<br>hệ thống tự điền sẵn — còn sao → tự chọn ⭐ Dùng sao; hết sao (0 sao)<br>→ tự chọn 🕐 Tăng ca. NV vẫn xem/đổi lại được trước khi lưu báo cáo.<br>Riêng <strong>Mốc 2 (🚨 Cảnh báo dùng sao liên tiếp)</strong> đã tự điền sẵn ngay<br>khi Mốc 2 đang BẬT, không phụ thuộc công tắc này (bật 1 trong 2 là đủ).<br>Tắt → NV phải tự bấm chọn cho Mốc 1 như trước</div>
+              <div class="t-sub">Bật → Áp dụng cho CẢ 2 mốc bắt buộc ở trên (🕐 Tăng ca/Dùng sao<br>VÀ 🚨 Cảnh báo dùng sao liên tiếp): khi chạm mốc, hệ thống tự điền<br>sẵn — còn sao → tự chọn ⭐ Dùng sao / ⭐ Trừ×2; hết sao (0 sao)<br>→ tự chọn 🕐 Tăng ca / 🕐 TC ngày mai. NV vẫn xem/đổi lại được<br>trước khi lưu báo cáo<br>Tắt → NV phải tự bấm chọn như trước cho cả 2 mốc</div>
               <span class="t-badge" id="autoOtChoiceBadge">—</span>
             </div>
             <label class="sw">
@@ -1242,11 +1257,19 @@ tr.row-done .cat-name{color:var(--green)}
             <span class="dot" id="x2ThresholdDot"></span>
             <span id="x2ThresholdTxt">—</span>
           </div>
+
+          <div class="toggle-row" id="x2CatsRow" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--gray-line);display:block">
+            <div class="toggle-info" style="margin-bottom:10px">
+              <div class="t-title" style="font-size:12px">📍 Áp dụng x2 riêng theo môn của từng siêu thị</div>
+              <div class="t-sub">Chưa chọn (để trống) = áp dụng cho <b>TẤT CẢ</b> môn của siêu thị đó — như trước giờ.<br>Có tick môn nào thì <b>CHỈ</b> môn đó mới được thưởng x2; bấm "Bỏ chọn tất cả" để tắt hẳn x2 cho cả siêu thị.</div>
+            </div>
+            <div id="x2CatsContainer"></div>
+          </div>
         </div>
 
         <div style="font-size:10px;color:var(--text-light);padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:14px;line-height:1.5">
           <i class="ti ti-info-circle" style="color:#d97706;margin-right:4px"></i>
-          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code>, <code>settings.starPenaltyEnabled</code>, <code>settings.starPenaltyThreshold</code>, <code>settings.autoOtChoiceEnabled</code> trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
+          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code>, <code>settings.starPenaltyEnabled</code>, <code>settings.starPenaltyThreshold</code>, <code>settings.autoOtChoiceEnabled</code>, <code>settings.bonusX2Cats</code> (lưu dạng chuỗi JSON) trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
         </div>
 
         <!-- ══ THIẾU BÁO CÁO (THÁNG NÀY) ══ -->
@@ -1723,6 +1746,24 @@ let autoOtChoiceEnabled = false; // Mặc định TẮT, QL bật khi cần
 // ══ THƯỞNG X2 SAO KHI VƯỢT NGƯỠNG % (mặc định >300%) ══
 let bonusX2Enabled   = true; // QL toggle: bật/tắt tính năng thưởng x2 sao khi vượt ngưỡng
 let bonusX2Threshold = 300;  // QL thiết lập: mức % (VD 200/300/400) để kích hoạt thưởng x2
+// QL cấu hình: danh sách môn được BẬT thưởng x2 riêng theo từng siêu thị (dept).
+// Cấu trúc: { [dept]: string[] catId }. QUY ƯỚC:
+//  - dept chưa có key, hoặc mảng RỖNG THẬT ([])  → CHƯA cấu hình riêng → mặc định TẤT CẢ
+//    môn của siêu thị đó đều được tính x2 (giữ đúng hành vi cũ trước khi có tính năng này).
+//  - mảng chỉ chứa marker X2_CATS_NONE_MARKER    → QL đã chủ động BỎ CHỌN HẾT → KHÔNG môn
+//    nào được x2 (khác với "chưa cấu hình" ở trên).
+//  - mảng chứa danh sách catId cụ thể            → CHỈ những môn đó được x2.
+let bonusX2Cats = {};
+const X2_CATS_NONE_MARKER = '__NONE__';
+
+// Kiểm tra 1 môn (catId) có được BẬT thưởng x2 tại đúng siêu thị (dept) này không — xem quy
+// ước đầy đủ ở comment khai báo bonusX2Cats phía trên.
+function isX2CatEnabled(catId, dept){
+  const list = bonusX2Cats[dept];
+  if(!list || !list.length) return true;
+  if(list.length === 1 && list[0] === X2_CATS_NONE_MARKER) return false;
+  return list.includes(catId);
+}
 
 // ════════════════════════════════════════════
 //  SYNC INDICATOR
@@ -1798,7 +1839,7 @@ async function loadAll(){
     if(data.settings && data.settings.starPenaltyEnabled !== undefined){
       starPenaltyEnabled = data.settings.starPenaltyEnabled;
     }
-    if(data.settings && data.settings.starPenaltyThreshold !== undefined && [3,4,5].includes(Number(data.settings.starPenaltyThreshold))){
+    if(data.settings && data.settings.starPenaltyThreshold !== undefined && [3,4,5,6,7,8,9,10].includes(Number(data.settings.starPenaltyThreshold))){
       starPenaltyThreshold = Number(data.settings.starPenaltyThreshold);
     }
     if(data.settings && data.settings.bonusX2Enabled !== undefined){
@@ -1806,6 +1847,15 @@ async function loadAll(){
     }
     if(data.settings && data.settings.bonusX2Threshold !== undefined && Number(data.settings.bonusX2Threshold) > 100){
       bonusX2Threshold = Number(data.settings.bonusX2Threshold);
+    }
+    if(data.settings && data.settings.bonusX2Cats !== undefined){
+      try {
+        const raw = data.settings.bonusX2Cats;
+        const parsed = typeof raw === 'string' ? (raw ? JSON.parse(raw) : {}) : (raw || {});
+        bonusX2Cats = (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+      } catch(e){
+        bonusX2Cats = {}; // dữ liệu lỗi → coi như chưa cấu hình gì, mặc định bật hết (an toàn)
+      }
     }
     if(data.settings && data.settings.autoOtChoiceEnabled !== undefined){
       autoOtChoiceEnabled = data.settings.autoOtChoiceEnabled;
@@ -1970,6 +2020,44 @@ function renderReportEmptyState(){
   const dateEl = document.getElementById('resDateD');
   if(dateEl) dateEl.textContent = todayStr;
 
+  // ── ⚡ Môn đang thưởng x2 sao hôm nay (theo từng siêu thị) — hiện TRƯỚC khi chọn NV để
+  // NV thấy ngay và có động lực đẩy số vượt ngưỡng. Chỉ hiện khi bonusX2Enabled đang BẬT và
+  // có ít nhất 1 môn thực sự đủ điều kiện x2 (theo cấu hình riêng từng siêu thị của QL). ──
+  const x2Card = document.getElementById('x2HighlightCard');
+  const x2Body = document.getElementById('x2HighlightBody');
+  if(x2Card && x2Body){
+    if(!bonusX2Enabled){
+      x2Card.style.display = 'none';
+    } else {
+      const groups = Object.keys(CATS).map(dept => ({
+        dept,
+        cats: (CATS[dept] || []).filter(c => isX2CatEnabled(c.id, dept))
+      })).filter(g => g.cats.length > 0);
+
+      if(!groups.length){
+        x2Card.style.display = 'none';
+      } else {
+        x2Card.style.display = '';
+        x2Body.innerHTML =
+          `<div style="font-size:10.5px;color:#7a5b00;margin-bottom:10px;line-height:1.5">
+            Đạt trên <b>${bonusX2Threshold}%</b> chỉ tiêu các môn dưới đây → được <b>nhân đôi (x2)</b> số sao thưởng. Cố lên, đẩy số nào! 💪
+          </div>` +
+          groups.map(g => {
+            const deptCls = g.dept.toLowerCase().includes('top') ? 'b-top' : 'b-tgdd';
+            return `
+              <div style="margin-bottom:10px">
+                <span class="badge ${deptCls}" style="font-size:10px;padding:2px 8px;margin-bottom:6px;display:inline-block">${escapeHtml(g.dept)}</span>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+                  ${g.cats.map(c => `<span style="font-size:11px;font-weight:700;background:var(--gold-dim);border:1px solid var(--gold-border);color:#7a5b00;border-radius:14px;padding:4px 10px;display:inline-flex;align-items:center;gap:4px">
+                    <i class="ti ti-bolt" style="font-size:12px"></i>${escapeHtml(c.name)}
+                  </span>`).join('')}
+                </div>
+              </div>`;
+          }).join('');
+      }
+    }
+  }
+
   // ── Top 5 NV nhiều sao nhất (gộp cả 2 siêu thị) ──
   const lbBody = document.getElementById('resLbBody');
   if(lbBody){
@@ -2039,6 +2127,90 @@ function onEmpChange(){
   updateEmpHeader();
   computeStreak();
   renderTable();
+  // Popup cảnh báo nhanh cho NV vừa chọn tên — chỉ hiện khi đang xem ĐÚNG NGÀY HÔM NAY
+  // (không hiện khi QL/NV đang xem lại một ngày cũ trong lịch sử)
+  const dateKeyNow = document.getElementById('dateIn').value;
+  if(dateKeyNow === todayStr) showDailyRiskPopup(emp, dateKeyNow);
+}
+
+// ════════════════════════════════════════════
+//  POPUP CẢNH BÁO NHANH — hiện khi NV vừa chọn tên (chỉ khi xem đúng HÔM NAY).
+//  Tổng hợp trước cho NV biết: môn nào sẽ TĂNG CA / TRỪ×2 SAO / TRỪ SAO (mức
+//  thường) nếu hôm nay KHÔNG về số, cộng thêm cảnh báo sớm các môn đã có chuỗi
+//  liên tiếp CHƯA ĐẠT từ 3 ngày trở lên (dùng chung chỉ số "Số Ngày" trên bảng).
+// ════════════════════════════════════════════
+function showDailyRiskPopup(emp, dateKey){
+  const cats  = getCats(emp.dept);
+  const saved = (STORED.reports[emp.id] || {})[dateKey] || {};
+
+  const otList = [], x2List = [], normalList = [], chooseList = [], streakList = [];
+
+  cats.forEach(cat => {
+    const otUnlocked = !!saved['_unlockOt_' + cat.id];
+    const yestSaved   = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
+    const forcedOtToday = yestSaved['sp_' + cat.id] === 'ot' && !otUnlocked;
+
+    const moc3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
+    const moc3Streak = Math.min(moc3Past + 1, 7);
+    const moc3Forced = cat.sm > 300 && moc3Streak >= 7 && !otUnlocked;
+
+    const zdPast      = getZeroDays(emp.id, cat.id, dateKey);
+    const zdProjected = Math.min(zdPast + 1, 6);
+    const needOtChoice = otFeatureEnabled && zdProjected === otThreshold;
+
+    const spPast       = getStarPenaltyStreak(emp.id, cat.id, dateKey);
+    const spStreak     = Math.min(spPast + 1, 10);
+    const needSpChoice = starPenaltyEnabled && spStreak >= starPenaltyThreshold;
+    const spChoiceSaved = saved['sp_' + cat.id] || '';
+
+    // ── Phân nhóm theo mức độ ưu tiên, khớp thứ tự áp dụng thật trên bảng báo cáo ──
+    if(moc3Forced){
+      otList.push(`${escapeHtml(cat.name)} <span style="font-size:10px;color:#7c3aed">(Mốc 3 — 7 ngày liên tiếp, có thể chọn Trừ×5 thay thế)</span>`);
+    } else if(forcedOtToday){
+      otList.push(`${escapeHtml(cat.name)} <span style="font-size:10px;color:#6b7280">(đã chọn Tăng ca ngày mai từ hôm qua)</span>`);
+    } else if(spChoiceSaved === 'x2'){
+      x2List.push(`${escapeHtml(cat.name)} <span style="font-size:10px;color:#6b7280">(đã chọn Trừ×2 cho hôm nay)</span>`);
+    } else if(needOtChoice || needSpChoice){
+      const moc = needOtChoice ? `Mốc 1 — ${zdProjected} ngày` : `Mốc 2 — ${spStreak} ngày`;
+      chooseList.push(`${escapeHtml(cat.name)} <span style="font-size:10px;color:#6b7280">(${moc}, cần chọn hôm nay)</span>`);
+    } else {
+      normalList.push(cat.name);
+    }
+
+    // Cảnh báo chuỗi sớm — độc lập, hiển thị cho MỌI môn đã ≥3 ngày liên tiếp chưa đạt
+    if(zdProjected >= 3){
+      streakList.push(`${escapeHtml(cat.name)}: <strong>${zdProjected} ngày</strong>`);
+    }
+  });
+
+  // Không có gì đáng cảnh báo (toàn bộ môn đều bình thường, chưa ai chạm mốc nào) → khỏi hiện popup
+  if(otList.length === 0 && x2List.length === 0 && chooseList.length === 0 && streakList.length === 0) return;
+
+  const sectionH = (title, color, bg, items, emptyNote) => items.length === 0 ? '' : `
+    <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:${bg};border:1px solid ${color}33">
+      <div style="font-weight:700;font-size:12.5px;color:${color};margin-bottom:4px">${title}</div>
+      <ul style="margin:0;padding-left:18px;font-size:12px;color:var(--text)">
+        ${items.map(i => `<li style="margin-bottom:2px">${i}</li>`).join('')}
+      </ul>
+    </div>`;
+
+  const bg    = document.getElementById('modalBg');
+  const title = document.getElementById('modalTitle');
+  const body  = document.getElementById('modalBody');
+  const btns  = document.getElementById('modalBtns');
+
+  title.innerHTML = `<span style="color:#b91c1c">⚠️ Cảnh báo hôm nay — ${escapeHtml(emp.name)}</span>`;
+  body.innerHTML = `
+    <p style="font-size:12.5px;color:var(--text-mid);margin:0 0 6px;line-height:1.5">
+      Dưới đây là tình trạng CÁC MÔN nếu <strong>hôm nay không về số</strong> (tính theo dữ liệu tới hôm qua):
+    </p>
+    ${sectionH('🚨 Sẽ TĂNG CA nếu không về số', '#dc2626', '#fef2f2', otList)}
+    ${sectionH('⭐ Sẽ bị TRỪ ×2 SAO nếu không về số', '#c2410c', '#fff7ed', x2List)}
+    ${sectionH('🔔 Cần chọn ngay hôm nay (vừa chạm mốc)', '#7c3aed', '#f5f3ff', chooseList)}
+    ${sectionH('⚠️ Sẽ bị trừ sao (mức thường) nếu không về số', '#b45309', '#fffbeb', normalList.map(n => escapeHtml(n)))}
+    ${sectionH('📉 Chuỗi liên tiếp CHƯA ĐẠT từ 3 ngày trở lên', '#0369a1', '#eff6ff', streakList)}`;
+  btns.innerHTML = `<button class="act-btn primary" onclick="closeModal()">Đã hiểu, để tôi nhập báo cáo</button>`;
+  bg.classList.add('open');
 }
 
 function onDateChange(){
@@ -2087,7 +2259,7 @@ function updateEmpHeader(){
       const actual = rep[cat.id] || 0;
       const hope   = rep['h_' + cat.id] || false;
       const pct    = cat.target > 0 ? Math.round(actual / cat.target * 100) : 0;
-      if(pct >= 100)    mPlus  += starBonus(cat, pct);
+      if(pct >= 100)    mPlus  += starBonus(cat, pct, emp.dept);
       else if(hope)     mMinus += cat.sm;
     });
     mMinus += (rep._latePenalty || 0); // gộp cả phạt nộp trễ vào tổng bị trừ trong tháng
@@ -2382,7 +2554,7 @@ function getZdPlainHistory(empId, catId, dateKey, n){
 
     let starDelta = 0, status;
     if(isDone){
-      starDelta = cat2 ? starBonus(cat2, pct) : 0;
+      starDelta = cat2 ? starBonus(cat2, pct, emp2.dept) : 0;
       status = 'done';
     } else if(otFlag && !hope){
       starDelta = 0;
@@ -2479,7 +2651,7 @@ function getStarPenaltyStreak(empId, catId, dateKey){
   const thisMonth = dateKey.slice(0, 7);
   let count = 0;
   for(let i = 1; i <= 90; i++){
-    if(count >= 6) break;
+    if(count >= 10) break;                   // nâng trần lên 10 để hỗ trợ mốc cảnh báo tối đa 10 ngày
     const k = daysBefore(dateKey, i);
     if(k.slice(0, 7) !== thisMonth) break;   // sang tháng trước → dừng (reset đầu tháng)
     const rep = reps[k];
@@ -2491,7 +2663,39 @@ function getStarPenaltyStreak(empId, catId, dateKey){
     if(target > 0 && Math.round(actual / target * 100) >= 100) break; // đạt → dừng (điều kiện ngắt DUY NHẤT)
     count++;                                 // chưa đạt (dùng sao hoặc đã chọn tăng ca đều tính) → đếm
   }
-  return Math.min(count, 6);
+  return Math.min(count, 10);
+}
+
+// Streak riêng cho MỐC 3 (7 ngày liên tiếp chưa đạt, chỉ áp dụng môn trừ sao >300).
+// Giống getStarPenaltyStreak(): KHÔNG bị ngắt bởi việc Dùng sao/Trừ sao (hope) hay đã
+// chọn Tăng ca (ot) ở giữa chừng — chỉ dừng khi THẬT SỰ đạt ≥100% chỉ tiêu. Ngày OFF
+// (không nộp báo cáo) vẫn được bỏ qua, không ngắt chuỗi. Việc "reset về 0" của Mốc 3
+// chỉ xảy ra khi: (a) đạt ≥100%, hoặc (b) NV đã xử lý xong lựa chọn bắt buộc (Tăng ca
+// hoặc Trừ×5) tại đúng ngày chạm mốc — lúc đó cờ `_resetM3_<catId>` được set (xem
+// submitReport()), streak được tính lại từ 0 kể từ ngày hôm sau.
+function getMoc3Streak(empId, catId, dateKey, cap){
+  cap = cap || 7;
+  const reps = STORED.reports[empId] || {};
+  const emp2 = EMPS.find(e => e.id === empId);
+  if((reps[dateKey] || {})['_resetM3_' + catId]) return 0;
+  const cat2      = emp2 ? getCats(emp2.dept).find(c => c.id === catId) : null;
+  const target    = cat2 ? cat2.target : 1;
+  const thisMonth = dateKey.slice(0, 7);
+  let count = 0;
+  for(let i = 1; i <= 90; i++){
+    if(count >= cap) break;
+    const k = daysBefore(dateKey, i);
+    if(k.slice(0, 7) !== thisMonth) break;    // sang tháng trước → dừng (reset đầu tháng)
+    const rep = reps[k];
+    if(!rep) continue;                        // ngày OFF → bỏ qua, KHÔNG ngắt chuỗi
+    if(rep['_resetM3_' + catId]) break;        // đã xử lý xong lựa chọn Mốc 3 ở ngày này → dừng
+    if(!(catId in rep)) continue;              // môn chưa tồn tại vào ngày đó → bỏ qua
+
+    const actual = rep[catId] || 0;
+    if(target > 0 && Math.round(actual / target * 100) >= 100) break; // đạt → dừng (điều kiện ngắt DUY NHẤT)
+    count++;                                   // chưa đạt (dùng sao/Trừ×5/Tăng ca đều tính) → đếm
+  }
+  return Math.min(count, cap);
 }
 
 // ════════════════════════════════════════════
@@ -2500,9 +2704,12 @@ function getStarPenaltyStreak(empId, catId, dateKey){
 function getPct(a, t){ return t > 0 ? Math.round(a / t * 100) : 0; }
 
 // Số sao THƯỞNG thực nhận cho 1 môn khi đã ĐẠT (pct >= 100).
-// Quy tắc: môn nào đạt trên 300% (vượt xa target) → thưởng x2 số sao cấu hình (cat.sp).
-function starBonus(cat, pct){
-  return (bonusX2Enabled && pct > bonusX2Threshold) ? cat.sp * 2 : cat.sp;
+// Quy tắc: môn nào đạt trên 300% (vượt xa target) VÀ nằm trong danh sách môn được QL bật x2
+// cho đúng siêu thị (dept) đó → thưởng x2 số sao cấu hình (cat.sp). Nếu không truyền dept
+// (một số nơi gọi cũ chưa cập nhật) → coi như môn nào cũng đủ điều kiện, giữ hành vi cũ.
+function starBonus(cat, pct, dept){
+  const eligible = dept === undefined ? true : isX2CatEnabled(cat.id, dept);
+  return (bonusX2Enabled && pct > bonusX2Threshold && eligible) ? cat.sp * 2 : cat.sp;
 }
 
 // Tìm % hoàn thành của môn (cat) ở NGÀY BÁO CÁO LIỀN TRƯỚC (ngày gần nhất
@@ -2524,6 +2731,7 @@ function getPrevDayResult(empId, catId, target, dateKey){
 //  TỰ ĐỘNG CHỌN HỘ khi chạm mốc bắt buộc — áp dụng CẢ 2 mốc:
 //    Mốc 1 (otThreshold)         : ⭐ Dùng sao  ⇄  🕐 Tăng ca
 //    Mốc 2 (starPenaltyThreshold): ⭐ Trừ sao ×2 ⇄  🕐 TC ngày mai
+//  QL bật/tắt qua autoOtChoiceEnabled (dùng chung 1 công tắc cho cả 2 mốc).
 //  Quy tắc: còn sao (emp.stars > 0) → tự chọn phương án DÙNG SAO/TRỪ SAO;
 //  hết sao (emp.stars === 0) → tự chọn phương án TĂNG CA (kèm ghi chú tự
 //  động cho Mốc 1, vì không có NV bấm để nhập ghi chú thủ công qua modal).
@@ -2531,19 +2739,10 @@ function getPrevDayResult(empId, catId, target, dateKey){
 //  NV vẫn tự bấm đổi lại được trước khi lưu báo cáo. Chỉ áp dụng cho
 //  đúng (NV+ngày+môn) CHƯA có lựa chọn nào (chưa lưu, chưa tự bấm) —
 //  không bao giờ ghi đè lựa chọn đã có sẵn.
-//
-//  ĐIỀU KIỆN BẬT — MỖI MỐC RIÊNG (không còn dùng chung 1 gate như trước):
-//    • Mốc 1: cần autoOtChoiceEnabled VÀ otFeatureEnabled (AND — giữ nguyên).
-//    • Mốc 2: chỉ cần starPenaltyEnabled — tự động chọn ngay cả khi
-//      autoOtChoiceEnabled đang TẮT (đổi AND → OR theo yêu cầu QL: bật
-//      1 trong 2 công tắc "Cảnh báo Dùng sao liên tiếp" / "Tự động lựa
-//      chọn hộ NV" là đủ để tự điền sẵn cho Mốc 2). Vì Mốc 2 vốn không
-//      tồn tại/không hiển thị nếu starPenaltyEnabled tắt (xem needSpChoice
-//      trong renderTable), điều kiện rút gọn còn đúng starPenaltyEnabled;
-//      bật thêm autoOtChoiceEnabled cùng lúc vẫn hoạt động bình thường,
-//      không đổi kết quả.
 // ════════════════════════════════════════════
 function applyAutoOtChoice(emp, cats, dateKey, saved){
+  if(!autoOtChoiceEnabled) return;
+
   cats.forEach(cat => {
     const hk      = 'h_'      + cat.id;
     const otk     = 'ot_'     + cat.id;
@@ -2563,7 +2762,7 @@ function applyAutoOtChoice(emp, cats, dateKey, saved){
     const forcedOtToday = yestSaved[spk] === 'ot' && !otUnlocked;
     let moc3Forced = false;
     if(cat.sm > 300 && !otUnlocked){
-      const m3Past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+      const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
       const m3Streak = Math.min(m3Past + 1, 7);
       moc3Forced = m3Streak >= 7;
     }
@@ -2581,7 +2780,7 @@ function applyAutoOtChoice(emp, cats, dateKey, saved){
           ? inputs['zd_' + cat.id]
           : (saved['zd_' + cat.id] || 0);
       }
-      if(autoOtChoiceEnabled && otFeatureEnabled && zdCurrentVal === otThreshold){
+      if(otFeatureEnabled && zdCurrentVal === otThreshold){
         if(emp.stars > 0){
           inputs[hk] = true;
         } else {
@@ -2593,12 +2792,10 @@ function applyAutoOtChoice(emp, cats, dateKey, saved){
     }
 
     // ── MỐC 2: Trừ sao ×2 ⇄ TC ngày mai (dựa trên chuỗi CHƯA ĐẠT riêng, độc lập Mốc 1)
-    //    Từ mốc trở đi (>=) vẫn tiếp tục bắt chọn mỗi ngày nếu NV chưa tự bấm chọn.
-    //    CHỈ cần starPenaltyEnabled — KHÔNG còn bắt buộc autoOtChoiceEnabled cũng bật
-    //    (OR: bật 1 trong 2 công tắc là tự điền chọn cho Mốc 2) ──
+    //    Từ mốc trở đi (>=) vẫn tiếp tục bắt chọn mỗi ngày nếu NV chưa tự bấm chọn ──
     if(inputs[spk] === undefined && saved[spk] === undefined){
       const spPast   = getStarPenaltyStreak(emp.id, cat.id, dateKey);
-      const spStreak = Math.min(spPast + 1, 6);
+      const spStreak = Math.min(spPast + 1, 10);
       if(starPenaltyEnabled && spStreak >= starPenaltyThreshold){
         inputs[spk] = emp.stars > 0 ? 'x2' : 'ot';
         inputs['_autoSpChoice_' + cat.id] = true; // đánh dấu để hiển thị badge minh bạch, KHÔNG gửi lên server
@@ -2652,11 +2849,9 @@ function renderTable(){
   }
   tbody.innerHTML = '';
 
-  // Tự động điền sẵn lựa chọn Tăng ca/Dùng sao cho các môn vừa chạm mốc bắt buộc.
-  // Mốc 1 chạy khi (autoOtChoiceEnabled AND otFeatureEnabled) đều bật; Mốc 2 chạy khi
-  // starPenaltyEnabled bật (không cần autoOtChoiceEnabled cũng bật — xem giải thích
-  // trong applyAutoOtChoice). PHẢI chạy TRƯỚC vòng lặp chính bên dưới để totPlus/
-  // totMinus và các cột hiển thị tính đúng ngay từ đầu.
+  // Tự động điền sẵn lựa chọn Tăng ca/Dùng sao cho các môn vừa chạm mốc bắt buộc
+  // (chỉ chạy khi QL đã bật autoOtChoiceEnabled) — PHẢI chạy TRƯỚC vòng lặp chính
+  // bên dưới để totPlus/totMinus và các cột hiển thị tính đúng ngay từ đầu.
   applyAutoOtChoice(emp, cats, dateKey, saved);
 
   let totPlus = 0, totMinus = 0, done = 0;
@@ -2679,7 +2874,7 @@ function renderTable(){
     // logic thật khi lưu (submitReport), để bảng xem trước không hiển thị sai "không trừ gì".
     if(spChoice === 'x2') hope = true;
     const spPast        = getStarPenaltyStreak(emp.id, cat.id, dateKey);
-    const spStreak      = isDone ? 0 : Math.min(spPast + 1, 6);
+    const spStreak      = isDone ? 0 : Math.min(spPast + 1, 10);
     const needSpChoice  = starPenaltyEnabled && !isDone && spStreak >= starPenaltyThreshold;
 
     /* Nếu HÔM QUA đã chọn "🕐 Tăng ca ngày mai" cho môn này (sp_ = 'ot') → hôm nay
@@ -2693,9 +2888,12 @@ function renderTable(){
        chưa đạt liên tiếp đủ 7 ngày → tự động khoá Tăng ca bắt buộc ngay hôm nay, KHÔNG
        cho dùng sao (không phải lựa chọn, là ép buộc), bắt buộc nhập ghi chú tăng ca hôm
        sau (dùng chung field ot_/otNote_ với Mốc 1). QL vẫn gỡ khoá riêng được như Mốc 2. */
-    const moc3Past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+    const moc3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
     const moc3Streak = Math.min(moc3Past + 1, 7);
     const moc3Forced = !isDone && cat.sm > 300 && moc3Streak >= 7 && !otUnlocked;
+    /* MỐC 3 — lựa chọn NV đã chọn hôm nay (nếu có): '' | 'ot' (Tăng ca bắt buộc) | 'x5' (Trừ×5 sao) */
+    const m3k       = 'm3ch_' + cat.id;
+    const m3Choice  = inputs[m3k] !== undefined ? inputs[m3k] : (saved[m3k] || '');
 
     /* percent cell */
     let pCls = 'pz', pTxt = '—';
@@ -2707,13 +2905,14 @@ function renderTable(){
     const bCol = isDone ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
 
     /* star cells */
-    const bonusStar = starBonus(cat, pct);
-    const isX2Bonus = bonusX2Enabled && pct > bonusX2Threshold;
+    const bonusStar = starBonus(cat, pct, emp.dept);
+    const isX2Bonus = bonusX2Enabled && pct > bonusX2Threshold && isX2CatEnabled(cat.id, emp.dept);
     let spH = '<span class="star-na">—</span>';
     if(isDone) spH = `<span class="star-plus">+${bonusStar}${isX2Bonus ? ` <i class="ti ti-bolt" title="Vượt ${bonusX2Threshold}% — thưởng x2"></i>` : ''}</span>`;
 
     let kqH = '<span class="star-na">—</span>';
     if(isDone)                                        { totPlus  += bonusStar; kqH = `<span class="star-plus">+${bonusStar}${isX2Bonus ? ' ⚡x2' : ''}</span>`; }
+    else if(moc3Forced && m3Choice === 'x5')          { const m3Ded = cat.sm * 5; totMinus += m3Ded; kqH = `<span class="star-minus">-${m3Ded} (×5)</span>`; }
     else if(hope && !forcedOtToday && !moc3Forced)    { totMinus += cat.sm * spMult; kqH = `<span class="star-minus">-${cat.sm * spMult}</span>`; }
 
     /* kq actual value */
@@ -2759,8 +2958,9 @@ function renderTable(){
 
     // Nếu hôm qua đã chọn "🕐 Tăng ca ngày mai" (sp_ = 'ot') cho môn này → hôm nay bị khoá thành Tăng ca
     if(forcedOtToday) otFlag = true;
-    // MỐC 3 — chưa đạt 7 ngày liên tiếp + môn trừ sao >300 → cũng ép otFlag=true, không cho dùng sao
-    if(moc3Forced) otFlag = true;
+    // MỐC 3 — chưa đạt 7 ngày liên tiếp + môn trừ sao >300 → NV tự chọn 1 trong 2: Tăng ca bắt
+    // buộc (ép otFlag=true) hoặc Trừ×5 sao (không ép otFlag, không cho dùng sao thường)
+    if(moc3Forced && m3Choice === 'ot') otFlag = true;
 
     /* use-star button */
     // canToggle: QL đã bật allowHope VÀ môn chưa đạt VÀ không bị khoá Tăng ca bắt buộc hôm nay
@@ -2783,17 +2983,23 @@ function renderTable(){
     let actionH;
     if(moc3Forced){
       const unlockBtnH = adminUnlocked
-        ? `<button class="reset-btn" style="margin-top:4px;font-size:10px" onclick="unlockOtForCat('${cat.id}')" title="QL gỡ khoá Tăng ca bắt buộc riêng cho môn này hôm nay">🔓 Gỡ khoá (QL)</button>`
+        ? `<button class="reset-btn" style="margin-top:4px;font-size:10px" onclick="unlockOtForCat('${cat.id}')" title="QL gỡ khoá bắt buộc riêng cho môn này hôm nay">🔓 Gỡ khoá (QL)</button>`
         : '';
-      const noteMissingH = otNoteVal
-        ? ''
-        : `<div style="margin-top:3px;font-size:9px;color:#b91c1c;font-weight:800">⚠️ Bắt buộc bấm nút và nhập ghi chú tăng ca hôm sau!</div>`;
+      const m3OtCls = 'ot-btn' + (m3Choice === 'ot' ? ' active' : '');
+      const m3X5Cls = 'ot-btn' + (m3Choice === 'x5' ? ' active' : '');
+      const needM3NoteH = (m3Choice === 'ot' && !otNoteVal)
+        ? `<div style="margin-top:3px;font-size:9px;color:#b91c1c;font-weight:800">⚠️ Bắt buộc nhập ghi chú tăng ca hôm sau!</div>`
+        : '';
+      const m3WarnH = !m3Choice
+        ? `<div style="margin-top:3px;font-size:9px;color:#b91c1c;font-weight:800;line-height:1.3;text-align:left;max-width:150px">🚨 Đã 7 ngày liên tiếp chưa đạt — bắt buộc chọn 1 trong 2</div>`
+        : '';
       actionH = `
         <div class="ot-choice">
-          <button class="ot-btn active" onclick="showOtNoteModal('${cat.id}')" title="Bắt buộc — 7 ngày liên tiếp chưa đạt, môn trừ sao >300">🚨 TC bắt buộc</button>
-          ${unlockBtnH}
+          <button class="${m3OtCls}" data-m3catid="${cat.id}" data-m3val="ot" title="Bắt buộc Tăng ca bù cho ngày mai">🚨 TC bắt buộc</button>
+          <button class="${m3X5Cls}" data-m3catid="${cat.id}" data-m3val="x5" title="Trừ sao gấp 5 lần (×5) cho hôm nay">⭐ Trừ×5</button>
         </div>
-        ${otNoteVisibleH}${noteMissingH}`;
+        ${unlockBtnH}
+        ${m3Choice === 'ot' ? otNoteVisibleH : ''}${needM3NoteH}${m3WarnH}`;
     } else if(forcedOtToday){
       const unlockBtnH = adminUnlocked
         ? `<button class="reset-btn" style="margin-top:4px;font-size:10px" onclick="unlockOtForCat('${cat.id}')" title="QL gỡ khoá Tăng ca bắt buộc riêng cho môn này hôm nay">🔓 Gỡ khoá (QL)</button>`
@@ -2919,7 +3125,7 @@ function renderTable(){
       const a = saved[cat.id] || 0;
       const pct = getPct(a, cat.target);
       const hopeUsed = saved['h_' + cat.id] || false;
-      if(pct >= 100) prevNet += starBonus(cat, pct);
+      if(pct >= 100) prevNet += starBonus(cat, pct, emp.dept);
       else if(hopeUsed) prevNet -= cat.sm;
     });
     prevNet -= (saved._latePenalty || 0); // emp.stars hiện tại đã trừ luôn phạt trễ của ngày này (nếu có)
@@ -3008,6 +3214,12 @@ document.addEventListener('click', e => {
   const spBtn = e.target.closest('[data-spcatid]');
   if(spBtn && spBtn.dataset.spcatid && spBtn.dataset.spval){
     toggleStarPenaltyChoice(spBtn.dataset.spcatid, spBtn.dataset.spval);
+    return;
+  }
+  // Lựa chọn MỐC 3 (7 ngày liên tiếp chưa đạt, môn trừ sao >300): Tăng ca bắt buộc / Trừ×5
+  const m3Btn = e.target.closest('[data-m3catid]');
+  if(m3Btn && m3Btn.dataset.m3catid && m3Btn.dataset.m3val){
+    toggleMoc3Choice(m3Btn.dataset.m3catid, m3Btn.dataset.m3val);
     return;
   }
   // Reset (chỉ QL)
@@ -3140,7 +3352,7 @@ function renderAutoOtChoiceToggle(){
   const badge = document.getElementById('autoOtChoiceBadge');
   if(!chk || !badge) return;
   chk.checked = autoOtChoiceEnabled;
-  badge.textContent = autoOtChoiceEnabled ? '✅ Đang BẬT — tự chọn hộ Mốc 1 cho tất cả NV (Mốc 2 tự chọn theo công tắc riêng)' : '🔴 Đang TẮT — NV tự bấm chọn Mốc 1';
+  badge.textContent = autoOtChoiceEnabled ? '✅ Đang BẬT — tự chọn hộ cho tất cả NV (cả 2 mốc)' : '🔴 Đang TẮT — NV tự bấm chọn';
   badge.className = 't-badge ' + (autoOtChoiceEnabled ? 't-badge-on' : 't-badge-off');
 }
 
@@ -3325,6 +3537,115 @@ async function onBonusX2ThresholdChange(){
   }
 }
 
+// ── Chọn môn được thưởng x2 riêng theo từng siêu thị (dept) ──
+// Vẽ lại toàn bộ khối checkbox theo từng siêu thị, dùng chỉ số (di) thay vì tên dept làm id
+// phần tử để tránh lỗi với tên siêu thị có khoảng trắng/ký tự đặc biệt.
+function renderBonusX2CatsControl(){
+  const box = document.getElementById('x2CatsContainer');
+  if(!box) return;
+  const depts = Object.keys(CATS);
+  if(!depts.length){
+    box.innerHTML = '<div style="font-size:11px;color:var(--text-light)">Chưa có dữ liệu môn thi đua</div>';
+    return;
+  }
+  box.innerHTML = depts.map((dept, di) => {
+    const cats         = CATS[dept] || [];
+    const rawSelected  = bonusX2Cats[dept] || [];
+    const isNoneMarker = rawSelected.length === 1 && rawSelected[0] === X2_CATS_NONE_MARKER;
+    const allOn        = !rawSelected.length; // chưa cấu hình riêng → coi như tất cả đang bật
+    const selectedIds  = isNoneMarker ? [] : rawSelected;
+    const statusTxt    = isNoneMarker
+      ? 'Đã TẮT x2 toàn bộ'
+      : allOn
+        ? 'Tất cả môn đang BẬT'
+        : `${selectedIds.length}/${cats.length} môn đang chọn`;
+    const statusColor  = isNoneMarker ? 'var(--red)' : allOn ? 'var(--green)' : 'var(--orange)';
+
+    return `
+      <div class="x2-dept-block" style="margin-bottom:12px;padding:10px;background:var(--gray-bg);border-radius:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
+          <span style="font-size:11px;font-weight:800;color:var(--text)"><i class="ti ti-building-store"></i> ${escapeHtml(dept)}</span>
+          <span style="font-size:9px;font-weight:700;color:${statusColor};white-space:nowrap">${statusTxt}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+          ${cats.map(c => {
+            const checked = allOn || selectedIds.includes(c.id);
+            return `<label style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;background:#fff;border:1px solid var(--gray-line);border-radius:14px;padding:4px 10px;cursor:pointer">
+              <input type="checkbox" data-x2di="${di}" data-x2catid="${escAttr(c.id)}" ${checked ? 'checked' : ''}
+                style="width:14px;height:14px;cursor:pointer;accent-color:#f59e0b">
+              ${escapeHtml(c.name)}
+            </label>`;
+          }).join('') || '<span style="font-size:11px;color:var(--text-light)">Chưa có môn</span>'}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="act-btn" type="button" style="font-size:10px;padding:5px 8px" onclick="setX2CatsAll(${di}, true)">Chọn tất cả</button>
+          <button class="act-btn" type="button" style="font-size:10px;padding:5px 8px" onclick="setX2CatsAll(${di}, false)">Bỏ chọn tất cả (tắt hết x2)</button>
+          <button class="act-btn primary" type="button" style="font-size:10px;padding:5px 10px;margin-left:auto" onclick="saveX2CatsForDept(${di})">Lưu</button>
+        </div>
+        <div class="toggle-sync-txt" id="x2CatsSyncTxt_${di}">
+          <span class="dot" id="x2CatsDot_${di}"></span>
+          <span id="x2CatsTxt_${di}">—</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Tick/bỏ tick toàn bộ checkbox của 1 siêu thị (chưa lưu, chỉ đổi trên UI — bấm "Lưu" mới đồng bộ)
+function setX2CatsAll(di, allOn){
+  document.querySelectorAll(`[data-x2di="${di}"]`).forEach(chk => { chk.checked = allOn; });
+}
+
+// Lưu cấu hình môn x2 cho đúng 1 siêu thị (di) lên server — gửi CẢ object bonusX2Cats (dạng
+// chuỗi JSON) vì GAS lưu theo từng key đơn, không lưu được từng phần tử con riêng lẻ.
+async function saveX2CatsForDept(di){
+  const depts = Object.keys(CATS);
+  const dept  = depts[di];
+  if(!dept) return;
+  const cats  = CATS[dept] || [];
+
+  const checked = [];
+  document.querySelectorAll(`[data-x2di="${di}"]`).forEach(chk => {
+    if(chk.checked) checked.push(chk.dataset.x2catid);
+  });
+
+  const prevVal = bonusX2Cats[dept]; // lưu lại để revert nếu lỗi
+  let newVal;
+  if(checked.length === 0){
+    newVal = [X2_CATS_NONE_MARKER];      // chủ động bỏ chọn hết → tắt x2 toàn bộ cho siêu thị này
+  } else if(checked.length === cats.length){
+    newVal = [];                          // chọn đủ tất cả → không cần lưu danh sách riêng (coi như mặc định)
+  } else {
+    newVal = checked;
+  }
+  bonusX2Cats[dept] = newVal;
+  renderBonusX2CatsControl();
+  renderTable();
+  renderReportEmptyState();
+
+  const dot = document.getElementById('x2CatsDot_' + di);
+  const txt = document.getElementById('x2CatsTxt_' + di);
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'bonusX2Cats', value: JSON.stringify(bonusX2Cats) });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = checked.length === 0
+      ? `Đã đồng bộ — TẮT x2 toàn bộ cho "${dept}"`
+      : checked.length === cats.length
+        ? `Đã đồng bộ — BẬT x2 tất cả môn cho "${dept}"`
+        : `Đã đồng bộ — chỉ ${checked.length}/${cats.length} môn được x2 cho "${dept}"`;
+    toast(`✅ Đã lưu cấu hình thưởng x2 cho "${dept}"`, 'ok');
+  } catch(err){
+    bonusX2Cats[dept] = prevVal;
+    renderBonusX2CatsControl();
+    renderTable();
+    renderReportEmptyState();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
 async function onZdToggle(val){
   const prevVal = allowZdManual; // lưu lại để revert nếu lỗi
   allowZdManual = val;
@@ -3448,6 +3769,84 @@ function toggleStarPenaltyChoice(catId, val){
   renderTable();
 }
 
+// ════════════════════════════════════════════
+//  MỐC 3 — 7 ngày liên tiếp chưa đạt (chỉ môn trừ sao >300)
+//  NV TỰ CHỌN 1 trong 2: 🚨 Tăng ca bắt buộc (bù ngày mai) / ⭐ Trừ×5 sao (hôm nay)
+//  Sau khi xử lý xong, chuỗi 7 ngày reset về 0 (xem `_resetM3_<catId>` trong submitReport()).
+// ════════════════════════════════════════════
+function toggleMoc3Choice(catId, val){
+  const emp = getCurEmp(); if(!emp) return;
+  if(val === 'ot'){
+    // Chọn Tăng ca → mở popup bắt buộc nhập ghi chú làm gì bù cho ngày mai
+    showMoc3OtNoteModal(catId);
+    return;
+  }
+  // val === 'x5'
+  const m3k     = 'm3ch_' + catId;
+  const dateKey = document.getElementById('dateIn').value;
+  const saved   = (STORED.reports[emp.id] || {})[dateKey] || {};
+  const cur     = inputs[m3k] !== undefined ? inputs[m3k] : (saved[m3k] || '');
+  const newVal  = (cur === 'x5') ? '' : 'x5'; // bấm lại nút đang chọn → bỏ chọn (bắt lại chọn)
+
+  if(newVal === 'x5'){
+    const cat = getCats(emp.dept).find(c => c.id === catId);
+    const ok = confirm(`Xác nhận chọn "Trừ×5 sao" cho môn "${cat ? cat.name : ''}"?\n\nSẽ bị trừ ${cat ? cat.sm * 5 : ''} sao ngay hôm nay (gấp 5 lần mức trừ thường), thay vì tăng ca bù.`);
+    if(!ok) return;
+    // Nếu trước đó lỡ chọn Tăng ca và đã nhập ghi chú → xoá đi khi đổi sang Trừ×5
+    delete inputs['ot_' + catId];
+    delete inputs['otNote_' + catId];
+  }
+  inputs[m3k] = newVal;
+  renderTable();
+}
+
+function showMoc3OtNoteModal(catId){
+  const emp = getCurEmp(); if(!emp) return;
+  const cat = getCats(emp.dept).find(c => c.id === catId);
+  const bg    = document.getElementById('modalBg');
+  const title = document.getElementById('modalTitle');
+  const body  = document.getElementById('modalBody');
+  const btns  = document.getElementById('modalBtns');
+
+  title.innerHTML = `<span style="color:#dc2626">🚨 Tăng ca bắt buộc — Mốc 7 ngày — ${cat ? cat.name : ''}</span>`;
+
+  body.innerHTML = `
+    <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
+      Môn này đã <strong style="color:#dc2626">7 ngày liên tiếp chưa đạt</strong> (môn trừ sao trên 300).
+      Vui lòng ghi rõ <strong>tăng ca làm gì để bù vào ngày mai</strong>, nội dung này sẽ hiển thị
+      nổi bật trên báo cáo.
+    </p>
+    <textarea id="m3NoteInput" rows="3" placeholder="VD: Tăng ca sắp xếp lại kho, bù hàng thiếu..."
+      style="width:100%;padding:10px 12px;border:2px solid var(--gray-line);border-radius:8px;
+      font-family:'Barlow',sans-serif;font-size:13px;resize:vertical;color:var(--text)"></textarea>
+    <p id="m3NoteErr" style="display:none;font-size:11px;color:#dc2626;margin-top:6px;font-weight:700">
+      ⚠️ Vui lòng nhập nội dung tăng ca khi xác nhận
+    </p>`;
+
+  btns.innerHTML = `
+    <button class="act-btn" onclick="closeModal()">Huỷ</button>
+    <button class="act-btn primary" onclick="confirmMoc3OtNote('${catId}')">Xác nhận Tăng ca</button>`;
+
+  bg.classList.add('open');
+  setTimeout(() => { const ta = document.getElementById('m3NoteInput'); if(ta) ta.focus(); }, 50);
+}
+
+function confirmMoc3OtNote(catId){
+  const ta  = document.getElementById('m3NoteInput');
+  const val = ta ? ta.value.trim() : '';
+  if(!val){
+    const err = document.getElementById('m3NoteErr');
+    if(err) err.style.display = 'block';
+    return;
+  }
+  inputs['m3ch_' + catId]    = 'ot';
+  inputs['ot_' + catId]      = true;
+  inputs['otNote_' + catId]  = val;
+  closeModal();
+  renderTable();
+  toast('🚨 Đã ghi nhận Tăng ca bắt buộc — Mốc 7 ngày', 'ok');
+}
+
 function showOtNoteModal(catId){
   const emp = getCurEmp(); if(!emp) return;
   const cat = getCats(emp.dept).find(c => c.id === catId);
@@ -3564,7 +3963,7 @@ function showMissingMoc3Modal(missing){
   const body  = document.getElementById('modalBody');
   const btns  = document.getElementById('modalBtns');
 
-  title.innerHTML = `<span style="color:#dc2626">🚨 Bắt buộc Tăng ca — Mốc 3</span>`;
+  title.innerHTML = `<span style="color:#dc2626">🚨 Bắt buộc chọn — Mốc 7 ngày</span>`;
 
   const listH = missing.map(name =>
     `<li style="margin-bottom:4px">${name}</li>`
@@ -3573,9 +3972,9 @@ function showMissingMoc3Modal(missing){
   body.innerHTML = `
     <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
       Các môn dưới đây trừ sao <strong style="color:#dc2626">trên 300</strong> mỗi lần và đã
-      <strong style="color:#dc2626">7 ngày liên tiếp chưa đạt</strong> (không dùng sao được nữa).
-      Bấm nút <strong>🚨 TC bắt buộc</strong> và nhập rõ <strong>ghi chú tăng ca hôm sau</strong>
-      cho các môn này trước khi lưu &amp; xuất báo cáo.
+      <strong style="color:#dc2626">7 ngày liên tiếp chưa đạt</strong>. Vui lòng chọn 1 trong 2:
+      bấm <strong>🚨 TC bắt buộc</strong> (kèm ghi chú tăng ca hôm sau) hoặc
+      <strong>⭐ Trừ×5</strong> (trừ ×5 sao ngay hôm nay) cho các môn này trước khi lưu &amp; xuất báo cáo.
     </p>
     <ul style="font-size:12px;color:#dc2626;font-weight:700;padding-left:18px;max-height:180px;overflow-y:auto;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 10px 10px 26px">
       ${listH}
@@ -3843,7 +4242,7 @@ async function submitReport(){
     const yestSavedChk  = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
     if(yestSavedChk['sp_' + cat.id] === 'ot' && !otUnlockedChk) return; // forcedOtToday
     if(cat.sm > 300 && !otUnlockedChk){
-      const m3Past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+      const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
       const m3Streak = Math.min(m3Past + 1, 7);
       if(m3Streak >= 7) return; // moc3Forced
     }
@@ -3886,13 +4285,13 @@ async function submitReport(){
       const yestSavedChk  = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
       if(yestSavedChk['sp_' + cat.id] === 'ot' && !otUnlockedChk) return; // forcedOtToday
       if(cat.sm > 300 && !otUnlockedChk){
-        const m3Past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+        const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
         const m3Streak = Math.min(m3Past + 1, 7);
         if(m3Streak >= 7) return; // moc3Forced
       }
 
       const past     = getStarPenaltyStreak(emp.id, cat.id, dateKey);
-      const spStreak = Math.min(past + 1, 6);
+      const spStreak = Math.min(past + 1, 10);
       if(spStreak >= starPenaltyThreshold) missingSpChoice.push({ name: cat.name, streak: spStreak });
     });
   }
@@ -3902,8 +4301,8 @@ async function submitReport(){
   }
 
   // ══ VALIDATION: MỐC 3 — môn trừ sao >300 + chưa đạt liên tiếp đủ 7 ngày →
-  // bắt buộc đã bấm "🚨 TC bắt buộc" và nhập ghi chú tăng ca hôm sau (dùng chung field
-  // ot_/otNote_ với Mốc 1). Độc lập, không phụ thuộc otFeatureEnabled/starPenaltyEnabled. ══
+  // bắt buộc NV đã chọn 1 trong 2: 🚨 Tăng ca bắt buộc (kèm ghi chú) HOẶC ⭐ Trừ×5 sao.
+  // Độc lập, không phụ thuộc otFeatureEnabled/starPenaltyEnabled. ══
   const missingMoc3Note = [];
   cats.forEach(cat => {
     const actual = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
@@ -3915,13 +4314,17 @@ async function submitReport(){
     const otUnlocked = !!saved['_unlockOt_' + cat.id];
     if(otUnlocked) return; // QL đã gỡ khoá riêng cho hôm nay
 
-    const past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+    const past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
     const streak = Math.min(past + 1, 7);
     if(streak < 7) return;
 
+    const m3k      = 'm3ch_' + cat.id;
+    const m3Choice = inputs[m3k] !== undefined ? inputs[m3k] : (saved[m3k] || '');
+    if(m3Choice === 'x5') return; // đã chọn Trừ×5 → hợp lệ, không cần ghi chú
+
     const otNoteK = 'otNote_' + cat.id;
     const otNote  = inputs[otNoteK] !== undefined ? inputs[otNoteK] : (saved[otNoteK] || '');
-    if(!otNote) missingMoc3Note.push(cat.name);
+    if(m3Choice !== 'ot' || !otNote) missingMoc3Note.push(cat.name);
   });
   if(missingMoc3Note.length > 0){
     showMissingMoc3Modal(missingMoc3Note);
@@ -3970,17 +4373,31 @@ async function submitReport(){
       otNote = otNote || '(Tự động — bắt buộc do hôm qua đã chọn Tăng ca ngày mai vì dùng sao liên tiếp)';
     }
 
-    // MỐC 3 — môn trừ sao >300 + chưa đạt liên tiếp đủ 7 ngày → bắt buộc Tăng ca, không
-    // cho dùng sao (validation phía trên đã chặn nếu chưa có ghi chú, nên otNote chắc chắn có)
+    // MỐC 3 — môn trừ sao >300 + chưa đạt liên tiếp đủ 7 ngày → NV tự chọn 1 trong 2:
+    // 🚨 Tăng ca bắt buộc (bù ngày mai) HOẶC ⭐ Trừ×5 sao ngay hôm nay. Validation phía
+    // trên đã chặn nếu chưa chọn / (chọn Tăng ca mà) chưa có ghi chú, nên tới đây lựa
+    // chọn chắc chắn hợp lệ. Sau khi xử lý xong (dù chọn gì), chuỗi 7 ngày reset về 0.
     const otUnlockedM3 = !!saved['_unlockOt_' + cat.id];
+    const m3k          = 'm3ch_' + cat.id;
+    let   m3Choice     = inputs[m3k] !== undefined ? inputs[m3k] : (saved[m3k] || '');
+    let   moc3X5Star   = 0;
     if(pct < 100 && cat.sm > 300 && !otUnlockedM3){
-      const m3Past   = getZeroDays(emp.id, cat.id, dateKey, 7);
+      const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
       const m3Streak = Math.min(m3Past + 1, 7);
       if(m3Streak >= 7){
-        otFlag = true;
-        hope   = false;
+        if(m3Choice === 'x5'){
+          hope       = false;
+          otFlag     = false;
+          moc3X5Star = cat.sm * 5;
+        } else {
+          otFlag   = true;
+          hope     = false;
+          m3Choice = 'ot';
+        }
+        rep['_resetM3_' + cat.id] = true; // đã xử lý xong lựa chọn Mốc 3 → chuỗi reset kể từ ngày mai
       }
     }
+    if(m3Choice) rep[m3k] = m3Choice;
 
     rep[hk] = hope;
     if(otFlag){
@@ -4007,8 +4424,9 @@ async function submitReport(){
 
     pctSum      += pct;
     let star = 0;
-    if(pct >= 100)    { star = starBonus(cat, pct); totPlus += star; }
-    else if(hope)     { const deducted = cat.sm * spMult; totMinus += deducted; star = -deducted; hopeUsed++; }
+    if(pct >= 100)          { star = starBonus(cat, pct, emp.dept); totPlus += star; }
+    else if(moc3X5Star > 0) { totMinus += moc3X5Star; star = -moc3X5Star; } // Mốc 3 — Trừ×5
+    else if(hope)           { const deducted = cat.sm * spMult; totMinus += deducted; star = -deducted; hopeUsed++; }
     if(bonus300 > 0)  { star += bonus300; totPlus += bonus300; }
     lines.push({ name:cat.name, target:cat.target, actual, pct, star, bonus300 });
   });
@@ -4044,8 +4462,9 @@ async function submitReport(){
       const oldActual = saved[cat.id] || 0;
       const oldHope   = saved['h_' + cat.id] || false;
       const oldPct    = getPct(oldActual, cat.target);
-      if(oldPct >= 100)   oldPlus  += starBonus(cat, oldPct);
-      else if(oldHope)    oldMinus += cat.sm;
+      if(oldPct >= 100)                          oldPlus  += starBonus(cat, oldPct, emp.dept);
+      else if(saved['m3ch_' + cat.id] === 'x5')  oldMinus += cat.sm * 5; // Mốc 3 — Trừ×5 đã tính trước đó
+      else if(oldHope)                           oldMinus += cat.sm;
       if(saved['_bonus300_' + cat.id]) oldPlus += 1000; // giữ đúng phần thưởng 1000 sao đã tính trước đó khi sửa lại cùng ngày
     });
     oldNet = oldPlus - oldMinus;
@@ -5267,6 +5686,7 @@ function renderAdminTab(){
   renderAutoOtChoiceToggle();
   renderStarPenaltyThresholdControl();
   renderBonusX2ThresholdControl();
+  renderBonusX2CatsControl();
   renderMissingReports();
   renderExtraApprovals();
   const tbody = document.getElementById('adminEmpBody');
@@ -5555,7 +5975,7 @@ function qlPreviewNet(){
     if(spChoice === 'x2') hope = true; // Trừ×2 luôn kéo theo Dùng sao, giống luồng NV tự nộp
     const spMult = (spChoice === 'x2') ? 2 : 1;
     const pct    = getPct(actual, cat.target);
-    if(pct >= 100)  plus  += starBonus(cat, pct);
+    if(pct >= 100)  plus  += starBonus(cat, pct, emp.dept);
     else if(hope)   minus += cat.sm * spMult;
   });
   const net = plus - minus;
@@ -5579,8 +5999,9 @@ async function qlSaveReport(){
     const oldSpChoice = saved['sp_' + cat.id] || '';
     const oldSpMult = (oldSpChoice === 'x2') ? 2 : 1;
     const oldPct    = getPct(oldActual, cat.target);
-    if(oldPct >= 100)  oldPlus  += starBonus(cat, oldPct);
-    else if(oldHope)   oldMinus += cat.sm * oldSpMult;
+    if(oldPct >= 100)                          oldPlus  += starBonus(cat, oldPct, emp.dept);
+    else if(saved['m3ch_' + cat.id] === 'x5')  oldMinus += cat.sm * 5; // Mốc 3 — Trừ×5 đã tính trước đó
+    else if(oldHope)                           oldMinus += cat.sm * oldSpMult;
     if(saved['_bonus300_' + cat.id]) oldPlus += 1000; // giữ đúng phần thưởng 1000 sao đã tính trước đó
   });
   const oldNet = oldPlus - oldMinus;
@@ -5609,8 +6030,13 @@ async function qlSaveReport(){
     const pct = getPct(actual, cat.target);
     pctSum += pct;
     let star = 0;
-    if(pct >= 100)  { star = starBonus(cat, pct); newPlus += star; }
-    else if(hope)   { const deducted = cat.sm * spMult; newMinus += deducted; star = -deducted; }
+    // Mốc 3 — giữ nguyên lựa chọn Trừ×5 nếu đã có (QL sửa lại không được tự ý đổi thành hope thường)
+    const m3ChoiceQl = saved['m3ch_' + cat.id] || '';
+    if(m3ChoiceQl) rep['m3ch_' + cat.id] = m3ChoiceQl;
+    if(saved['_resetM3_' + cat.id]) rep['_resetM3_' + cat.id] = true;
+    if(pct >= 100)                { star = starBonus(cat, pct, emp.dept); newPlus += star; }
+    else if(m3ChoiceQl === 'x5')  { const deducted = cat.sm * 5; newMinus += deducted; star = -deducted; hope = false; rep['h_'+cat.id] = false; }
+    else if(hope)                 { const deducted = cat.sm * spMult; newMinus += deducted; star = -deducted; }
 
     // ── Thưởng đặc biệt: 2 ngày liên tiếp >300% → +1000 sao (giống luồng NV tự nộp) ──
     const s300k    = '_s300_' + cat.id;
@@ -5689,7 +6115,7 @@ function renderVrDashboard(){
         const hope   = rep['h_' + cat.id] || false;
         const pct    = getPct(actual, cat.target);
         pctSum += pct; cnt++;
-        if(pct >= 100)   net += starBonus(cat, pct);
+        if(pct >= 100)   net += starBonus(cat, pct, emp.dept);
         else if(hope)    net -= cat.sm;
       });
       net -= (rep._latePenalty || 0);
@@ -5807,8 +6233,8 @@ function vrLoadReport(){
     const bCol = isDone ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
 
     /* Sao+ cell */
-    const bonusStarVr = starBonus(cat, pct);
-    const isX2BonusVr = bonusX2Enabled && pct > bonusX2Threshold;
+    const bonusStarVr = starBonus(cat, pct, emp.dept);
+    const isX2BonusVr = bonusX2Enabled && pct > bonusX2Threshold && isX2CatEnabled(cat.id, emp.dept);
     const spH = isDone ? `<span class="star-plus">+${bonusStarVr}${isX2BonusVr ? ' ⚡x2' : ''}</span>` : '<span class="star-na">—</span>';
 
     /* Kết quả cell (thay cho nút Dùng sao — chỉ hiển thị, không bấm được) */
@@ -6608,7 +7034,7 @@ async function pollSettings(){
     // Kiểm tra starPenaltyThreshold (mốc số ngày chưa đạt liên tiếp)
     if(data.settings.starPenaltyThreshold !== undefined){
       const newSp = Number(data.settings.starPenaltyThreshold);
-      if([3,4,5].includes(newSp) && newSp !== starPenaltyThreshold){
+      if([3,4,5,6,7,8,9,10].includes(newSp) && newSp !== starPenaltyThreshold){
         starPenaltyThreshold = newSp;
         changed = true;
         if(!adminUnlocked){
@@ -6643,6 +7069,24 @@ async function pollSettings(){
         renderBonusX2ThresholdControl();
         if(document.getElementById('tab-rules').classList.contains('on')) renderRulesTab();
       }
+    }
+
+    // Kiểm tra bonusX2Cats (danh sách môn được thưởng x2 riêng theo từng siêu thị)
+    if(data.settings.bonusX2Cats !== undefined){
+      try {
+        const raw = data.settings.bonusX2Cats;
+        const parsed = typeof raw === 'string' ? (raw ? JSON.parse(raw) : {}) : (raw || {});
+        if(parsed && typeof parsed === 'object' && !Array.isArray(parsed) &&
+           JSON.stringify(parsed) !== JSON.stringify(bonusX2Cats)){
+          bonusX2Cats = parsed;
+          changed = true;
+          if(!adminUnlocked){
+            toast('⚡ Quản lý đã cập nhật danh sách môn thưởng x2 theo siêu thị', 'ok');
+          }
+          renderBonusX2CatsControl();
+          renderReportEmptyState();
+        }
+      } catch(e){ /* dữ liệu lỗi → bỏ qua, giữ nguyên cấu hình hiện tại */ }
     }
 
     // Kiểm tra autoOtChoiceEnabled (bật/tắt tự động lựa chọn hộ Tăng ca/Dùng sao)
