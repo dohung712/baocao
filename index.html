@@ -2262,7 +2262,7 @@ function showDailyRiskPopup(emp, dateKey){
 
     const zdPast      = getZeroDays(emp.id, cat.id, dateKey);
     const zdProjected = Math.min(zdPast + 1, 6);
-    const needOtChoice = otFeatureEnabled && zdProjected === otThreshold;
+    const needOtChoice = otFeatureEnabled && zdProjected >= otThreshold;
 
     const spPast       = getStarPenaltyStreak(emp.id, cat.id, dateKey);
     const spStreak     = Math.min(spPast + 1, 10);
@@ -3024,7 +3024,7 @@ function applyAutoOtChoice(emp, cats, dateKey, saved){
           ? inputs['zd_' + cat.id]
           : (saved['zd_' + cat.id] || 0);
       }
-      if(otFeatureEnabled && zdCurrentVal === otThreshold){
+      if(otFeatureEnabled && zdCurrentVal >= otThreshold){
         if(emp.stars > 0){
           inputs[hk] = true;
         } else {
@@ -3198,7 +3198,7 @@ function renderTable(){
     const otk       = 'ot_' + cat.id;
     const otNoteK   = 'otNote_' + cat.id;
     let   otFlag    = inputs[otk]     !== undefined ? inputs[otk]     : (saved[otk]     || false);
-    const needOtChoice = otFeatureEnabled && !isDone && !hope && zdCurrentVal === otThreshold;
+    const needOtChoice = otFeatureEnabled && !isDone && !hope && zdCurrentVal >= otThreshold;
 
     // Nếu hôm qua đã chọn "🕐 Tăng ca ngày mai" (sp_ = 'ot') cho môn này → hôm nay bị khoá thành Tăng ca
     if(forcedOtToday) otFlag = true;
@@ -3225,7 +3225,12 @@ function renderTable(){
       ? `<div style="margin-top:3px;font-size:8px;color:#9a3412;font-weight:700;line-height:1.25;text-align:left;max-width:90px">📝 ${escapeHtml(otNoteVal)}</div>`
       : '';
     let actionH;
-    if(moc3Forced){
+    let spChoiceH = '';
+    if(isDone){
+      // Đã đạt ≥100% — bỏ qua MỌI lựa chọn cũ (kể cả do hệ thống tự động chọn hộ trước
+      // đó khi chưa đạt): không còn ý nghĩa gì nữa, tránh hiện lại nút/badge/cảnh báo cũ.
+      actionH = `<span class="star-na">✅ Đạt</span>`;
+    } else if(moc3Forced){
       const unlockBtnH = adminUnlocked
         ? `<button class="reset-btn" style="margin-top:4px;font-size:10px" onclick="unlockOtForCat('${cat.id}')" title="QL gỡ khoá bắt buộc riêng cho môn này hôm nay">🔓 Gỡ khoá (QL)</button>`
         : '';
@@ -3278,9 +3283,8 @@ function renderTable(){
     }
 
     /* ô lựa chọn CẢNH BÁO DÙNG SAO LIÊN TIẾP — hiện khi vừa chạm mốc riêng hoặc đã chọn trước đó
-       (không hiện nếu Mốc 3 đang khoá — Mốc 3 có mức ưu tiên cao nhất, không dùng sao được nữa) */
-    let spChoiceH = '';
-    if(!moc3Forced && !forcedOtToday && (needSpChoice || spChoice)){
+       (không hiện nếu Mốc 3 đang khoá, hoặc đã đạt — Mốc 3/Đạt có mức ưu tiên cao nhất) */
+    if(!isDone && !moc3Forced && !forcedOtToday && (needSpChoice || spChoice)){
       const x2Cls    = 'ot-btn' + (spChoice === 'x2' ? ' active' : '');
       const nextCls  = 'ot-btn' + (spChoice === 'ot' ? ' active' : '');
       const spWarnH  = spChoice === 'ot'
@@ -4668,7 +4672,7 @@ async function submitReport(){
       const past = getZeroDays(emp.id, cat.id, dateKey);
       zdCurrentVal = Math.min(past + 1, 6);
     }
-    if(zdCurrentVal === otThreshold) missingOtChoice.push(cat.name);
+    if(zdCurrentVal >= otThreshold) missingOtChoice.push(cat.name);
     });
   }
   if(missingOtChoice.length > 0){
@@ -6796,7 +6800,7 @@ function vrRender5Day(emp, cats, dateKey){
         checkH = `<span class="pct-val pg" style="font-size:11px">✓ Dùng sao</span>`;
       } else if(lastOt){
         checkH = `<span class="pct-val pg" style="font-size:11px">✓ Tăng ca</span>`;
-      } else if(otFeatureEnabled && curStreak === otThreshold){
+      } else if(otFeatureEnabled && curStreak >= otThreshold){
         checkH = `<span class="pct-val pr" style="font-size:11px;font-weight:900">✗ Chưa chọn</span>`;
       }
     }
