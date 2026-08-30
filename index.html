@@ -943,7 +943,7 @@ tr.row-done .cat-name{color:var(--green)}
           <div class="hist-grid">
             <div class="hist-cell"><div class="h-lbl">Ngày báo cáo</div><div class="h-val c-blue" id="histDays">—</div></div>
             <div class="hist-cell"><div class="h-lbl">Kiếm tháng</div><div class="h-val hg" id="histPlus">—</div></div>
-            <div class="hist-cell"><div class="h-lbl">Bị trừ tháng</div><div class="h-val hr" id="histMinus">—</div></div>
+            <div class="hist-cell" id="histMinusCell" onclick="showMonthMinusBreakdown()" style="cursor:pointer" title="Bấm để xem môn nào bị trừ sao"><div class="h-lbl">Bị trừ tháng 🔍</div><div class="h-val hr" id="histMinus">—</div></div>
             <div class="hist-cell"><div class="h-lbl">Ngày xuất sắc</div><div class="h-val hy" id="histBest">—</div></div>
           </div>
         </div>
@@ -1013,7 +1013,7 @@ tr.row-done .cat-name{color:var(--green)}
               <tr style="text-align:left;color:var(--text-light)"><th style="padding:4px 6px">Mốc</th><th style="padding:4px 6px">Điều kiện chạm mốc</th><th style="padding:4px 6px">Phải làm gì</th></tr>
               <tr><td style="padding:4px 6px;font-weight:800">1</td><td style="padding:4px 6px"><span class="rule-badge gold" id="ruleOtThresholdTxt">—</span> ngày chưa đạt liên tiếp</td><td style="padding:4px 6px">Chọn 🕐 Tăng ca <i>hoặc</i> ⭐ Dùng sao</td></tr>
               <tr><td style="padding:4px 6px;font-weight:800">2</td><td style="padding:4px 6px"><span class="rule-badge gold" id="ruleSpThresholdTxt">—</span> ngày <i>Dùng sao</i> liên tiếp</td><td style="padding:4px 6px">Chọn 🕐 TC ngày mai <i>hoặc</i> ⭐ Trừ×2</td></tr>
-              <tr><td style="padding:4px 6px;font-weight:800">3</td><td style="padding:4px 6px">Môn trừ &gt;300 sao + <b>7 ngày</b> chưa đạt liên tiếp</td><td style="padding:4px 6px"><b>Tự động khoá</b> 🕐 Tăng ca — không có lựa chọn khác</td></tr>
+              <tr><td style="padding:4px 6px;font-weight:800">3</td><td style="padding:4px 6px">Môn trừ &gt;<span class="rule-badge gold" id="ruleMoc3StarTxt">—</span> sao + <span class="rule-badge gold" id="ruleMoc3DaysTxt">—</span> chưa đạt liên tiếp</td><td style="padding:4px 6px"><b>Tự động khoá</b> 🕐 Tăng ca — không có lựa chọn khác</td></tr>
             </table>
           </div>
 
@@ -1026,9 +1026,9 @@ tr.row-done .cat-name{color:var(--green)}
           </ul>
           <p>Có thể đổi qua lại giữa 2 lựa chọn thoải mái trước khi bấm Lưu.</p>
 
-          <p><b>Mốc 3 (mới)</b> — chỉ áp dụng cho <b>môn có mức trừ sao trên 300</b>: nếu nhân viên <b>7 ngày liên tiếp không về trên 100%</b>, hệ thống <b>tự động khoá Tăng ca bắt buộc ngay hôm đó</b> — <b>không có lựa chọn Dùng sao</b> nữa (khác Mốc 1/2, đây không phải lựa chọn mà là ép buộc). Chỉ cần bấm nút <b>🚨 TC bắt buộc</b> và nhập rõ ghi chú tăng ca bù cho ngày hôm sau là xong, không cần chờ chạm Mốc 1/2 trước.</p>
+          <p><b>Mốc 3</b> — chỉ áp dụng cho <b>môn có mức trừ sao trên <span id="ruleMoc3StarTxt2">300</span></b>: nếu nhân viên <b><span id="ruleMoc3DaysTxt2">7</span> ngày liên tiếp không về trên 100%</b>, hệ thống <b>tự động khoá Tăng ca bắt buộc ngay hôm đó</b> — <b>không có lựa chọn Dùng sao</b> nữa (khác Mốc 1/2, đây không phải lựa chọn mà là ép buộc). Chỉ cần bấm nút <b>🚨 TC bắt buộc</b> và nhập rõ ghi chú tăng ca bù cho ngày hôm sau là xong, không cần chờ chạm Mốc 1/2 trước. <span id="ruleMoc3OffTxt" style="color:#dc2626;font-weight:800"></span></p>
 
-          <div class="rule-note">💡 Mốc 1 và Mốc 2 do QL cấu hình riêng, có thể thay đổi theo từng giai đoạn — số hiện tại hiển thị ngay phía trên luôn đúng với cấu hình mới nhất. Mốc 3 (trừ &gt;300 sao, 7 ngày) là mốc cố định, áp dụng cho mọi giai đoạn.</div>
+          <div class="rule-note">💡 Cả 3 mốc đều do QL cấu hình riêng (bật/tắt + số ngày, Mốc 3 có thêm mức trừ sao áp dụng), có thể thay đổi theo từng giai đoạn — số hiện tại hiển thị ngay phía trên luôn đúng với cấu hình mới nhất.</div>
           <div class="rule-note">🔓 Bị khoá "TC bắt buộc" (do Mốc 2 hoặc Mốc 3) — QL đều có thể bấm <b>🔓 Gỡ khoá</b> ngay trên dòng đó để huỷ khoá riêng cho hôm nay nếu cần (ví dụ: NV có lý do chính đáng không thể tăng ca).</div>
         </div>
 
@@ -1119,8 +1119,9 @@ tr.row-done .cat-name{color:var(--green)}
           </div>
         </div>
 
-        <!-- Nhóm 2 — MỐC BẮT BUỘC: Mốc 1 → Mốc 2 → (Mốc 3 cố định, không có công tắc) theo đúng
-             thứ tự leo thang thực tế: chưa đạt liên tiếp → dùng sao liên tiếp → khoá cứng TC. -->
+        <!-- Nhóm 2 — MỐC BẮT BUỘC: Mốc 1 → Mốc 2 → Mốc 3 (nay đã có công tắc riêng, xem
+             grp-note bên dưới) theo đúng thứ tự leo thang thực tế: chưa đạt liên tiếp →
+             dùng sao liên tiếp → khoá cứng TC. -->
         <div class="grp-title"><i class="ti ti-alert-triangle"></i>Nhóm Mốc bắt buộc (leo thang 1 → 2 → 3)</div>
         <div class="toggle-card">
           <div class="toggle-row">
@@ -1195,10 +1196,88 @@ tr.row-done .cat-name{color:var(--green)}
           </div>
         </div>
 
+        <div class="toggle-card">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="t-title">🔒 Mốc 3 — Khoá cứng Tăng ca</div>
+              <div class="t-sub">Bật → Môn có mức trừ sao vượt ngưỡng bên dưới, nếu chưa đạt liên tục<br>đủ số ngày đã đặt, hệ thống <b>tự động khoá cứng</b> 🕐 Tăng ca ngay hôm đó —<br>không còn lựa chọn ⭐ Dùng sao (khác Mốc 1/2, đây là ép buộc chứ<br>không phải lựa chọn)<br>Tắt → Không còn khoá cứng nào xảy ra, dù chuỗi chưa đạt dài bao nhiêu</div>
+              <span class="t-badge" id="moc3Badge">—</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="moc3Toggle" onchange="onMoc3Toggle(this.checked)">
+              <span class="sw-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-sync-txt" id="moc3ToggleSyncTxt">
+            <span class="dot" id="moc3ToggleDot"></span>
+            <span id="moc3ToggleTxt">—</span>
+          </div>
+
+          <div class="toggle-row" id="moc3ThresholdRow" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--gray-line)">
+            <div class="toggle-info">
+              <div class="t-title" style="font-size:12px">Mốc số ngày CHƯA ĐẠT liên tiếp áp dụng</div>
+              <span class="t-badge" id="moc3ThresholdBadge">—</span>
+            </div>
+            <select id="moc3ThresholdSel" class="sel-control" style="width:70px;text-align:center;padding:8px 4px"
+              onchange="onMoc3ThresholdChange(this.value)">
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="14">14</option>
+              <option value="21">21</option>
+              <option value="30">30</option>
+            </select>
+          </div>
+          <div class="toggle-sync-txt" id="moc3ThresholdSyncTxt">
+            <span class="dot" id="moc3ThresholdDot"></span>
+            <span id="moc3ThresholdTxt">—</span>
+          </div>
+
+          <div class="toggle-row" id="moc3StarThresholdRow" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--gray-line)">
+            <div class="toggle-info">
+              <div class="t-title" style="font-size:12px">Chỉ áp dụng cho môn trừ sao trên mức</div>
+              <span class="t-badge" id="moc3StarThresholdBadge">—</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input type="number" id="moc3StarThresholdInp" min="1" step="10"
+                class="sel-control" style="width:78px;text-align:center;padding:8px 4px">
+              <span style="font-size:13px;font-weight:800;color:var(--text-mid)">sao</span>
+              <button class="act-btn primary" style="padding:8px 10px;font-size:11px" onclick="onMoc3StarThresholdChange()">Lưu</button>
+            </div>
+          </div>
+          <div class="toggle-sync-txt" id="moc3StarThresholdSyncTxt">
+            <span class="dot" id="moc3StarThresholdDot"></span>
+            <span id="moc3StarThresholdTxt">—</span>
+          </div>
+
+          <div class="toggle-row" id="moc3MultRow" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--gray-line)">
+            <div class="toggle-info">
+              <div class="t-title" style="font-size:12px">Hệ số nhân khi chọn "Trừ×N"</div>
+              <span class="t-badge" id="moc3MultBadge">—</span>
+            </div>
+            <select id="moc3MultSel" class="sel-control" style="width:70px;text-align:center;padding:8px 4px"
+              onchange="onMoc3MultChange(this.value)">
+              <option value="3">×3</option>
+              <option value="4">×4</option>
+              <option value="5">×5</option>
+            </select>
+          </div>
+          <div class="toggle-sync-txt" id="moc3MultSyncTxt">
+            <span class="dot" id="moc3MultDot"></span>
+            <span id="moc3MultTxt">—</span>
+          </div>
+        </div>
+
         <div class="grp-note">
-          🔒 <b>Mốc 3</b> (môn trừ sao &gt;300, 7 ngày liên tiếp chưa đạt) <b>không có công tắc bật/tắt</b> —
-          đây là mốc cố định, luôn áp dụng bất kể Mốc 1/2 ở trên đang Bật hay Tắt. Tắt Mốc 1 &amp; 2 sẽ
-          <b>không</b> tắt được Mốc 3.
+          💡 Mốc 3 có <b>công tắc bật/tắt riêng</b>, độc lập với Mốc 1/2 ở trên — tắt Mốc 1 &amp; 2 sẽ
+          <b>không</b> tự tắt Mốc 3 và ngược lại. Số ngày, mức trừ sao áp dụng, và hệ số nhân khi
+          chọn "Trừ×N" đều do QL tự đặt ở trên.
         </div>
 
         <!-- Nhóm 3 — HỖ TRỢ TỰ ĐỘNG: phụ thuộc trực tiếp vào Mốc 1 & 2 ở trên (tự điền lựa chọn khi
@@ -1269,7 +1348,7 @@ tr.row-done .cat-name{color:var(--green)}
 
         <div style="font-size:10px;color:var(--text-light);padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:14px;line-height:1.5">
           <i class="ti ti-info-circle" style="color:#d97706;margin-right:4px"></i>
-          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code>, <code>settings.starPenaltyEnabled</code>, <code>settings.starPenaltyThreshold</code>, <code>settings.autoOtChoiceEnabled</code>, <code>settings.bonusX2Cats</code> (lưu dạng chuỗi JSON) trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
+          <strong>Lưu ý GAS:</strong> Cần thêm xử lý <code>saveSetting</code> và trả về <code>settings.allowHope</code>, <code>settings.allowZdManual</code>, <code>settings.otThreshold</code>, <code>settings.otFeatureEnabled</code>, <code>settings.starPenaltyEnabled</code>, <code>settings.starPenaltyThreshold</code>, <code>settings.autoOtChoiceEnabled</code>, <code>settings.bonusX2Cats</code>, <code>settings.moc3Enabled</code>, <code>settings.moc3Threshold</code>, <code>settings.moc3StarThreshold</code>, <code>settings.moc3Mult</code> (lưu dạng chuỗi JSON) trong hàm <code>load</code> của Google Apps Script. Xem hướng dẫn bên dưới.
         </div>
 
         <!-- ══ THIẾU BÁO CÁO (THÁNG NÀY) ══ -->
@@ -1743,6 +1822,12 @@ let starPenaltyThreshold = 4;    // QL thiết lập: mốc số ngày CHƯA Đ�
 // `inputs`, KHÔNG khoá cứng — NV vẫn có thể tự bấm đổi lại trước khi lưu.
 let autoOtChoiceEnabled = false; // Mặc định TẮT, QL bật khi cần
 
+// ══ MỐC 3 — KHOÁ CỨNG TĂNG CA (trước đây cố định, nay QL cấu hình được) ══
+let moc3Enabled       = true; // QL toggle: bật/tắt toàn bộ Mốc 3
+let moc3Threshold     = 7;    // QL thiết lập: mốc số NGÀY chưa đạt liên tiếp kích hoạt Mốc 3
+let moc3StarThreshold = 300;  // QL thiết lập: chỉ áp dụng cho môn có mức trừ sao (sm) > giá trị này
+let moc3Mult           = 5;   // QL thiết lập: hệ số nhân khi chọn "Trừ×N" cho Mốc 3 (3/4/5)
+
 // ══ THƯỞNG X2 SAO KHI VƯỢT NGƯỠNG % (mặc định >300%) ══
 let bonusX2Enabled   = true; // QL toggle: bật/tắt tính năng thưởng x2 sao khi vượt ngưỡng
 let bonusX2Threshold = 300;  // QL thiết lập: mức % (VD 200/300/400) để kích hoạt thưởng x2
@@ -1859,6 +1944,20 @@ async function loadAll(){
     }
     if(data.settings && data.settings.autoOtChoiceEnabled !== undefined){
       autoOtChoiceEnabled = data.settings.autoOtChoiceEnabled;
+    }
+    if(data.settings && data.settings.moc3Enabled !== undefined){
+      moc3Enabled = data.settings.moc3Enabled;
+    }
+    if(data.settings && data.settings.moc3Threshold !== undefined){
+      const v = Number(data.settings.moc3Threshold);
+      if(Number.isInteger(v) && v >= 2 && v <= 30) moc3Threshold = v;
+    }
+    if(data.settings && data.settings.moc3StarThreshold !== undefined && Number(data.settings.moc3StarThreshold) > 0){
+      moc3StarThreshold = Number(data.settings.moc3StarThreshold);
+    }
+    if(data.settings && data.settings.moc3Mult !== undefined){
+      const v = Number(data.settings.moc3Mult);
+      if([3, 4, 5].includes(v)) moc3Mult = v;
     }
 
     EMPS.forEach(e => {
@@ -2144,15 +2243,16 @@ function showDailyRiskPopup(emp, dateKey){
   const saved = (STORED.reports[emp.id] || {})[dateKey] || {};
 
   const otList = [], x2List = [], normalList = [], chooseList = [], streakList = [];
+  const breakdownRows = []; // [{ name, amountTxt, amountMax }] — dùng cho bảng chi tiết khi bấm vào tổng số sao
 
   cats.forEach(cat => {
     const otUnlocked = !!saved['_unlockOt_' + cat.id];
     const yestSaved   = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
     const forcedOtToday = yestSaved['sp_' + cat.id] === 'ot' && !otUnlocked;
 
-    const moc3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
-    const moc3Streak = Math.min(moc3Past + 1, 7);
-    const moc3Forced = cat.sm > 300 && moc3Streak >= 7 && !otUnlocked;
+    const moc3Past   = getMoc3Streak(emp.id, cat.id, dateKey, moc3Threshold);
+    const moc3Streak = Math.min(moc3Past + 1, moc3Threshold);
+    const moc3Forced = moc3Enabled && cat.sm > moc3StarThreshold && moc3Streak >= moc3Threshold && !otUnlocked;
 
     const zdPast      = getZeroDays(emp.id, cat.id, dateKey);
     const zdProjected = Math.min(zdPast + 1, 6);
@@ -2164,17 +2264,26 @@ function showDailyRiskPopup(emp, dateKey){
     const spChoiceSaved = saved['sp_' + cat.id] || '';
 
     // ── Phân nhóm theo mức độ ưu tiên, khớp thứ tự áp dụng thật trên bảng báo cáo ──
+    // Đồng thời tính số sao TỐI ĐA có thể bị trừ cho môn này nếu hôm nay không về số,
+    // dùng cho bảng chi tiết khi NV bấm vào tổng số sao.
     if(moc3Forced){
-      otList.push(`${escapeHtml(cat.name)} <span style="font-size:10px;color:#7c3aed">(Mốc 3 — 7 ngày liên tiếp, có thể chọn Trừ×5 thay thế)</span>`);
+      otList.push(`${escapeHtml(cat.name)} <span style="font-size:10px;color:#7c3aed">(Mốc 3 — ${moc3Threshold} ngày liên tiếp, có thể chọn Trừ×${moc3Mult} thay thế)</span>`);
+      breakdownRows.push({ name: cat.name, amountTxt: `0 (Tăng ca) / −${cat.sm * moc3Mult} (nếu chọn Trừ×${moc3Mult})`, amountMax: cat.sm * moc3Mult });
     } else if(forcedOtToday){
       otList.push(`${escapeHtml(cat.name)} <span style="font-size:10px;color:#6b7280">(đã chọn Tăng ca ngày mai từ hôm qua)</span>`);
+      breakdownRows.push({ name: cat.name, amountTxt: '0 (Tăng ca — không trừ sao)', amountMax: 0 });
     } else if(spChoiceSaved === 'x2'){
       x2List.push(`${escapeHtml(cat.name)} <span style="font-size:10px;color:#6b7280">(đã chọn Trừ×2 cho hôm nay)</span>`);
+      breakdownRows.push({ name: cat.name, amountTxt: `−${cat.sm * 2} (Trừ×2 — đã chọn)`, amountMax: cat.sm * 2 });
     } else if(needOtChoice || needSpChoice){
       const moc = needOtChoice ? `Mốc 1 — ${zdProjected} ngày` : `Mốc 2 — ${spStreak} ngày`;
       chooseList.push(`${escapeHtml(cat.name)} <span style="font-size:10px;color:#6b7280">(${moc}, cần chọn hôm nay)</span>`);
+      const maxAmt = needOtChoice ? cat.sm : cat.sm * 2;
+      const optTxt = needOtChoice ? `0 (Tăng ca) / −${cat.sm} (Dùng sao)` : `0 (TC ngày mai) / −${cat.sm * 2} (Trừ×2)`;
+      breakdownRows.push({ name: cat.name, amountTxt: `${optTxt} — cần chọn`, amountMax: maxAmt });
     } else {
       normalList.push(cat.name);
+      breakdownRows.push({ name: cat.name, amountTxt: `−${cat.sm}`, amountMax: cat.sm });
     }
 
     // Cảnh báo chuỗi sớm — độc lập, hiển thị cho MỌI môn đã ≥3 ngày liên tiếp chưa đạt
@@ -2186,13 +2295,39 @@ function showDailyRiskPopup(emp, dateKey){
   // Không có gì đáng cảnh báo (toàn bộ môn đều bình thường, chưa ai chạm mốc nào) → khỏi hiện popup
   if(otList.length === 0 && x2List.length === 0 && chooseList.length === 0 && streakList.length === 0) return;
 
-  const sectionH = (title, color, bg, items, emptyNote) => items.length === 0 ? '' : `
+  const totalMax = breakdownRows.reduce((s, r) => s + r.amountMax, 0);
+
+  const sectionH = (title, color, bg, items) => items.length === 0 ? '' : `
     <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:${bg};border:1px solid ${color}33">
       <div style="font-weight:700;font-size:12.5px;color:${color};margin-bottom:4px">${title}</div>
       <ul style="margin:0;padding-left:18px;font-size:12px;color:var(--text)">
         ${items.map(i => `<li style="margin-bottom:2px">${i}</li>`).join('')}
       </ul>
     </div>`;
+
+  const breakdownTableH = `
+    <table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px">
+      <tr style="background:#f3f4f6">
+        <th style="padding:4px 6px;border:1px solid #e5e7eb;text-align:left">Môn</th>
+        <th style="padding:4px 6px;border:1px solid #e5e7eb;text-align:right">Sao dự kiến bị trừ</th>
+      </tr>
+      ${breakdownRows.map(r => `
+        <tr>
+          <td style="padding:4px 6px;border:1px solid #e5e7eb">${escapeHtml(r.name)}</td>
+          <td style="padding:4px 6px;border:1px solid #e5e7eb;text-align:right;${r.amountMax > 0 ? 'color:#dc2626;font-weight:700' : 'color:#16a34a'}">${escapeHtml(r.amountTxt)}</td>
+        </tr>`).join('')}
+    </table>`;
+
+  const totalH = `
+    <div style="margin-top:10px;padding:9px 12px;border-radius:8px;background:#111827;cursor:pointer;user-select:none"
+      onclick="const b=document.getElementById('riskBreakdownBox'); b.style.display = b.style.display==='none' ? 'block' : 'none';">
+      <div style="display:flex;justify-content:space-between;align-items:center;color:#ffffff">
+        <span style="font-size:12.5px">💰 Tổng số sao TỐI ĐA có thể bị trừ hôm nay</span>
+        <span style="font-size:16px;font-weight:800;color:#fca5a5">−${totalMax}</span>
+      </div>
+      <div style="font-size:10.5px;color:#9ca3af;margin-top:2px">👆 Bấm vào đây để xem môn nào trừ bao nhiêu</div>
+    </div>
+    <div id="riskBreakdownBox" style="display:none">${breakdownTableH}</div>`;
 
   const bg    = document.getElementById('modalBg');
   const title = document.getElementById('modalTitle');
@@ -2204,6 +2339,7 @@ function showDailyRiskPopup(emp, dateKey){
     <p style="font-size:12.5px;color:var(--text-mid);margin:0 0 6px;line-height:1.5">
       Dưới đây là tình trạng CÁC MÔN nếu <strong>hôm nay không về số</strong> (tính theo dữ liệu tới hôm qua):
     </p>
+    ${totalH}
     ${sectionH('🚨 Sẽ TĂNG CA nếu không về số', '#dc2626', '#fef2f2', otList)}
     ${sectionH('⭐ Sẽ bị TRỪ ×2 SAO nếu không về số', '#c2410c', '#fff7ed', x2List)}
     ${sectionH('🔔 Cần chọn ngay hôm nay (vừa chạm mốc)', '#7c3aed', '#f5f3ff', chooseList)}
@@ -2252,20 +2388,115 @@ function updateEmpHeader(){
   // month stats
   const monthKey = dateKey.substring(0,7);
   const cats = getCats(emp.dept);
-  let mPlus = 0, mMinus = 0;
+  let mPlus = 0;
   Object.entries(STORED.reports[emp.id] || {}).forEach(([dk, rep]) => {
     if(!dk.startsWith(monthKey)) return; // chỉ tính báo cáo trong tháng đang xem → Kiếm/Trừ tự làm mới khi sang tháng mới
     cats.forEach(cat => {
       const actual = rep[cat.id] || 0;
-      const hope   = rep['h_' + cat.id] || false;
       const pct    = cat.target > 0 ? Math.round(actual / cat.target * 100) : 0;
-      if(pct >= 100)    mPlus  += starBonus(cat, pct, emp.dept);
-      else if(hope)     mMinus += cat.sm;
+      if(pct >= 100) mPlus += starBonus(cat, pct, emp.dept);
     });
-    mMinus += (rep._latePenalty || 0); // gộp cả phạt nộp trễ vào tổng bị trừ trong tháng
   });
+  const mb = computeMonthMinusBreakdown(emp, monthKey);
   document.getElementById('histPlus').textContent  = '+' + mPlus  + '⭐';
-  document.getElementById('histMinus').textContent = '-' + mMinus + '⭐';
+  document.getElementById('histMinus').textContent = '-' + mb.grandTotal + '⭐';
+}
+
+// Gộp toàn bộ nguyên nhân bị trừ sao trong 1 tháng, theo từng môn (kể cả Trừ×2/Trừ×5
+// Mốc 3) + phạt nộp trễ, để hiển thị chi tiết khi NV bấm vào ô "Bị trừ tháng".
+// Dùng đúng logic tính sao như bảng chính (renderTable) — không chỉ cat.sm đơn thuần,
+// nên khớp 100% với con số hiển thị, kể cả những ngày đã chọn Trừ×2/Trừ×5.
+function computeMonthMinusBreakdown(emp, monthKey){
+  const cats = getCats(emp.dept);
+  const byCat = {}; // catId -> { name, sm, count, total }
+  let lateTotal = 0, lateCount = 0;
+  Object.entries(STORED.reports[emp.id] || {}).forEach(([dk, rep]) => {
+    if(!dk.startsWith(monthKey)) return;
+    cats.forEach(cat => {
+      const actual = rep[cat.id] || 0;
+      const pct    = cat.target > 0 ? Math.round(actual / cat.target * 100) : 0;
+      if(pct >= 100) return; // đạt → không trừ
+      const hope     = rep['h_' + cat.id] || false;
+      const m3Choice = rep['m3ch_' + cat.id] || '';
+      const isAuto   = !!rep['_auto1_' + cat.id] || !!rep['_auto2_' + cat.id]; // hệ thống tự chọn hộ
+      let amt = 0;
+      if(m3Choice === 'x5')      amt = cat.sm * moc3Mult;          // Mốc 3 — Trừ×N
+      else if(hope){
+        const spChoice = rep['sp_' + cat.id] || '';
+        const spMult   = spChoice === 'x2' ? 2 : 1;               // Mốc 2 — Trừ×2
+        amt = cat.sm * spMult;
+      }
+      if(amt > 0){
+        if(!byCat[cat.id]) byCat[cat.id] = { name: cat.name, count: 0, total: 0, autoCount: 0 };
+        byCat[cat.id].count++;
+        byCat[cat.id].total += amt;
+        if(isAuto) byCat[cat.id].autoCount++;
+      }
+    });
+    if(rep._latePenalty){ lateTotal += rep._latePenalty; lateCount++; }
+  });
+  const grandTotal = Object.values(byCat).reduce((s,c) => s + c.total, 0) + lateTotal;
+  return { byCat, lateTotal, lateCount, grandTotal };
+}
+
+// Popup chi tiết khi NV bấm vào ô "Bị trừ tháng" — liệt kê từng môn bị trừ bao nhiêu
+// lần, tổng bao nhiêu sao, cộng riêng dòng phạt nộp trễ. Bấm vào 1 môn sẽ mở tiếp lịch
+// sử ngày-theo-ngày của đúng môn đó (dùng lại showZdBreakdown() đã có).
+function showMonthMinusBreakdown(){
+  const emp = getCurEmp(); if(!emp) return;
+  const dateKey  = document.getElementById('dateIn').value;
+  const monthKey = dateKey.substring(0,7);
+  const { byCat, lateTotal, lateCount, grandTotal } = computeMonthMinusBreakdown(emp, monthKey);
+
+  const rows = Object.entries(byCat)
+    .map(([catId, c]) => ({ catId, ...c }))
+    .sort((a, b) => b.total - a.total);
+
+  const rowsH = rows.map(r => `
+    <tr style="cursor:pointer" onclick="showZdBreakdown('${r.catId}',7)">
+      <td style="padding:7px 8px;font-size:12.5px;font-weight:700">${escapeHtml(r.name)}</td>
+      <td style="padding:7px 8px;font-size:12px;text-align:center;white-space:nowrap">${r.count} lần${r.autoCount > 0 ? ` <span title="Trong đó ${r.autoCount} lần hệ thống tự chọn hộ" style="cursor:help;color:#7c3aed">🤖×${r.autoCount}</span>` : ''}</td>
+      <td style="padding:7px 8px;font-size:13px;text-align:right;color:#dc2626;font-weight:900;white-space:nowrap">−${r.total}⭐</td>
+      <td style="padding:7px 8px;text-align:center;color:#9ca3af;font-size:11px;white-space:nowrap">Xem &rsaquo;</td>
+    </tr>`).join('');
+
+  const lateRowH = lateTotal > 0 ? `
+    <tr>
+      <td style="padding:7px 8px;font-size:12.5px;font-weight:700">⏰ Phạt nộp trễ (sau 22h30)</td>
+      <td style="padding:7px 8px;font-size:12px;text-align:center;white-space:nowrap">${lateCount} lần</td>
+      <td style="padding:7px 8px;font-size:13px;text-align:right;color:#dc2626;font-weight:900;white-space:nowrap">−${lateTotal}⭐</td>
+      <td></td>
+    </tr>` : '';
+
+  const emptyH = (!rowsH && !lateRowH)
+    ? `<tr><td colspan="4" style="padding:14px;text-align:center;color:#9ca3af">Chưa bị trừ sao nào trong tháng này 🎉</td></tr>`
+    : '';
+
+  document.getElementById('modalTitle').innerHTML = `📉 Chi tiết trừ sao — Tháng ${monthKey}`;
+  document.getElementById('modalBody').innerHTML = `
+    <div style="font-size:12.5px;margin-bottom:10px;padding:8px 10px;background:#fef2f2;border-radius:8px;color:#7f1d1d">
+      Tổng bị trừ tháng này: <b style="font-size:15px">−${grandTotal}⭐</b> — bấm vào từng môn để xem đúng những ngày nào bị trừ.
+    </div>
+    <div style="max-height:360px;overflow:auto;border:1px solid var(--gray-line);border-radius:8px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="position:sticky;top:0;background:#eef1ff">
+            <th style="padding:6px 8px;font-size:10.5px;text-align:left">Môn / Lý do</th>
+            <th style="padding:6px 8px;font-size:10.5px">Số lần</th>
+            <th style="padding:6px 8px;font-size:10.5px;text-align:right">Tổng trừ</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rowsH}${lateRowH}${emptyH}</tbody>
+      </table>
+    </div>
+    <div style="font-size:10.5px;color:var(--text-light);margin-top:8px;line-height:1.5">
+      📌 Chỉ tính các ngày đã chọn ⭐ Dùng sao / Trừ×2 / Trừ×5 — những ngày chưa đạt nhưng chọn 🕐 Tăng ca không bị trừ sao.<br>
+      🤖×N = trong đó có N lần hệ thống <b>tự động chọn hộ</b> "Dùng sao/Trừ×2" (do QL bật cài đặt tự chọn khi hết sao vẫn để mặc định), không phải NV tự bấm — bấm vào môn để xem đúng ngày nào.
+    </div>`;
+  document.getElementById('modalBtns').innerHTML =
+    `<button class="act-btn primary" onclick="closeModal()">Đóng</button>`;
+  document.getElementById('modalBg').classList.add('open');
 }
 
 // ════════════════════════════════════════════
@@ -2552,10 +2783,16 @@ function getZdPlainHistory(empId, catId, dateKey, n){
     const spMult   = spChoice === 'x2' ? 2 : 1;
     const otFlag   = !!rep['ot_' + catId];
 
+    const m3Choice = rep['m3ch_' + catId] || '';
+    const isAuto   = !!rep['_auto1_' + catId] || !!rep['_auto2_' + catId]; // hệ thống tự chọn hộ (không phải NV tự bấm)
+
     let starDelta = 0, status;
     if(isDone){
       starDelta = cat2 ? starBonus(cat2, pct, emp2.dept) : 0;
       status = 'done';
+    } else if(m3Choice === 'x5'){
+      starDelta = -((cat2 ? cat2.sm : 0) * 5);
+      status = 'hope';
     } else if(otFlag && !hope){
       starDelta = 0;
       status = 'ot';
@@ -2566,7 +2803,7 @@ function getZdPlainHistory(empId, catId, dateKey, n){
       starDelta = 0;
       status = 'missed'; // chưa đạt, chưa dùng sao, chưa tăng ca — thường là chưa nộp xong hoặc bỏ trống
     }
-    rows.push({ date: k, actual, target, pct, status, starDelta, spMult });
+    rows.push({ date: k, actual, target, pct, status, starDelta, spMult, isAuto });
   }
   return rows;
 }
@@ -2597,7 +2834,7 @@ function showZdBreakdown(catId, cap){
     const starH = r.starDelta > 0
       ? `<span style="color:#16a34a;font-weight:900">+${r.starDelta}</span>`
       : r.starDelta < 0
-        ? `<span style="color:#dc2626;font-weight:900">${r.starDelta}${r.spMult === 2 ? ' (×2)' : ''}</span>`
+        ? `<span style="color:#dc2626;font-weight:900">${r.starDelta}${r.spMult === 2 ? ' (×2)' : ''}${r.isAuto ? ' <span title="Hệ thống tự chọn hộ, không phải NV tự bấm" style="cursor:help">🤖</span>' : ''}</span>`
         : `<span style="color:#9ca3af">0</span>`;
     return `<tr>
       <td style="padding:6px 8px;font-size:12px;font-weight:700;white-space:nowrap">${r.date}</td>
@@ -2633,7 +2870,8 @@ function showZdBreakdown(catId, cap){
       </table>
     </div>
     <div style="font-size:10.5px;color:var(--text-light);margin-top:8px;line-height:1.5">
-      📌 Bảng này liệt kê đủ ${cap} ngày liền kề trước ${dateKey}, không dừng sớm dù có ngày đã đạt/dùng sao — chỉ để đối chiếu. Số Ngày THẬT dùng để xét các mốc bắt buộc Tăng ca vẫn tính theo quy tắc dừng sớm (xem ô tóm tắt phía trên).
+      📌 Bảng này liệt kê đủ ${cap} ngày liền kề trước ${dateKey}, không dừng sớm dù có ngày đã đạt/dùng sao — chỉ để đối chiếu. Số Ngày THẬT dùng để xét các mốc bắt buộc Tăng ca vẫn tính theo quy tắc dừng sớm (xem ô tóm tắt phía trên).<br>
+      🤖 bên cạnh số sao = hôm đó hệ thống tự động chọn "Dùng sao/Trừ×2" hộ NV (do bật cài đặt tự chọn), không phải NV tự bấm.
     </div>`;
   document.getElementById('modalBtns').innerHTML =
     `<button class="act-btn primary" onclick="closeModal()">Đóng</button>`;
@@ -2761,10 +2999,10 @@ function applyAutoOtChoice(emp, cats, dateKey, saved){
     const otUnlocked = !!saved['_unlockOt_' + cat.id];
     const forcedOtToday = yestSaved[spk] === 'ot' && !otUnlocked;
     let moc3Forced = false;
-    if(cat.sm > 300 && !otUnlocked){
-      const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
-      const m3Streak = Math.min(m3Past + 1, 7);
-      moc3Forced = m3Streak >= 7;
+    if(moc3Enabled && cat.sm > moc3StarThreshold && !otUnlocked){
+      const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, moc3Threshold);
+      const m3Streak = Math.min(m3Past + 1, moc3Threshold);
+      moc3Forced = m3Streak >= moc3Threshold;
     }
     if(forcedOtToday || moc3Forced) return;
 
@@ -2888,9 +3126,9 @@ function renderTable(){
        chưa đạt liên tiếp đủ 7 ngày → tự động khoá Tăng ca bắt buộc ngay hôm nay, KHÔNG
        cho dùng sao (không phải lựa chọn, là ép buộc), bắt buộc nhập ghi chú tăng ca hôm
        sau (dùng chung field ot_/otNote_ với Mốc 1). QL vẫn gỡ khoá riêng được như Mốc 2. */
-    const moc3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
-    const moc3Streak = Math.min(moc3Past + 1, 7);
-    const moc3Forced = !isDone && cat.sm > 300 && moc3Streak >= 7 && !otUnlocked;
+    const moc3Past   = getMoc3Streak(emp.id, cat.id, dateKey, moc3Threshold);
+    const moc3Streak = Math.min(moc3Past + 1, moc3Threshold);
+    const moc3Forced = moc3Enabled && !isDone && cat.sm > moc3StarThreshold && moc3Streak >= moc3Threshold && !otUnlocked;
     /* MỐC 3 — lựa chọn NV đã chọn hôm nay (nếu có): '' | 'ot' (Tăng ca bắt buộc) | 'x5' (Trừ×5 sao) */
     const m3k       = 'm3ch_' + cat.id;
     const m3Choice  = inputs[m3k] !== undefined ? inputs[m3k] : (saved[m3k] || '');
@@ -2912,7 +3150,7 @@ function renderTable(){
 
     let kqH = '<span class="star-na">—</span>';
     if(isDone)                                        { totPlus  += bonusStar; kqH = `<span class="star-plus">+${bonusStar}${isX2Bonus ? ' ⚡x2' : ''}</span>`; }
-    else if(moc3Forced && m3Choice === 'x5')          { const m3Ded = cat.sm * 5; totMinus += m3Ded; kqH = `<span class="star-minus">-${m3Ded} (×5)</span>`; }
+    else if(moc3Forced && m3Choice === 'x5')          { const m3Ded = cat.sm * moc3Mult; totMinus += m3Ded; kqH = `<span class="star-minus">-${m3Ded} (×${moc3Mult})</span>`; }
     else if(hope && !forcedOtToday && !moc3Forced)    { totMinus += cat.sm * spMult; kqH = `<span class="star-minus">-${cat.sm * spMult}</span>`; }
 
     /* kq actual value */
@@ -2996,7 +3234,7 @@ function renderTable(){
       actionH = `
         <div class="ot-choice">
           <button class="${m3OtCls}" data-m3catid="${cat.id}" data-m3val="ot" title="Bắt buộc Tăng ca bù cho ngày mai">🚨 TC bắt buộc</button>
-          <button class="${m3X5Cls}" data-m3catid="${cat.id}" data-m3val="x5" title="Trừ sao gấp 5 lần (×5) cho hôm nay">⭐ Trừ×5</button>
+          <button class="${m3X5Cls}" data-m3catid="${cat.id}" data-m3val="x5" title="Trừ sao gấp ${moc3Mult} lần (×${moc3Mult}) cho hôm nay">⭐ Trừ×${moc3Mult}</button>
         </div>
         ${unlockBtnH}
         ${m3Choice === 'ot' ? otNoteVisibleH : ''}${needM3NoteH}${m3WarnH}`;
@@ -3024,7 +3262,10 @@ function renderTable(){
         ${otFlag ? otNoteVisibleH : ''}`;
     } else {
       const unlockedBadgeH = otUnlocked ? `<div style="font-size:10px;color:#16a34a;margin-top:2px">🔓 QL đã gỡ khoá hôm nay</div>` : '';
-      const autoChoiceBadgeH = (inputs['_autoOtChoice_' + cat.id] && hope)
+      const isAutoChoice1 = inputs['_autoOtChoice_' + cat.id] !== undefined
+        ? inputs['_autoOtChoice_' + cat.id]
+        : !!saved['_auto1_' + cat.id]; // ngày cũ đã lưu — đọc lại cờ đã lưu, không chỉ phiên đang nhập
+      const autoChoiceBadgeH = (isAutoChoice1 && hope)
         ? `<div style="font-size:9px;color:#7c3aed;margin-top:2px;font-weight:700">🤖 Tự động chọn — có thể đổi lại</div>`
         : '';
       actionH = `<button class="${btnCls}" data-catid="${cat.id}" ${btnDis}${btnTitle}>${btnTxt}</button>${unlockedBadgeH}${autoChoiceBadgeH}`;
@@ -3039,7 +3280,10 @@ function renderTable(){
       const spWarnH  = spChoice === 'ot'
         ? `<div style="margin-top:3px;font-size:9px;color:#c2410c;font-weight:800;line-height:1.3;text-align:left;max-width:150px">⚠️ NGÀY MAI môn này sẽ tự khoá Tăng ca bắt buộc nếu chưa đạt — không dùng sao được nữa</div>`
         : `<div style="margin-top:3px;font-size:9px;color:#9a3412;font-weight:700;line-height:1.3;text-align:left;max-width:150px">☝️ Bắt buộc chọn 1 trong 2 — nút "⭐ Dùng sao" bình thường không dùng được nữa</div>`;
-      const spAutoBadgeH = inputs['_autoSpChoice_' + cat.id]
+      const isAutoChoice2 = inputs['_autoSpChoice_' + cat.id] !== undefined
+        ? inputs['_autoSpChoice_' + cat.id]
+        : !!saved['_auto2_' + cat.id]; // ngày cũ đã lưu — đọc lại cờ đã lưu, không chỉ phiên đang nhập
+      const spAutoBadgeH = isAutoChoice2
         ? `<div style="font-size:9px;color:#7c3aed;margin-top:2px;font-weight:700">🤖 Tự động chọn — có thể đổi lại</div>`
         : '';
       spChoiceH = `
@@ -3455,6 +3699,166 @@ async function onStarPenaltyThresholdChange(val){
   }
 }
 
+// ── MỐC 3 — Khoá cứng Tăng ca: bật/tắt + mốc số ngày + mức trừ sao áp dụng ──
+function renderMoc3Toggle(){
+  const chk   = document.getElementById('moc3Toggle');
+  const badge = document.getElementById('moc3Badge');
+  if(!chk || !badge) return;
+  chk.checked = moc3Enabled;
+  badge.textContent = moc3Enabled ? '✅ Đang BẬT — áp dụng cho tất cả NV' : '🔴 Đang TẮT — không khoá cứng';
+  badge.className = 't-badge ' + (moc3Enabled ? 't-badge-on' : 't-badge-off');
+
+  // Ẩn/mờ 2 khối chọn mốc ngày + mức trừ sao khi tính năng đang TẮT
+  const row1 = document.getElementById('moc3ThresholdRow');
+  const sel1 = document.getElementById('moc3ThresholdSel');
+  if(row1) row1.style.opacity = moc3Enabled ? '1' : '.4';
+  if(sel1) sel1.disabled = !moc3Enabled;
+  const row2 = document.getElementById('moc3StarThresholdRow');
+  const inp2 = document.getElementById('moc3StarThresholdInp');
+  if(row2) row2.style.opacity = moc3Enabled ? '1' : '.4';
+  if(inp2) inp2.disabled = !moc3Enabled;
+  const row3 = document.getElementById('moc3MultRow');
+  const sel3 = document.getElementById('moc3MultSel');
+  if(row3) row3.style.opacity = moc3Enabled ? '1' : '.4';
+  if(sel3) sel3.disabled = !moc3Enabled;
+}
+
+function renderMoc3ThresholdControl(){
+  const sel   = document.getElementById('moc3ThresholdSel');
+  const badge = document.getElementById('moc3ThresholdBadge');
+  if(!sel || !badge) return;
+  sel.value = String(moc3Threshold);
+  badge.textContent = `✅ Đang áp dụng — mốc ${moc3Threshold} ngày chưa đạt liên tiếp`;
+  badge.className = 't-badge t-badge-on';
+  renderMoc3StarThresholdControl();
+}
+
+function renderMoc3StarThresholdControl(){
+  const inp   = document.getElementById('moc3StarThresholdInp');
+  const badge = document.getElementById('moc3StarThresholdBadge');
+  if(!inp || !badge) return;
+  inp.value = String(moc3StarThreshold);
+  badge.textContent = `✅ Đang áp dụng — môn trừ trên ${moc3StarThreshold} sao`;
+  badge.className = 't-badge t-badge-on';
+  renderMoc3MultControl();
+}
+
+function renderMoc3MultControl(){
+  const sel   = document.getElementById('moc3MultSel');
+  const badge = document.getElementById('moc3MultBadge');
+  if(!sel || !badge) return;
+  sel.value = String(moc3Mult);
+  badge.textContent = `✅ Đang áp dụng — Trừ×${moc3Mult} khi chọn phương án này`;
+  badge.className = 't-badge t-badge-on';
+  renderMoc3Toggle();
+}
+
+async function onMoc3Toggle(val){
+  const prevVal  = moc3Enabled; // lưu lại để revert nếu lỗi
+  moc3Enabled    = val;
+  renderMoc3Toggle();
+  renderTable();
+  const dot = document.getElementById('moc3ToggleDot');
+  const txt = document.getElementById('moc3ToggleTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'moc3Enabled', value: val });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — ${val ? 'BẬT' : 'TẮT'} cho tất cả nhân viên`;
+    toast(val ? '✅ Đã BẬT Mốc 3 (khoá cứng Tăng ca) cho tất cả NV' : '🔒 Đã TẮT Mốc 3 (khoá cứng Tăng ca) cho tất cả NV', 'ok');
+  } catch(err){
+    moc3Enabled = prevVal;
+    renderMoc3Toggle();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
+async function onMoc3ThresholdChange(val){
+  const newVal  = parseInt(val);
+  const prevVal = moc3Threshold; // lưu lại để revert nếu lỗi
+  moc3Threshold = newVal;
+  renderMoc3ThresholdControl();
+  renderTable();
+  const dot = document.getElementById('moc3ThresholdDot');
+  const txt = document.getElementById('moc3ThresholdTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'moc3Threshold', value: newVal });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — áp dụng mốc ${newVal} ngày cho tất cả nhân viên`;
+    toast(`✅ Đã đặt mốc Khoá cứng Tăng ca (Mốc 3) = ${newVal} ngày cho tất cả NV`, 'ok');
+  } catch(err){
+    moc3Threshold = prevVal;
+    renderMoc3ThresholdControl();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
+async function onMoc3StarThresholdChange(){
+  const inp = document.getElementById('moc3StarThresholdInp');
+  if(!inp) return;
+  const newVal = parseInt(inp.value);
+  if(!newVal || newVal < 1){
+    toast('⚠️ Mức trừ sao phải lớn hơn 0', 'err');
+    inp.value = String(moc3StarThreshold);
+    return;
+  }
+  const prevVal = moc3StarThreshold; // lưu lại để revert nếu lỗi
+  moc3StarThreshold = newVal;
+  renderMoc3StarThresholdControl();
+  renderTable();
+  const dot = document.getElementById('moc3StarThresholdDot');
+  const txt = document.getElementById('moc3StarThresholdTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'moc3StarThreshold', value: newVal });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — áp dụng cho môn trừ trên ${newVal} sao`;
+    toast(`✅ Đã đặt mức trừ sao áp dụng Mốc 3 = trên ${newVal} sao cho tất cả NV`, 'ok');
+  } catch(err){
+    moc3StarThreshold = prevVal;
+    renderMoc3StarThresholdControl();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
+async function onMoc3MultChange(val){
+  const newVal  = parseInt(val);
+  const prevVal = moc3Mult; // lưu lại để revert nếu lỗi
+  moc3Mult = newVal;
+  renderMoc3MultControl();
+  renderTable();
+  const dot = document.getElementById('moc3MultDot');
+  const txt = document.getElementById('moc3MultTxt');
+  if(dot) dot.className = 'dot busy';
+  if(txt) txt.textContent = 'Đang đồng bộ…';
+  try {
+    await gasCall({ action:'saveSetting', key:'moc3Mult', value: newVal });
+    if(dot) dot.className = 'dot ok';
+    if(txt) txt.textContent = `Đã đồng bộ — Trừ×${newVal} cho tất cả nhân viên`;
+    toast(`✅ Đã đặt hệ số Mốc 3 = Trừ×${newVal} cho tất cả NV`, 'ok');
+  } catch(err){
+    moc3Mult = prevVal;
+    renderMoc3MultControl();
+    renderTable();
+    if(dot) dot.className = 'dot err';
+    if(txt) txt.textContent = 'Lỗi đồng bộ: ' + err.message;
+    toast('⚠️ Lỗi đồng bộ: ' + err.message + ' — đã hoàn tác', 'err');
+  }
+}
+
 // ── Thưởng x2 sao khi vượt ngưỡng % (mặc định >300%) ──
 function renderBonusX2Toggle(){
   const chk   = document.getElementById('x2Toggle');
@@ -3719,6 +4123,7 @@ function toggleHope(catId){
   // Nếu đang tắt và hết sao hy vọng → không cho bật thêm
   inputs[hk] = !cur;
   delete inputs['_autoOtChoice_' + catId]; // NV vừa tự bấm → không còn là lựa chọn tự động nữa
+  inputs['_manualOt_' + catId] = true; // đánh dấu đã tự bấm — kể cả khi sửa lại ngày đã lưu trước đó
   renderTable();
 }
 
@@ -3737,6 +4142,7 @@ function toggleOt(catId){
     inputs[otk] = false;
     inputs['otNote_' + catId] = '';
     delete inputs['_autoOtChoice_' + catId]; // NV vừa tự bấm → không còn là lựa chọn tự động nữa
+    inputs['_manualOt_' + catId] = true; // đánh dấu đã tự bấm — kể cả khi sửa lại ngày đã lưu trước đó
     renderTable();
     return;
   }
@@ -3766,6 +4172,7 @@ function toggleStarPenaltyChoice(catId, val){
 
   inputs[spk] = newVal;
   delete inputs['_autoSpChoice_' + catId]; // NV vừa tự bấm → không còn là lựa chọn tự động nữa
+  inputs['_manualSp_' + catId] = true; // đánh dấu đã tự bấm — kể cả khi sửa lại ngày đã lưu trước đó
   renderTable();
 }
 
@@ -3790,7 +4197,7 @@ function toggleMoc3Choice(catId, val){
 
   if(newVal === 'x5'){
     const cat = getCats(emp.dept).find(c => c.id === catId);
-    const ok = confirm(`Xác nhận chọn "Trừ×5 sao" cho môn "${cat ? cat.name : ''}"?\n\nSẽ bị trừ ${cat ? cat.sm * 5 : ''} sao ngay hôm nay (gấp 5 lần mức trừ thường), thay vì tăng ca bù.`);
+    const ok = confirm(`Xác nhận chọn "Trừ×${moc3Mult} sao" cho môn "${cat ? cat.name : ''}"?\n\nSẽ bị trừ ${cat ? cat.sm * moc3Mult : ''} sao ngay hôm nay (gấp ${moc3Mult} lần mức trừ thường), thay vì tăng ca bù.`);
     if(!ok) return;
     // Nếu trước đó lỡ chọn Tăng ca và đã nhập ghi chú → xoá đi khi đổi sang Trừ×5
     delete inputs['ot_' + catId];
@@ -3808,11 +4215,11 @@ function showMoc3OtNoteModal(catId){
   const body  = document.getElementById('modalBody');
   const btns  = document.getElementById('modalBtns');
 
-  title.innerHTML = `<span style="color:#dc2626">🚨 Tăng ca bắt buộc — Mốc 7 ngày — ${cat ? cat.name : ''}</span>`;
+  title.innerHTML = `<span style="color:#dc2626">🚨 Tăng ca bắt buộc — Mốc ${moc3Threshold} ngày — ${cat ? cat.name : ''}</span>`;
 
   body.innerHTML = `
     <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
-      Môn này đã <strong style="color:#dc2626">7 ngày liên tiếp chưa đạt</strong> (môn trừ sao trên 300).
+      Môn này đã <strong style="color:#dc2626">${moc3Threshold} ngày liên tiếp chưa đạt</strong> (môn trừ sao trên ${moc3StarThreshold}).
       Vui lòng ghi rõ <strong>tăng ca làm gì để bù vào ngày mai</strong>, nội dung này sẽ hiển thị
       nổi bật trên báo cáo.
     </p>
@@ -3844,7 +4251,7 @@ function confirmMoc3OtNote(catId){
   inputs['otNote_' + catId]  = val;
   closeModal();
   renderTable();
-  toast('🚨 Đã ghi nhận Tăng ca bắt buộc — Mốc 7 ngày', 'ok');
+  toast(`🚨 Đã ghi nhận Tăng ca bắt buộc — Mốc ${moc3Threshold} ngày`, 'ok');
 }
 
 function showOtNoteModal(catId){
@@ -3889,6 +4296,7 @@ function confirmOtNote(catId){
   inputs['ot_' + catId]     = true;
   inputs['otNote_' + catId] = val;
   delete inputs['_autoOtChoice_' + catId]; // NV vừa tự bấm + tự nhập ghi chú → không còn là lựa chọn tự động nữa
+  inputs['_manualOt_' + catId] = true; // đánh dấu đã tự bấm — kể cả khi sửa lại ngày đã lưu trước đó
   closeModal();
   renderTable();
   toast('🕐 Đã ghi nhận Tăng ca — Số Ngày giữ nguyên', 'ok');
@@ -3963,7 +4371,7 @@ function showMissingMoc3Modal(missing){
   const body  = document.getElementById('modalBody');
   const btns  = document.getElementById('modalBtns');
 
-  title.innerHTML = `<span style="color:#dc2626">🚨 Bắt buộc chọn — Mốc 7 ngày</span>`;
+  title.innerHTML = `<span style="color:#dc2626">🚨 Bắt buộc chọn — Mốc ${moc3Threshold} ngày</span>`;
 
   const listH = missing.map(name =>
     `<li style="margin-bottom:4px">${name}</li>`
@@ -3971,10 +4379,10 @@ function showMissingMoc3Modal(missing){
 
   body.innerHTML = `
     <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
-      Các môn dưới đây trừ sao <strong style="color:#dc2626">trên 300</strong> mỗi lần và đã
-      <strong style="color:#dc2626">7 ngày liên tiếp chưa đạt</strong>. Vui lòng chọn 1 trong 2:
+      Các môn dưới đây trừ sao <strong style="color:#dc2626">trên ${moc3StarThreshold}</strong> mỗi lần và đã
+      <strong style="color:#dc2626">${moc3Threshold} ngày liên tiếp chưa đạt</strong>. Vui lòng chọn 1 trong 2:
       bấm <strong>🚨 TC bắt buộc</strong> (kèm ghi chú tăng ca hôm sau) hoặc
-      <strong>⭐ Trừ×5</strong> (trừ ×5 sao ngay hôm nay) cho các môn này trước khi lưu &amp; xuất báo cáo.
+      <strong>⭐ Trừ×${moc3Mult}</strong> (trừ ×${moc3Mult} sao ngay hôm nay) cho các môn này trước khi lưu &amp; xuất báo cáo.
     </p>
     <ul style="font-size:12px;color:#dc2626;font-weight:700;padding-left:18px;max-height:180px;overflow-y:auto;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 10px 10px 26px">
       ${listH}
@@ -4241,10 +4649,10 @@ async function submitReport(){
     const otUnlockedChk = !!saved['_unlockOt_' + cat.id];
     const yestSavedChk  = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
     if(yestSavedChk['sp_' + cat.id] === 'ot' && !otUnlockedChk) return; // forcedOtToday
-    if(cat.sm > 300 && !otUnlockedChk){
-      const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
-      const m3Streak = Math.min(m3Past + 1, 7);
-      if(m3Streak >= 7) return; // moc3Forced
+    if(moc3Enabled && cat.sm > moc3StarThreshold && !otUnlockedChk){
+      const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, moc3Threshold);
+      const m3Streak = Math.min(m3Past + 1, moc3Threshold);
+      if(m3Streak >= moc3Threshold) return; // moc3Forced
     }
 
     let zdCurrentVal;
@@ -4284,10 +4692,10 @@ async function submitReport(){
       const otUnlockedChk = !!saved['_unlockOt_' + cat.id];
       const yestSavedChk  = (STORED.reports[emp.id] || {})[daysBefore(dateKey, 1)] || {};
       if(yestSavedChk['sp_' + cat.id] === 'ot' && !otUnlockedChk) return; // forcedOtToday
-      if(cat.sm > 300 && !otUnlockedChk){
-        const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
-        const m3Streak = Math.min(m3Past + 1, 7);
-        if(m3Streak >= 7) return; // moc3Forced
+      if(moc3Enabled && cat.sm > moc3StarThreshold && !otUnlockedChk){
+        const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, moc3Threshold);
+        const m3Streak = Math.min(m3Past + 1, moc3Threshold);
+        if(m3Streak >= moc3Threshold) return; // moc3Forced
       }
 
       const past     = getStarPenaltyStreak(emp.id, cat.id, dateKey);
@@ -4304,19 +4712,19 @@ async function submitReport(){
   // bắt buộc NV đã chọn 1 trong 2: 🚨 Tăng ca bắt buộc (kèm ghi chú) HOẶC ⭐ Trừ×5 sao.
   // Độc lập, không phụ thuộc otFeatureEnabled/starPenaltyEnabled. ══
   const missingMoc3Note = [];
-  cats.forEach(cat => {
+  if(moc3Enabled) cats.forEach(cat => {
     const actual = (cat.id in inputs) ? inputs[cat.id] : saved[cat.id];
     const actualNum = actual === undefined || actual === null || actual === '' ? 0 : actual;
     const pct = getPct(actualNum, cat.target);
     if(pct >= 100) return; // đã đạt hôm nay → không cần
-    if(cat.sm <= 300) return; // môn trừ sao không cao → không áp dụng Mốc 3
+    if(cat.sm <= moc3StarThreshold) return; // môn trừ sao không cao → không áp dụng Mốc 3
 
     const otUnlocked = !!saved['_unlockOt_' + cat.id];
     if(otUnlocked) return; // QL đã gỡ khoá riêng cho hôm nay
 
-    const past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
-    const streak = Math.min(past + 1, 7);
-    if(streak < 7) return;
+    const past   = getMoc3Streak(emp.id, cat.id, dateKey, moc3Threshold);
+    const streak = Math.min(past + 1, moc3Threshold);
+    if(streak < moc3Threshold) return;
 
     const m3k      = 'm3ch_' + cat.id;
     const m3Choice = inputs[m3k] !== undefined ? inputs[m3k] : (saved[m3k] || '');
@@ -4354,6 +4762,12 @@ async function submitReport(){
     const spk      = 'sp_' + cat.id;
     const spChoice = inputs[spk] !== undefined ? inputs[spk] : (saved[spk] || '');
     if(spChoice) rep[spk] = spChoice;
+    // Ghi nhận lại đây là hệ thống TỰ CHỌN hộ (Mốc 2) hay NV tự bấm — để hiển thị badge
+    // minh bạch "🤖 Tự động chọn" khi xem lại lịch sử/popup chi tiết trừ sao, không chỉ
+    // lúc đang nhập báo cáo. Giữ nguyên cờ cũ nếu NV không đụng vào môn này hôm nay.
+    const auto2 = !inputs['_manualSp_' + cat.id] &&
+      (!!inputs['_autoSpChoice_' + cat.id] || (!!saved['_auto2_' + cat.id] && inputs[spk] === undefined));
+    if(auto2) rep['_auto2_' + cat.id] = true;
     // "Trừ sao ×2" tự động coi như đã Dùng sao hôm nay (đó chính là hình phạt), nhân đôi mức trừ
     if(spChoice === 'x2') hope = true;
     const spMult = (spChoice === 'x2') ? 2 : 1;
@@ -4363,6 +4777,14 @@ async function submitReport(){
     const otNoteK = 'otNote_' + cat.id;
     let   otFlag  = inputs[otk]     !== undefined ? inputs[otk]     : (saved[otk]     || false);
     let   otNote  = inputs[otNoteK] !== undefined ? inputs[otNoteK] : (saved[otNoteK] || '');
+
+    // Ghi nhận lại đây là hệ thống TỰ CHỌN hộ (Mốc 1: Dùng sao ⇄ Tăng ca) hay NV tự bấm —
+    // để hiển thị badge minh bạch "🤖 Tự động chọn" khi xem lại lịch sử/popup chi tiết trừ
+    // sao, không chỉ lúc đang nhập báo cáo. Giữ nguyên cờ cũ nếu NV không đụng vào môn này.
+    const auto1 = !inputs['_manualOt_' + cat.id] &&
+      (!!inputs['_autoOtChoice_' + cat.id] ||
+       (!!saved['_auto1_' + cat.id] && inputs[hk] === undefined && inputs[otk] === undefined));
+    if(auto1) rep['_auto1_' + cat.id] = true;
 
     // Nếu HÔM QUA đã chọn "🕐 Tăng ca ngày mai" (sp_ = 'ot') cho môn này và hôm nay
     // chưa đạt → BẮT BUỘC hôm nay tính là Tăng ca (kể cả khi NV không tự bấm)
@@ -4381,14 +4803,14 @@ async function submitReport(){
     const m3k          = 'm3ch_' + cat.id;
     let   m3Choice     = inputs[m3k] !== undefined ? inputs[m3k] : (saved[m3k] || '');
     let   moc3X5Star   = 0;
-    if(pct < 100 && cat.sm > 300 && !otUnlockedM3){
-      const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, 7);
-      const m3Streak = Math.min(m3Past + 1, 7);
-      if(m3Streak >= 7){
+    if(moc3Enabled && pct < 100 && cat.sm > moc3StarThreshold && !otUnlockedM3){
+      const m3Past   = getMoc3Streak(emp.id, cat.id, dateKey, moc3Threshold);
+      const m3Streak = Math.min(m3Past + 1, moc3Threshold);
+      if(m3Streak >= moc3Threshold){
         if(m3Choice === 'x5'){
           hope       = false;
           otFlag     = false;
-          moc3X5Star = cat.sm * 5;
+          moc3X5Star = cat.sm * moc3Mult;
         } else {
           otFlag   = true;
           hope     = false;
@@ -4463,7 +4885,7 @@ async function submitReport(){
       const oldHope   = saved['h_' + cat.id] || false;
       const oldPct    = getPct(oldActual, cat.target);
       if(oldPct >= 100)                          oldPlus  += starBonus(cat, oldPct, emp.dept);
-      else if(saved['m3ch_' + cat.id] === 'x5')  oldMinus += cat.sm * 5; // Mốc 3 — Trừ×5 đã tính trước đó
+      else if(saved['m3ch_' + cat.id] === 'x5')  oldMinus += cat.sm * moc3Mult; // Mốc 3 — Trừ×N đã tính trước đó
       else if(oldHope)                           oldMinus += cat.sm;
       if(saved['_bonus300_' + cat.id]) oldPlus += 1000; // giữ đúng phần thưởng 1000 sao đã tính trước đó khi sửa lại cùng ngày
     });
@@ -5176,32 +5598,43 @@ function generateTestScenarios(){
     }]
   });
 
-  // ── Mốc 3: khoá cứng vĩnh viễn (cố định, sm>300 & 7 ngày) ──
+  // ── Mốc 3: khoá cứng Tăng ca (nay QL cấu hình được: bật/tắt + số ngày + mức trừ sao) ──
   groups.push({
     key: 'moc3',
-    title: `🔒 Mốc 3 — Khoá cứng Tăng ca (cố định: môn trừ sao > 300 sao, 7 ngày chưa đạt — không phụ thuộc cấu hình QL)`,
-    cases: [
+    title: `🔒 Mốc 3 — Khoá cứng Tăng ca (đang set: ${moc3Threshold} ngày, trừ &gt; ${moc3StarThreshold} sao, tính năng ${moc3Enabled ? 'ĐANG BẬT' : 'ĐANG TẮT'})`,
+    cases: moc3Enabled ? [
       {
         id: 'm3_1',
-        desc: `1 môn có mức trừ sao (sm) > 300, chưa đạt liên tục đủ 7 ngày`,
-        setup: `Chọn 1 môn có sm > 300 trong bảng cấu hình môn của Xuân Hùng, để trượt liên tục 7 ngày`,
+        desc: `1 môn có mức trừ sao (sm) > ${moc3StarThreshold}, chưa đạt liên tục đủ ${moc3Threshold} ngày`,
+        setup: `Chọn 1 môn có sm > ${moc3StarThreshold} trong bảng cấu hình môn của Xuân Hùng, để trượt liên tục ${moc3Threshold} ngày`,
         expected: `Tự động khoá cứng 🕐 TC bắt buộc ngay hôm đó — không còn lựa chọn Dùng sao, không cần chờ chạm Mốc 1/2 trước`,
-        seed: { days: 6, catFilter: c => c.sm > 300, catFilterLabel: 'chỉ hiện môn có sm > 300' }
+        seed: { days: moc3Threshold - 1, catFilter: c => c.sm > moc3StarThreshold, catFilterLabel: `chỉ hiện môn có sm > ${moc3StarThreshold}` }
       },
       {
         id: 'm3_2',
-        desc: `[Đối chiếu lỗ hổng đã biết] 1 môn có sm ≤ 300, chưa đạt liên tục hơn 7 ngày`,
-        setup: `Chọn 1 môn có sm ≤ 300, để trượt liên tục hơn 7 ngày`,
-        expected: `KHÔNG có escalation Mốc 3 nào xảy ra — hành vi hiện tại là như vậy (đúng như đã phân tích), chỉ ghi nhận lại để QL biết rõ giới hạn hiện có, không phải bug ở bước test này`,
-        seed: { days: 8, catFilter: c => c.sm <= 300, catFilterLabel: 'chỉ hiện môn có sm ≤ 300' }
+        desc: `[Đối chiếu lỗ hổng đã biết] 1 môn có sm ≤ ${moc3StarThreshold}, chưa đạt liên tục hơn ${moc3Threshold} ngày`,
+        setup: `Chọn 1 môn có sm ≤ ${moc3StarThreshold}, để trượt liên tục hơn ${moc3Threshold} ngày`,
+        expected: `KHÔNG có escalation Mốc 3 nào xảy ra — đúng như thiết kế (Mốc 3 chỉ áp dụng môn trừ sao cao), không phải bug`,
+        seed: { days: moc3Threshold + 1, catFilter: c => c.sm <= moc3StarThreshold, catFilterLabel: `chỉ hiện môn có sm ≤ ${moc3StarThreshold}` }
       },
       {
         id: 'm3_3',
         desc: `QL bấm "🔓 Gỡ khoá" cho môn đang bị Mốc 2 hoặc Mốc 3 khoá`,
         setup: `Khi đang mở Admin, bấm Gỡ khoá riêng cho đúng môn/ngày đó`,
         expected: `Đúng hôm đó NV dùng sao lại được bình thường; các ngày sau nếu vẫn trượt tiếp thì tính lại từ đầu theo đúng quy tắc streak hiện có`
+      },
+      {
+        id: 'm3_4',
+        desc: `Đổi mốc số ngày hoặc mức trừ sao (VD ${moc3Threshold === 7 ? 5 : 7} ngày / ${moc3StarThreshold === 300 ? 200 : 300} sao) trong Cài đặt`,
+        setup: `Sau khi đổi, quan sát đúng NV Xuân Hùng đang có chuỗi chưa đạt ở môn trừ sao cao`,
+        expected: `Mốc khoá cứng phải dời theo đúng giá trị mới ngay, không còn áp dụng mốc/mức cũ`
       }
-    ]
+    ] : [{
+      id: 'm3_off',
+      desc: `Tính năng Mốc 3 đang TẮT`,
+      setup: `Để 1 môn có sm > ${moc3StarThreshold} trượt liên tục nhiều ngày bất kỳ (kể cả vượt xa ${moc3Threshold} ngày)`,
+      expected: `Không có khoá cứng Tăng ca nào xảy ra do Mốc 3, dù chuỗi dài bao nhiêu`
+    }]
   });
 
   // ── Thưởng x2 sao khi vượt ngưỡng % ──
@@ -5685,6 +6118,7 @@ function renderAdminTab(){
   renderOtThresholdControl();
   renderAutoOtChoiceToggle();
   renderStarPenaltyThresholdControl();
+  renderMoc3ThresholdControl();
   renderBonusX2ThresholdControl();
   renderBonusX2CatsControl();
   renderMissingReports();
@@ -6000,7 +6434,7 @@ async function qlSaveReport(){
     const oldSpMult = (oldSpChoice === 'x2') ? 2 : 1;
     const oldPct    = getPct(oldActual, cat.target);
     if(oldPct >= 100)                          oldPlus  += starBonus(cat, oldPct, emp.dept);
-    else if(saved['m3ch_' + cat.id] === 'x5')  oldMinus += cat.sm * 5; // Mốc 3 — Trừ×5 đã tính trước đó
+    else if(saved['m3ch_' + cat.id] === 'x5')  oldMinus += cat.sm * moc3Mult; // Mốc 3 — Trừ×N đã tính trước đó
     else if(oldHope)                           oldMinus += cat.sm * oldSpMult;
     if(saved['_bonus300_' + cat.id]) oldPlus += 1000; // giữ đúng phần thưởng 1000 sao đã tính trước đó
   });
@@ -6035,7 +6469,7 @@ async function qlSaveReport(){
     if(m3ChoiceQl) rep['m3ch_' + cat.id] = m3ChoiceQl;
     if(saved['_resetM3_' + cat.id]) rep['_resetM3_' + cat.id] = true;
     if(pct >= 100)                { star = starBonus(cat, pct, emp.dept); newPlus += star; }
-    else if(m3ChoiceQl === 'x5')  { const deducted = cat.sm * 5; newMinus += deducted; star = -deducted; hope = false; rep['h_'+cat.id] = false; }
+    else if(m3ChoiceQl === 'x5')  { const deducted = cat.sm * moc3Mult; newMinus += deducted; star = -deducted; hope = false; rep['h_'+cat.id] = false; }
     else if(hope)                 { const deducted = cat.sm * spMult; newMinus += deducted; star = -deducted; }
 
     // ── Thưởng đặc biệt: 2 ngày liên tiếp >300% → +1000 sao (giống luồng NV tự nộp) ──
@@ -6402,6 +6836,22 @@ function renderRulesTab(){
 
   const spEl = document.getElementById('ruleSpThresholdTxt');
   if(spEl) spEl.textContent = starPenaltyThreshold + ' ngày';
+
+  // Mốc 3 — cập nhật số ngày + mức trừ sao động, ẩn dòng #3 trong bảng và thêm
+  // dòng cảnh báo "đang TẮT" trong đoạn mô tả nếu QL đã tắt tính năng này.
+  const m3DaysEl  = document.getElementById('ruleMoc3DaysTxt');
+  if(m3DaysEl) m3DaysEl.textContent = moc3Threshold + ' ngày';
+  const m3StarEl  = document.getElementById('ruleMoc3StarTxt');
+  if(m3StarEl) m3StarEl.textContent = moc3StarThreshold;
+  const m3Row = m3DaysEl ? m3DaysEl.closest('tr') : null;
+  if(m3Row) m3Row.style.display = moc3Enabled ? '' : 'none';
+
+  const m3DaysEl2 = document.getElementById('ruleMoc3DaysTxt2');
+  if(m3DaysEl2) m3DaysEl2.textContent = moc3Threshold;
+  const m3StarEl2 = document.getElementById('ruleMoc3StarTxt2');
+  if(m3StarEl2) m3StarEl2.textContent = moc3StarThreshold;
+  const m3OffEl = document.getElementById('ruleMoc3OffTxt');
+  if(m3OffEl) m3OffEl.textContent = moc3Enabled ? '' : '(QL đang TẮT Mốc 3 — hiện KHÔNG áp dụng cho ai)';
 
   const x2El = document.getElementById('ruleX2ThresholdTxt');
   if(x2El) x2El.textContent = bonusX2Threshold;
