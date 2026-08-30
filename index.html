@@ -267,16 +267,22 @@ tr.row-done .cat-name{color:var(--green)}
 .ot-choice .use-btn{width:auto;flex:1 1 0;padding:1px 3px;font-size:8px}
 
 /* Tăng ca — mốc Số Ngày = 3, bắt buộc chọn cùng Dùng sao */
-.ot-choice{display:flex;flex-direction:row;flex-wrap:nowrap;gap:3px;align-items:center;justify-content:center}
+.ot-choice{display:flex;flex-direction:row;flex-wrap:wrap;gap:2px;align-items:center;justify-content:center}
 .ot-btn{
-  padding:1px 3px;border-radius:5px;font-size:8px;font-weight:800;line-height:1;
+  padding:1px 2px;border-radius:5px;font-size:7.5px;font-weight:800;line-height:1.1;
   border:1.5px solid #93c5fd;cursor:pointer;background:#eff6ff;
-  color:#1d4ed8;white-space:nowrap;transition:.15s;
+  color:#1d4ed8;white-space:normal;word-break:break-word;transition:.15s;
   font-family:'Barlow',sans-serif;display:inline-flex;align-items:center;gap:1px;
-  justify-content:center;flex:1 1 0
+  justify-content:center;flex:1 1 42%;min-width:0
 }
 .ot-btn:hover{background:#dbeafe;border-color:#3b82f6}
 .ot-btn.active{background:#1d4ed8;color:#fff;border-color:#1d4ed8;font-weight:900;box-shadow:0 0 0 2px rgba(29,78,216,.25)}
+
+/* Cột "Dùng sao" — khoá chiều rộng cột, ép nội dung bên trong (nút/badge/dòng cảnh
+   báo) co giãn/xuống dòng vừa trong cột thay vì đẩy cả bảng phình rộng ra */
+.dungsao-td{width:96px;max-width:96px;padding:2px 2px;word-break:break-word}
+.dungsao-td .use-btn{font-size:8px;white-space:normal}
+.dungsao-td .ot-choice .use-btn{flex:1 1 42%;min-width:0}
 
 /* Badge đỏ TĂNG CA NGÀY MAI cạnh tiêu đề */
 .hdr-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -847,7 +853,7 @@ tr.row-done .cat-name{color:var(--green)}
                 </th>
                 <th style="width:40px" title="% hoàn thành của ngày báo cáo liền trước">KQ<br>Hôm qua</th>
                 <th class="reset-th" style="width:34px;display:none">Reset</th>
-                <th style="width:78px">Dùng sao</th>
+                <th style="width:96px">Dùng sao</th>
               </tr>
             </thead>
             <tbody id="repBody"></tbody>
@@ -3216,7 +3222,7 @@ function renderTable(){
     /* ô nút cột "Dùng sao" — hiện thêm lựa chọn Tăng ca khi chạm mốc 3 */
     const otNoteVal = inputs[otNoteK] !== undefined ? inputs[otNoteK] : (saved[otNoteK] || '');
     const otNoteVisibleH = otNoteVal
-      ? `<div style="margin-top:3px;font-size:9px;color:#9a3412;font-weight:700;line-height:1.3;text-align:left;max-width:140px">📝 ${escapeHtml(otNoteVal)}</div>`
+      ? `<div style="margin-top:3px;font-size:8px;color:#9a3412;font-weight:700;line-height:1.25;text-align:left;max-width:90px">📝 ${escapeHtml(otNoteVal)}</div>`
       : '';
     let actionH;
     if(moc3Forced){
@@ -3229,7 +3235,7 @@ function renderTable(){
         ? `<div style="margin-top:3px;font-size:9px;color:#b91c1c;font-weight:800">⚠️ Bắt buộc nhập ghi chú tăng ca hôm sau!</div>`
         : '';
       const m3WarnH = !m3Choice
-        ? `<div style="margin-top:3px;font-size:9px;color:#b91c1c;font-weight:800;line-height:1.3;text-align:left;max-width:150px">🚨 Đã 7 ngày liên tiếp chưa đạt — bắt buộc chọn 1 trong 2</div>`
+        ? `<div style="margin-top:3px;font-size:8px;color:#b91c1c;font-weight:800;line-height:1.25;text-align:left;max-width:90px">🚨 Đã 7 ngày liên tiếp chưa đạt — bắt buộc chọn 1 trong 2</div>`
         : '';
       actionH = `
         <div class="ot-choice">
@@ -3252,7 +3258,7 @@ function renderTable(){
     } else if(needOtChoice || otFlag){
       const otBtnCls = 'ot-btn' + (otFlag ? ' active' : '');
       const otBtnTxt = otFlag ? '🕐 Đã tăng ca' : '🕐 Tăng ca';
-      const unlockedBadgeH = otUnlocked ? `<div style="font-size:10px;color:#16a34a;margin-top:2px">🔓 QL đã gỡ khoá hôm nay</div>` : '';
+      const unlockedBadgeH = otUnlocked ? `<div style="font-size:8px;color:#16a34a;margin-top:2px;line-height:1.2">🔓 QL đã gỡ khoá hôm nay</div>` : '';
       actionH = `
         <div class="ot-choice">
           <button class="${otBtnCls}" data-otcatid="${cat.id}">${otBtnTxt}</button>
@@ -3261,12 +3267,12 @@ function renderTable(){
         </div>
         ${otFlag ? otNoteVisibleH : ''}`;
     } else {
-      const unlockedBadgeH = otUnlocked ? `<div style="font-size:10px;color:#16a34a;margin-top:2px">🔓 QL đã gỡ khoá hôm nay</div>` : '';
+      const unlockedBadgeH = otUnlocked ? `<div style="font-size:8px;color:#16a34a;margin-top:2px;line-height:1.2">🔓 QL đã gỡ khoá hôm nay</div>` : '';
       const isAutoChoice1 = inputs['_autoOtChoice_' + cat.id] !== undefined
         ? inputs['_autoOtChoice_' + cat.id]
         : !!saved['_auto1_' + cat.id]; // ngày cũ đã lưu — đọc lại cờ đã lưu, không chỉ phiên đang nhập
       const autoChoiceBadgeH = (isAutoChoice1 && hope)
-        ? `<div style="font-size:9px;color:#7c3aed;margin-top:2px;font-weight:700">🤖 Tự động chọn — có thể đổi lại</div>`
+        ? `<div style="font-size:8px;color:#7c3aed;margin-top:2px;font-weight:700;line-height:1.2">🤖 Tự động chọn — có thể đổi lại</div>`
         : '';
       actionH = `<button class="${btnCls}" data-catid="${cat.id}" ${btnDis}${btnTitle}>${btnTxt}</button>${unlockedBadgeH}${autoChoiceBadgeH}`;
     }
@@ -3278,13 +3284,13 @@ function renderTable(){
       const x2Cls    = 'ot-btn' + (spChoice === 'x2' ? ' active' : '');
       const nextCls  = 'ot-btn' + (spChoice === 'ot' ? ' active' : '');
       const spWarnH  = spChoice === 'ot'
-        ? `<div style="margin-top:3px;font-size:9px;color:#c2410c;font-weight:800;line-height:1.3;text-align:left;max-width:150px">⚠️ NGÀY MAI môn này sẽ tự khoá Tăng ca bắt buộc nếu chưa đạt — không dùng sao được nữa</div>`
-        : `<div style="margin-top:3px;font-size:9px;color:#9a3412;font-weight:700;line-height:1.3;text-align:left;max-width:150px">☝️ Bắt buộc chọn 1 trong 2 — nút "⭐ Dùng sao" bình thường không dùng được nữa</div>`;
+        ? `<div style="margin-top:3px;font-size:8px;color:#c2410c;font-weight:800;line-height:1.25;text-align:left;max-width:90px">⚠️ NGÀY MAI môn này sẽ tự khoá Tăng ca bắt buộc nếu chưa đạt — không dùng sao được nữa</div>`
+        : `<div style="margin-top:3px;font-size:8px;color:#9a3412;font-weight:700;line-height:1.25;text-align:left;max-width:90px">☝️ Bắt buộc chọn 1 trong 2 — nút "⭐ Dùng sao" bình thường không dùng được nữa</div>`;
       const isAutoChoice2 = inputs['_autoSpChoice_' + cat.id] !== undefined
         ? inputs['_autoSpChoice_' + cat.id]
         : !!saved['_auto2_' + cat.id]; // ngày cũ đã lưu — đọc lại cờ đã lưu, không chỉ phiên đang nhập
       const spAutoBadgeH = isAutoChoice2
-        ? `<div style="font-size:9px;color:#7c3aed;margin-top:2px;font-weight:700">🤖 Tự động chọn — có thể đổi lại</div>`
+        ? `<div style="font-size:8px;color:#7c3aed;margin-top:2px;font-weight:700;line-height:1.2">🤖 Tự động chọn — có thể đổi lại</div>`
         : '';
       spChoiceH = `
         <div class="ot-choice" style="margin-top:4px">
@@ -3334,7 +3340,7 @@ function renderTable(){
       <td>${zdH}</td>
       <td>${prevH}</td>
       ${resetTd}
-      <td>
+      <td class="dungsao-td">
         ${actionH}
       </td>`;
     tbody.appendChild(tr);
