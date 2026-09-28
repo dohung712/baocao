@@ -664,6 +664,66 @@
         <span>✅ Đã lưu cấu hình lên Google Sheets!</span>
       </div>
 
+      <!-- KHỐI LIÊN KẾT TRUY CẬP HỆ THỐNG GỐC GOOGLE SHEETS & APPS SCRIPT -->
+      <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-xl p-3 md:p-4 shadow-sm border border-slate-800 space-y-2.5">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 border-b border-white/10 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="p-1.5 bg-white/10 text-amber-300 rounded-lg text-xs font-black">🔗</span>
+            <div>
+              <h2 class="text-xs md:text-sm font-black text-amber-300 uppercase tracking-tight">HỆ THỐNG GỐC GOOGLE CLOUD (QUẢN TRỊ VIÊN)</h2>
+              <p class="text-[10px] text-slate-300">Truy cập trực tiếp bảng tính dữ liệu hoặc dự án mã nguồn Google Apps Script</p>
+            </div>
+          </div>
+          <span class="bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            Dành riêng Quản Lý
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+          <!-- Card 1: Google Sheet Data -->
+          <div class="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2.5 space-y-2 transition">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-emerald-400 flex items-center gap-1.5 text-xs">
+                <span>📊</span> Google Sheet Cơ Sở Dữ Liệu
+              </span>
+              <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono">Spreadsheet</span>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-snug line-clamp-2 font-mono break-all opacity-85">
+              https://docs.google.com/spreadsheets/d/1ECzgSqXPzfrpqYs3ffTaMwsN73jVpGbE5z18L-gGGzY/edit
+            </p>
+            <div class="flex gap-1.5 pt-1">
+              <a href="https://docs.google.com/spreadsheets/d/1ECzgSqXPzfrpqYs3ffTaMwsN73jVpGbE5z18L-gGGzY/edit?gid=1383818872#gid=1383818872" target="_blank" rel="noopener noreferrer" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-center transition shadow-sm text-[11px] flex items-center justify-center gap-1">
+                <span>Mở Google Sheet</span> ↗
+              </a>
+              <button type="button" onclick="copySystemLink('https://docs.google.com/spreadsheets/d/1ECzgSqXPzfrpqYs3ffTaMwsN73jVpGbE5z18L-gGGzY/edit?gid=1383818872#gid=1383818872', 'Google Sheet')" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 font-bold rounded-lg transition border border-white/10 text-[11px]">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 2: Google Apps Script Backend Project -->
+          <div class="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2.5 space-y-2 transition">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-blue-400 flex items-center gap-1.5 text-xs">
+                <span>⚙️</span> Dự Án Google Apps Script
+              </span>
+              <span class="text-[9px] bg-blue-500/20 text-blue-300 px-1.5 py-0.2 rounded font-mono">Backend API</span>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-snug line-clamp-2 font-mono break-all opacity-85">
+              https://script.google.com/.../projects/1IyQEasYKvageUVvvG0nlEDIDotLiw85bZ0fvGVOnghMqGL93w9L0S8bC/edit
+            </p>
+            <div class="flex gap-1.5 pt-1">
+              <a href="https://script.google.com/u/0/home/projects/1IyQEasYKvageUVvvG0nlEDIDotLiw85bZ0fvGVOnghMqGL93w9L0S8bC/edit" target="_blank" rel="noopener noreferrer" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-center transition shadow-sm text-[11px] flex items-center justify-center gap-1">
+                <span>Mở Apps Script</span> ↗
+              </a>
+              <button type="button" onclick="copySystemLink('https://script.google.com/u/0/home/projects/1IyQEasYKvageUVvvG0nlEDIDotLiw85bZ0fvGVOnghMqGL93w9L0S8bC/edit', 'Apps Script')" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 font-bold rounded-lg transition border border-white/10 text-[11px]">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- BẢNG QUẢN TRỊ & ĐIỀU CHỈNH SAO NHÂN VIÊN TRỰC TIẾP -->
       <div class="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-slate-200 space-y-2.5">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b pb-2">
@@ -1348,6 +1408,17 @@
         toast.classList.add('opacity-0');
         setTimeout(() => toast.classList.add('hidden'), 300);
       }, 2000);
+    }
+
+    // SAO CHÉP LIÊN KẾT HỆ THỐNG AN TOÀN TRONG IFRAME
+    function copySystemLink(url, name) {
+      const tempInput = document.createElement("input");
+      tempInput.value = url;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+      showToastMessage(`📋 Đã copy link ${name}!`);
     }
 
     function switchTab(tab) {
