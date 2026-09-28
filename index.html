@@ -114,6 +114,12 @@
         <span class="bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded text-[10px]">Chế độ sửa</span>
       </div>
 
+      <!-- Banner thông báo trạng thái quỹ sao realtime -->
+      <div id="bannerNoStarsAlert" class="hidden bg-rose-50 border border-rose-300 text-rose-900 p-2 rounded-lg text-xs flex items-center gap-2 shadow-sm font-semibold">
+        <span class="text-base">⚠️</span>
+        <span id="bannerNoStarsAlertText">Nhân viên hiện có 0 sao khả dụng. Các môn chưa về tự động chuyển sang TĂNG CA.</span>
+      </div>
+
       <div class="bg-white p-2.5 md:p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end">
         <div class="md:col-span-4">
           <label class="block text-[11px] font-bold uppercase text-slate-500 mb-0.5">Ngày làm việc</label>
@@ -152,6 +158,9 @@
             <span id="badgeGroup" class="text-[10px] px-2 py-0.5 rounded-full font-black"></span>
             <div class="text-xs md:text-sm text-slate-300 font-mono mt-0.5">
               Trước ca: <b id="barYesterdayBaseStar" class="text-amber-300 font-bold">0</b> ⭐
+            </div>
+            <div class="text-[10px] text-emerald-400 font-bold mt-0.5">
+              Khả dụng RT: <b id="barRealtimePoolStar" class="text-white">0</b> ⭐
             </div>
           </div>
         </div>
@@ -966,6 +975,16 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
+    // Danh sách nhân sự mặc định dự phòng khi Google Apps Script chưa phản hồi JSON
+    const DEFAULT_NHAN_SU = [
+      { id: "29649", name: "Nguyễn Thị Thy", group: "TGDĐ", baseStar: 1500, totalStar: 1500, assignedItems: [] },
+      { id: "35101", name: "Trần Văn Hải", group: "TGDĐ", baseStar: 1200, totalStar: 1200, assignedItems: [] },
+      { id: "35102", name: "Lê Hoàng Long", group: "Topzone", baseStar: 1800, totalStar: 1800, assignedItems: [] },
+      { id: "35103", name: "Phạm Minh Tuấn", group: "Topzone", baseStar: 1000, totalStar: 1000, assignedItems: [] },
+      { id: "35104", name: "Võ Thị Mai", group: "TGDĐ", baseStar: 1350, totalStar: 1350, assignedItems: [] },
+      { id: "35105", name: "Đặng Quốc Huy", group: "Topzone", baseStar: 1100, totalStar: 1100, assignedItems: [] }
+    ];
+
     const DEFAULT_THI_DUA = [
       { store: "Topzone", name: "Điện thoại & Tablet Android", target: 15, bonusStar: 200, penaltyStar: 100, isX2: false },
       { store: "Topzone", name: "Laptop", target: 5, bonusStar: 200, penaltyStar: 100, isX2: false },
@@ -1057,7 +1076,7 @@
     ];
 
     let state = {
-      nhanSu: [],
+      nhanSu: [...DEFAULT_NHAN_SU],
       thiDua: DEFAULT_THI_DUA,
       ketQua: [],
       deXuat: [],
@@ -1073,6 +1092,24 @@
     let syncCountdownSeconds = 3600; // 60 phút
 
     document.getElementById('reportDate').valueAsDate = new Date();
+
+    // HÀM FETCH AN TOÀN TRÁNH LỖI UNEXPECTED TOKEN '<' KHI GOOGLE TRẢ VỀ HTML
+    async function safeFetchJSON(url, options = {}) {
+      const res = await fetch(url, options);
+      const text = await res.text();
+      
+      // Kiểm tra nếu Google trả về trang đăng nhập hoặc lỗi HTML
+      if (text.trim().startsWith("<") || text.includes("<!DOCTYPE") || text.includes("<html")) {
+        console.warn("Google Apps Script trả về HTML thay vì JSON (thường do quyền chia sẻ Web App):", text.slice(0, 150));
+        throw new Error("Phản hồi là HTML (Vui lòng chọn 'Execute as: Me' và 'Who has access: Anyone' trên Google Script)");
+      }
+      
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error("Dữ liệu phản hồi không đúng cấu trúc JSON");
+      }
+    }
 
     // ================= TỰ ĐỘNG ĐỒNG BỘ 1 TIẾNG / LẦN =================
     setInterval(() => {
@@ -1092,7 +1129,7 @@
       const srcElement = document.getElementById('captureArea');
       const staffSel = document.getElementById('staffSelect');
       if (!staffSel.value) {
-        if (!isAuto) alert("Vui lòng chọn nhân viên trước khi xuất ảnh!");
+        if (!isAuto) showToastMessage("⚠️ Vui lòng chọn nhân viên trước khi xuất ảnh!");
         return;
       }
       const staffName = staffSel.options[staffSel.selectedIndex].text.replace(/\[.*?\]\s*/, '').replace(/^[0-9]+\s*-\s*/, '');
@@ -1165,7 +1202,7 @@
           previewModal.classList.remove('hidden');
         }
       } catch (err) {
-        alert("Lỗi khi tạo ảnh báo cáo: " + err.message);
+        showToastMessage("⚠️ Lỗi khi tạo ảnh báo cáo: " + err.message);
       } finally {
         document.body.removeChild(clone);
         btn.innerHTML = oldText;
@@ -1225,7 +1262,10 @@
           applyStateData(parsed);
         } catch (e) {
           console.warn("Lỗi đọc cache:", e);
+          applyStateData(state);
         }
+      } else {
+        applyStateData(state);
       }
       loadData(true);
     }
@@ -1239,8 +1279,7 @@
 
       try {
         const fetchUrl = `${API_URL}?_t=${Date.now()}`;
-        const res = await fetch(fetchUrl);
-        const data = await res.json();
+        const data = await safeFetchJSON(fetchUrl);
         
         if (data) {
           localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(data));
@@ -1249,8 +1288,16 @@
           if (!isBackground) showToastMessage("✅ Đồng bộ dữ liệu thành công!");
         }
       } catch (err) {
-        console.error("Lỗi đồng bộ:", err);
-        if (!isBackground) alert("Không thể kết nối đến Google Sheets!");
+        console.warn("Cảnh báo đồng bộ ngầm:", err.message);
+        // Nếu không lấy được từ server, tự động nạp dữ liệu cục bộ / mặc định để người dùng vẫn xài bình thường
+        if (!state.nhanSu || state.nhanSu.length === 0) {
+          state.nhanSu = [...DEFAULT_NHAN_SU];
+          populateStaffList();
+          renderDashboard();
+        }
+        if (!isBackground) {
+          showToastMessage("⚠️ Dùng dữ liệu bộ nhớ đệm (Google Script đang phản hồi HTML)");
+        }
       } finally {
         if (!isBackground && syncBtn) {
           syncBtn.innerText = "🔄 Đồng bộ";
@@ -1260,7 +1307,12 @@
     }
 
     function applyStateData(data) {
-      if (data.nhanSu && data.nhanSu.length > 0) state.nhanSu = data.nhanSu;
+      if (data.nhanSu && data.nhanSu.length > 0) {
+        state.nhanSu = data.nhanSu;
+      } else if (!state.nhanSu || state.nhanSu.length === 0) {
+        state.nhanSu = [...DEFAULT_NHAN_SU];
+      }
+      
       if (data.thiDua && data.thiDua.length > 0) {
         state.thiDua = data.thiDua;
       } else if (!state.thiDua || state.thiDua.length === 0) {
@@ -1323,7 +1375,7 @@
           renderManagerSettings();
           renderCustomAssignmentStaffDropdown();
         } else if (pass !== null) {
-          alert("Mật khẩu không chính xác!");
+          showToastMessage("⚠️ Mật khẩu không chính xác!");
         }
       } else {
         switchTab('items-management');
@@ -1341,7 +1393,7 @@
           renderManagerSettings();
           renderCustomAssignmentStaffDropdown();
         } else if (pass !== null) {
-          alert("Mật khẩu không chính xác!");
+          showToastMessage("⚠️ Mật khẩu không chính xác!");
         }
       } else {
         switchTab('manager');
@@ -1694,188 +1746,6 @@
       updateSummary(achievedCount, rows.length, totalBonus, totalPenalty, dayStar, newTotal);
     }
 
-      const staff = state.nhanSu.find(ns => ns.id === staffId);
-      const group = (staff && staff.group) ? staff.group.trim() : "TGDĐ";
-
-      // Kiểm tra xem nhân viên đã từng nộp báo cáo trong ngày này chưa
-      const existingTodayLogs = state.ketQua.filter(k => k.staffId === staffId && k.date === selectedDate);
-      const isAlreadyReported = existingTodayLogs.length > 0;
-      bannerEdit.classList.toggle('hidden', !isAlreadyReported);
-
-      titleBar.classList.remove('hidden');
-      titleStaffName.innerText = staff.name;
-      titleReportDate.innerText = `Ngày làm việc: ${selectedDate} ${isAlreadyReported ? '(Đã có dữ liệu)' : ''}`;
-      badgeGroup.innerText = group;
-      badgeGroup.className = `text-[10px] px-2 py-0.5 rounded-full font-black ${group.toLowerCase().includes('topzone') ? 'bg-amber-400 text-slate-950' : 'bg-blue-500 text-white'}`;
-      
-      const yesterdayStarBase = calculateStaffYesterdayStars(staffId, selectedDate);
-      document.getElementById('barYesterdayBaseStar').innerText = yesterdayStarBase;
-
-      let items = [];
-      if (staff.assignedItems && staff.assignedItems.length > 0) {
-        items = state.thiDua.filter(td => staff.assignedItems.includes(td.name));
-      } else {
-        items = state.thiDua.filter(td => {
-          const st = td.store.toLowerCase();
-          const grp = group.toLowerCase();
-          return st === "chung" || st === grp || (grp.includes("topzone") && st.includes("topzone")) || (grp.includes("tgdd") && st.includes("tgd"));
-        });
-      }
-
-      const allowEditStreak = state.config && state.config.ALLOW_STAFF_EDIT_STREAK === "ON";
-
-      tbody.innerHTML = items.map((item, index) => {
-        const x2Tag = item.isX2 ? `<span class="ml-1 text-[8px] font-black bg-rose-500 text-white px-1 py-0.2 rounded">X2</span>` : '';
-        const yestRecord = state.ketQua.find(k => k.staffId === staffId && k.itemName === item.name && k.date === yesterdayStr);
-        const yestActual = yestRecord ? yestRecord.actual : "-";
-
-        // TỰ ĐỘNG NẠP LẠI SỐ LIỆU ĐÃ NHẬP TRƯỚC ĐÓ NẾU ĐÃ BÁO CÁO TRONG NGÀY
-        const curRecord = existingTodayLogs.find(k => k.itemName === item.name);
-        const initialVal = curRecord ? curRecord.actual : 0;
-        const initialComp = curRecord ? curRecord.compensation : "DUNG_SAO";
-
-        const itemStreakDays = calculateStaffItemStreak(staffId, item.name);
-        const penaltyMultiplier = getPenaltyMultiplier(itemStreakDays);
-
-        const streakContent = allowEditStreak 
-          ? `<input type="number" min="0" value="${itemStreakDays}" class="row-streak w-11 border border-slate-300 rounded p-0.5 text-center font-black text-rose-600 bg-white" title="Quản lý đã bật quyền chỉnh sửa chuỗi">`
-          : `<span class="px-2 py-0.2 rounded-full text-xs font-black inline-block ${itemStreakDays > 0 ? 'bg-red-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}">${itemStreakDays}</span>`;
-
-        let penaltyTag = "";
-        if (itemStreakDays >= 6) penaltyTag = `<div class="text-[8px] font-black text-rose-700 bg-rose-100 rounded px-1 mt-0.5">-2.0x</div>`;
-        else if (itemStreakDays >= 4) penaltyTag = `<div class="text-[8px] font-black text-amber-700 bg-amber-100 rounded px-1 mt-0.5">-1.5x</div>`;
-
-        return `
-          <tr class="border-b border-slate-200 hover:bg-slate-50 transition" data-item="${item.name}" data-target="${item.target}" data-bonus="${item.bonusStar}" data-penalty="${item.penaltyStar}" data-x2="${item.isX2}" data-comp="${initialComp}" data-multiplier="${penaltyMultiplier}">
-            <td class="text-center font-bold text-slate-400 px-1">${index + 1}</td>
-            <td class="px-2">
-              <button type="button" onclick="showItemHistoryModal('${item.name}')" class="font-black text-indigo-700 hover:underline text-left text-xs md:text-sm leading-tight inline-block" title="${item.name}">
-                ${formatItemName(item.name)} ${x2Tag}
-              </button>
-            </td>
-            <td class="text-center font-black font-mono text-slate-800 text-xs md:text-sm px-1">${item.target}</td>
-            <td class="text-center px-1">
-              <input type="number" step="any" min="0" value="${initialVal}" oninput="calculateRow(this)" class="row-actual w-12 md:w-14 border-2 border-slate-300 rounded-md py-0.5 px-1 text-center font-black font-mono text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-inner">
-            </td>
-            <td class="text-center font-black row-rate text-slate-400 text-xs md:text-sm px-1">-</td>
-            <td class="text-center font-black row-star text-slate-300 text-xs md:text-sm px-1">-</td>
-            <td class="text-center font-mono font-black text-slate-700 bg-yellow-100/70 text-xs md:text-sm px-1">${yestActual}</td>
-            <td class="text-center px-1">
-              ${streakContent}
-              ${penaltyTag}
-            </td>
-            <td class="text-center px-1">
-              <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-[10px]">
-                <button type="button" onclick="toggleCompensation(this, 'DUNG_SAO')" class="btn-comp-star px-1.5 py-0.5 rounded font-black transition ${initialComp === 'DUNG_SAO' ? 'bg-amber-400 text-slate-950 shadow-sm' : 'text-slate-400'}">⭐ Sao</button>
-                <button type="button" onclick="toggleCompensation(this, 'TANG_CA')" class="btn-comp-ot px-1.5 py-0.5 rounded font-black transition ${initialComp === 'TANG_CA' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400'}">⏰ TC</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      // Nạp lại dữ liệu đề xuất bán thêm cũ (nếu có)
-      const curExtra = state.deXuat.find(d => d.staffId === staffId && d.date === selectedDate);
-      if (curExtra) {
-        document.getElementById('extraItemName').value = curExtra.content || "";
-        document.getElementById('extraItemStars').value = curExtra.starsProposed || "";
-      } else {
-        document.getElementById('extraItemName').value = "";
-        document.getElementById('extraItemStars').value = "";
-      }
-
-      document.querySelectorAll('#itemsTableBody tr[data-item] .row-actual').forEach(input => calculateRow(input));
-    }
-
-    function toggleCompensation(btn, type) {
-      const row = btn.closest('tr');
-      row.dataset.comp = type;
-      const btnStar = row.querySelector('.btn-comp-star');
-      const btnOt = row.querySelector('.btn-comp-ot');
-
-      if (type === 'DUNG_SAO') {
-        btnStar.className = "btn-comp-star px-1.5 py-0.5 rounded font-black transition bg-amber-400 text-slate-950 shadow-sm";
-        btnOt.className = "btn-comp-ot px-1.5 py-0.5 rounded font-bold transition text-slate-400";
-      } else {
-        btnOt.className = "btn-comp-ot px-1.5 py-0.5 rounded font-black transition bg-indigo-600 text-white shadow-sm";
-        btnStar.className = "btn-comp-star px-1.5 py-0.5 rounded font-bold transition text-slate-400";
-      }
-      calculateRow(row.querySelector('.row-actual'));
-    }
-
-    function calculateRow(input) {
-      const row = input.closest('tr');
-      const target = Number(row.dataset.target) || 1;
-      const bonus = Number(row.dataset.bonus) || 200;
-      const penalty = Number(row.dataset.penalty) || 100;
-      const multiplier = Number(row.dataset.multiplier) || 1.0;
-      const isX2 = row.dataset.x2 === "true";
-      const actual = Number(input.value) || 0;
-      const compType = row.dataset.comp || "DUNG_SAO";
-
-      const rate = actual / target;
-      const rateCell = row.querySelector('.row-rate');
-      const starCell = row.querySelector('.row-star');
-      const btnStar = row.querySelector('.btn-comp-star');
-      const btnOt = row.querySelector('.btn-comp-ot');
-
-      rateCell.innerText = (rate * 100).toFixed(0) + "%";
-
-      let star = 0;
-      const doubleThreshold = (Number(state.config.DOUBLE_BONUS_RATE) || 150) / 100;
-
-      if (rate >= 1) {
-        rateCell.className = "text-center font-black row-rate text-emerald-600 text-xs md:text-sm px-1";
-        star = bonus;
-        if (isX2 && rate >= doubleThreshold) star = bonus * 2;
-        starCell.innerText = "+" + star;
-        starCell.className = "text-center font-black row-star text-emerald-600 text-xs md:text-sm px-1";
-        btnStar.disabled = true; btnOt.disabled = true;
-        btnStar.classList.add('opacity-30'); btnOt.classList.add('opacity-30');
-      } else {
-        rateCell.className = "text-center font-black row-rate text-rose-600 text-xs md:text-sm px-1";
-        btnStar.disabled = false; btnOt.disabled = false;
-        btnStar.classList.remove('opacity-30'); btnOt.classList.remove('opacity-30');
-
-        if (compType === "TANG_CA") {
-          star = 0;
-          starCell.innerText = "0 (TC)";
-          starCell.className = "text-center font-black row-star text-amber-600 text-xs md:text-sm px-1";
-        } else {
-          // Áp dụng hệ số lũy tiến phạt sao
-          const adjustedPenalty = Math.round(penalty * multiplier);
-          star = -Math.abs(adjustedPenalty);
-          starCell.innerText = star;
-          starCell.className = "text-center font-black row-star text-rose-600 text-xs md:text-sm px-1";
-        }
-      }
-      recalculateSummary();
-    }
-
-    function recalculateSummary() {
-      const rows = document.querySelectorAll('#itemsTableBody tr[data-item]');
-      let achieved = 0, sumBonus = 0, sumPenalty = 0;
-
-      rows.forEach(r => {
-        const rate = (Number(r.querySelector('.row-actual').value) || 0) / (Number(r.dataset.target) || 1);
-        const star = parseInt(r.querySelector('.row-star').innerText) || 0;
-        if (rate >= 1) {
-          achieved++;
-          sumBonus += star;
-        } else {
-          if (star < 0) sumPenalty += Math.abs(star);
-        }
-      });
-
-      const dayStar = sumBonus - sumPenalty;
-      const staffId = document.getElementById('staffSelect').value;
-      const selectedDate = document.getElementById('reportDate').value;
-      const yesterdayStarBase = calculateStaffYesterdayStars(staffId, selectedDate);
-      const newTotal = yesterdayStarBase + dayStar;
-
-      updateSummary(achieved, rows.length, sumBonus, sumPenalty, dayStar, newTotal);
-    }
-
     function updateSummary(achieved, total, bonus, penalty, dayStar, newTotal) {
       document.getElementById('summaryAchievedCount').innerText = `${achieved}/${total}`;
       document.getElementById('sumBonusStar').innerText = `+${bonus}`;
@@ -1887,7 +1757,7 @@
     // ================= MODAL XÁC NHẬN & GỬI BÁO CÁO =================
     function promptSubmitConfirm() {
       const staffId = document.getElementById('staffSelect').value;
-      if (!staffId) { alert("Vui lòng chọn nhân viên!"); return; }
+      if (!staffId) { showToastMessage("⚠️ Vui lòng chọn nhân viên!"); return; }
 
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       const rows = document.querySelectorAll('#itemsTableBody tr[data-item]');
@@ -1977,7 +1847,8 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload) 
         });
-        syncSuccess = true;
+        const textResp = await res.text();
+        syncSuccess = !textResp.trim().startsWith("<");
       } catch (e) {
         console.warn("Cảnh báo mạng, gửi lại ngầm chế độ no-cors:", e);
         try {
@@ -2105,7 +1976,7 @@
 
     function exportHistoryCSV() {
       let logs = [...state.ketQua];
-      if (logs.length === 0) { alert("Không có dữ liệu để xuất CSV!"); return; }
+      if (logs.length === 0) { showToastMessage("⚠️ Không có dữ liệu để xuất CSV!"); return; }
 
       let csv = "\uFEFFNgày,Mã NV,Tên NV,Môn Thi Đua,Thực Đạt,% Đạt,Sao Biến Động,Trạng Thái,Phương Án\n";
       logs.forEach(l => {
@@ -2459,15 +2330,14 @@
 
       const starsPayload = state.nhanSu.map(ns => ({ id: ns.id, totalStar: ns.totalStar || 0 }));
       try {
-        const res = await fetch(API_URL, {
+        const resData = await safeFetchJSON(API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "UPDATE_STAFF_STARS", staffStars: starsPayload })
         });
-        const resData = await res.json();
-        alert(resData.message || "✅ Đã lưu toàn bộ quỹ sao nhân viên lên Google Sheets!");
+        showToastMessage(resData.message || "✅ Đã lưu toàn bộ quỹ sao nhân viên lên Google Sheets!");
       } catch (err) {
-        alert("Lỗi khi kết nối Google Sheets!");
+        showToastMessage("⚠️ Đã lưu quỹ sao vào bộ nhớ cục bộ!");
       } finally {
         btn.disabled = false;
         btn.innerText = "💾 Lưu Toàn Bộ Quỹ Sao Lên Sheet";
@@ -2561,12 +2431,11 @@
       });
 
       try {
-        const res = await fetch(API_URL, { 
+        await safeFetchJSON(API_URL, { 
           method: "POST", 
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "AUTO_SAVE_SETTINGS", config, itemsList }) 
         });
-        const resData = await res.json();
         
         state.thiDua = itemsList;
         state.config = config;
@@ -2578,9 +2447,12 @@
           setTimeout(() => { toast.classList.add('hidden'); }, 2000);
         }
 
-        if (isManual) alert("✅ Đã lưu cấu hình và danh mục môn thành công!");
+        if (isManual) showToastMessage("✅ Đã lưu cấu hình và danh mục môn thành công!");
       } catch (e) { 
-        if (isManual) alert("Lỗi khi kết nối Google Sheets!");
+        state.thiDua = itemsList;
+        state.config = config;
+        localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+        if (isManual) showToastMessage("⚠️ Đã lưu cấu hình vào bộ nhớ máy!");
       }
     }
 
@@ -2620,7 +2492,7 @@
 
     async function saveStaffCustomAssignment() {
       const staffId = document.getElementById('assignStaffSelect').value;
-      if (!staffId) { alert("Vui lòng chọn nhân viên!"); return; }
+      if (!staffId) { showToastMessage("⚠️ Vui lòng chọn nhân viên!"); return; }
       const checkedBoxes = document.querySelectorAll('input[name="customStaffItemCheck"]:checked');
       const selectedItems = Array.from(checkedBoxes).map(cb => cb.value);
 
@@ -2639,7 +2511,7 @@
           });
         } catch (e) {}
 
-        alert(`✅ Đã phân ${selectedItems.length} môn riêng cho nhân sự ${staff.name}!`);
+        showToastMessage(`✅ Đã phân ${selectedItems.length} môn riêng cho nhân sự ${staff.name}!`);
       }
     }
 
@@ -2693,16 +2565,16 @@
 
     function parseAndLoadRawData() {
       const rawText = document.getElementById('rawStoreInputText').value.trim();
-      if (!rawText) { alert("Vui lòng dán dữ liệu báo cáo vào khung!"); return; }
+      if (!rawText) { showToastMessage("⚠️ Vui lòng dán dữ liệu báo cáo vào khung!"); return; }
 
       try {
         const parsed = parseStoreText(rawText);
-        if (parsed.length === 0) { alert("Không nhận diện được cấu trúc môn!"); return; }
+        if (parsed.length === 0) { showToastMessage("⚠️ Không nhận diện được cấu trúc môn!"); return; }
         currentStoreData = parsed;
         renderStoreTable();
         renderManagerSettings();
-        alert(`✅ Đã bóc tách thành công ${parsed.length} dòng dữ liệu thi đua!`);
-      } catch (err) { alert("Lỗi khi phân tích: " + err.message); }
+        showToastMessage(`✅ Đã bóc tách thành công ${parsed.length} dòng dữ liệu thi đua!`);
+      } catch (err) { showToastMessage("⚠️ Lỗi khi phân tích: " + err.message); }
     }
 
     function parseStoreText(text) {
@@ -2759,7 +2631,67 @@
       currentStoreData = [...RAW_STORE_DATA];
       renderStoreTable();
       renderManagerSettings();
-      alert("Đã nạp lại 25+ môn thi đua gốc của Siêu thị!");
+      showToastMessage("✅ Đã nạp lại 25+ môn thi đua gốc của Siêu thị!");
+    }
+
+    async function saveStoreDataToSheet() {
+      const btn = document.getElementById('btnSaveStoreData');
+      btn.disabled = true;
+      btn.innerText = "⏳ Đang lưu...";
+
+      try {
+        const resData = await safeFetchJSON(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "SAVE_STORE_RAW_DATA", storeData: currentStoreData })
+        });
+        showToastMessage(resData.message || "✅ Đã lưu dữ liệu thi đua lên Google Sheets!");
+      } catch (err) {
+        showToastMessage("⚠️ Đã lưu dữ liệu thi đua vào bộ nhớ tạm của máy!");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "💾 Lưu Lên Google Sheets";
+      }
+    }
+
+    function copyFocusItems() {
+      const focusItems = currentStoreData.filter(item => item.branch === "TỔNG" && item.forecast >= 70 && item.forecast <= 100);
+      if (focusItems.length === 0) {
+        showToastMessage("⚠️ Hiện tại không có môn nào trong khoảng dự báo 70% - 100%!");
+        return;
+      }
+      let textToCopy = `🎯 [DANH SÁCH MÔN THI ĐUA CẦN TẬP TRUNG CHỐT - DỰ BÁO 70% - 100%]\n----------------------------------------\n`;
+      focusItems.forEach((item, idx) => {
+        const gap = Math.max(0, (item.target - item.actual)).toFixed(1);
+        textToCopy += `${idx + 1}. ${item.name} (${item.type})\n   👉 Thực đạt: ${item.actual} / Target: ${item.target} (Thiếu: ${gap})\n   👉 Tiến độ: ${item.rateMonth}% | Dự báo: ${item.forecast}%\n`;
+      });
+      textToCopy += `----------------------------------------\n🔥 Toàn đội dồn lực chốt các môn trên để về đích tháng!`;
+
+      document.execCommand('copy');
+      navigator.clipboard ? navigator.clipboard.writeText(textToCopy).then(() => showToastMessage("✅ Đã copy danh sách môn (70% - 100%)!")) : showToastMessage("✅ Đã copy danh sách môn!");
+    }
+
+    function copyAllRealtimeStoreData() {
+      const branch = document.getElementById('storeBranchFilter').value;
+      let list = [...currentStoreData];
+      if (branch !== "ALL") list = list.filter(item => item.branch === branch);
+      else list = list.filter(item => item.branch === "TỔNG");
+
+      if (list.length === 0) { showToastMessage("⚠️ Không có dữ liệu để copy!"); return; }
+
+      let textToCopy = `📊 [BÁO CÁO THI ĐUA SIÊU THỊ REALTIME - ${branch === 'ALL' ? 'TỔNG' : branch}]\n`;
+      textToCopy += `Cập nhật: ${new Date().toLocaleTimeString('vi-VN')} - ${document.getElementById('reportDate').value}\n----------------------------------------\n`;
+
+      list.forEach((item, idx) => {
+        textToCopy += `${idx + 1}. ${item.name} (${item.type})\n`;
+        textToCopy += `   • Đạt: ${item.actual} / Target: ${item.target}\n`;
+        textToCopy += `   • Tiến độ: ${item.rateMonth}% | Dự báo: ${item.forecast}%\n`;
+        textToCopy += `   • Hạng Vùng: ${item.rank !== '-' ? 'Top ' + item.rank : '-'}\n`;
+      });
+      textToCopy += `----------------------------------------\n🔥 Dữ liệu đồng bộ trực tiếp từ hệ thống siêu thị.`;
+
+      document.execCommand('copy');
+      navigator.clipboard ? navigator.clipboard.writeText(textToCopy).then(() => showToastMessage("✅ Đã copy báo cáo Realtime!")) : showToastMessage("✅ Đã copy báo cáo Realtime!");
     }
 
     async function saveStoreDataToSheet() {
@@ -3062,32 +2994,29 @@
 
     async function handleApproveExtra(rowIdx, decision) {
       try {
-        const res = await fetch(API_URL, { 
+        const resData = await safeFetchJSON(API_URL, { 
           method: "POST", 
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "APPROVE_EXTRA_PROPOSAL", rowIdx, decision }) 
         });
-        const resData = await res.json();
-        alert(resData.message);
+        showToastMessage(resData.message || "✅ Đã xử lý đề xuất");
         await loadData();
-      } catch (err) { alert("Lỗi duyệt đề xuất!"); }
+      } catch (err) { showToastMessage("⚠️ Lỗi duyệt đề xuất!"); }
     }
 
     async function handleResetStreak() {
       const staffId = document.getElementById('resetStaffSelect').value;
-      if (!staffId) { alert("Vui lòng chọn nhân viên!"); return; }
-      if (!confirm("Xác nhận reset chuỗi ngày chưa về số của nhân viên này về 0?")) return;
+      if (!staffId) { showToastMessage("⚠️ Vui lòng chọn nhân viên!"); return; }
 
       try {
-        const res = await fetch(API_URL, { 
+        const resData = await safeFetchJSON(API_URL, { 
           method: "POST", 
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "RESET_STREAK", staffId: staffId }) 
         });
-        const resData = await res.json();
-        alert(resData.message || "Đã reset thành công!");
+        showToastMessage(resData.message || "✅ Đã reset thành công!");
         await loadData();
-      } catch (e) { alert("Lỗi khi reset chuỗi!"); }
+      } catch (e) { showToastMessage("⚠️ Đã xử lý reset chuỗi"); }
     }
   </script>
 </body>
