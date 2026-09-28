@@ -1368,7 +1368,14 @@
 
     function applyStateData(data) {
       if (data.nhanSu && data.nhanSu.length > 0) {
-        state.nhanSu = data.nhanSu;
+        state.nhanSu = data.nhanSu.map(ns => {
+          const starVal = Number(ns.totalStar !== undefined ? ns.totalStar : ns.baseStar) || 0;
+          return {
+            ...ns,
+            totalStar: starVal,
+            baseStar: starVal
+          };
+        });
       } else if (!state.nhanSu || state.nhanSu.length === 0) {
         state.nhanSu = [...DEFAULT_NHAN_SU];
       }
@@ -1536,15 +1543,24 @@
       return 1.0;
     }
 
-    // TÍNH TOÁN SAO LŨY KẾ NGÀY TRƯỚC (SAO TRƯỚC CA)
+    // TÍNH TOÁN SAO LŨY KẾ NGÀY TRƯỚC (MAP CHUẨN XÁC VỚI TỔNG SAO HIỆN TẠI CỦA NHÂN SỰ)
     function calculateStaffYesterdayStars(staffId, selectedDate) {
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       if (!staff) return 0;
-      const baseInitial = Number(staff.baseStar) || 0;
       
-      const beforeLogs = state.ketQua.filter(k => k.staffId === staffId && k.date < selectedDate);
-      const netStarBefore = beforeLogs.reduce((sum, item) => sum + (Number(item.starChange) || 0), 0);
-      return baseInitial + netStarBefore;
+      // Lấy Tổng sao hiện tại (đồng bộ 100% với tab Cấu hình QL và BXH)
+      const currentMasterStars = Number(staff.totalStar !== undefined ? staff.totalStar : staff.baseStar) || 0;
+      
+      // Biến động của chính ngày đang chọn (nếu trước đó đã lưu báo cáo trong ngày này)
+      const todayLogs = state.ketQua.filter(k => k.staffId === staffId && k.date === selectedDate);
+      const todayDelta = todayLogs.reduce((sum, item) => sum + (Number(item.starChange) || 0), 0);
+      
+      // Biến động của các ngày sau ngày đang chọn (nếu đang xem lại lịch sử ngày cũ)
+      const afterLogs = state.ketQua.filter(k => k.staffId === staffId && k.date > selectedDate);
+      const afterDelta = afterLogs.reduce((sum, item) => sum + (Number(item.starChange) || 0), 0);
+      
+      // Sao trước ca = Tổng sao hiện tại trừ đi phần phát sinh của ca hôm nay và các ca sau đó
+      return currentMasterStars - todayDelta - afterDelta;
     }
 
     // ================= RENDER BẢNG BÁO CÁO (DÙNG SAO KIẾM ĐƯỢC REALTIME - DÙNG ĐẾN KHI HẾT) =================
@@ -1906,9 +1922,10 @@
       });
 
       // TÍNH LẠI QUỸ SAO NHÂN SỰ
-      const baseInitial = Number(staff.baseStar) || 0;
-      const totalDelta = state.ketQua.filter(k => k.staffId === staffId).reduce((s, x) => s + (Number(x.starChange) || 0), 0);
-      staff.totalStar = baseInitial + totalDelta;
+      const priorStars = calculateStaffYesterdayStars(staffId, selectedDate);
+      const todayNetDelta = reports.reduce((s, x) => s + (Number(x.starChange) || 0), 0);
+      staff.totalStar = priorStars + todayNetDelta;
+      staff.baseStar = staff.totalStar;
       localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
 
       let syncSuccess = false;
@@ -2376,9 +2393,14 @@
     function updateStaffStarDirect(staffId, newVal) {
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       if (staff) {
-        staff.totalStar = Number(newVal) || 0;
+        const valNum = Number(newVal) || 0;
+        staff.totalStar = valNum;
+        staff.baseStar = valNum;
         localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
         renderDashboard();
+        if (document.getElementById('staffSelect').value === staffId) {
+          renderItemsTable();
+        }
         showToastMessage(`⭐ Đã cập nhật sao ${staff.name}: ${staff.totalStar}`);
       }
     }
@@ -2386,10 +2408,15 @@
     function adjustStaffStarDelta(staffId, delta) {
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       if (staff) {
-        staff.totalStar = (Number(staff.totalStar) || 0) + delta;
+        const valNum = (Number(staff.totalStar) || 0) + delta;
+        staff.totalStar = valNum;
+        staff.baseStar = valNum;
         localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
         renderManagerSettings();
         renderDashboard();
+        if (document.getElementById('staffSelect').value === staffId) {
+          renderItemsTable();
+        }
         showToastMessage(`⭐ ${staff.name} ${delta > 0 ? '+' : ''}${delta}⭐ (Tổng: ${staff.totalStar})`);
       }
     }
