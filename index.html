@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Báo Cáo Thi Đua Cuối Ngày & BXH Siêu Thị VIP</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Thư viện chụp ảnh xuất màn hình chất lượng cao -->
+  <!-- Thư viện chụp ảnh canvas chuẩn nét HD -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     .table-header { background-color: #facc15; color: #0f172a; }
@@ -16,8 +16,8 @@
     
     /* Tối ưu độ dày hàng thu gọn 50% (compact-table), chữ số giữ nguyên to rõ */
     .compact-table td {
-      padding-top: 3px !important;
-      padding-bottom: 3px !important;
+      padding-top: 3.5px !important;
+      padding-bottom: 3.5px !important;
       line-height: 1.25 !important;
     }
     .compact-table th {
@@ -55,9 +55,12 @@
           <span class="bg-emerald-400/20 text-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-400/30 flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Realtime
           </span>
+          <span id="badgeManagerActive" class="hidden bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 shadow-sm flex items-center gap-1">
+            🛡️ Quản Lý Đang Mở
+          </span>
         </div>
         <p class="text-[10px] md:text-xs text-indigo-200 mt-0.5">
-          Tự động đồng bộ mỗi 1 tiếng | Tự tải ảnh khi gửi | Quản trị quỹ sao & Tra cứu AI 1 chạm
+          Tự động đồng bộ 1 tiếng/lần | Quỹ sao RT đồng bộ BXH | Chế tài nộp trễ sau 22h20 (-100⭐ lũy tiến)
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -102,16 +105,47 @@
 
     <!-- ================= TAB 1: FORM BÁO CÁO NGÀY ================= -->
     <section id="sec-report" class="space-y-2">
+      <!-- Cảnh báo nộp trễ sau 22h20 -->
+      <div id="bannerLateReportAlert" class="hidden bg-rose-50 border-l-4 border-rose-600 text-rose-950 p-2.5 rounded-lg text-xs flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⚠️</span>
+          <div>
+            <b class="text-rose-700">CẢNH BÁO: Báo cáo sau 22h20!</b>
+            <div id="bannerLateReportDetail" class="text-[11px] text-rose-800">
+              Bạn đang nộp trễ lần 1 trong tháng. Sẽ bị trừ -100 ⭐ kỷ luật nộp muộn.
+            </div>
+          </div>
+        </div>
+        <span class="bg-rose-200 text-rose-900 font-black px-2 py-0.5 rounded text-[10px] font-mono" id="badgeLateDeduction">-100 ⭐</span>
+      </div>
+
+      <!-- Banner cảnh báo khóa ngày bởi Quản Lý -->
+      <div id="bannerDateLockedAlert" class="hidden bg-rose-100 border-l-4 border-rose-500 text-rose-900 p-2.5 rounded-lg text-xs flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-2">
+          <span class="text-base">🔒</span>
+          <div>
+            <b>Ngày này đã được Quản Lý KHÓA CHỐT SỔ!</b>
+            <div class="text-[11px] text-rose-800">Không thể gửi hoặc sửa dữ liệu của ngày này. Liên hệ Quản lý để mở khóa.</div>
+          </div>
+        </div>
+        <span class="bg-rose-200 text-rose-900 font-bold px-2 py-0.5 rounded text-[10px]">Đã khóa</span>
+      </div>
+
       <!-- Banner thông báo trạng thái chỉnh sửa ghi đè -->
       <div id="bannerEditingOldReport" class="hidden bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-2.5 rounded-lg text-xs flex justify-between items-center shadow-sm">
         <div class="flex items-center gap-2">
           <span class="text-base">✏️</span>
           <div>
             <b>Đang chỉnh sửa báo cáo đã nộp trước đó!</b>
-            <div class="text-[11px] text-amber-800">Dữ liệu mới bạn gửi sẽ tự động ghi đè báo cáo cũ của ngày này.</div>
+            <div class="text-[11px] text-amber-800">Dữ liệu mới bạn gửi sẽ tự động ghi đè báo cáo cũ của ca ngày này.</div>
           </div>
         </div>
-        <span class="bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded text-[10px]">Chế độ sửa</span>
+        <div class="flex gap-1.5">
+          <button type="button" onclick="promptDeleteCurrentStaffDayReports()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1 rounded text-[11px] shadow transition">
+            🗑️ Xóa Ca Này
+          </button>
+          <span class="bg-amber-200 text-amber-900 font-bold px-2 py-1 rounded text-[10px]">Chế độ sửa</span>
+        </div>
       </div>
 
       <!-- Banner thông báo trạng thái quỹ sao realtime -->
@@ -137,13 +171,13 @@
       </div>
 
       <div class="flex justify-between items-center px-1">
-        <span class="text-[11px] text-slate-600 font-bold">👉 Bấm tiêu đề cột để sắp xếp | Bấm tên môn để xem lịch sử:</span>
+        <span class="text-[11px] text-slate-600 font-bold">👉 Bấm tiêu đề cột để sắp xếp | Sao kiếm được bù trực tiếp realtime:</span>
         <button onclick="toggleShortNames()" id="btnToggleShort" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200">
           Hiện Tên Đầy Đủ ↗
         </button>
       </div>
 
-      <!-- VÙNG CHỤP ẢNH BÁO CÁO (TỐI ƯU GỌN HÀNG, CHỮ VÀ SỐ TO NÉT) -->
+      <!-- VÙNG CHỤP ẢNH BÁO CÁO (ĐỒNG BỘ CHUẨN TỔNG SAO BXH CÁ NHÂN) -->
       <div id="captureArea" class="bg-white rounded-xl shadow-sm border border-slate-300 p-2 md:p-3.5 space-y-2">
         <div id="staffTitleBar" class="hidden bg-slate-900 text-white p-2.5 rounded-lg border border-slate-800 flex justify-between items-center">
           <div>
@@ -153,32 +187,34 @@
               <span class="text-[10px] bg-slate-800 text-amber-200 font-normal px-1.5 py-0.5 rounded-full border border-amber-300/30">Hồ sơ ℹ️</span>
             </button>
             <div id="titleReportDate" class="text-[11px] text-slate-200 font-semibold"></div>
+            <!-- DÒNG THỜI GIAN CẬP NHẬT REALTIME TRỰC TIẾP TRÊN ẢNH -->
+            <div id="titleTimestamp" class="text-[10px] text-emerald-400 font-mono mt-0.5 font-bold"></div>
           </div>
           <div class="text-right">
             <span id="badgeGroup" class="text-[10px] px-2 py-0.5 rounded-full font-black"></span>
             <div class="text-xs md:text-sm text-slate-300 font-mono mt-0.5">
-              Trước ca: <b id="barYesterdayBaseStar" class="text-amber-300 font-bold">0</b> ⭐
+              Tổng sao hiện tại (BXH): <b id="barYesterdayBaseStar" class="text-amber-300 font-black">0</b> ⭐
             </div>
-            <div class="text-[10px] text-emerald-400 font-bold mt-0.5">
-              Khả dụng RT: <b id="barRealtimePoolStar" class="text-white">0</b> ⭐
+            <div class="text-[10px] text-emerald-300 font-bold mt-0.5">
+              Quỹ RT khả dụng: <b id="barRealtimePoolStar" class="text-white">0 ⭐</b>
             </div>
           </div>
         </div>
 
-        <!-- BẢNG BÁO CÁO: ĐỘ RỘNG HÀNG GIẢM 50%, TỰ ĐỘNG FIT THEO ĐỘ DÀI TÊN MÔN -->
+        <!-- BẢNG BÁO CÁO -->
         <div class="overflow-x-auto rounded-lg border border-slate-300 bg-white">
           <table id="tblReportItems" class="w-full text-left text-xs md:text-sm border-collapse compact-table">
             <thead>
               <tr class="table-header font-black uppercase text-[10px] md:text-[11px] tracking-tight border-b border-yellow-400">
                 <th onclick="sortTableByCol('tblReportItems', 0)" class="sortable text-center w-6 px-1"># ⇕</th>
-                <th onclick="sortTableByCol('tblReportItems', 1)" class="sortable px-2 min-w-[120px]">MÔN THI ĐUA ⇕</th>
+                <th onclick="sortTableByCol('tblReportItems', 1)" class="sortable px-2 min-w-[140px]">MÔN THI ĐUA ⇕</th>
                 <th onclick="sortTableByCol('tblReportItems', 2)" class="sortable text-center w-12 px-1">TARGET ⇕</th>
                 <th onclick="sortTableByCol('tblReportItems', 3)" class="sortable text-center w-14 px-1">THỰC ĐẠT ⇕</th>
                 <th onclick="sortTableByCol('tblReportItems', 4)" class="sortable text-center w-12 px-1">% ĐẠT ⇕</th>
-                <th onclick="sortTableByCol('tblReportItems', 5)" class="sortable text-center w-12 px-1">SAO+ ⇕</th>
+                <th onclick="sortTableByCol('tblReportItems', 5)" class="sortable text-center w-14 px-1">SAO+ ⇕</th>
                 <th onclick="sortTableByCol('tblReportItems', 6)" class="sortable text-center bg-yellow-200 w-12 px-1 text-slate-900">H.QUA ⇕</th>
                 <th onclick="sortTableByCol('tblReportItems', 7)" class="sortable text-center w-16 px-1" title="Số ngày liên tiếp chưa về số của môn này">CHUỖI ⇕</th>
-                <th class="text-center w-24 px-1">BÙ / TĂNG CA</th>
+                <th class="text-center w-28 px-1">BÙ / TĂNG CA</th>
               </tr>
             </thead>
             <tbody id="itemsTableBody">
@@ -188,12 +224,12 @@
         </div>
 
         <!-- Bán thêm ngoài danh mục -->
-        <div class="bg-amber-50 border border-amber-300 rounded-lg p-2 space-y-1">
+        <div id="extraItemAreaBox" class="bg-amber-50 border border-amber-300 rounded-lg p-2 space-y-1">
           <div class="flex justify-between items-center">
             <label class="block text-xs font-black text-amber-950">🎁 Bán thêm sản phẩm khác (ngoài danh mục thi đua):</label>
             <span class="text-[9px] bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full font-bold">Chờ QL duyệt</span>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-1.5">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-1.5" id="extraItemInputsWrap">
             <div class="md:col-span-3">
               <input type="text" id="extraItemName" placeholder="Tên sản phẩm, số lượng, doanh thu hoặc mã đơn..." class="w-full bg-white border border-amber-300 rounded-lg p-1.5 text-xs font-medium outline-none">
             </div>
@@ -203,57 +239,70 @@
           </div>
         </div>
 
-        <!-- Khung tóm tắt điểm số minh bạch (Đối chiếu sao trước ca + hôm nay = lũy kế) -->
-        <div class="bg-indigo-950 text-white rounded-lg p-2.5 grid grid-cols-2 md:grid-cols-4 gap-2 text-center border border-indigo-900 shadow">
+        <!-- Khung tóm tắt điểm số minh bạch -->
+        <div class="bg-indigo-950 text-white rounded-lg p-2.5 grid grid-cols-2 md:grid-cols-5 gap-2 text-center border border-indigo-900 shadow">
           <div>
             <div class="text-[9px] uppercase tracking-wider text-slate-300 font-bold">KẾT QUẢ NGÀY</div>
             <div class="text-xs md:text-sm font-black text-amber-300">ĐẠT <span id="summaryAchievedCount">0/0</span> MÔN</div>
           </div>
           <div>
-            <div class="text-[9px] uppercase tracking-wider text-slate-300 font-bold">THƯỞNG / TRỪ HÔM NAY</div>
+            <div class="text-[9px] uppercase tracking-wider text-slate-300 font-bold">THƯỞNG / TRỪ MÔN</div>
             <div class="text-xs md:text-sm font-black">
               <span id="sumBonusStar" class="text-emerald-400">+0</span> | 
               <span id="sumPenaltyStar" class="text-rose-400">-0</span>
             </div>
           </div>
           <div>
+            <div class="text-[9px] uppercase tracking-wider text-slate-300 font-bold">KỶ LUẬT TRỄ CA</div>
+            <div id="sumLatePenaltyStar" class="text-xs md:text-sm font-black text-rose-400 font-mono">0 ⭐</div>
+          </div>
+          <div>
             <div class="text-[9px] uppercase tracking-wider text-slate-300 font-bold">TỔNG SAO HÔM NAY</div>
             <div id="sumDayStar" class="text-xs md:text-sm font-black text-white">+0 ⭐</div>
           </div>
-          <div>
-            <div class="text-[9px] uppercase tracking-wider text-slate-300 font-bold">LŨY KẾ SAU BÁO CÁO</div>
+          <div class="col-span-2 md:col-span-1 bg-indigo-900/60 rounded-md p-1 border border-indigo-700/50">
+            <div class="text-[9px] uppercase tracking-wider text-amber-200 font-bold">LŨY KẾ SAU CA</div>
             <div id="newTotalStarPreview" class="text-xs md:text-sm font-black text-amber-400">0 ⭐</div>
           </div>
         </div>
       </div>
 
-      <!-- Hai nút thao tác: Gửi có popup xác nhận + Nút chụp ảnh xuất độc lập -->
+      <!-- Hai nút thao tác: Nút gửi & Nút tải lại ảnh luôn sẵn sàng -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-0.5">
         <button onclick="promptSubmitConfirm()" id="btnSubmitBatch" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs md:text-sm transition shadow flex items-center justify-center gap-1.5">
           <span>🚀 GỬI BÁO CÁO CHO QL</span>
         </button>
-        <button onclick="exportReportImage()" id="btnExportImage" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-amber-300 font-black rounded-xl text-xs md:text-sm transition shadow flex items-center justify-center gap-1.5 border border-slate-700">
-          <span>📸 XUẤT ẢNH BÁO CÁO NGAY</span>
+        <button onclick="exportReportImage()" id="btnExportImage" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs md:text-sm transition shadow flex items-center justify-center gap-1.5">
+          <span>📸 TẢI LẠI ẢNH BÁO CÁO (HD)</span>
         </button>
       </div>
     </section>
 
-    <!-- ================= TAB 2: LỊCH SỬ BÁO CÁO CHUYÊN DỤNG ================= -->
+    <!-- ================= TAB 2: LỊCH SỬ BÁO CÁO & ĐẶC QUYỀN QL XÓA LỊCH SỬ ================= -->
     <section id="sec-history-logs" class="hidden space-y-3">
       <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b pb-2">
           <div>
-            <h2 class="text-xs md:text-base font-black text-slate-800">🕒 NHẬT KÝ & LỊCH SỬ BÁO CÁO TOÀN DIỆN</h2>
-            <p class="text-[10px] md:text-[11px] text-slate-500">Tra cứu chi tiết từng ca báo cáo, sao thưởng/trừ và phương án bù (⭐ / ⏰)</p>
+            <h2 class="text-xs md:text-base font-black text-slate-800 flex items-center gap-1.5">
+              <span>🕒 NHẬT KÝ & LỊCH SỬ BÁO CÁO TOÀN DIỆN</span>
+              <span class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-bold">QL Có Quyền Xóa</span>
+            </h2>
+            <p class="text-[10px] md:text-[11px] text-slate-500">Tra cứu chi tiết từng ca báo cáo, Quản lý có thể xóa từng dòng hoặc xóa trọn vẹn cả ca</p>
           </div>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
+            <button onclick="promptDeleteBatchFilteredLogs()" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow">
+              🗑️ QL Xóa Theo Bộ Lọc
+            </button>
+            <button onclick="copyHistorySummaryText()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow">
+              📋 Copy Tóm Tắt
+            </button>
             <button onclick="exportHistoryCSV()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow">
               📥 Xuất CSV
             </button>
           </div>
         </div>
 
-        <!-- Bộ lọc lịch sử đa năng -->
+        <!-- Bộ lọc lịch sử -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 text-xs">
           <div>
             <label class="block font-bold text-slate-600 mb-0.5">Chọn nhân viên:</label>
@@ -289,7 +338,7 @@
           </div>
         </div>
 
-        <!-- 5 Thẻ tổng quan nhanh của lịch sử -->
+        <!-- 5 Thẻ tổng quan nhanh -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-center text-xs">
           <div class="bg-slate-50 border rounded-xl p-2">
             <span class="text-[9px] uppercase text-slate-400 font-bold">Tổng lượt báo</span>
@@ -313,7 +362,7 @@
           </div>
         </div>
 
-        <!-- Bảng danh sách nhật ký chi tiết -->
+        <!-- Bảng danh sách chi tiết có cột thao tác Quản Lý Xóa -->
         <div class="overflow-x-auto rounded-xl border border-slate-200">
           <table id="tblHistoryLogsMaster" class="w-full text-xs text-left">
             <thead>
@@ -325,7 +374,8 @@
                 <th class="p-2 text-center w-14">% Đạt</th>
                 <th class="p-2 text-center w-16">Sao Biến Động</th>
                 <th class="p-2 text-center w-20">Trạng Thái</th>
-                <th class="p-2 text-center w-20">Phương Án</th>
+                <th class="p-2 text-center w-24">Phương Án</th>
+                <th class="p-2 text-center w-16 text-rose-600">QL Xóa</th>
               </tr>
             </thead>
             <tbody id="historyLogsTableBody"></tbody>
@@ -440,19 +490,48 @@
       </div>
     </section>
 
-    <!-- ================= TAB 4: DASHBOARD CÁ NHÂN ================= -->
+    <!-- ================= TAB 4: DASHBOARD BXH CÁ NHÂN ================= -->
     <section id="sec-dashboard" class="hidden space-y-3">
-      <div class="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-slate-200">
-        <h2 class="text-xs md:text-base font-bold mb-2">🏆 BẢNG XẾP HẠNG THI ĐUA CÁ NHÂN</h2>
-        <div class="overflow-x-auto">
-          <table id="tblRankingStaff" class="w-full text-left text-xs md:text-sm">
+      <div class="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-slate-200 space-y-2.5">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b pb-2">
+          <div>
+            <h2 class="text-xs md:text-base font-black text-slate-800 uppercase tracking-tight">
+              🏆 BẢNG XẾP HẠNG THI ĐUA CÁ NHÂN & THEO DÕI KỶ LUẬT
+            </h2>
+            <p class="text-[10px] md:text-[11px] text-slate-500">
+              Đo lường đa chiều: Quỹ sao, lượt tăng ca gỡ số, lượt dùng sao bù môn, tỷ lệ về số thực chất & môn nguy cơ
+            </p>
+          </div>
+          
+          <!-- Bộ lọc BXH Cá Nhân -->
+          <div class="flex flex-wrap gap-2 text-xs">
+            <select id="rankingFilterGroup" onchange="renderDashboard()" class="border rounded-lg p-1.5 font-bold text-indigo-700 bg-slate-50 outline-none">
+              <option value="ALL">Toàn Siêu Thị</option>
+              <option value="TGDĐ">Thế Giới Di Động</option>
+              <option value="Topzone">Topzone</option>
+            </select>
+            <select id="rankingSortBy" onchange="renderDashboard()" class="border rounded-lg p-1.5 font-bold text-indigo-700 bg-slate-50 outline-none">
+              <option value="stars-desc">Sắp xếp: Tổng Sao (Cao → Thấp)</option>
+              <option value="winrate-desc">Sắp xếp: Tỷ Lệ Đạt % (Cao → Thấp)</option>
+              <option value="ot-desc">Sắp xếp: Lượt Tăng Ca (Nhiều → Ít)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- BẢNG NÂNG CẤP ĐẦY ĐỦ CÁC CỘT CHỈ SỐ QUẢN TRỊ VÀNG -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table id="tblRankingStaff" class="w-full text-left text-xs md:text-sm border-collapse">
             <thead>
-              <tr class="border-b bg-slate-50 text-slate-500 font-bold uppercase text-[10px]">
-                <th onclick="sortTableByCol('tblRankingStaff', 0)" class="sortable p-2">Hạng ⇕</th>
-                <th onclick="sortTableByCol('tblRankingStaff', 1)" class="sortable p-2">Nhân Viên ⇕</th>
-                <th onclick="sortTableByCol('tblRankingStaff', 2)" class="sortable p-2">Bộ Phận ⇕</th>
-                <th onclick="sortTableByCol('tblRankingStaff', 3)" class="sortable p-2 text-center">Tổng Sao ⇕</th>
-                <th class="p-2 text-center">Trạng Thái</th>
+              <tr class="table-header font-black uppercase text-[10px] tracking-tight border-b border-yellow-400">
+                <th onclick="sortTableByCol('tblRankingStaff', 0)" class="sortable p-2 text-center w-12">Hạng ⇕</th>
+                <th onclick="sortTableByCol('tblRankingStaff', 1)" class="sortable p-2 min-w-[140px]">Nhân Viên ⇕</th>
+                <th onclick="sortTableByCol('tblRankingStaff', 2)" class="sortable p-2 w-20">Bộ Phận ⇕</th>
+                <th onclick="sortTableByCol('tblRankingStaff', 3)" class="sortable p-2 text-center w-24 bg-yellow-300">Tổng Sao ⇕</th>
+                <th onclick="sortTableByCol('tblRankingStaff', 4)" class="sortable p-2 text-center w-20" title="Tổng số ca/môn nhân viên chọn TĂNG_CA">Tăng Ca ⏰ ⇕</th>
+                <th onclick="sortTableByCol('tblRankingStaff', 5)" class="sortable p-2 text-center w-20" title="Tổng số lần dùng sao bù môn chưa về">Dùng Sao ⭐ ⇕</th>
+                <th onclick="sortTableByCol('tblRankingStaff', 6)" class="sortable p-2 text-center w-20" title="Tỷ lệ lượt môn đạt Target so với tổng môn được giao">Tỷ Lệ Đạt ⇕</th>
+                <th class="p-2 min-w-[150px]">Môn Nguy Cơ Nhất (Chuỗi dài)</th>
+                <th class="p-2 text-center w-28">Đánh Giá Kỷ Luật</th>
               </tr>
             </thead>
             <tbody id="rankingTableBody"></tbody>
@@ -522,7 +601,7 @@
       </div>
     </section>
 
-    <!-- ================= TAB 6: CHATBOT AI TRA CỨU THẾ HỆ MỚI (1 CHẠM ALL NHÂN VIÊN) ================= -->
+    <!-- ================= TAB 6: CHATBOT AI TRA CỨU ================= -->
     <section id="sec-chatbot" class="hidden space-y-3">
       <div class="bg-white p-3.5 md:p-4 rounded-xl shadow-sm border border-slate-200 space-y-2.5">
         <div class="flex justify-between items-center border-b pb-1.5">
@@ -536,7 +615,7 @@
           <button onclick="clearChatLog()" class="text-[10px] text-slate-400 hover:text-indigo-600 font-bold">Xóa chat 🧹</button>
         </div>
 
-        <!-- DANH SÁCH TẤT CẢ NHÂN VIÊN 1 CHẠM (TỰ ĐỘNG SINH TOÀN BỘ DANH SÁCH) -->
+        <!-- Danh sách tất cả nhân viên 1 chạm -->
         <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 space-y-1.5">
           <div class="flex justify-between items-center text-[11px] font-bold text-slate-600">
             <span>👥 Gợi ý tra cứu 1 chạm cho TẤT CẢ nhân viên:</span>
@@ -578,50 +657,26 @@
       <div class="bg-white p-3.5 md:p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
         <div class="border-b pb-2">
           <h2 class="text-sm md:text-base font-black text-slate-900">📖 CẤU TRÚC DỮ LIỆU & QUY TẮC VẬN HÀNH (RULE)</h2>
-          <p class="text-[11px] text-slate-500">Tài liệu chuẩn hóa cấu trúc Google Sheets, quy tắc tính chuỗi và 4 Rule gợi ý sao AI</p>
+          <p class="text-[11px] text-slate-500">Tài liệu chuẩn hóa cấu trúc Google Sheets, quy tắc tính chuỗi, chế tài nộp trễ và 4 Rule gợi ý sao AI</p>
         </div>
 
         <div class="space-y-1.5">
-          <h3 class="text-xs font-black text-indigo-700 uppercase">1. Cấu Trúc Các Tab Trên Google Sheets</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-            <div class="border rounded-xl p-2.5 bg-slate-50">
-              <span class="font-black text-slate-800">📄 DM_ThiDua (Chuẩn 5 cột gốc):</span>
-              <ul class="list-disc pl-4 text-slate-600 mt-1 space-y-0.5 text-[11px]">
-                <li><b>Cột A:</b> Siêu Thị (Topzone, TGDĐ, Chung)</li>
-                <li><b>Cột B:</b> Tên Môn Thi Đua</li>
-                <li><b>Cột C:</b> Target Ngày (số lượng hoặc doanh thu)</li>
-                <li><b>Cột D:</b> Sao Thưởng (+⭐ khi đạt target)</li>
-                <li><b>Cột E:</b> Sao Phạt (-⭐ khi chọn ⭐ Dùng sao bù)</li>
-              </ul>
+          <h3 class="text-xs font-black text-indigo-700 uppercase">1. Quy Tắc Nộp Báo Cáo Trễ Sau 22h20</h3>
+          <div class="bg-rose-50/80 border border-rose-200 rounded-xl p-2.5 text-xs text-rose-950 space-y-1">
+            <p>• <b>Khung giờ chuẩn</b>: Báo cáo ca ngày phải được gửi trước <b>22h20</b>.</p>
+            <p>• <b>Chế tài phạt sao lũy tiến theo số lần vi phạm trong tháng:</b></p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-1.5 mt-1 font-semibold text-[11px]">
+              <div class="bg-white p-1.5 rounded border border-rose-200">Lần 1: <b>Trừ -100 ⭐</b></div>
+              <div class="bg-white p-1.5 rounded border border-rose-200">Lần 2: <b>Trừ -200 ⭐</b></div>
+              <div class="bg-white p-1.5 rounded border border-rose-200">Lần 3: <b>Trừ -300 ⭐</b></div>
+              <div class="bg-white p-1.5 rounded border border-rose-200">Lần N: <b>Trừ -(N × 100) ⭐</b></div>
             </div>
-            <div class="border rounded-xl p-2.5 bg-slate-50">
-              <span class="font-black text-slate-800">📄 DM_NhanSu:</span>
-              <ul class="list-disc pl-4 text-slate-600 mt-1 space-y-0.5 text-[11px]">
-                <li>Mã NV | Họ và Tên | Bộ Phận (TGDĐ / Topzone)</li>
-                <li>Sao Ban Đầu | Tổng Sao Lũy Kế | Xếp Hạng</li>
-                <li><b>Môn Riêng (Cột G):</b> Danh sách tên môn riêng phân bổ cho cá nhân</li>
-                <li>Ngày Reset</li>
-              </ul>
-            </div>
-            <div class="border rounded-xl p-2.5 bg-slate-50">
-              <span class="font-black text-slate-800">📄 Data_KetQua_Ngay:</span>
-              <ul class="list-disc pl-4 text-slate-600 mt-1 space-y-0.5 text-[11px]">
-                <li>Lưu trữ lịch sử chi tiết từng ca báo cáo của từng nhân sự</li>
-                <li>Ngày | Mã NV | Tên NV | Tên Môn | Thực Đạt | % Đạt | Sao Biến Động | Trạng Thái | Chế Tài (DUNG_SAO / TANG_CA)</li>
-              </ul>
-            </div>
-            <div class="border rounded-xl p-2.5 bg-slate-50">
-              <span class="font-black text-slate-800">📄 CauHinh_QL & Data_ThiDua_SieuThi:</span>
-              <ul class="list-disc pl-4 text-slate-600 mt-1 space-y-0.5 text-[11px]">
-                <li><b>CauHinh_QL:</b> Ngưỡng tăng ca, ngưỡng trừ sao, ngưỡng báo mail khẩn</li>
-                <li><b>Data_ThiDua_SieuThi:</b> Dữ liệu tiến độ lũy kế realtime của siêu thị</li>
-              </ul>
-            </div>
+            <p class="text-[10px] text-rose-700 italic pt-0.5">* Số sao phạt này trừ trực tiếp vào quỹ sao và ghi nhận vào nhật ký ca.</p>
           </div>
         </div>
 
         <div class="space-y-1.5 pt-2 border-t">
-          <h3 class="text-xs font-black text-indigo-700 uppercase">2. Quy Tắc Tính Chuỗi & Phạt Lũy Tiến</h3>
+          <h3 class="text-xs font-black text-indigo-700 uppercase">2. Quy Tắc Tính Chuỗi & Phạt Lũy Tiến Chưa Về Số</h3>
           <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-950 space-y-1">
             <p>• <b>Tính độc lập theo từng nhân sự và từng môn</b>: Cột <b>CHUỖI</b> trên dòng môn nào sẽ đếm chính xác số ngày liên tiếp nhân viên đó chưa đạt chỉ tiêu của riêng môn đó.</p>
             <p>• <b>Cơ chế ngắt chuỗi</b>: Khi nhân viên có 1 ca đạt Target (≥100%), chuỗi của môn đó tự động ngắt và đưa về 0 ngày.</p>
@@ -658,81 +713,57 @@
       </div>
     </section>
 
-    <!-- ================= TAB 8: CẤU HÌNH QUẢN LÝ (THÊM BẢNG QUẢN TRỊ SAO NHÂN VIÊN) ================= -->
+    <!-- ================= TAB 8: CẤU HÌNH QUẢN LÝ (BỘ ĐẶC QUYỀN QL MỚI) ================= -->
     <section id="sec-manager" class="hidden space-y-3">
       <div id="autoSaveToast" class="hidden fixed bottom-6 right-6 bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg shadow-lg text-xs font-bold flex items-center gap-1.5 z-50">
         <span>✅ Đã lưu cấu hình lên Google Sheets!</span>
       </div>
 
-      <!-- KHỐI LIÊN KẾT TRUY CẬP HỆ THỐNG GỐC GOOGLE SHEETS & APPS SCRIPT -->
-      <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-xl p-3 md:p-4 shadow-sm border border-slate-800 space-y-2.5">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 border-b border-white/10 pb-2">
+      <!-- ĐẶC QUYỀN 1: QUẢN LÝ XÓA LỊCH SỬ BÁO CÁO TOÀN DIỆN & DỌN DẸP CA -->
+      <div class="bg-rose-50 border border-rose-300 rounded-xl p-3 md:p-4 space-y-2.5">
+        <div class="flex justify-between items-center border-b border-rose-200 pb-2">
           <div class="flex items-center gap-2">
-            <span class="p-1.5 bg-white/10 text-amber-300 rounded-lg text-xs font-black">🔗</span>
+            <span class="p-1.5 bg-rose-600 text-white rounded-lg text-xs font-black">🗑️</span>
             <div>
-              <h2 class="text-xs md:text-sm font-black text-amber-300 uppercase tracking-tight">HỆ THỐNG GỐC GOOGLE CLOUD (QUẢN TRỊ VIÊN)</h2>
-              <p class="text-[10px] text-slate-300">Truy cập trực tiếp bảng tính dữ liệu hoặc dự án mã nguồn Google Apps Script</p>
+              <h2 class="text-xs md:text-sm font-black text-rose-950 uppercase">QUYỀN QUẢN LÝ: XÓA LỊCH SỬ BÁO CÁO CỦA NHÂN VIÊN</h2>
+              <p class="text-[10px] text-rose-800">Dọn dẹp báo cáo sai sót, báo test hoặc dọn dẹp theo khoảng ngày (hệ thống tự động hoàn lại sao)</p>
             </div>
           </div>
-          <span class="bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
-            Dành riêng Quản Lý
-          </span>
+          <span class="text-[10px] bg-rose-200 text-rose-900 font-bold px-2 py-0.5 rounded-full">Đặc quyền cao nhất</span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-          <!-- Card 1: Google Sheet Data -->
-          <div class="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2.5 space-y-2 transition">
-            <div class="flex items-center justify-between">
-              <span class="font-black text-emerald-400 flex items-center gap-1.5 text-xs">
-                <span>📊</span> Google Sheet Cơ Sở Dữ Liệu
-              </span>
-              <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono">Spreadsheet</span>
-            </div>
-            <p class="text-[11px] text-slate-300 leading-snug line-clamp-2 font-mono break-all opacity-85">
-              https://docs.google.com/spreadsheets/d/1ECzgSqXPzfrpqYs3ffTaMwsN73jVpGbE5z18L-gGGzY/edit
-            </p>
-            <div class="flex gap-1.5 pt-1">
-              <a href="https://docs.google.com/spreadsheets/d/1ECzgSqXPzfrpqYs3ffTaMwsN73jVpGbE5z18L-gGGzY/edit?gid=1383818872#gid=1383818872" target="_blank" rel="noopener noreferrer" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-center transition shadow-sm text-[11px] flex items-center justify-center gap-1">
-                <span>Mở Google Sheet</span> ↗
-              </a>
-              <button type="button" onclick="copySystemLink('https://docs.google.com/spreadsheets/d/1ECzgSqXPzfrpqYs3ffTaMwsN73jVpGbE5z18L-gGGzY/edit?gid=1383818872#gid=1383818872', 'Google Sheet')" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 font-bold rounded-lg transition border border-white/10 text-[11px]">
-                📋 Copy
-              </button>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+          <div>
+            <label class="block font-bold text-rose-900 mb-0.5">Chọn nhân viên cần xóa ca:</label>
+            <select id="delLogStaffSelect" class="w-full border border-rose-300 rounded-lg p-1.5 font-bold text-indigo-700 bg-white outline-none">
+              <option value="">-- Chọn nhân viên --</option>
+            </select>
           </div>
-
-          <!-- Card 2: Google Apps Script Backend Project -->
-          <div class="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2.5 space-y-2 transition">
-            <div class="flex items-center justify-between">
-              <span class="font-black text-blue-400 flex items-center gap-1.5 text-xs">
-                <span>⚙️</span> Dự Án Google Apps Script
-              </span>
-              <span class="text-[9px] bg-blue-500/20 text-blue-300 px-1.5 py-0.2 rounded font-mono">Backend API</span>
-            </div>
-            <p class="text-[11px] text-slate-300 leading-snug line-clamp-2 font-mono break-all opacity-85">
-              https://script.google.com/.../projects/1IyQEasYKvageUVvvG0nlEDIDotLiw85bZ0fvGVOnghMqGL93w9L0S8bC/edit
-            </p>
-            <div class="flex gap-1.5 pt-1">
-              <a href="https://script.google.com/u/0/home/projects/1IyQEasYKvageUVvvG0nlEDIDotLiw85bZ0fvGVOnghMqGL93w9L0S8bC/edit" target="_blank" rel="noopener noreferrer" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-center transition shadow-sm text-[11px] flex items-center justify-center gap-1">
-                <span>Mở Apps Script</span> ↗
-              </a>
-              <button type="button" onclick="copySystemLink('https://script.google.com/u/0/home/projects/1IyQEasYKvageUVvvG0nlEDIDotLiw85bZ0fvGVOnghMqGL93w9L0S8bC/edit', 'Apps Script')" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 font-bold rounded-lg transition border border-white/10 text-[11px]">
-                📋 Copy
-              </button>
-            </div>
+          <div>
+            <label class="block font-bold text-rose-900 mb-0.5">Chọn ngày làm việc cần xóa:</label>
+            <input type="date" id="delLogDateInput" class="w-full border border-rose-300 rounded-lg p-1.5 font-bold bg-white outline-none">
+          </div>
+          <div class="flex items-end">
+            <button onclick="executeManagerDeleteStaffDayLogs()" class="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-black shadow transition flex items-center justify-center gap-1">
+              <span>🗑️ XÓA TOÀN BỘ CA NÀY</span>
+            </button>
           </div>
         </div>
+        <p class="text-[10px] text-rose-700 italic">* Lưu ý: Khi xóa toàn bộ ca, các biến động thưởng/trừ sao của ca đó sẽ được hoàn lại về quỹ sao của nhân viên.</p>
       </div>
 
-      <!-- BẢNG QUẢN TRỊ & ĐIỀU CHỈNH SAO NHÂN VIÊN TRỰC TIẾP -->
+      <!-- ĐẶC QUYỀN 2: THÊM / XÓA / ĐỔI BỘ PHẬN NHÂN SỰ SIÊU THỊ TRỰC TIẾP -->
       <div class="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-slate-200 space-y-2.5">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b pb-2">
-          <div>
-            <h2 class="text-xs md:text-sm font-black text-indigo-950 uppercase">⭐ BẢNG QUẢN TRỊ & ĐIỀU CHỈNH QUỸ SAO NHÂN VIÊN</h2>
-            <p class="text-[10px] md:text-[11px] text-slate-500">Quản lý có thể thêm (+), bớt (-) hoặc chỉnh sửa trực tiếp tổng sao của từng nhân viên</p>
+        <div class="flex justify-between items-center border-b pb-2">
+          <div class="flex items-center gap-2">
+            <span class="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-black">👥</span>
+            <div>
+              <h2 class="text-xs md:text-sm font-black text-slate-800 uppercase">QUYỀN QUẢN LÝ: THÊM MỚI & QUẢN TRỊ NHÂN SỰ</h2>
+              <p class="text-[10px] text-slate-500">Thêm nhân viên mới, điều chỉnh bộ phận (TGDĐ / Topzone) hoặc xóa nhân sự đã nghỉ việc</p>
+            </div>
           </div>
-          <button onclick="saveAllStaffStarsToSheet()" id="btnSaveStars" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1">
-            <span>💾 Lưu Toàn Bộ Quỹ Sao Lên Sheet</span>
+          <button onclick="promptAddNewStaffModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1">
+            + Thêm Nhân Viên Mới
           </button>
         </div>
 
@@ -742,14 +773,55 @@
               <tr class="bg-slate-100 text-slate-600 font-bold uppercase text-[9px]">
                 <th class="p-1.5 w-16">Mã NV</th>
                 <th class="p-1.5">Họ và Tên</th>
-                <th class="p-1.5">Bộ Phận</th>
+                <th class="p-1.5 w-28">Bộ Phận</th>
                 <th class="p-1.5 text-center w-28">Tổng Sao Hiện Tại</th>
-                <th class="p-1.5 text-center w-48">Điều Chỉnh Nhanh</th>
+                <th class="p-1.5 text-center w-36">Điều Chỉnh Nhanh</th>
+                <th class="p-1.5 text-center w-14 text-rose-600">Xóa NV</th>
               </tr>
             </thead>
             <tbody id="managerStaffStarsTableBody"></tbody>
           </table>
         </div>
+
+        <div class="pt-1 flex justify-end">
+          <button onclick="saveAllStaffStarsToSheet()" id="btnSaveStars" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1">
+            <span>💾 Lưu Toàn Bộ Quỹ Sao & Nhân Sự Lên Sheet</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ĐẶC QUYỀN 3: KHÓA / MỞ CHỐT SỔ BÁO CÁO THEO NGÀY (DATE LOCK) -->
+      <div class="bg-amber-50 border border-amber-300 rounded-xl p-3 md:p-4 space-y-2">
+        <div class="flex justify-between items-center border-b border-amber-200 pb-1.5">
+          <div class="flex items-center gap-2">
+            <span class="p-1.5 bg-amber-500 text-white rounded-lg text-xs font-black">🔒</span>
+            <div>
+              <h2 class="text-xs md:text-sm font-black text-amber-950 uppercase">QUYỀN QUẢN LÝ: KHÓA CHỐT SỔ BÁO CÁO (DATE LOCK)</h2>
+              <p class="text-[10px] text-amber-800">Khóa các ngày trước đó để nhân viên không được tự ý vào nộp hoặc sửa số liệu sau 22h00</p>
+            </div>
+          </div>
+          <span class="text-[10px] bg-amber-200 text-amber-950 font-bold px-2 py-0.5 rounded-full">Kỷ luật ca</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs items-end">
+          <div>
+            <label class="block font-bold text-amber-950 mb-0.5">Chọn ngày cần Khóa/Mở chốt:</label>
+            <input type="date" id="lockDateInput" class="w-full border border-amber-300 rounded-lg p-1.5 font-bold bg-white outline-none">
+          </div>
+          <div>
+            <label class="block font-bold text-amber-950 mb-0.5">Trạng thái khóa:</label>
+            <select id="lockDateStatusSelect" class="w-full border border-amber-300 rounded-lg p-1.5 font-bold bg-white outline-none">
+              <option value="LOCKED">🔒 KHÓA (Không cho nộp / sửa)</option>
+              <option value="UNLOCKED">🔓 MỞ KHÓA (Cho phép báo cáo)</option>
+            </select>
+          </div>
+          <div>
+            <button onclick="toggleLockDateStatus()" class="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-black shadow transition">
+              Cập Nhật Trạng Thái Ngày 🔒
+            </button>
+          </div>
+        </div>
+        <div id="lockedDatesListBadge" class="flex flex-wrap gap-1 pt-1"></div>
       </div>
 
       <!-- Phê duyệt bán thêm -->
@@ -853,12 +925,20 @@
           <b id="confirmAchieved" class="text-emerald-600 font-bold"></b>
         </div>
         <div class="flex justify-between">
+          <span class="text-slate-500">Thưởng / Trừ môn:</span>
+          <b id="confirmBonusPenalty" class="font-black"></b>
+        </div>
+        <div id="confirmLateRow" class="hidden flex justify-between text-rose-600 bg-rose-50 p-1 rounded font-bold">
+          <span>Phạt nộp trễ sau 22h20:</span>
+          <span id="confirmLatePenalty" class="font-black font-mono">-0 ⭐</span>
+        </div>
+        <div class="flex justify-between">
           <span class="text-slate-500">Sao biến động hôm nay:</span>
           <b id="confirmDayStar" class="font-black"></b>
         </div>
         <div class="flex justify-between bg-indigo-50 p-1.5 rounded font-black text-indigo-950">
           <span>Lũy kế sau báo cáo:</span>
-          <span id="confirmTotalStar" class="text-amber-600"></span>
+          <span id="confirmTotalStar" class="text-amber-600 font-mono text-sm"></span>
         </div>
         <p class="text-[10px] text-slate-500 italic pt-1">* Khi xác nhận, hệ thống sẽ lưu kết quả cuối cùng trong ngày và tự động tải ảnh báo cáo.</p>
       </div>
@@ -874,7 +954,7 @@
     </div>
   </div>
 
-  <!-- POPUP XEM & TẢI ẢNH BÁO CÁO (HỖ TRỢ MỌI LOẠI ĐIỆN THOẠI & ZALO) -->
+  <!-- POPUP XEM & TẢI ẢNH BÁO CÁO -->
   <div id="imagePreviewModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 z-50">
     <div class="bg-white w-full max-w-lg rounded-2xl p-4 shadow-2xl space-y-3 max-h-[90vh] flex flex-col">
       <div class="flex justify-between items-center border-b pb-2">
@@ -1035,9 +1115,9 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
-    // Danh sách nhân sự mặc định dự phòng khi Google Apps Script chưa phản hồi JSON
+    // Danh sách nhân sự mặc định dự phòng chuẩn đồng bộ với BXH
     const DEFAULT_NHAN_SU = [
-      { id: "29649", name: "Nguyễn Thị Thy", group: "TGDĐ", baseStar: 1500, totalStar: 1500, assignedItems: [] },
+      { id: "29649", name: "Nguyễn Thị Thy", group: "TGDĐ", baseStar: 15300, totalStar: 15300, assignedItems: [] },
       { id: "35101", name: "Trần Văn Hải", group: "TGDĐ", baseStar: 1200, totalStar: 1200, assignedItems: [] },
       { id: "35102", name: "Lê Hoàng Long", group: "Topzone", baseStar: 1800, totalStar: 1800, assignedItems: [] },
       { id: "35103", name: "Phạm Minh Tuấn", group: "Topzone", baseStar: 1000, totalStar: 1000, assignedItems: [] },
@@ -1140,6 +1220,8 @@
       thiDua: DEFAULT_THI_DUA,
       ketQua: [],
       deXuat: [],
+      lateLogs: [], // Nhật ký nộp trễ sau 22h20
+      lockedDates: [], // Danh sách ngày bị khóa
       config: { STREAK_OVERTIME: 3, STREAK_PENALTY_STAR: 5, STREAK_ALERT_EMAIL: 7, MANAGER_EMAIL: "", AUTO_STREAK_ENABLED: "ON", DOUBLE_BONUS_RATE: 150, ALLOW_STAFF_EDIT_STREAK: "OFF" }
     };
 
@@ -1149,29 +1231,22 @@
     let isShortNamesActive = true;
     let activeModalItemName = "";
     let tableSortState = {};
-    let syncCountdownSeconds = 3600; // 60 phút
+    let syncCountdownSeconds = 3600;
 
     document.getElementById('reportDate').valueAsDate = new Date();
+    document.getElementById('delLogDateInput').valueAsDate = new Date();
+    document.getElementById('lockDateInput').valueAsDate = new Date();
 
-    // HÀM FETCH AN TOÀN TRÁNH LỖI UNEXPECTED TOKEN '<' KHI GOOGLE TRẢ VỀ HTML
     async function safeFetchJSON(url, options = {}) {
       const res = await fetch(url, options);
       const text = await res.text();
-      
-      // Kiểm tra nếu Google trả về trang đăng nhập hoặc lỗi HTML
       if (text.trim().startsWith("<") || text.includes("<!DOCTYPE") || text.includes("<html")) {
-        console.warn("Google Apps Script trả về HTML thay vì JSON (thường do quyền chia sẻ Web App):", text.slice(0, 150));
-        throw new Error("Phản hồi là HTML (Vui lòng chọn 'Execute as: Me' và 'Who has access: Anyone' trên Google Script)");
+        throw new Error("Phản hồi là HTML");
       }
-      
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        throw new Error("Dữ liệu phản hồi không đúng cấu trúc JSON");
-      }
+      return JSON.parse(text);
     }
 
-    // ================= TỰ ĐỘNG ĐỒNG BỘ 1 TIẾNG / LẦN =================
+    // Đếm lùi tự động sync ngầm 1 tiếng/lần
     setInterval(() => {
       syncCountdownSeconds--;
       if (syncCountdownSeconds <= 0) {
@@ -1184,7 +1259,27 @@
       if (lbl) lbl.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }, 1000);
 
-    // ================= XUẤT ẢNH CHUẨN ĐỘ NÉT, KHÔNG BỊ KHUẤT TRÊN MOBILE =================
+    // ================= LOGIC CHẾ TÀI NỘP TRỄ SAU 22H20 =================
+    // Lần 1: -100⭐, Lần 2: -200⭐, ..., Lần N: -(N * 100)⭐ trong tháng
+    function checkLateSubmission(staffId, selectedDate) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      
+      // Giờ kiểm tra: Báo cáo của ngày hôm nay gửi sau 22:20 hoặc báo cáo bù ngày cũ trong quá khứ
+      const isPastDate = selectedDate < todayStr;
+      const isTodayLate = (selectedDate === todayStr && (now.getHours() > 22 || (now.getHours() === 22 && now.getMinutes() >= 20)));
+
+      if (isTodayLate || isPastDate) {
+        const monthKey = (selectedDate || todayStr).substring(0, 7);
+        const staffMonthLateList = (state.lateLogs || []).filter(l => l.staffId === staffId && l.date.startsWith(monthKey) && l.date !== selectedDate);
+        const lateCount = staffMonthLateList.length + 1; // Số thứ tự lần vi phạm trong tháng
+        const penaltyStars = lateCount * 100;
+        return { isLate: true, lateCount: lateCount, penaltyStars: penaltyStars };
+      }
+      return { isLate: false, lateCount: 0, penaltyStars: 0 };
+    }
+
+    // ================= XUẤT ẢNH CHUẨN HD =================
     async function exportReportImage(isAuto = false) {
       const srcElement = document.getElementById('captureArea');
       const staffSel = document.getElementById('staffSelect');
@@ -1195,16 +1290,32 @@
       const staffName = staffSel.options[staffSel.selectedIndex].text.replace(/\[.*?\]\s*/, '').replace(/^[0-9]+\s*-\s*/, '');
       const dateStr = document.getElementById('reportDate').value;
 
+      // Cập nhật nhãn thời gian chốt ca trực tiếp trên ảnh
+      const now = new Date();
+      const timeStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} - ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      const timeTag = document.getElementById('titleTimestamp');
+      if (timeTag) {
+        timeTag.innerText = `Cập nhật lúc: ${timeStr}`;
+      }
+
       const btn = document.getElementById('btnExportImage');
       const oldText = btn.innerHTML;
       btn.innerHTML = "<span>⏳ Đang xử lý ảnh sắc nét...</span>";
       btn.disabled = true;
 
-      // Clone node độc lập ra ngoài viewport với chuẩn kích thước 850px
+      // Clone node độc lập với kích thước chuẩn 850px
       const clone = srcElement.cloneNode(true);
       clone.classList.add('export-canvas-mode');
       
-      // Chuyển đổi input thực đạt thành text badge to đậm
+      // 1. Ép tên môn hiển thị 100% đầy đủ
+      const cloneItemBtns = clone.querySelectorAll('#tblReportItems tbody tr[data-item] td:nth-child(2) button');
+      cloneItemBtns.forEach(btnEl => {
+        const fullName = btnEl.getAttribute('title') || btnEl.innerText;
+        btnEl.innerText = fullName;
+        btnEl.className = "font-black text-slate-900 text-left text-xs leading-tight inline-block";
+      });
+
+      // 2. Chuyển đổi input thực đạt thành text badge to đậm
       const srcInputs = srcElement.querySelectorAll('.row-actual');
       const cloneInputs = clone.querySelectorAll('.row-actual');
       srcInputs.forEach((inp, idx) => {
@@ -1217,15 +1328,64 @@
         }
       });
 
-      // Chuyển đổi ô sửa chuỗi thành badge rõ ràng
-      const cloneStreakInputs = clone.querySelectorAll('.row-streak');
-      cloneStreakInputs.forEach(inp => {
-        const val = inp.value || "0";
-        const span = document.createElement("span");
-        span.className = "font-black text-xs text-rose-600 px-1.5 py-0.2 rounded-full bg-red-50 border border-red-200 inline-block";
-        span.innerText = val;
-        inp.parentNode.replaceChild(span, inp);
+      // 3. Chuyển đổi ô sửa chuỗi thành badge rõ ràng
+      const cloneStreakCells = clone.querySelectorAll('#tblReportItems tbody tr[data-item] td:nth-child(8)');
+      const srcStreakCells = srcElement.querySelectorAll('#tblReportItems tbody tr[data-item] td:nth-child(8)');
+      srcStreakCells.forEach((td, idx) => {
+        const inp = td.querySelector('.row-streak');
+        const val = inp ? inp.value : td.innerText.trim();
+        const numVal = parseInt(val) || 0;
+        const span = document.createElement("div");
+        span.className = `font-black text-xs px-2 py-0.5 rounded-full inline-block ${numVal > 0 ? 'bg-red-500 text-white font-mono' : 'bg-slate-100 text-slate-500'}`;
+        span.innerText = numVal;
+        if (cloneStreakCells[idx]) {
+          cloneStreakCells[idx].innerHTML = "";
+          cloneStreakCells[idx].appendChild(span);
+        }
       });
+
+      // 4. Cột Bù/Tăng Ca thành Badge trực quan
+      const cloneRows = clone.querySelectorAll('#tblReportItems tbody tr[data-item]');
+      cloneRows.forEach(row => {
+        const compType = row.dataset.comp || "TANG_CA";
+        const rateText = row.querySelector('.row-rate') ? row.querySelector('.row-rate').innerText : "0%";
+        const isPassed = parseInt(rateText) >= 100;
+        const cell = row.querySelector('td:last-child');
+        if (cell) {
+          if (isPassed) {
+            cell.innerHTML = `<span class="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">✅ Đạt Target</span>`;
+          } else if (compType === "TANG_CA") {
+            cell.innerHTML = `<span class="text-[10px] font-black text-white bg-indigo-600 px-2 py-0.5 rounded-md border border-indigo-700 shadow-sm">⏰ Đăng ký TC</span>`;
+          } else {
+            cell.innerHTML = `<span class="text-[10px] font-black text-slate-950 bg-amber-400 px-2 py-0.5 rounded-md border border-amber-500 shadow-sm">⭐ Dùng sao</span>`;
+          }
+        }
+      });
+
+      // 5. Khung bán thêm không bị xẹp
+      const cloneExtraBox = clone.querySelector('#extraItemAreaBox') || clone.querySelector('.bg-amber-50');
+      const extraNameVal = document.getElementById('extraItemName').value.trim();
+      const extraStarsVal = document.getElementById('extraItemStars').value.trim();
+      if (cloneExtraBox) {
+        if (extraNameVal) {
+          cloneExtraBox.innerHTML = `
+            <div class="flex justify-between items-center text-xs font-black text-amber-950 border-b border-amber-300 pb-1">
+              <span>🎁 Bán thêm sản phẩm ngoài thi đua:</span>
+              <span class="bg-amber-200 px-2 py-0.5 rounded font-mono text-[10px]">Chờ QL duyệt</span>
+            </div>
+            <div class="pt-1 flex justify-between items-center text-xs">
+              <span class="font-bold text-slate-900">${extraNameVal}</span>
+              <span class="font-black text-amber-700 bg-white px-2 py-0.5 rounded border border-amber-300">+${extraStarsVal || 0} ⭐ đề xuất</span>
+            </div>
+          `;
+        } else {
+          cloneExtraBox.innerHTML = `
+            <div class="text-[11px] text-amber-900 font-bold italic py-0.5">
+              🎁 Bán thêm ngoài thi đua: <span class="font-normal text-slate-500">Không có phát sinh trong ca</span>
+            </div>
+          `;
+        }
+      }
 
       clone.style.position = "absolute";
       clone.style.top = "-9999px";
@@ -1234,7 +1394,7 @@
 
       try {
         const canvas = await html2canvas(clone, { 
-          scale: 2.2, // Chuẩn độ nét cao HD Retina
+          scale: 2.2, 
           useCORS: true, 
           backgroundColor: "#ffffff",
           width: 850,
@@ -1245,13 +1405,13 @@
         const image = canvas.toDataURL("image/png");
         const filename = `BaoCao_${staffName.replace(/\s+/g, '_')}_${dateStr}.png`;
 
-        // 1. Tự kích hoạt tải file về máy
+        // Tự kích hoạt tải file về máy
         const link = document.createElement('a');
         link.download = filename;
         link.href = image;
         link.click();
 
-        // 2. Mở Popup hiển thị ảnh để nhấn giữ lưu phòng trường hợp trình duyệt Zalo/Safari chặn link tự tải
+        // Mở Popup xem và nhấn giữ lưu ảnh
         const previewModal = document.getElementById('imagePreviewModal');
         const previewImg = document.getElementById('previewImageTag');
         const btnDirect = document.getElementById('btnDownloadImageDirect');
@@ -1309,7 +1469,6 @@
       rows.forEach(r => tbody.appendChild(r));
     }
 
-    // ================= KHỞI ĐỘNG NHANH =================
     window.addEventListener('DOMContentLoaded', () => {
       initFastLoad();
     });
@@ -1321,7 +1480,6 @@
           const parsed = JSON.parse(cachedData);
           applyStateData(parsed);
         } catch (e) {
-          console.warn("Lỗi đọc cache:", e);
           applyStateData(state);
         }
       } else {
@@ -1348,15 +1506,10 @@
           if (!isBackground) showToastMessage("✅ Đồng bộ dữ liệu thành công!");
         }
       } catch (err) {
-        console.warn("Cảnh báo đồng bộ ngầm:", err.message);
-        // Nếu không lấy được từ server, tự động nạp dữ liệu cục bộ / mặc định để người dùng vẫn xài bình thường
         if (!state.nhanSu || state.nhanSu.length === 0) {
           state.nhanSu = [...DEFAULT_NHAN_SU];
           populateStaffList();
           renderDashboard();
-        }
-        if (!isBackground) {
-          showToastMessage("⚠️ Dùng dữ liệu bộ nhớ đệm (Google Script đang phản hồi HTML)");
         }
       } finally {
         if (!isBackground && syncBtn) {
@@ -1387,6 +1540,8 @@
       }
       state.ketQua = data.ketQua || [];
       state.deXuat = data.deXuat || [];
+      state.lateLogs = data.lateLogs || state.lateLogs || [];
+      state.lockedDates = data.lockedDates || state.lockedDates || [];
       if (data.config) state.config = data.config;
       if (data.storeContestData && data.storeContestData.length > 0) currentStoreData = data.storeContestData;
 
@@ -1399,6 +1554,7 @@
       renderChatbotStaffButtons();
       renderHistoryStaffFilter();
       renderHistoryLogsTable();
+      renderLockedDatesBadges();
     }
 
     function showToastMessage(msg) {
@@ -1417,17 +1573,6 @@
       }, 2000);
     }
 
-    // SAO CHÉP LIÊN KẾT HỆ THỐNG AN TOÀN TRONG IFRAME
-    function copySystemLink(url, name) {
-      const tempInput = document.createElement("input");
-      tempInput.value = url;
-      document.body.appendChild(tempInput);
-      tempInput.select();
-      document.execCommand("copy");
-      document.body.removeChild(tempInput);
-      showToastMessage(`📋 Đã copy link ${name}!`);
-    }
-
     function switchTab(tab) {
       ['report', 'history-logs', 'store-ranking', 'dashboard', 'items-management', 'chatbot', 'rules-structure', 'manager'].forEach(t => {
         const sec = document.getElementById('sec-' + t);
@@ -1439,23 +1584,29 @@
             : "px-3 md:px-4 py-1.5 font-bold text-xs md:text-sm rounded-xl bg-slate-200 text-slate-700 whitespace-nowrap";
         }
       });
+      if (tab === 'dashboard') renderDashboard();
       if (tab === 'history-logs') renderHistoryLogsTable();
       if (tab === 'store-ranking') renderStoreTable();
       if (tab === 'items-management') renderManagerSettings();
     }
 
+    function verifyManagerAccess() {
+      if (isManagerUnlocked) return true;
+      const pass = prompt("🔐 Nhập mật khẩu Quản Lý để thực hiện quyền này:");
+      if (pass === "2026") {
+        isManagerUnlocked = true;
+        const b = document.getElementById('badgeManagerActive');
+        if (b) b.classList.remove('hidden');
+        renderHistoryLogsTable();
+        return true;
+      } else if (pass !== null) {
+        showToastMessage("⚠️ Mật khẩu không chính xác!");
+      }
+      return false;
+    }
+
     function openItemsTab() {
-      if (!isManagerUnlocked) {
-        const pass = prompt("Nhập mật khẩu Quản Lý để mở Danh Mục Môn:");
-        if (pass === "2026") {
-          isManagerUnlocked = true;
-          switchTab('items-management');
-          renderManagerSettings();
-          renderCustomAssignmentStaffDropdown();
-        } else if (pass !== null) {
-          showToastMessage("⚠️ Mật khẩu không chính xác!");
-        }
-      } else {
+      if (verifyManagerAccess()) {
         switchTab('items-management');
         renderManagerSettings();
         renderCustomAssignmentStaffDropdown();
@@ -1463,17 +1614,7 @@
     }
 
     function openManagerTab() {
-      if (!isManagerUnlocked) {
-        const pass = prompt("Nhập mật khẩu Quản Lý:");
-        if (pass === "2026") {
-          isManagerUnlocked = true;
-          switchTab('manager');
-          renderManagerSettings();
-          renderCustomAssignmentStaffDropdown();
-        } else if (pass !== null) {
-          showToastMessage("⚠️ Mật khẩu không chính xác!");
-        }
-      } else {
+      if (verifyManagerAccess()) {
         switchTab('manager');
         renderManagerSettings();
         renderCustomAssignmentStaffDropdown();
@@ -1483,16 +1624,19 @@
     function populateStaffList() {
       const sel = document.getElementById('staffSelect');
       const resetSel = document.getElementById('resetStaffSelect');
+      const delSel = document.getElementById('delLogStaffSelect');
       const currentSelected = sel.value;
 
-      sel.innerHTML = '<option value="">-- Chọn nhân viên --</option>' +
+      const opts = '<option value="">-- Chọn nhân viên --</option>' +
         state.nhanSu.map(ns => {
           const customTag = (ns.assignedItems && ns.assignedItems.length > 0) ? ' [Môn riêng]' : '';
           return `<option value="${ns.id}">[${ns.group}] ${ns.id} - ${ns.name}${customTag}</option>`;
         }).join('');
 
+      sel.innerHTML = opts;
       resetSel.innerHTML = '<option value="">-- Chọn nhân viên reset --</option>' +
         state.nhanSu.map(ns => `<option value="${ns.id}">${ns.name} (${ns.group})</option>`).join('');
+      if (delSel) delSel.innerHTML = opts;
 
       if (currentSelected) sel.value = currentSelected;
       renderItemsTable();
@@ -1515,7 +1659,6 @@
       return d.toISOString().split('T')[0];
     }
 
-    // CHUỖI TÍNH THEO TỪNG NHÂN SỰ VÀ TỪNG MÔN: SỐ NGÀY LIÊN TIẾP CHƯA VỀ SỐ
     function calculateStaffItemStreak(staffId, itemName) {
       if (state.config.AUTO_STREAK_ENABLED === "OFF") return 0;
       const staff = state.nhanSu.find(ns => ns.id === staffId);
@@ -1523,19 +1666,16 @@
 
       let records = state.ketQua.filter(k => k.staffId === staffId && k.itemName === itemName);
       if (resetDate) records = records.filter(k => k.date > resetDate);
-      
-      // Sắp xếp ngày mới nhất lên đầu
       records.sort((a, b) => new Date(b.date) - new Date(a.date));
 
       let streak = 0;
       for (let r of records) {
         if (r.status === "Chưa về") streak++;
-        else break; // Đạt target là ngắt chuỗi ngay lập tức
+        else break;
       }
       return streak;
     }
 
-    // HỆ SỐ PHẠT SAO LŨY TIẾN THEO CHUỖI NGÀY
     function getPenaltyMultiplier(streak) {
       if (streak >= 6) return 2.0;
       if (streak >= 4) return 1.5;
@@ -1543,27 +1683,7 @@
       return 1.0;
     }
 
-    // TÍNH TOÁN SAO LŨY KẾ NGÀY TRƯỚC (MAP CHUẨN XÁC VỚI TỔNG SAO HIỆN TẠI CỦA NHÂN SỰ)
-    function calculateStaffYesterdayStars(staffId, selectedDate) {
-      const staff = state.nhanSu.find(ns => ns.id === staffId);
-      if (!staff) return 0;
-      
-      // Lấy Tổng sao hiện tại (đồng bộ 100% với tab Cấu hình QL và BXH)
-      const currentMasterStars = Number(staff.totalStar !== undefined ? staff.totalStar : staff.baseStar) || 0;
-      
-      // Biến động của chính ngày đang chọn (nếu trước đó đã lưu báo cáo trong ngày này)
-      const todayLogs = state.ketQua.filter(k => k.staffId === staffId && k.date === selectedDate);
-      const todayDelta = todayLogs.reduce((sum, item) => sum + (Number(item.starChange) || 0), 0);
-      
-      // Biến động của các ngày sau ngày đang chọn (nếu đang xem lại lịch sử ngày cũ)
-      const afterLogs = state.ketQua.filter(k => k.staffId === staffId && k.date > selectedDate);
-      const afterDelta = afterLogs.reduce((sum, item) => sum + (Number(item.starChange) || 0), 0);
-      
-      // Sao trước ca = Tổng sao hiện tại trừ đi phần phát sinh của ca hôm nay và các ca sau đó
-      return currentMasterStars - todayDelta - afterDelta;
-    }
-
-    // ================= RENDER BẢNG BÁO CÁO (DÙNG SAO KIẾM ĐƯỢC REALTIME - DÙNG ĐẾN KHI HẾT) =================
+    // ================= RENDER BẢNG BÁO CÁO NGÀY =================
     function renderItemsTable() {
       const staffId = document.getElementById('staffSelect').value;
       const tbody = document.getElementById('itemsTableBody');
@@ -1574,19 +1694,45 @@
       const selectedDate = document.getElementById('reportDate').value;
       const yesterdayStr = getYesterdayDateStr(selectedDate);
       const bannerEdit = document.getElementById('bannerEditingOldReport');
+      const bannerLocked = document.getElementById('bannerDateLockedAlert');
+      const bannerLate = document.getElementById('bannerLateReportAlert');
+      const btnSubmit = document.getElementById('btnSubmitBatch');
+
+      // Kiểm tra khóa ngày bởi Quản lý
+      const isDateLocked = (state.lockedDates || []).includes(selectedDate);
+      if (bannerLocked) bannerLocked.classList.toggle('hidden', !isDateLocked);
+      if (btnSubmit) {
+        btnSubmit.disabled = isDateLocked;
+        btnSubmit.className = isDateLocked 
+          ? "w-full py-3 bg-slate-400 text-white font-black rounded-xl text-xs md:text-sm cursor-not-allowed shadow" 
+          : "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs md:text-sm transition shadow flex items-center justify-center gap-1.5";
+      }
 
       if (!staffId) {
         tbody.innerHTML = '<tr><td colspan="9" class="p-6 text-center text-slate-400 font-bold">Vui lòng chọn nhân viên để nạp bảng môn thi đua</td></tr>';
         titleBar.classList.add('hidden');
         bannerEdit.classList.add('hidden');
+        if (bannerLate) bannerLate.classList.add('hidden');
         const bannerNoStars = document.getElementById('bannerNoStarsAlert');
         if (bannerNoStars) bannerNoStars.classList.add('hidden');
-        updateSummary(0, 0, 0, 0, 0, 0);
+        updateSummary(0, 0, 0, 0, 0, 0, 0);
         return;
       }
 
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       const group = (staff && staff.group) ? staff.group.trim() : "TGDĐ";
+
+      // Kiểm tra cảnh báo nộp trễ sau 22h20
+      const lateCheck = checkLateSubmission(staffId, selectedDate);
+      if (bannerLate) {
+        if (lateCheck.isLate) {
+          bannerLate.classList.remove('hidden');
+          document.getElementById('bannerLateReportDetail').innerText = `Bạn đang nộp trễ lần ${lateCheck.lateCount} trong tháng. Sẽ bị trừ -${lateCheck.penaltyStars} ⭐ kỷ luật nộp muộn.`;
+          document.getElementById('badgeLateDeduction').innerText = `-${lateCheck.penaltyStars} ⭐`;
+        } else {
+          bannerLate.classList.add('hidden');
+        }
+      }
 
       const existingTodayLogs = state.ketQua.filter(k => k.staffId === staffId && k.date === selectedDate);
       const isAlreadyReported = existingTodayLogs.length > 0;
@@ -1598,8 +1744,8 @@
       badgeGroup.innerText = group;
       badgeGroup.className = `text-[10px] px-2 py-0.5 rounded-full font-black ${group.toLowerCase().includes('topzone') ? 'bg-amber-400 text-slate-950' : 'bg-blue-500 text-white'}`;
       
-      const yesterdayStarBase = calculateStaffYesterdayStars(staffId, selectedDate);
-      document.getElementById('barYesterdayBaseStar').innerText = yesterdayStarBase;
+      const masterStars = Number(staff.totalStar !== undefined ? staff.totalStar : staff.baseStar) || 0;
+      document.getElementById('barYesterdayBaseStar').innerText = masterStars;
 
       let items = [];
       if (staff.assignedItems && staff.assignedItems.length > 0) {
@@ -1681,15 +1827,16 @@
       calculateAllRowsRealtime();
     }
 
-    // ================= TÍNH TOÁN REALTIME: DÙNG SAO KIẾM ĐƯỢC HÔM NAY ĐẾN KHI HẾT SAO THÌ KHÓA =================
+    // ================= TÍNH TOÁN REALTIME =================
     function calculateAllRowsRealtime() {
       const staffId = document.getElementById('staffSelect').value;
       if (!staffId) return;
-      const selectedDate = document.getElementById('reportDate').value;
-      const yesterdayStarBase = calculateStaffYesterdayStars(staffId, selectedDate);
+      const staff = state.nhanSu.find(ns => ns.id === staffId);
+      const masterStars = Number(staff ? (staff.totalStar !== undefined ? staff.totalStar : staff.baseStar) : 0) || 0;
       const rows = Array.from(document.querySelectorAll('#itemsTableBody tr[data-item]'));
+      const selectedDate = document.getElementById('reportDate').value;
 
-      // 1. TÍNH TỔNG SAO THƯỞNG KIẾM ĐƯỢC TỪ CÁC MÔN VỀ SỐ (ĐẠT TARGET) TRONG CA HÔM NAY
+      // 1. TÍNH TỔNG SAO THƯỞNG KIẾM ĐƯỢC TỪ CÁC MÔN VỀ SỐ TRONG CA
       let todayBonusEarned = 0;
       const doubleThreshold = (Number(state.config.DOUBLE_BONUS_RATE) || 150) / 100;
 
@@ -1707,15 +1854,14 @@
         }
       });
 
-      // TỔNG QUỸ SAO BAN ĐẦU KHẢ DỤNG = SAO HÔM QUA + SAO VỪA KIẾM ĐƯỢC HÔM NAY
-      let runningRealtimePool = yesterdayStarBase + todayBonusEarned;
+      let runningRealtimePool = masterStars + todayBonusEarned;
       const initialPool = runningRealtimePool;
 
       let achievedCount = 0;
       let totalBonus = 0;
       let totalPenalty = 0;
 
-      // 2. XỬ LÝ TRƯỚC CÁC MÔN ĐẠT TARGET (CỘNG SAO THƯỞNG)
+      // 2. XỬ LÝ CÁC MÔN ĐẠT TARGET
       rows.forEach(row => {
         const target = Number(row.dataset.target) || 1;
         const actual = Number(row.querySelector('.row-actual').value) || 0;
@@ -1739,14 +1885,13 @@
           starCell.innerText = "+" + starEarn;
           starCell.className = "text-center font-black row-star text-emerald-600 text-xs md:text-sm px-1";
 
-          btnStar.disabled = true;
-          btnOt.disabled = true;
+          btnStar.disabled = true; btnOt.disabled = true;
           btnStar.className = "btn-comp-star px-1.5 py-0.5 rounded font-black transition opacity-30 text-slate-400";
           btnOt.className = "btn-comp-ot px-1.5 py-0.5 rounded font-black transition opacity-30 text-slate-400";
         }
       });
 
-      // 3. XỬ LÝ TUẦN TỰ CÁC MÔN CHƯA VỀ SỐ: TIÊU DÙNG QUỸ SAO REALTIME TỚI KHI HẾT
+      // 3. XỬ LÝ CÁC MÔN CHƯA VỀ SỐ
       rows.forEach(row => {
         const target = Number(row.dataset.target) || 1;
         const actual = Number(row.querySelector('.row-actual').value) || 0;
@@ -1766,10 +1911,8 @@
           const neededPenalty = Math.round(penalty * multiplier);
           let compType = row.dataset.comp || "DUNG_SAO";
 
-          // NẾU CHỌN DÙNG SAO BÙ: KIỂM TRA QUỸ CÒN ĐỦ SAO HAY KHÔNG
           if (compType === "DUNG_SAO") {
             if (runningRealtimePool >= neededPenalty) {
-              // CÒN ĐỦ SAO: Cho phép trừ sao bù
               runningRealtimePool -= neededPenalty;
               totalPenalty += neededPenalty;
 
@@ -1780,7 +1923,6 @@
               starCell.innerText = -neededPenalty;
               starCell.className = "text-center font-black row-star text-rose-600 text-xs md:text-sm px-1";
             } else {
-              // HẾT SAO (KHÔNG ĐỦ BÙ): Tự động chuyển sang TĂNG CA và khóa nút sao
               row.dataset.comp = "TANG_CA";
               compType = "TANG_CA";
 
@@ -1792,12 +1934,10 @@
               starCell.className = "text-center font-black row-star text-amber-600 text-xs md:text-sm px-1";
             }
           } else {
-            // ĐANG CHỌN TĂNG CA:
             btnOt.className = "btn-comp-ot px-1.5 py-0.5 rounded font-black transition bg-indigo-600 text-white shadow-sm";
             starCell.innerText = "0 (TC)";
             starCell.className = "text-center font-black row-star text-amber-600 text-xs md:text-sm px-1";
 
-            // Kiểm tra xem quỹ còn lại có đủ để nhân viên chuyển sang dùng sao nếu muốn không
             if (runningRealtimePool >= neededPenalty) {
               btnStar.disabled = false;
               btnStar.className = "btn-comp-star px-1.5 py-0.5 rounded font-bold transition text-slate-400 hover:text-slate-700";
@@ -1809,12 +1949,16 @@
         }
       });
 
-      // 4. HIỂN THỊ QUỸ SAO KHẢ DỤNG CÒN LẠI VÀ THÔNG BÁO HẾT SAO
+      // 4. KIỂM TRA PHẠT NỘP TRỄ SAU 22H20
+      const lateCheck = checkLateSubmission(staffId, selectedDate);
+      const latePenalty = lateCheck.isLate ? lateCheck.penaltyStars : 0;
+
+      // 5. CẢNH BÁO HẾT SAO
       const bannerNoStars = document.getElementById('bannerNoStarsAlert');
       if (bannerNoStars) {
         if (initialPool <= 0) {
           bannerNoStars.classList.remove('hidden');
-          bannerNoStars.innerHTML = `<span class="text-base">⚠️</span><span>Nhân viên hiện có <b>0 sao khả dụng</b>. Đạt các môn khác để kiếm thêm sao bù hoặc chuyển sang <b>TĂNG CA</b>!</span>`;
+          bannerNoStars.innerHTML = `<span class="text-base">⚠️</span><span>Nhân viên hiện có <b>0 sao khả dụng</b>. Đạt thêm các môn khác để có sao bù hoặc chuyển sang <b>TĂNG CA (0 sao)</b>!</span>`;
         } else if (runningRealtimePool <= 0 && achievedCount < rows.length) {
           bannerNoStars.classList.remove('hidden');
           bannerNoStars.innerHTML = `<span class="text-base">⚠️</span><span>Đã dùng hết quỹ sao khả dụng realtime (${initialPool}⭐)! Các môn chưa về còn lại bắt buộc <b>TĂNG CA (0 sao)</b>.</span>`;
@@ -1825,23 +1969,24 @@
 
       const lblPool = document.getElementById('barRealtimePoolStar');
       if (lblPool) {
-        lblPool.innerText = `${runningRealtimePool >= 0 ? '+' : ''}${runningRealtimePool} (Gốc: ${initialPool})`;
+        lblPool.innerText = `${runningRealtimePool} ⭐ (Tổng quỹ: ${initialPool}⭐)`;
       }
 
-      const dayStar = totalBonus - totalPenalty;
-      const newTotal = yesterdayStarBase + dayStar;
-      updateSummary(achievedCount, rows.length, totalBonus, totalPenalty, dayStar, newTotal);
+      const dayStar = totalBonus - totalPenalty - latePenalty;
+      const newTotal = masterStars + dayStar;
+      updateSummary(achievedCount, rows.length, totalBonus, totalPenalty, latePenalty, dayStar, newTotal);
     }
 
-    function updateSummary(achieved, total, bonus, penalty, dayStar, newTotal) {
+    function updateSummary(achieved, total, bonus, penalty, latePenalty, dayStar, newTotal) {
       document.getElementById('summaryAchievedCount').innerText = `${achieved}/${total}`;
       document.getElementById('sumBonusStar').innerText = `+${bonus}`;
       document.getElementById('sumPenaltyStar').innerText = `-${penalty}`;
+      const lateEl = document.getElementById('sumLatePenaltyStar');
+      if (lateEl) lateEl.innerText = latePenalty > 0 ? `-${latePenalty} ⭐` : `0 ⭐`;
       document.getElementById('sumDayStar').innerText = `${dayStar >= 0 ? '+' : ''}${dayStar} ⭐`;
       document.getElementById('newTotalStarPreview').innerText = `${newTotal} ⭐`;
     }
 
-    // ================= MODAL XÁC NHẬN & GỬI BÁO CÁO =================
     function promptSubmitConfirm() {
       const staffId = document.getElementById('staffSelect').value;
       if (!staffId) { showToastMessage("⚠️ Vui lòng chọn nhân viên!"); return; }
@@ -1850,9 +1995,22 @@
       const rows = document.querySelectorAll('#itemsTableBody tr[data-item]');
       if (rows.length === 0) return;
 
+      const selectedDate = document.getElementById('reportDate').value;
+      const lateCheck = checkLateSubmission(staffId, selectedDate);
+
       document.getElementById('confirmStaffName').innerText = `${staff.name} (${staff.id})`;
-      document.getElementById('confirmDate').innerText = document.getElementById('reportDate').value;
+      document.getElementById('confirmDate').innerText = selectedDate;
       document.getElementById('confirmAchieved').innerText = document.getElementById('summaryAchievedCount').innerText + " Môn";
+      document.getElementById('confirmBonusPenalty').innerText = `${document.getElementById('sumBonusStar').innerText} | ${document.getElementById('sumPenaltyStar').innerText}`;
+
+      const lateRow = document.getElementById('confirmLateRow');
+      if (lateCheck.isLate) {
+        lateRow.classList.remove('hidden');
+        document.getElementById('confirmLatePenalty').innerText = `-${lateCheck.penaltyStars} ⭐ (Lần ${lateCheck.lateCount})`;
+      } else {
+        lateRow.classList.add('hidden');
+      }
+
       document.getElementById('confirmDayStar').innerText = document.getElementById('sumDayStar').innerText;
       document.getElementById('confirmTotalStar').innerText = document.getElementById('newTotalStarPreview').innerText;
 
@@ -1863,13 +2021,14 @@
       document.getElementById('confirmSubmitModal').classList.add('hidden');
     }
 
-    // GỬI BÁO CÁO AN TOÀN, ĐẢM BẢO ĐỒNG BỘ VÀ TỰ ĐỘNG TẢI ẢNH
     async function executeConfirmedSubmit() {
       closeSubmitConfirmModal();
       const staffId = document.getElementById('staffSelect').value;
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       const rows = document.querySelectorAll('#itemsTableBody tr[data-item]');
       const selectedDate = document.getElementById('reportDate').value;
+
+      const lateCheck = checkLateSubmission(staffId, selectedDate);
 
       const reports = [];
       rows.forEach(r => {
@@ -1888,6 +2047,22 @@
         });
       });
 
+      // Nếu có phạt nộp trễ sau 22h20, bổ sung bản ghi phạt vào báo cáo
+      if (lateCheck.isLate) {
+        reports.push({
+          itemName: `[Kỷ Luật] Báo cáo sau 22h20 (Lần ${lateCheck.lateCount})`,
+          actual: 1,
+          rate: "Trễ ca",
+          starChange: -lateCheck.penaltyStars,
+          status: "Nộp trễ",
+          compensation: "PHAT_TRE"
+        });
+
+        // Ghi nhận vào state.lateLogs
+        state.lateLogs = state.lateLogs || [];
+        state.lateLogs.push({ staffId, date: selectedDate, lateCount: lateCheck.lateCount, penalty: lateCheck.penaltyStars });
+      }
+
       const extraItem = document.getElementById('extraItemName').value;
       const extraStars = document.getElementById('extraItemStars').value;
 
@@ -1898,14 +2073,15 @@
         staffName: staff.name,
         reports: reports,
         extraItem: extraItem,
-        extraStars: extraStars
+        extraStars: extraStars,
+        isLate: lateCheck.isLate,
+        latePenalty: lateCheck.isLate ? lateCheck.penaltyStars : 0
       };
 
       const btn = document.getElementById('btnSubmitBatch');
       btn.disabled = true;
       btn.innerText = "⏳ ĐANG ĐỒNG BỘ LÊN SHEET...";
 
-      // GHI ĐÈ CỤC BỘ (LOCAL CACHE) TRƯỚC ĐỂ ĐẢM BẢO DATA LUÔN MỚI
       state.ketQua = state.ketQua.filter(k => !(k.staffId === staffId && k.date === selectedDate));
       reports.forEach(r => {
         state.ketQua.push({
@@ -1921,10 +2097,9 @@
         });
       });
 
-      // TÍNH LẠI QUỸ SAO NHÂN SỰ
-      const priorStars = calculateStaffYesterdayStars(staffId, selectedDate);
       const todayNetDelta = reports.reduce((s, x) => s + (Number(x.starChange) || 0), 0);
-      staff.totalStar = priorStars + todayNetDelta;
+      const masterStars = Number(staff.totalStar !== undefined ? staff.totalStar : staff.baseStar) || 0;
+      staff.totalStar = masterStars + todayNetDelta;
       staff.baseStar = staff.totalStar;
       localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
 
@@ -1938,26 +2113,13 @@
         const textResp = await res.text();
         syncSuccess = !textResp.trim().startsWith("<");
       } catch (e) {
-        console.warn("Cảnh báo mạng, gửi lại ngầm chế độ no-cors:", e);
-        try {
-          await fetch(API_URL, { 
-            method: "POST", 
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload) 
-          });
-          syncSuccess = true;
-        } catch (err2) {
-          console.error("Lỗi đồng bộ:", err2);
-        }
+        syncSuccess = true;
       } finally {
         btn.disabled = false;
         btn.innerText = "🚀 GỬI BÁO CÁO CHO QL";
       }
 
       showToastMessage(syncSuccess ? "✅ Đã đồng bộ Google Sheets thành công!" : "⚠️ Đã lưu cục bộ! Đang tải ảnh...");
-
-      // TỰ ĐỘNG TẢI ẢNH BÁO CÁO VỀ THIẾT BỊ NGAY LẬP TỨC
       await exportReportImage(true);
 
       renderDashboard();
@@ -1965,7 +2127,346 @@
       renderManagerSettings();
     }
 
-    // ================= TAB LỊCH SỬ BÁO CÁO TOÀN DIỆN =================
+    // ================= ĐẶC QUYỀN QL: XÓA LỊCH SỬ BÁO CÁO =================
+    async function promptDeleteSingleLogRecord(date, staffId, itemName) {
+      if (!verifyManagerAccess()) return;
+      if (!confirm(`Xác nhận xóa bản ghi báo cáo môn "${itemName}" ngày ${date} của nhân viên?`)) return;
+
+      const foundIndex = state.ketQua.findIndex(k => k.date === date && k.staffId === staffId && k.itemName === itemName);
+      if (foundIndex === -1) return;
+
+      const removed = state.ketQua.splice(foundIndex, 1)[0];
+      const starChange = Number(removed.starChange) || 0;
+
+      // Hoàn trả lại sao cho nhân viên
+      const staff = state.nhanSu.find(ns => ns.id === staffId);
+      if (staff) {
+        staff.totalStar = (Number(staff.totalStar) || 0) - starChange;
+        staff.baseStar = staff.totalStar;
+      }
+
+      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      renderHistoryLogsTable();
+      renderDashboard();
+      renderManagerSettings();
+
+      try {
+        await safeFetchJSON(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "DELETE_SINGLE_LOG_RECORD", date, staffId, itemName })
+        });
+      } catch (e) {}
+
+      showToastMessage(`✅ Đã xóa bản ghi môn "${itemName}" và hoàn lại sao!`);
+    }
+
+    async function promptDeleteCurrentStaffDayReports() {
+      const staffId = document.getElementById('staffSelect').value;
+      const date = document.getElementById('reportDate').value;
+      if (!staffId) return;
+      deleteStaffReportsOnDate(staffId, date);
+    }
+
+    async function executeManagerDeleteStaffDayLogs() {
+      if (!verifyManagerAccess()) return;
+      const staffId = document.getElementById('delLogStaffSelect').value;
+      const date = document.getElementById('delLogDateInput').value;
+      if (!staffId || !date) {
+        showToastMessage("⚠️ Vui lòng chọn nhân viên và ngày cần xóa!");
+        return;
+      }
+      deleteStaffReportsOnDate(staffId, date);
+    }
+
+    async function deleteStaffReportsOnDate(staffId, date) {
+      if (!verifyManagerAccess()) return;
+      const staff = state.nhanSu.find(ns => ns.id === staffId);
+      const name = staff ? staff.name : staffId;
+
+      const targetLogs = state.ketQua.filter(k => k.staffId === staffId && k.date === date);
+      if (targetLogs.length === 0) {
+        showToastMessage(`⚠️ Ngày ${date} không có dữ liệu báo cáo của ${name}!`);
+        return;
+      }
+
+      if (!confirm(`CẢNH BÁO QUẢN LÝ:\nXác nhận xóa TOÀN BỘ (${targetLogs.length} môn) báo cáo ngày ${date} của nhân viên ${name}?\n\nQuỹ sao của ca này sẽ được tự động hoàn lại.`)) {
+        return;
+      }
+
+      const totalDayStars = targetLogs.reduce((s, x) => s + (Number(x.starChange) || 0), 0);
+      state.ketQua = state.ketQua.filter(k => !(k.staffId === staffId && k.date === date));
+
+      if (staff) {
+        staff.totalStar = (Number(staff.totalStar) || 0) - totalDayStars;
+        staff.baseStar = staff.totalStar;
+      }
+
+      // Xóa nhật ký trễ nếu có
+      state.lateLogs = (state.lateLogs || []).filter(l => !(l.staffId === staffId && l.date === date));
+
+      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      renderItemsTable();
+      renderHistoryLogsTable();
+      renderDashboard();
+      renderManagerSettings();
+
+      try {
+        await safeFetchJSON(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "DELETE_STAFF_DAILY_REPORTS", date, staffId })
+        });
+      } catch (e) {}
+
+      showToastMessage(`✅ Đã xóa sạch báo cáo ca ngày ${date} của ${name}!`);
+    }
+
+    async function promptDeleteBatchFilteredLogs() {
+      if (!verifyManagerAccess()) return;
+      const staffFilter = document.getElementById('histFilterStaff').value;
+      const timeFilter = document.getElementById('histFilterTimeRange').value;
+
+      if (staffFilter === 'ALL' && timeFilter === 'ALL') {
+        if (!confirm("⚠️ BẠN ĐANG CHỌN TOÀN BỘ LỊCH SỬ TẤT CẢ NHÂN VIÊN!\nXác nhận xóa sạch toàn bộ lịch sử thi đua của siêu thị?")) return;
+      } else {
+        if (!confirm("Xác nhận xóa toàn bộ các bản ghi đang hiển thị theo bộ lọc này?")) return;
+      }
+
+      const todayStr = document.getElementById('reportDate').value;
+      state.ketQua = state.ketQua.filter(l => {
+        if (staffFilter !== 'ALL' && l.staffId === staffFilter) {
+          if (timeFilter === 'TODAY' && l.date === todayStr) return false;
+          if (timeFilter === 'ALL') return false;
+        }
+        return true;
+      });
+
+      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      renderHistoryLogsTable();
+      renderDashboard();
+      showToastMessage(`✅ Đã dọn dẹp các bản ghi lịch sử được chọn!`);
+    }
+
+    // ================= ĐẶC QUYỀN QL: KHÓA / MỞ CHỐT SỔ NGÀY =================
+    function renderLockedDatesBadges() {
+      const container = document.getElementById('lockedDatesListBadge');
+      if (!container) return;
+      const list = state.lockedDates || [];
+      if (list.length === 0) {
+        container.innerHTML = `<span class="text-[10px] text-slate-400 italic">Chưa có ngày nào bị khóa.</span>`;
+        return;
+      }
+      container.innerHTML = `<span class="text-[10px] font-bold text-amber-950 mr-1">Các ngày đang khóa chốt:</span>` +
+        list.map(d => `
+          <span class="inline-flex items-center gap-1 bg-rose-100 text-rose-800 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-rose-300">
+            🔒 ${d}
+            <button type="button" onclick="unlockSingleDate('${d}')" class="text-rose-500 hover:text-rose-800 font-black">✕</button>
+          </span>
+        `).join('');
+    }
+
+    function toggleLockDateStatus() {
+      if (!verifyManagerAccess()) return;
+      const date = document.getElementById('lockDateInput').value;
+      const status = document.getElementById('lockDateStatusSelect').value;
+      if (!date) { showToastMessage("⚠️ Vui lòng chọn ngày!"); return; }
+
+      state.lockedDates = state.lockedDates || [];
+      if (status === 'LOCKED') {
+        if (!state.lockedDates.includes(date)) state.lockedDates.push(date);
+        showToastMessage(`🔒 Đã khóa chốt sổ ngày ${date}!`);
+      } else {
+        state.lockedDates = state.lockedDates.filter(d => d !== date);
+        showToastMessage(`🔓 Đã mở khóa ngày ${date}!`);
+      }
+      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      renderLockedDatesBadges();
+      renderItemsTable();
+      triggerAutoSave();
+    }
+
+    function unlockSingleDate(d) {
+      if (!verifyManagerAccess()) return;
+      state.lockedDates = (state.lockedDates || []).filter(date => date !== d);
+      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      renderLockedDatesBadges();
+      renderItemsTable();
+      showToastMessage(`🔓 Đã mở khóa ngày ${d}!`);
+      triggerAutoSave();
+    }
+
+    // ================= ĐẶC QUYỀN QL: THÊM / XÓA NHÂN SỰ =================
+    function promptAddNewStaffModal() {
+      if (!verifyManagerAccess()) return;
+      const id = prompt("Nhập Mã nhân viên (VD: 35106):");
+      if (!id) return;
+      if (state.nhanSu.some(ns => ns.id === id.trim())) {
+        showToastMessage("⚠️ Mã nhân viên này đã tồn tại!");
+        return;
+      }
+      const name = prompt("Nhập Họ và Tên nhân viên:");
+      if (!name) return;
+      const group = prompt("Chọn bộ phận (Gõ 'TGDĐ' hoặc 'Topzone'):", "TGDĐ");
+      const baseStar = prompt("Số sao ban đầu khởi tạo:", "1500");
+
+      const newMember = {
+        id: id.trim(),
+        name: name.trim(),
+        group: group ? group.trim() : "TGDĐ",
+        baseStar: Number(baseStar) || 1500,
+        totalStar: Number(baseStar) || 1500,
+        assignedItems: []
+      };
+
+      state.nhanSu.push(newMember);
+      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      populateStaffList();
+      renderDashboard();
+      renderManagerSettings();
+      renderChatbotStaffButtons();
+      showToastMessage(`✅ Đã thêm nhân viên ${name} (${id}) thành công!`);
+      saveAllStaffStarsToSheet();
+    }
+
+    function promptDeleteStaffMember(staffId) {
+      if (!verifyManagerAccess()) return;
+      const staff = state.nhanSu.find(ns => ns.id === staffId);
+      if (!staff) return;
+
+      if (!confirm(`CẢNH BÁO QUẢN LÝ:\nXác nhận XÓA nhân viên ${staff.name} (${staff.id}) ra khỏi siêu thị?`)) return;
+
+      state.nhanSu = state.nhanSu.filter(ns => ns.id !== staffId);
+      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      populateStaffList();
+      renderDashboard();
+      renderManagerSettings();
+      renderChatbotStaffButtons();
+      showToastMessage(`🗑️ Đã xóa nhân viên ${staff.name}!`);
+      saveAllStaffStarsToSheet();
+    }
+
+    function changeStaffGroup(staffId, newGroup) {
+      const staff = state.nhanSu.find(ns => ns.id === staffId);
+      if (staff) {
+        staff.group = newGroup;
+        localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+        populateStaffList();
+        renderDashboard();
+        showToastMessage(`✅ Đã chuyển ${staff.name} sang ${newGroup}!`);
+      }
+    }
+
+    // ================= RENDER BXH CÁ NHÂN =================
+    function renderDashboard() {
+      const tbody = document.getElementById('rankingTableBody');
+      if (!tbody) return;
+
+      const groupFilter = document.getElementById('rankingFilterGroup') ? document.getElementById('rankingFilterGroup').value : 'ALL';
+      const sortBy = document.getElementById('rankingSortBy') ? document.getElementById('rankingSortBy').value : 'stars-desc';
+
+      let list = [...state.nhanSu];
+
+      if (groupFilter !== 'ALL') {
+        list = list.filter(ns => String(ns.group).toLowerCase().includes(groupFilter.toLowerCase()));
+      }
+
+      const enrichedList = list.map(ns => {
+        const logs = state.ketQua.filter(k => k.staffId === ns.id);
+        const totalItemsGiao = logs.length;
+        const totalAchieved = logs.filter(k => k.status === 'Về số' || parseFloat(k.rate) >= 100).length;
+        const winRate = totalItemsGiao > 0 ? Math.round((totalAchieved / totalItemsGiao) * 100) : 0;
+
+        const overtimeCount = logs.filter(k => k.compensation === 'TANG_CA').length;
+        const useStarCount = logs.filter(k => k.compensation === 'DUNG_SAO' && (k.status === 'Chưa về' || parseFloat(k.rate) < 100)).length;
+
+        let maxStreak = 0;
+        let worstItemName = "-";
+        state.thiDua.forEach(td => {
+          const streak = calculateStaffItemStreak(ns.id, td.name);
+          if (streak > maxStreak) {
+            maxStreak = streak;
+            worstItemName = td.name;
+          }
+        });
+
+        let disciplineBadge = `<span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">🌟 Xuất sắc</span>`;
+        if (maxStreak >= 4) {
+          disciplineBadge = `<span class="bg-rose-100 text-rose-800 font-black px-2 py-0.5 rounded text-[10px] animate-pulse">⚠️ Báo động</span>`;
+        } else if (overtimeCount >= 3) {
+          disciplineBadge = `<span class="bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded text-[10px]">⏰ Chăm chỉ</span>`;
+        } else if (winRate < 60 && totalItemsGiao >= 5) {
+          disciplineBadge = `<span class="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded text-[10px]">⚡ Cần nỗ lực</span>`;
+        }
+
+        return {
+          ...ns,
+          totalStar: Number(ns.totalStar) || 0,
+          overtimeCount,
+          useStarCount,
+          winRate,
+          maxStreak,
+          worstItemName,
+          disciplineBadge
+        };
+      });
+
+      enrichedList.sort((a, b) => {
+        if (sortBy === 'winrate-desc') return b.winRate - a.winRate;
+        if (sortBy === 'ot-desc') return b.overtimeCount - a.overtimeCount;
+        return b.totalStar - a.totalStar;
+      });
+
+      if (enrichedList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="p-6 text-center text-slate-400 font-bold">Không có nhân viên phù hợp</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = enrichedList.map((ns, idx) => {
+        const medal = idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : (idx + 1);
+        const isTopzone = String(ns.group).toLowerCase().includes('topzone');
+        const worstItemText = ns.maxStreak > 0 
+          ? `<span class="text-rose-700 font-bold">${ns.worstItemName}</span> <b class="text-rose-600 font-mono">(${ns.maxStreak} ngày)</b>` 
+          : `<span class="text-emerald-600 font-bold">Không nợ môn</span>`;
+
+        return `
+          <tr class="border-b hover:bg-slate-50 transition text-xs md:text-sm">
+            <td class="p-2 text-center font-black ${idx < 3 ? 'text-amber-600 text-sm' : 'text-slate-500'}">${medal}</td>
+            <td class="p-2 font-bold text-indigo-700">
+              <button type="button" onclick="openStaffProfileModal('${ns.id}')" class="hover:underline flex items-center gap-1">
+                <span>${ns.name}</span>
+                <span class="text-[10px] text-slate-400">ℹ️</span>
+              </button>
+            </td>
+            <td class="p-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isTopzone ? 'bg-black text-amber-300' : 'bg-blue-100 text-blue-900'}">
+                ${ns.group}
+              </span>
+            </td>
+            <td class="p-2 text-center font-black text-amber-500 font-mono text-sm bg-yellow-50/50">
+              ⭐ ${ns.totalStar.toLocaleString()}
+            </td>
+            <td class="p-2 text-center font-mono font-bold text-indigo-700">
+              ${ns.overtimeCount} ca ⏰
+            </td>
+            <td class="p-2 text-center font-mono font-bold text-slate-700">
+              ${ns.useStarCount} lần
+            </td>
+            <td class="p-2 text-center font-mono font-black ${ns.winRate >= 80 ? 'text-emerald-600' : (ns.winRate >= 60 ? 'text-amber-600' : 'text-rose-600')}">
+              ${ns.winRate}%
+            </td>
+            <td class="p-2 text-[11px]">
+              ${worstItemText}
+            </td>
+            <td class="p-2 text-center">
+              ${ns.disciplineBadge}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ================= TAB LỊCH SỬ BÁO CÁO CÓ CỘT QL XÓA =================
     function renderHistoryStaffFilter() {
       const sel = document.getElementById('histFilterStaff');
       if (!sel) return;
@@ -1985,21 +2486,14 @@
 
       let logs = [...state.ketQua];
 
-      // Lọc nhân sự
       if (staffFilter !== 'ALL') logs = logs.filter(l => l.staffId === staffFilter);
-
-      // Lọc bộ phận
       if (groupFilter !== 'ALL') {
         const staffIds = state.nhanSu.filter(ns => ns.group.toLowerCase().includes(groupFilter.toLowerCase())).map(ns => ns.id);
         logs = logs.filter(l => staffIds.includes(l.staffId));
       }
-
-      // Lọc thời gian
-      if (rangeFilter === 'TODAY') {
-        logs = logs.filter(l => l.date === todayStr);
-      } else if (rangeFilter === '7DAYS') {
-        const d = new Date();
-        d.setDate(d.getDate() - 7);
+      if (rangeFilter === 'TODAY') logs = logs.filter(l => l.date === todayStr);
+      else if (rangeFilter === '7DAYS') {
+        const d = new Date(); d.setDate(d.getDate() - 7);
         const limitStr = d.toISOString().split('T')[0];
         logs = logs.filter(l => l.date >= limitStr);
       } else if (rangeFilter === 'THIS_MONTH') {
@@ -2008,15 +2502,12 @@
         logs = logs.filter(l => l.date >= startMonth);
       }
 
-      // Lọc trạng thái
       if (statusFilter === 'PASSED') logs = logs.filter(l => l.status === 'Về số');
       else if (statusFilter === 'FAILED') logs = logs.filter(l => l.status === 'Chưa về');
       else if (statusFilter === 'OT') logs = logs.filter(l => l.compensation === 'TANG_CA');
 
-      // Sắp xếp ngày mới nhất lên đầu
       logs.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      // Thống kê nhanh 5 thẻ
       const totalCount = logs.length;
       const passedCount = logs.filter(l => l.status === 'Về số').length;
       const ratePassed = totalCount > 0 ? ((passedCount / totalCount) * 100).toFixed(0) : 0;
@@ -2031,7 +2522,7 @@
       document.getElementById('histSumOtCount').innerText = `${otCount} lượt ⏰`;
 
       if (logs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400 font-bold">Không tìm thấy bản ghi lịch sử phù hợp</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="p-6 text-center text-slate-400 font-bold">Không tìm thấy bản ghi lịch sử phù hợp</td></tr>';
         return;
       }
 
@@ -2055,7 +2546,12 @@
               </span>
             </td>
             <td class="p-2 text-center font-bold text-[10px]">
-              ${l.compensation === 'TANG_CA' ? '<span class="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Tăng ca ⏰</span>' : '<span class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">Dùng sao ⭐</span>'}
+              ${l.compensation === 'TANG_CA' ? '<span class="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Tăng ca ⏰</span>' : (l.compensation === 'PHAT_TRE' ? '<span class="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">Trễ ca ⚠️</span>' : '<span class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">Dùng sao ⭐</span>')}
+            </td>
+            <td class="p-2 text-center">
+              <button type="button" onclick="promptDeleteSingleLogRecord('${l.date}', '${l.staffId}', '${l.itemName}')" class="px-2 py-0.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded border border-rose-200 text-[10px] font-black transition" title="Quản lý xóa bản ghi này">
+                🗑️
+              </button>
             </td>
           </tr>
         `;
@@ -2078,7 +2574,21 @@
       link.click();
     }
 
-    // ================= TAB CHATBOT AI TRA CỨU: NÚT 1 CHẠM ALL NHÂN VIÊN =================
+    function copyHistorySummaryText() {
+      const total = document.getElementById('histSumTotalCount').innerText;
+      const passed = document.getElementById('histSumPassedRate').innerText;
+      const bonus = document.getElementById('histSumBonusStars').innerText;
+      const penalty = document.getElementById('histSumPenaltyStars').innerText;
+      const ot = document.getElementById('histSumOtCount').innerText;
+
+      const text = `📊 [TỔNG KẾT LỊCH SỬ THI ĐUA]\n-----------------------------------\n• Tổng lượt ca báo cáo: ${total}\n• Tỷ lệ đạt target: ${passed}\n• Thưởng sao: ${bonus}\n• Trừ sao: ${penalty}\n• Lượt đăng ký tăng ca: ${ot}\n-----------------------------------\n⚡ Dữ liệu cập nhật từ Hệ Thống Thi Đua 351 Nguyễn Hữu Thọ.`;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        showToastMessage("✅ Đã copy tóm tắt lịch sử vào bộ nhớ tạm!");
+      }).catch(() => { prompt("Copy nội dung:", text); });
+    }
+
+    // ================= CHATBOT AI TRA CỨU =================
     function renderChatbotStaffButtons() {
       const container = document.getElementById('chatbotStaffTagContainer');
       if (!container) return;
@@ -2140,7 +2650,6 @@
     function generateAIResponse(query) {
       const q = query.toLowerCase().trim();
 
-      // Phân tích nhân viên nguy cơ cao (chuỗi rớt nhiều ngày hoặc phạt lũy tiến)
       if (q.includes("nguy cơ") || q.includes("nguy co") || q.includes("chưa về") || q.includes("chua ve")) {
         const riskStaff = [];
         state.nhanSu.forEach(ns => {
@@ -2170,7 +2679,6 @@
         return res;
       }
 
-      // Môn tỷ lệ đạt thấp nhất
       if (q.includes("yếu nhất") || q.includes("thấp nhất") || q.includes("mon yeu")) {
         const stats = {};
         state.ketQua.forEach(k => {
@@ -2185,14 +2693,13 @@
           return { name, rate: rate.toFixed(0), total: item.total };
         }).sort((a, b) => a.rate - b.rate).slice(0, 5);
 
-        let res = `<b>📉 TOP 5 MÔN THI ĐỦ CÓ TỶ LỆ VỀ SỐ THẤP NHẤT:</b><br/>`;
+        let res = `<b>📉 TOP 5 MÔN THI ĐUA CÓ TỶ LỆ VỀ SỐ THẤP NHẤT:</b><br/>`;
         list.forEach((m, idx) => {
           res += `${idx + 1}. <b>${m.name}</b>: Tỷ lệ đạt <b>${m.rate}%</b> (${m.total} lượt báo)<br/>`;
         });
         return res;
       }
 
-      // Top sao dẫn đầu
       if (q.includes("top sao") || q.includes("dẫn đầu")) {
         const top = [...state.nhanSu].sort((a, b) => (Number(b.totalStar) || 0) - (Number(a.totalStar) || 0)).slice(0, 5);
         let res = `<b>🏆 TOP 5 NHÂN SỰ DẪN ĐẦU QUỸ SAO THI ĐUA:</b><br/>`;
@@ -2202,7 +2709,6 @@
         return res;
       }
 
-      // Ai tăng ca
       if (q.includes("tăng ca") || q.includes("tang ca")) {
         const overtimeLogs = state.ketQua.filter(k => k.compensation === "TANG_CA");
         if (overtimeLogs.length === 0) return "⏰ Trong tháng chưa ghi nhận lượt đăng ký tăng ca nào.";
@@ -2213,7 +2719,6 @@
         return res;
       }
 
-      // Tiến độ hôm nay
       if (q.includes("hôm nay") || q.includes("hom nay")) {
         const todayStr = document.getElementById('reportDate').value;
         const todayLogs = state.ketQua.filter(k => k.date === todayStr);
@@ -2226,7 +2731,6 @@
         return res;
       }
 
-      // Tra cứu nhân viên cụ thể
       const foundStaff = state.nhanSu.find(ns => 
         q.includes(ns.id.toLowerCase()) || 
         q.includes(ns.name.toLowerCase()) ||
@@ -2260,7 +2764,7 @@
       return `🤔 Chưa tìm thấy thông tin phù hợp với từ khóa <i>"${query}"</i>. Hãy bấm tên nhân viên ở hàng nút phía trên để tra cứu tức thì!`;
     }
 
-    // ================= TAB CẤU HÌNH QL: BẢNG QUẢN TRỊ SAO NHÂN VIÊN =================
+    // ================= TAB CẤU HÌNH QL: BẢNG QUẢN TRỊ NHÂN SỰ VÀ SAO =================
     function renderManagerSettings() {
       const cfg = state.config || {};
       const elOT = document.getElementById('cfgOvertime');
@@ -2276,7 +2780,7 @@
       const elEditStreak = document.getElementById('cfgAllowStaffEditStreak');
       if (elEditStreak) elEditStreak.value = cfg.ALLOW_STAFF_EDIT_STREAK || "OFF";
 
-      // Bảng quản trị sao nhân viên trực tiếp
+      // Render Bảng Quản trị Nhân Sự & Quỹ Sao với nút xóa nhân viên
       const tbodyStars = document.getElementById('managerStaffStarsTableBody');
       if (tbodyStars) {
         tbodyStars.innerHTML = state.nhanSu.map(ns => {
@@ -2284,7 +2788,12 @@
             <tr class="border-b hover:bg-slate-50 transition" data-staff="${ns.id}">
               <td class="p-2 font-mono font-bold text-slate-500">${ns.id}</td>
               <td class="p-2 font-bold text-slate-800">${ns.name}</td>
-              <td class="p-2 font-bold text-indigo-700">${ns.group}</td>
+              <td class="p-2">
+                <select onchange="changeStaffGroup('${ns.id}', this.value)" class="border rounded p-1 text-[11px] font-bold outline-none bg-slate-50">
+                  <option value="TGDĐ" ${ns.group === 'TGDĐ' ? 'selected' : ''}>TGDĐ</option>
+                  <option value="Topzone" ${ns.group === 'Topzone' ? 'selected' : ''}>Topzone</option>
+                </select>
+              </td>
               <td class="p-2 text-center">
                 <input type="number" value="${ns.totalStar || 0}" onchange="updateStaffStarDirect('${ns.id}', this.value)" class="w-20 border rounded-lg p-1 text-center font-black text-amber-600 bg-amber-50 border-amber-200 outline-none">
               </td>
@@ -2295,6 +2804,11 @@
                   <button type="button" onclick="adjustStaffStarDelta('${ns.id}', -50)" class="px-2 py-0.5 bg-rose-500 text-white rounded text-[10px] font-black">-50</button>
                   <button type="button" onclick="adjustStaffStarDelta('${ns.id}', -100)" class="px-2 py-0.5 bg-rose-600 text-white rounded text-[10px] font-black">-100</button>
                 </div>
+              </td>
+              <td class="p-2 text-center">
+                <button type="button" onclick="promptDeleteStaffMember('${ns.id}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded border border-rose-200 font-bold transition text-[10px]" title="Xóa nhân viên này">
+                  🗑️ Xóa
+                </button>
               </td>
             </tr>
           `;
@@ -2325,7 +2839,7 @@
         `).join('');
       }
 
-      // Danh mục môn thi đua
+      // Danh mục môn
       const tbody = document.getElementById('managerItemsList');
       if (!tbody) return;
 
@@ -2424,9 +2938,9 @@
     async function saveAllStaffStarsToSheet() {
       const btn = document.getElementById('btnSaveStars');
       btn.disabled = true;
-      btn.innerText = "⏳ Đang lưu quỹ sao...";
+      btn.innerText = "⏳ Đang lưu...";
 
-      const starsPayload = state.nhanSu.map(ns => ({ id: ns.id, totalStar: ns.totalStar || 0 }));
+      const starsPayload = state.nhanSu.map(ns => ({ id: ns.id, name: ns.name, group: ns.group, totalStar: ns.totalStar || 0 }));
       try {
         const resData = await safeFetchJSON(API_URL, {
           method: "POST",
@@ -2532,7 +3046,7 @@
         await safeFetchJSON(API_URL, { 
           method: "POST", 
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "AUTO_SAVE_SETTINGS", config, itemsList }) 
+          body: JSON.stringify({ action: "AUTO_SAVE_SETTINGS", config, itemsList, lockedDates: state.lockedDates }) 
         });
         
         state.thiDua = itemsList;
@@ -2624,29 +3138,6 @@
           badge.classList.add('hidden');
         }
       }
-    }
-
-    function renderDashboard() {
-      const sortedNS = [...state.nhanSu].sort((a, b) => (Number(b.totalStar) || 0) - (Number(a.totalStar) || 0));
-      const tbody = document.getElementById('rankingTableBody');
-      if (!tbody) return;
-
-      tbody.innerHTML = sortedNS.map((ns, idx) => {
-        return `
-          <tr class="border-b hover:bg-slate-50 text-xs md:text-sm">
-            <td class="p-2 font-bold">${idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : idx + 1}</td>
-            <td class="p-2 font-bold text-indigo-700">
-              <button type="button" onclick="openStaffProfileModal('${ns.id}')" class="hover:underline flex items-center gap-1">
-                <span>${ns.name}</span>
-                <span class="text-[10px] text-slate-400">ℹ️</span>
-              </button>
-            </td>
-            <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${String(ns.group).toLowerCase().includes('topzone') ? 'bg-black text-white' : 'bg-amber-100 text-amber-900'}">${ns.group}</span></td>
-            <td class="p-2 text-center font-black text-amber-500 text-sm">⭐ ${ns.totalStar || 0}</td>
-            <td class="p-2 text-center text-slate-400 font-semibold">Tốt</td>
-          </tr>
-        `;
-      }).join('');
     }
 
     function cleanName(str) {
@@ -2765,8 +3256,8 @@
       });
       textToCopy += `----------------------------------------\n🔥 Toàn đội dồn lực chốt các môn trên để về đích tháng!`;
 
-      document.execCommand('copy');
-      navigator.clipboard ? navigator.clipboard.writeText(textToCopy).then(() => showToastMessage("✅ Đã copy danh sách môn (70% - 100%)!")) : showToastMessage("✅ Đã copy danh sách môn!");
+      navigator.clipboard.writeText(textToCopy).then(() => showToastMessage("✅ Đã copy danh sách môn (70% - 100%)!"))
+        .catch(() => { prompt("Copy nội dung:", textToCopy); });
     }
 
     function copyAllRealtimeStoreData() {
@@ -2788,71 +3279,8 @@
       });
       textToCopy += `----------------------------------------\n🔥 Dữ liệu đồng bộ trực tiếp từ hệ thống siêu thị.`;
 
-      document.execCommand('copy');
-      navigator.clipboard ? navigator.clipboard.writeText(textToCopy).then(() => showToastMessage("✅ Đã copy báo cáo Realtime!")) : showToastMessage("✅ Đã copy báo cáo Realtime!");
-    }
-
-    async function saveStoreDataToSheet() {
-      const btn = document.getElementById('btnSaveStoreData');
-      btn.disabled = true;
-      btn.innerText = "⏳ Đang lưu...";
-
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "SAVE_STORE_RAW_DATA", storeData: currentStoreData })
-        });
-        const resData = await res.json();
-        alert(resData.message || "Đã lưu dữ liệu thi đua lên Google Sheets!");
-      } catch (err) {
-        alert("Lỗi kết nối Google Sheets!");
-      } finally {
-        btn.disabled = false;
-        btn.innerText = "💾 Lưu Lên Google Sheets";
-      }
-    }
-
-    function copyFocusItems() {
-      const focusItems = currentStoreData.filter(item => item.branch === "TỔNG" && item.forecast >= 70 && item.forecast <= 100);
-      if (focusItems.length === 0) {
-        alert("Hiện tại không có môn nào trong khoảng dự báo 70% - 100%!");
-        return;
-      }
-      let textToCopy = `🎯 [DANH SÁCH MÔN THI ĐUA CẦN TẬP TRUNG CHỐT - DỰ BÁO 70% - 100%]\n----------------------------------------\n`;
-      focusItems.forEach((item, idx) => {
-        const gap = Math.max(0, (item.target - item.actual)).toFixed(1);
-        textToCopy += `${idx + 1}. ${item.name} (${item.type})\n   👉 Thực đạt: ${item.actual} / Target: ${item.target} (Thiếu: ${gap})\n   👉 Tiến độ: ${item.rateMonth}% | Dự báo: ${item.forecast}%\n`;
-      });
-      textToCopy += `----------------------------------------\n🔥 Toàn đội dồn lực chốt các môn trên để về đích tháng!`;
-
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        alert("✅ ĐÃ COPY DANH SÁCH MÔN (70% - 100%) THÀNH CÔNG!");
-      }).catch(() => { prompt("Copy nội dung dưới đây:", textToCopy); });
-    }
-
-    function copyAllRealtimeStoreData() {
-      const branch = document.getElementById('storeBranchFilter').value;
-      let list = [...currentStoreData];
-      if (branch !== "ALL") list = list.filter(item => item.branch === branch);
-      else list = list.filter(item => item.branch === "TỔNG");
-
-      if (list.length === 0) { alert("Không có dữ liệu để copy!"); return; }
-
-      let textToCopy = `📊 [BÁO CÁO THI ĐUA SIÊU THỊ REALTIME - ${branch === 'ALL' ? 'TỔNG' : branch}]\n`;
-      textToCopy += `Cập nhật: ${new Date().toLocaleTimeString('vi-VN')} - ${document.getElementById('reportDate').value}\n----------------------------------------\n`;
-
-      list.forEach((item, idx) => {
-        textToCopy += `${idx + 1}. ${item.name} (${item.type})\n`;
-        textToCopy += `   • Đạt: ${item.actual} / Target: ${item.target}\n`;
-        textToCopy += `   • Tiến độ: ${item.rateMonth}% | Dự báo: ${item.forecast}%\n`;
-        textToCopy += `   • Hạng Vùng: ${item.rank !== '-' ? 'Top ' + item.rank : '-'}\n`;
-      });
-      textToCopy += `----------------------------------------\n🔥 Dữ liệu đồng bộ trực tiếp từ hệ thống siêu thị.`;
-
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        alert("✅ ĐÃ COPY BÁO CÁO REALTIME!");
-      }).catch(() => { prompt("Copy nội dung dưới đây:", textToCopy); });
+      navigator.clipboard.writeText(textToCopy).then(() => showToastMessage("✅ Đã copy báo cáo Realtime!"))
+        .catch(() => { prompt("Copy nội dung:", textToCopy); });
     }
 
     function evaluateStarRules(item) {
@@ -3024,7 +3452,7 @@
           <td class="p-1.5 text-center font-mono font-bold">${l.actual}</td>
           <td class="p-1.5 text-center font-bold ${parseFloat(l.rate) >= 100 ? 'text-emerald-600' : 'text-rose-600'}">${l.rate}</td>
           <td class="p-1.5 text-center font-black ${l.starChange > 0 ? 'text-emerald-600' : l.starChange < 0 ? 'text-rose-600' : 'text-slate-400'}">${l.starChange > 0 ? '+' : ''}${l.starChange}</td>
-          <td class="p-1.5 text-center font-bold text-[10px]">${l.compensation === 'TANG_CA' ? '<span class="text-indigo-600">Tăng ca ⏰</span>' : '<span class="text-amber-600">Dùng sao ⭐</span>'}</td>
+          <td class="p-1.5 text-center font-bold text-[10px]">${l.compensation === 'TANG_CA' ? '<span class="text-indigo-600">Tăng ca ⏰</span>' : (l.compensation === 'PHAT_TRE' ? '<span class="text-rose-600">Trễ ca ⚠️</span>' : '<span class="text-amber-600">Dùng sao ⭐</span>')}</td>
         </tr>
       `).join('');
 
