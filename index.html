@@ -700,7 +700,7 @@
             <p>• <b>Cơ chế ngắt chuỗi</b>: Khi nhân viên có 1 ca đạt Target (≥100%), chuỗi của môn đó tự động ngắt và đưa về 0 ngày.</p>
             <p>• <b>Ngày không có báo cáo</b> (nghỉ/OFF/quên báo): bỏ qua, chuỗi giữ nguyên. <b>Chọn Tăng ca</b> (không trừ sao): chuỗi giữ nguyên, không +1.</p>
             <p>• Hệ số phạt tính theo chuỗi của <b>các ngày trước ngày đang báo cáo</b> (không tính chính ngày đó).</p>
-            <p>• <b>Ngưỡng chế tài (Cài Đặt Ngưỡng Tăng Ca &amp; Chế Tài):</b> ngày chưa về thứ N của môn chỉ bị trừ sao khi N ≥ <b>Chuỗi ngày TRỪ SAO</b>, chỉ được Tăng ca khi N ≥ <b>Chuỗi ngày TĂNG CA</b>. Chưa tới cả hai: <b>chỉ ghi nhận chuỗi</b> (không trừ sao, không tăng ca) nhưng chuỗi vẫn +1.</p>
+            <p>• <b>Ngưỡng chế tài (Cài Đặt Ngưỡng Tăng Ca &amp; Chế Tài):</b> chỉ trừ sao khi số ở cột CHUỖI ≥ <b>Chuỗi ngày TRỪ SAO</b>, chỉ được Tăng ca khi CHUỖI ≥ <b>Chuỗi ngày TĂNG CA</b>. CHUỖI nhỏ hơn cả hai: <b>chỉ ghi nhận chuỗi</b> (không trừ sao, không tăng ca) nhưng chuỗi vẫn +1.</p>
             <p>• <b>Hệ số phạt lũy tiến theo chuỗi chưa về số:</b></p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-1.5 mt-1 font-semibold text-[11px]">
               <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi các ngày trước &lt; 4 (rớt ngày 1-4): <b>Trừ 1 lần sao (1.0x)</b></div>
@@ -876,7 +876,7 @@
             💾 Lưu Ngưỡng
           </button>
         </div>
-        <p class="text-[10px] text-slate-500 mb-2 leading-snug">Tính theo <b>ngày chưa về liên tiếp</b> của từng môn (ngày 1, 2, 3...). Chưa tới ngưỡng <b>TRỪ SAO</b> → không trừ sao; chưa tới ngưỡng <b>TĂNG CA</b> → không được tăng ca; chưa tới cả hai → chỉ ghi nhận chuỗi. Tới ngưỡng thì trừ sao (nếu còn sao) hoặc tăng ca.</p>
+        <p class="text-[10px] text-slate-500 mb-2 leading-snug">So với số ở cột <b>CHUỖI</b> của từng môn (số ngày chưa về liên tiếp của các ngày trước). CHUỖI &lt; ngưỡng <b>TRỪ SAO</b> → không trừ sao; CHUỖI &lt; ngưỡng <b>TĂNG CA</b> → không được tăng ca; nhỏ hơn cả hai → chỉ ghi nhận chuỗi (vẫn +1 ngày). CHUỖI ≥ ngưỡng thì trừ sao (nếu còn sao) hoặc tăng ca.</p>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
           <div>
             <label class="block font-bold mb-0.5">Chuỗi ngày TĂNG CA:</label>
@@ -1160,7 +1160,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-09-30 · v2";
+    const APP_VERSION = "2026-09-30 · v3";
 
     function fmtSyncTime(ts) {
       const n = Number(ts);
@@ -1904,7 +1904,7 @@
         const penaltyMultiplier = getPenaltyMultiplier(itemStreakDays);
 
         const streakContent = allowEditStreak 
-          ? `<input type="number" min="0" value="${itemStreakDays}" class="row-streak w-11 border border-slate-300 rounded p-0.5 text-center font-black text-rose-600 bg-white" title="Quản lý đã bật quyền chỉnh sửa chuỗi">`
+          ? `<input type="number" min="0" value="${itemStreakDays}" oninput="calculateAllRowsRealtime()" class="row-streak w-11 border border-slate-300 rounded p-0.5 text-center font-black text-rose-600 bg-white" title="Quản lý đã bật quyền chỉnh sửa chuỗi">`
           : `<span class="px-2 py-0.2 rounded-full text-xs font-black inline-block ${itemStreakDays > 0 ? 'bg-red-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}">${itemStreakDays}</span>`;
 
         let penaltyTag = "";
@@ -2043,10 +2043,11 @@
           const multiplier = Number(row.dataset.multiplier) || 1.0;
           const neededPenalty = Math.round(penalty * multiplier);
 
-          // ---- NGƯỠNG CHẾ TÀI (Cài Đặt): so theo ngày chưa về liên tiếp của ca này = chuỗi các ngày trước + 1 ----
-          const dayNo = (Number(row.dataset.streak) || 0) + 1;
-          const canOT = dayNo >= getCfgNum('STREAK_OVERTIME', 3);
-          const canPen = dayNo >= getCfgNum('STREAK_PENALTY_STAR', 5);
+          // ---- NGƯỠNG CHẾ TÀI (Cài Đặt): so trực tiếp SỐ Ở CỘT "CHUỖI" của dòng môn (chuỗi các ngày trước, không tính hôm nay) ----
+          const streakInput = row.querySelector('.row-streak');
+          const curStreak = streakInput ? (Number(streakInput.value) || 0) : (Number(row.dataset.streak) || 0);
+          const canOT = curStreak >= getCfgNum('STREAK_OVERTIME', 3);
+          const canPen = curStreak >= getCfgNum('STREAK_PENALTY_STAR', 5);
 
           if (!canOT && !canPen) {
             // Chưa tới ngưỡng nào: chỉ ghi nhận chuỗi, không trừ sao, không tăng ca
