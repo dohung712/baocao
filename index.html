@@ -680,11 +680,14 @@
           <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-950 space-y-1">
             <p>• <b>Tính độc lập theo từng nhân sự và từng môn</b>: Cột <b>CHUỖI</b> trên dòng môn nào sẽ đếm chính xác số ngày liên tiếp nhân viên đó chưa đạt chỉ tiêu của riêng môn đó.</p>
             <p>• <b>Cơ chế ngắt chuỗi</b>: Khi nhân viên có 1 ca đạt Target (≥100%), chuỗi của môn đó tự động ngắt và đưa về 0 ngày.</p>
+            <p>• <b>Ngày không có báo cáo</b> (nghỉ/OFF/quên báo): bỏ qua, chuỗi giữ nguyên. <b>Chọn Tăng ca</b> (không trừ sao): chuỗi giữ nguyên, không +1.</p>
+            <p>• Hệ số phạt tính theo chuỗi của <b>các ngày trước ngày đang báo cáo</b> (không tính chính ngày đó).</p>
+            <p>• <b>Ngưỡng chế tài (Cài Đặt Ngưỡng Tăng Ca &amp; Chế Tài):</b> ngày chưa về thứ N của môn chỉ bị trừ sao khi N ≥ <b>Chuỗi ngày TRỪ SAO</b>, chỉ được Tăng ca khi N ≥ <b>Chuỗi ngày TĂNG CA</b>. Chưa tới cả hai: <b>chỉ ghi nhận chuỗi</b> (không trừ sao, không tăng ca) nhưng chuỗi vẫn +1.</p>
             <p>• <b>Hệ số phạt lũy tiến theo chuỗi chưa về số:</b></p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-1.5 mt-1 font-semibold text-[11px]">
-              <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi 2 - 3 ngày: <b>Trừ 1 lần sao (1.0x)</b></div>
-              <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi 4 - 5 ngày: <b>Trừ 1.5 lần sao (1.5x)</b></div>
-              <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi ≥ 6 ngày: <b>Trừ 2.0 lần sao (2.0x)</b></div>
+              <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi các ngày trước &lt; 4 (rớt ngày 1-4): <b>Trừ 1 lần sao (1.0x)</b></div>
+              <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi các ngày trước 4 - 5 (rớt ngày thứ 5-6): <b>Trừ 1.5 lần sao (1.5x)</b></div>
+              <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi các ngày trước ≥ 6 (rớt ngày thứ 7+): <b>Trừ 2.0 lần sao (2.0x)</b></div>
             </div>
           </div>
         </div>
@@ -855,6 +858,7 @@
             💾 Lưu Ngưỡng
           </button>
         </div>
+        <p class="text-[10px] text-slate-500 mb-2 leading-snug">Tính theo <b>ngày chưa về liên tiếp</b> của từng môn (ngày 1, 2, 3...). Chưa tới ngưỡng <b>TRỪ SAO</b> → không trừ sao; chưa tới ngưỡng <b>TĂNG CA</b> → không được tăng ca; chưa tới cả hai → chỉ ghi nhận chuỗi. Tới ngưỡng thì trừ sao (nếu còn sao) hoặc tăng ca.</p>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
           <div>
             <label class="block font-bold mb-0.5">Chuỗi ngày TĂNG CA:</label>
@@ -1233,9 +1237,9 @@
     let tableSortState = {};
     let syncCountdownSeconds = 3600;
 
-    document.getElementById('reportDate').valueAsDate = new Date();
-    document.getElementById('delLogDateInput').valueAsDate = new Date();
-    document.getElementById('lockDateInput').valueAsDate = new Date();
+    document.getElementById('reportDate').value = localDateStr();
+    document.getElementById('delLogDateInput').value = localDateStr();
+    document.getElementById('lockDateInput').value = localDateStr();
 
     async function safeFetchJSON(url, options = {}) {
       const res = await fetch(url, options);
@@ -1263,8 +1267,17 @@
     // Lần 1: -100⭐, Lần 2: -200⭐, ..., Lần N: -(N * 100)⭐ trong tháng
     function checkLateSubmission(staffId, selectedDate) {
       const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      
+      const todayStr = localDateStr(now);
+
+      // Đã có nhật ký trễ cho ngày này -> giữ nguyên mức phạt cũ khi sửa lại (không tính lại / không phạt thêm)
+      const existingLate = (state.lateLogs || []).find(l => l.staffId === staffId && l.date === selectedDate);
+      if (existingLate) {
+        return { isLate: true, lateCount: Number(existingLate.lateCount) || 1, penaltyStars: Number(existingLate.penalty) || (Number(existingLate.lateCount) || 1) * 100 };
+      }
+      // Ngày này đã có báo cáo đúng giờ trước đó -> sửa lại không bị phạt trễ
+      const hadOnTimeReport = state.ketQua.some(k => k.staffId === staffId && k.date === selectedDate);
+      if (hadOnTimeReport) return { isLate: false, lateCount: 0, penaltyStars: 0 };
+
       // Giờ kiểm tra: Báo cáo của ngày hôm nay gửi sau 22:20 hoặc báo cáo bù ngày cũ trong quá khứ
       const isPastDate = selectedDate < todayStr;
       const isTodayLate = (selectedDate === todayStr && (now.getHours() > 22 || (now.getHours() === 22 && now.getMinutes() >= 20)));
@@ -1354,6 +1367,8 @@
         if (cell) {
           if (isPassed) {
             cell.innerHTML = `<span class="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">✅ Đạt Target</span>`;
+          } else if (compType === "GHI_NHAN") {
+            cell.innerHTML = `<span class="text-[10px] font-black text-slate-700 bg-slate-200 px-2 py-0.5 rounded-md border border-slate-300 shadow-sm">📝 Ghi nhận chuỗi</span>`;
           } else if (compType === "TANG_CA") {
             cell.innerHTML = `<span class="text-[10px] font-black text-white bg-indigo-600 px-2 py-0.5 rounded-md border border-indigo-700 shadow-sm">⏰ Đăng ký TC</span>`;
           } else {
@@ -1653,27 +1668,58 @@
       return name.length > 18 ? name.substring(0, 17) + "..." : name;
     }
 
-    function getYesterdayDateStr(dateStr) {
-      const d = new Date(dateStr);
-      d.setDate(d.getDate() - 1);
-      return d.toISOString().split('T')[0];
+    // Ngày theo giờ máy (không dùng UTC để khỏi lệch ngày lúc 0h-7h sáng)
+    function localDateStr(d = new Date()) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    function calculateStaffItemStreak(staffId, itemName) {
+    function getYesterdayDateStr(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      return localDateStr(new Date(y, m - 1, d - 1));
+    }
+
+    // Tổng sao ĐẦU NGÀY = tổng hiện tại trừ phần sao của chính báo cáo ngày đó (nếu đã nộp trước đó)
+    // -> sửa/nộp lại cùng ngày không bị cộng dồn 2 lần
+    function getStaffOpeningStars(staff, dateStr) {
+      const cur = Number(staff.totalStar !== undefined ? staff.totalStar : staff.baseStar) || 0;
+      const sameDayDelta = state.ketQua
+        .filter(k => k.staffId === staff.id && k.date === dateStr)
+        .reduce((sum, k) => sum + (Number(k.starChange) || 0), 0);
+      return cur - sameDayDelta;
+    }
+
+    // Chuỗi ngày CHƯA VỀ liên tiếp của 1 môn (tính đến trước beforeDate; bỏ trống = tính đến bản ghi mới nhất)
+    // Rule đã chốt:
+    //  - Ngày không có báo cáo: bỏ qua, chuỗi giữ nguyên
+    //  - Chưa về + Dùng sao: +1
+    //  - Chưa về + Tăng ca: giữ nguyên, không +1 (không ngắt)
+    //  - Về số: ngắt chuỗi về 0
+    function calculateStaffItemStreak(staffId, itemName, beforeDate) {
       if (state.config.AUTO_STREAK_ENABLED === "OFF") return 0;
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       const resetDate = staff ? staff.resetDate : "";
 
       let records = state.ketQua.filter(k => k.staffId === staffId && k.itemName === itemName);
       if (resetDate) records = records.filter(k => k.date > resetDate);
-      records.sort((a, b) => new Date(b.date) - new Date(a.date));
+      if (beforeDate) records = records.filter(k => k.date < beforeDate);
+      records.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
       let streak = 0;
       for (let r of records) {
-        if (r.status === "Chưa về") streak++;
-        else break;
+        if (r.status === "Về số") break;
+        if (r.status !== "Chưa về") continue;
+        if (r.compensation === "TANG_CA") continue;
+        streak++;
       }
       return streak;
+    }
+
+    // Đọc ngưỡng số từ Cài Đặt (trống/không hợp lệ -> dùng mặc định)
+    function getCfgNum(key, def) {
+      const raw = state.config ? state.config[key] : undefined;
+      if (raw === undefined || raw === null || String(raw).trim() === "") return def;
+      const v = Number(raw);
+      return isFinite(v) && v >= 0 ? v : def;
     }
 
     function getPenaltyMultiplier(streak) {
@@ -1744,7 +1790,7 @@
       badgeGroup.innerText = group;
       badgeGroup.className = `text-[10px] px-2 py-0.5 rounded-full font-black ${group.toLowerCase().includes('topzone') ? 'bg-amber-400 text-slate-950' : 'bg-blue-500 text-white'}`;
       
-      const masterStars = Number(staff.totalStar !== undefined ? staff.totalStar : staff.baseStar) || 0;
+      const masterStars = getStaffOpeningStars(staff, selectedDate);
       document.getElementById('barYesterdayBaseStar').innerText = masterStars;
 
       let items = [];
@@ -1769,7 +1815,7 @@
         const initialVal = curRecord ? curRecord.actual : 0;
         const initialComp = curRecord ? curRecord.compensation : "DUNG_SAO";
 
-        const itemStreakDays = calculateStaffItemStreak(staffId, item.name);
+        const itemStreakDays = calculateStaffItemStreak(staffId, item.name, selectedDate);
         const penaltyMultiplier = getPenaltyMultiplier(itemStreakDays);
 
         const streakContent = allowEditStreak 
@@ -1781,7 +1827,7 @@
         else if (itemStreakDays >= 4) penaltyTag = `<div class="text-[8px] font-black text-amber-700 bg-amber-100 rounded px-1 mt-0.5">-1.5x</div>`;
 
         return `
-          <tr class="border-b border-slate-200 hover:bg-slate-50 transition" data-item="${item.name}" data-target="${item.target}" data-bonus="${item.bonusStar}" data-penalty="${item.penaltyStar}" data-x2="${item.isX2}" data-comp="${initialComp}" data-multiplier="${penaltyMultiplier}">
+          <tr class="border-b border-slate-200 hover:bg-slate-50 transition" data-item="${item.name}" data-target="${item.target}" data-bonus="${item.bonusStar}" data-penalty="${item.penaltyStar}" data-x2="${item.isX2}" data-comp="${initialComp}" data-multiplier="${penaltyMultiplier}" data-streak="${itemStreakDays}">
             <td class="text-center font-bold text-slate-400 px-1">${index + 1}</td>
             <td class="px-2">
               <button type="button" onclick="showItemHistoryModal('${item.name}')" class="font-black text-indigo-700 hover:underline text-left text-xs md:text-sm leading-tight inline-block" title="${item.name}">
@@ -1824,6 +1870,7 @@
     function toggleCompensation(btn, type) {
       const row = btn.closest('tr');
       row.dataset.comp = type;
+      row.dataset.autoOt = "0"; // người dùng tự chọn -> không còn là tự động
       calculateAllRowsRealtime();
     }
 
@@ -1832,9 +1879,9 @@
       const staffId = document.getElementById('staffSelect').value;
       if (!staffId) return;
       const staff = state.nhanSu.find(ns => ns.id === staffId);
-      const masterStars = Number(staff ? (staff.totalStar !== undefined ? staff.totalStar : staff.baseStar) : 0) || 0;
       const rows = Array.from(document.querySelectorAll('#itemsTableBody tr[data-item]'));
       const selectedDate = document.getElementById('reportDate').value;
+      const masterStars = staff ? getStaffOpeningStars(staff, selectedDate) : 0;
 
       // 1. TÍNH TỔNG SAO THƯỞNG KIẾM ĐƯỢC TỪ CÁC MÔN VỀ SỐ TRONG CA
       let todayBonusEarned = 0;
@@ -1885,6 +1932,7 @@
           starCell.innerText = "+" + starEarn;
           starCell.className = "text-center font-black row-star text-emerald-600 text-xs md:text-sm px-1";
 
+          if (row.dataset.comp === "TANG_CA" && row.dataset.autoOt === "1") { row.dataset.comp = "DUNG_SAO"; row.dataset.autoOt = "0"; }
           btnStar.disabled = true; btnOt.disabled = true;
           btnStar.className = "btn-comp-star px-1.5 py-0.5 rounded font-black transition opacity-30 text-slate-400";
           btnOt.className = "btn-comp-ot px-1.5 py-0.5 rounded font-black transition opacity-30 text-slate-400";
@@ -1909,6 +1957,44 @@
           const penalty = Number(row.dataset.penalty) || 100;
           const multiplier = Number(row.dataset.multiplier) || 1.0;
           const neededPenalty = Math.round(penalty * multiplier);
+
+          // ---- NGƯỠNG CHẾ TÀI (Cài Đặt): so theo ngày chưa về liên tiếp của ca này = chuỗi các ngày trước + 1 ----
+          const dayNo = (Number(row.dataset.streak) || 0) + 1;
+          const canOT = dayNo >= getCfgNum('STREAK_OVERTIME', 3);
+          const canPen = dayNo >= getCfgNum('STREAK_PENALTY_STAR', 5);
+
+          if (!canOT && !canPen) {
+            // Chưa tới ngưỡng nào: chỉ ghi nhận chuỗi, không trừ sao, không tăng ca
+            row.dataset.comp = "GHI_NHAN";
+            row.dataset.autoOt = "0";
+            btnStar.disabled = true; btnOt.disabled = true;
+            btnStar.className = "btn-comp-star px-1.5 py-0.5 rounded font-bold transition opacity-40 cursor-not-allowed text-slate-400";
+            btnOt.className = "btn-comp-ot px-1.5 py-0.5 rounded font-bold transition opacity-40 cursor-not-allowed text-slate-400";
+            starCell.innerText = "0 (chưa phạt)";
+            starCell.className = "text-center font-black row-star text-slate-500 text-[10px] md:text-xs px-1";
+            return;
+          }
+          if (!canPen) {
+            // Đã tới ngưỡng Tăng ca nhưng chưa tới ngưỡng Trừ sao: chỉ được Tăng ca
+            row.dataset.comp = "TANG_CA";
+            row.dataset.autoOt = "0";
+            btnStar.disabled = true; btnOt.disabled = false;
+            btnStar.className = "btn-comp-star px-1.5 py-0.5 rounded font-bold transition opacity-40 cursor-not-allowed text-slate-400";
+            btnOt.className = "btn-comp-ot px-1.5 py-0.5 rounded font-black transition bg-indigo-600 text-white shadow-sm";
+            starCell.innerText = "0 (TC)";
+            starCell.className = "text-center font-black row-star text-amber-600 text-xs md:text-sm px-1";
+            return;
+          }
+          // Dữ liệu cũ/ngưỡng vừa đổi: ca đang ở trạng thái "ghi nhận" nhưng nay đã tới ngưỡng -> về mặc định Dùng sao
+          if (row.dataset.comp === "GHI_NHAN") row.dataset.comp = "DUNG_SAO";
+          // Đã tới ngưỡng Trừ sao nhưng chưa tới ngưỡng Tăng ca: không cho chọn Tăng ca thủ công
+          if (!canOT && row.dataset.comp === "TANG_CA" && row.dataset.autoOt !== "1") row.dataset.comp = "DUNG_SAO";
+
+          // Môn từng bị hệ thống tự chuyển Tăng ca do thiếu quỹ: thử trả về Dùng sao khi quỹ đã đủ
+          if (row.dataset.autoOt === "1" && row.dataset.comp === "TANG_CA" && runningRealtimePool >= neededPenalty) {
+            row.dataset.comp = "DUNG_SAO";
+            row.dataset.autoOt = "0";
+          }
           let compType = row.dataset.comp || "DUNG_SAO";
 
           if (compType === "DUNG_SAO") {
@@ -1919,11 +2005,13 @@
               btnStar.disabled = false;
               btnStar.className = "btn-comp-star px-1.5 py-0.5 rounded font-black transition bg-amber-400 text-slate-950 shadow-sm";
               btnOt.className = "btn-comp-ot px-1.5 py-0.5 rounded font-bold transition text-slate-400";
+              if (!canOT) { btnOt.disabled = true; btnOt.className = "btn-comp-ot px-1.5 py-0.5 rounded font-bold transition opacity-40 cursor-not-allowed text-slate-400"; }
 
               starCell.innerText = -neededPenalty;
               starCell.className = "text-center font-black row-star text-rose-600 text-xs md:text-sm px-1";
             } else {
               row.dataset.comp = "TANG_CA";
+              row.dataset.autoOt = "1"; // hệ thống tự chuyển (thiếu quỹ sao)
               compType = "TANG_CA";
 
               btnStar.disabled = true;
@@ -2043,7 +2131,7 @@
           rate: (rate * 100).toFixed(0) + "%",
           starChange: star,
           status: rate >= 1 ? "Về số" : "Chưa về",
-          compensation: r.dataset.comp || "DUNG_SAO"
+          compensation: rate >= 1 ? "DUNG_SAO" : (r.dataset.comp || "DUNG_SAO")
         });
       });
 
@@ -2059,7 +2147,7 @@
         });
 
         // Ghi nhận vào state.lateLogs
-        state.lateLogs = state.lateLogs || [];
+        state.lateLogs = (state.lateLogs || []).filter(l => !(l.staffId === staffId && l.date === selectedDate));
         state.lateLogs.push({ staffId, date: selectedDate, lateCount: lateCheck.lateCount, penalty: lateCheck.penaltyStars });
       }
 
@@ -2082,6 +2170,7 @@
       btn.disabled = true;
       btn.innerText = "⏳ ĐANG ĐỒNG BỘ LÊN SHEET...";
 
+      const openingStars = getStaffOpeningStars(staff, selectedDate); // tính TRƯỚC khi xóa bản ghi cũ của ngày này
       state.ketQua = state.ketQua.filter(k => !(k.staffId === staffId && k.date === selectedDate));
       reports.forEach(r => {
         state.ketQua.push({
@@ -2098,12 +2187,12 @@
       });
 
       const todayNetDelta = reports.reduce((s, x) => s + (Number(x.starChange) || 0), 0);
-      const masterStars = Number(staff.totalStar !== undefined ? staff.totalStar : staff.baseStar) || 0;
-      staff.totalStar = masterStars + todayNetDelta;
+      staff.totalStar = openingStars + todayNetDelta;
       staff.baseStar = staff.totalStar;
       localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
 
       let syncSuccess = false;
+      let serverMsg = "";
       try {
         const res = await fetch(API_URL, { 
           method: "POST", 
@@ -2111,15 +2200,23 @@
           body: JSON.stringify(payload) 
         });
         const textResp = await res.text();
-        syncSuccess = !textResp.trim().startsWith("<");
+        if (textResp.trim().startsWith("<")) {
+          syncSuccess = false;
+        } else {
+          try {
+            const j = JSON.parse(textResp);
+            syncSuccess = (j.status === "success");
+            if (!syncSuccess) serverMsg = j.message || "Server từ chối báo cáo";
+          } catch (parseErr) { syncSuccess = false; }
+        }
       } catch (e) {
-        syncSuccess = true;
+        syncSuccess = null; // chưa xác nhận được phản hồi từ Sheet
       } finally {
         btn.disabled = false;
         btn.innerText = "🚀 GỬI BÁO CÁO CHO QL";
       }
 
-      showToastMessage(syncSuccess ? "✅ Đã đồng bộ Google Sheets thành công!" : "⚠️ Đã lưu cục bộ! Đang tải ảnh...");
+      showToastMessage(syncSuccess === true ? "✅ Đã đồng bộ Google Sheets thành công!" : (syncSuccess === null ? "⚠️ Đã lưu cục bộ, CHƯA xác nhận được phản hồi từ Sheet — bấm 🔄 Đồng bộ để kiểm tra. Đang tải ảnh..." : `⚠️ ${serverMsg || "Đã lưu cục bộ!"} Đang tải ảnh...`));
       await exportReportImage(true);
 
       renderDashboard();
@@ -2137,6 +2234,9 @@
 
       const removed = state.ketQua.splice(foundIndex, 1)[0];
       const starChange = Number(removed.starChange) || 0;
+      if (removed.compensation === "PHAT_TRE") {
+        state.lateLogs = (state.lateLogs || []).filter(l => !(l.staffId === staffId && l.date === date));
+      }
 
       // Hoàn trả lại sao cho nhân viên
       const staff = state.nhanSu.find(ns => ns.id === staffId);
@@ -2150,15 +2250,19 @@
       renderDashboard();
       renderManagerSettings();
 
+      let srvErr = "";
       try {
-        await safeFetchJSON(API_URL, {
+        const rj = await safeFetchJSON(API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "DELETE_SINGLE_LOG_RECORD", date, staffId, itemName })
         });
-      } catch (e) {}
+        if (rj && rj.status === "error") srvErr = rj.message || "Lỗi server";
+      } catch (e) { srvErr = "chưa kết nối được Sheet"; }
 
-      showToastMessage(`✅ Đã xóa bản ghi môn "${itemName}" và hoàn lại sao!`);
+      showToastMessage(srvErr
+        ? `⚠️ Đã xóa trên máy nhưng Sheet báo: ${srvErr}`
+        : `✅ Đã xóa bản ghi môn "${itemName}" và hoàn lại sao!`);
     }
 
     async function promptDeleteCurrentStaffDayReports() {
@@ -2211,15 +2315,19 @@
       renderDashboard();
       renderManagerSettings();
 
+      let srvErr = "";
       try {
-        await safeFetchJSON(API_URL, {
+        const rj = await safeFetchJSON(API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "DELETE_STAFF_DAILY_REPORTS", date, staffId })
         });
-      } catch (e) {}
+        if (rj && rj.status === "error") srvErr = rj.message || "Lỗi server";
+      } catch (e) { srvErr = "chưa kết nối được Sheet"; }
 
-      showToastMessage(`✅ Đã xóa sạch báo cáo ca ngày ${date} của ${name}!`);
+      showToastMessage(srvErr
+        ? `⚠️ Đã xóa trên máy nhưng Sheet báo: ${srvErr}`
+        : `✅ Đã xóa sạch báo cáo ca ngày ${date} của ${name}!`);
     }
 
     async function promptDeleteBatchFilteredLogs() {
@@ -2343,7 +2451,13 @@
       renderManagerSettings();
       renderChatbotStaffButtons();
       showToastMessage(`🗑️ Đã xóa nhân viên ${staff.name}!`);
-      saveAllStaffStarsToSheet();
+      safeFetchJSON(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "DELETE_STAFF", staffId })
+      }).then(rj => {
+        if (rj && rj.status === "error") showToastMessage(`⚠️ Sheet báo: ${rj.message}`);
+      }).catch(() => showToastMessage("⚠️ Đã xóa trên máy, chưa xác nhận được với Sheet — bấm 🔄 Đồng bộ để kiểm tra"));
     }
 
     function changeStaffGroup(staffId, newGroup) {
@@ -2546,7 +2660,7 @@
               </span>
             </td>
             <td class="p-2 text-center font-bold text-[10px]">
-              ${l.compensation === 'TANG_CA' ? '<span class="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Tăng ca ⏰</span>' : (l.compensation === 'PHAT_TRE' ? '<span class="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">Trễ ca ⚠️</span>' : '<span class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">Dùng sao ⭐</span>')}
+              ${l.compensation === 'TANG_CA' ? '<span class="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Tăng ca ⏰</span>' : (l.compensation === 'GHI_NHAN' ? '<span class="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">Ghi nhận chuỗi 📝</span>' : l.compensation === 'PHAT_TRE' ? '<span class="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">Trễ ca ⚠️</span>' : '<span class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">Dùng sao ⭐</span>')}
             </td>
             <td class="p-2 text-center">
               <button type="button" onclick="promptDeleteSingleLogRecord('${l.date}', '${l.staffId}', '${l.itemName}')" class="px-2 py-0.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded border border-rose-200 text-[10px] font-black transition" title="Quản lý xóa bản ghi này">
@@ -3380,13 +3494,19 @@
 
       const itemStreaks = {};
       state.thiDua.forEach(td => {
-        const logs = staffLogs.filter(k => k.itemName === td.name).reverse();
+        const logs = staffLogs.filter(k => k.itemName === td.name)
+          .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)); // mới nhất trước
         if (logs.length > 0) {
           let count = 0;
           let status = logs[0].status;
           for (let l of logs) {
-            if (l.status === status) count++;
-            else break;
+            if (status === "Về số") {
+              if (l.status === "Về số") count++;
+              else break;
+            } else {
+              if (l.status === "Về số") break;
+              if (l.status === "Chưa về" && l.compensation !== "TANG_CA") count++; // Tăng ca: giữ nguyên chuỗi
+            }
           }
           itemStreaks[td.name] = {
             status: status,
@@ -3452,7 +3572,7 @@
           <td class="p-1.5 text-center font-mono font-bold">${l.actual}</td>
           <td class="p-1.5 text-center font-bold ${parseFloat(l.rate) >= 100 ? 'text-emerald-600' : 'text-rose-600'}">${l.rate}</td>
           <td class="p-1.5 text-center font-black ${l.starChange > 0 ? 'text-emerald-600' : l.starChange < 0 ? 'text-rose-600' : 'text-slate-400'}">${l.starChange > 0 ? '+' : ''}${l.starChange}</td>
-          <td class="p-1.5 text-center font-bold text-[10px]">${l.compensation === 'TANG_CA' ? '<span class="text-indigo-600">Tăng ca ⏰</span>' : (l.compensation === 'PHAT_TRE' ? '<span class="text-rose-600">Trễ ca ⚠️</span>' : '<span class="text-amber-600">Dùng sao ⭐</span>')}</td>
+          <td class="p-1.5 text-center font-bold text-[10px]">${l.compensation === 'TANG_CA' ? '<span class="text-indigo-600">Tăng ca ⏰</span>' : (l.compensation === 'GHI_NHAN' ? '<span class="text-slate-500">Ghi nhận 📝</span>' : l.compensation === 'PHAT_TRE' ? '<span class="text-rose-600">Trễ ca ⚠️</span>' : '<span class="text-amber-600">Dùng sao ⭐</span>')}</td>
         </tr>
       `).join('');
 
