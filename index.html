@@ -2,6 +2,9 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Báo Cáo Thi Đua Cuối Ngày & BXH Siêu Thị VIP</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -62,6 +65,9 @@
         <p class="text-[10px] md:text-xs text-indigo-200 mt-0.5">
           Tự động đồng bộ 1 tiếng/lần | Quỹ sao RT đồng bộ BXH | Chế tài nộp trễ sau 22h20 (-100⭐ lũy tiến)
         </p>
+        <p class="text-[10px] text-indigo-300 mt-0.5 font-mono">
+          Phiên bản: <b id="lblAppVersion" class="text-white">-</b> · Đồng bộ dữ liệu lúc: <b id="lblLastSync" class="text-white">chưa có</b>
+        </p>
       </div>
       <div class="flex items-center gap-2">
         <div class="hidden md:flex flex-col text-right text-[10px] text-indigo-200">
@@ -73,6 +79,18 @@
         </button>
       </div>
     </header>
+
+    <!-- Cảnh báo khi KHÔNG đồng bộ được dữ liệu mới -->
+    <div id="syncFailBanner" class="hidden bg-rose-50 border border-rose-300 text-rose-800 rounded-xl p-2.5 text-xs flex items-start gap-2">
+      <span class="text-base leading-none">⚠️</span>
+      <div class="flex-1 leading-snug">
+        <b>Chưa đồng bộ được dữ liệu mới từ Google Sheet.</b>
+        Đang hiển thị dữ liệu cũ lưu trên máy (lần đồng bộ thành công gần nhất: <b id="syncFailLast">chưa có</b>).
+        Sao/chuỗi có thể chưa đúng, nên bấm <b>Thử lại</b> trước khi gửi báo cáo. Nếu vẫn lỗi, báo Quản lý kiểm tra Apps Script.
+        <span id="syncFailDetail" class="block text-[10px] text-rose-500 mt-0.5 font-mono"></span>
+      </div>
+      <button onclick="loadData()" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-black shadow whitespace-nowrap">🔄 Thử lại</button>
+    </div>
 
     <!-- Navigation Bar 8 Tab Hoàn Chỉnh -->
     <div class="flex gap-1.5 md:gap-2 border-b border-slate-200 pb-1.5 overflow-x-auto">
@@ -1141,6 +1159,45 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
+    // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
+    const APP_VERSION = "2026-09-30 · v2";
+
+    function fmtSyncTime(ts) {
+      const n = Number(ts);
+      if (!n) return "chưa có";
+      const d = new Date(n);
+      const p = x => String(x).padStart(2, '0');
+      return `${p(d.getHours())}:${p(d.getMinutes())} ${p(d.getDate())}/${p(d.getMonth() + 1)}`;
+    }
+
+    function getLastSyncOk() {
+      try { return localStorage.getItem('APP_LAST_SYNC_OK') || ""; } catch (e) { return ""; }
+    }
+
+    function updateSyncInfoLabel() {
+      const v = document.getElementById('lblAppVersion');
+      if (v) v.innerText = APP_VERSION;
+      const l = document.getElementById('lblLastSync');
+      if (l) l.innerText = fmtSyncTime(getLastSyncOk());
+    }
+
+    function markSyncOk() {
+      try { localStorage.setItem('APP_LAST_SYNC_OK', String(Date.now())); } catch (e) {}
+      const b = document.getElementById('syncFailBanner');
+      if (b) b.classList.add('hidden');
+      updateSyncInfoLabel();
+    }
+
+    function markSyncFail(err) {
+      const b = document.getElementById('syncFailBanner');
+      if (b) b.classList.remove('hidden');
+      const last = document.getElementById('syncFailLast');
+      if (last) last.innerText = fmtSyncTime(getLastSyncOk());
+      const det = document.getElementById('syncFailDetail');
+      if (det) det.innerText = "Chi tiết: " + ((err && err.message) ? err.message : "không kết nối được");
+      updateSyncInfoLabel();
+    }
+
     // Danh sách nhân sự mặc định dự phòng chuẩn đồng bộ với BXH
     const DEFAULT_NHAN_SU = [
       { id: "29649", name: "Nguyễn Thị Thy", group: "TGDĐ", baseStar: 15300, totalStar: 15300, assignedItems: [] },
@@ -1511,6 +1568,7 @@
     });
 
     function initFastLoad() {
+      updateSyncInfoLabel();
       const cachedData = localStorage.getItem('APP_STORE_DATA_CACHE');
       if (cachedData) {
         try {
@@ -1536,13 +1594,18 @@
         const fetchUrl = `${API_URL}?_t=${Date.now()}`;
         const data = await safeFetchJSON(fetchUrl);
         
-        if (data) {
+        if (data && Array.isArray(data.nhanSu)) {
           localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(data));
           applyStateData(data);
           syncCountdownSeconds = 3600;
+          markSyncOk();
           if (!isBackground) showToastMessage("✅ Đồng bộ dữ liệu thành công!");
+        } else {
+          throw new Error((data && data.message) ? data.message : "Phản hồi từ Google Sheet không hợp lệ");
         }
       } catch (err) {
+        markSyncFail(err);
+        if (!isBackground) showToastMessage("⚠️ Không đồng bộ được dữ liệu mới — đang dùng dữ liệu cũ trên máy!");
         if (!state.nhanSu || state.nhanSu.length === 0) {
           state.nhanSu = [...DEFAULT_NHAN_SU];
           populateStaffList();
