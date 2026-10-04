@@ -2045,6 +2045,11 @@
     function clThumb(id) { return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1000`; }
     function clViewUrl(id) { return `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`; }
     function clReported(rec) { return !!(rec && rec.photos && rec.photos.length >= 3); }
+    function clUpdateStar(staffId, totalStar) {
+      if (totalStar === null || totalStar === undefined) return;
+      const st = (state.nhanSu || []).find(ns => ns.id === staffId);
+      if (st) { st.totalStar = Number(totalStar) || 0; st.baseStar = st.totalStar; }
+    }
     function clPersist() { try { localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state)); } catch (e) {} }
 
     function clShiftMonth(n) {
@@ -2090,6 +2095,66 @@
       return { html, reg, done, overdue, dim };
     }
 
+    // ---- Thống kê vệ sinh theo người + báo cáo trễ + phạt sao (luật giống computeVeSinhLate trong Code.gs) ----
+    // Trễ = nộp ảnh sau ngày vệ sinh, hoặc quá ngày mà chưa nộp. Đếm theo từng người, từng tháng.
+    // Lần 1: -300 · Lần 2: -500 · Lần 3 trở đi: -800/lần (đổi ở CauHinh_QL: VS_PENALTY_1/2/3). Chỉ phạt từ ngày VESINH_START_DATE.
+    function clPenalty(n) {
+      const c = state.config || {};
+      const p1 = Number(c.VS_PENALTY_1) || 300, p2 = Number(c.VS_PENALTY_2) || 500, p3 = Number(c.VS_PENALTY_3) || 800;
+      return n <= 1 ? p1 : (n === 2 ? p2 : p3);
+    }
+    function clDM(date) { return date ? `${date.slice(8, 10)}/${date.slice(5, 7)}` : ''; }
+    function clLateStats(records, y, m, today) {
+      const start = (state.config && state.config.VESINH_START_DATE) || today;
+      const prefix = `${y}-${clPad(m + 1)}`;
+      const by = {};
+      (records || []).filter(r => r.date && r.date.startsWith(prefix))
+        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+        .forEach(r => {
+          const s = by[r.staffId] || (by[r.staffId] = { staffId: r.staffId, name: r.staffName, total: 0, onTime: 0, pending: 0, late: 0, penalty: 0, counted: 0, items: [] });
+          s.total++;
+          let how = '';
+          if (clReported(r)) {
+            if (r.reportDate && r.reportDate > r.date) how = `nộp ${clDM(r.reportDate)}`; else s.onTime++;
+          } else if (r.date < today) how = 'chưa nộp';
+          else s.pending++;
+          if (how) {
+            s.late++;
+            let no = 0, pen = 0;
+            if (r.date >= start) { s.counted++; no = s.counted; pen = clPenalty(no); s.penalty += pen; }
+            s.items.push({ date: r.date, how, no, pen });
+          }
+        });
+      return Object.values(by).sort((a, b) => b.late - a.late || b.total - a.total || String(a.name).localeCompare(String(b.name), 'vi'));
+    }
+    function clStatsHtml(y, m, today) {
+      const rows = clLateStats(state.veSinh, y, m, today);
+      if (!rows.length) return '';
+      const lateRows = rows.filter(r => r.late > 0);
+      const totalPen = rows.reduce((a, r) => a + r.penalty, 0);
+      let h = `<div class="border-t pt-2 mt-1 space-y-1.5">
+        <div class="font-black text-slate-700">📊 Chi tiết từng người — Tháng ${m + 1}/${y}</div>
+        <div class="overflow-x-auto"><table class="w-full text-[11px] border-collapse">
+          <thead><tr class="bg-slate-100 text-slate-600"><th class="text-left p-1.5">Nhân viên</th><th class="p-1.5">Số lần VS</th><th class="p-1.5">Đúng hạn</th><th class="p-1.5">Chờ tới ngày</th><th class="p-1.5 text-rose-600">Báo cáo trễ</th><th class="p-1.5 text-rose-600">Trừ sao</th></tr></thead><tbody>` +
+        rows.map(r => `<tr class="border-t ${r.late ? 'bg-rose-50/60' : ''}">
+          <td class="p-1.5 font-bold text-slate-800">${ttEsc(r.name)}</td>
+          <td class="p-1.5 text-center font-black">${r.total}</td>
+          <td class="p-1.5 text-center text-emerald-700 font-bold">${r.onTime}</td>
+          <td class="p-1.5 text-center text-slate-500">${r.pending}</td>
+          <td class="p-1.5 text-center font-black ${r.late ? 'text-rose-600' : 'text-slate-400'}">${r.late}</td>
+          <td class="p-1.5 text-center font-black ${r.penalty ? 'text-rose-600' : 'text-slate-400'}">${r.penalty ? '-' + r.penalty.toLocaleString('vi-VN') : '0'}</td></tr>`).join('') +
+        `</tbody></table></div>`;
+      if (lateRows.length) {
+        h += `<div class="bg-rose-50 border border-rose-200 rounded-lg p-2 space-y-1"><div class="font-black text-rose-700">⏰ Ai báo cáo trễ? (tổng trừ ${totalPen.toLocaleString('vi-VN')} sao)</div>` +
+          lateRows.map(r => `<div class="text-[11px] text-rose-800"><b>${ttEsc(r.name)}</b>: trễ <b>${r.late} lần</b> — ` +
+            r.items.map(it => `${clDM(it.date)} (${it.how}${it.no ? `, lần ${it.no}: -${it.pen}` : ', trước ngày áp dụng phạt'})`).join('; ') + `</div>`).join('') + `</div>`;
+      } else {
+        h += `<div class="text-[11px] text-emerald-700 font-bold">✅ Chưa có ai báo cáo trễ trong tháng này.</div>`;
+      }
+      h += `<div class="text-[10px] text-slate-500 leading-snug">📜 Quy định: báo cáo trễ lần 1 trừ <b>${clPenalty(1)}</b> sao · lần 2 trừ <b>${clPenalty(2)}</b> sao · lần 3 trở lên mỗi lần trừ <b>${clPenalty(3)}</b> sao (đếm theo từng người, mỗi tháng tính lại). Trễ = nộp ảnh sau ngày vệ sinh hoặc quá ngày mà chưa nộp.</div></div>`;
+      return h;
+    }
+
     function renderCleaningTab() {
       const grid = document.getElementById('clGrid');
       if (!grid) return;
@@ -2106,6 +2171,7 @@
         if (res.overdue.length) {
           h += `<div class="text-[11px] text-rose-700">⚠️ ` + res.overdue.map(r => `${ttEsc(r.staffName)} (${r.date.slice(8, 10)}/${r.date.slice(5, 7)})`).join(', ') + `</div>`;
         }
+        h += clStatsHtml(y, m, today);
         sum.innerHTML = h;
       }
     }
@@ -2285,6 +2351,7 @@
         if (res.status === "success") {
           state.veSinh = (state.veSinh || []).filter(v => v.date !== date);
           state.veSinh.push(res.record);
+          clUpdateStar(res.record.staffId, res.totalStar);
           clPersist();
           clPhotos = [null, null, null];
           showToastMessage("✅ " + res.message);
@@ -2312,6 +2379,7 @@
         if (res.status === "success") {
           if (onlyPhotos && rec) { rec.photos = []; rec.reportDate = ""; rec.reportTime = ""; }
           else state.veSinh = (state.veSinh || []).filter(v => v.date !== date);
+          clUpdateStar(res.staffId, res.totalStar);
           clPersist();
           showToastMessage("✅ " + res.message);
         } else alert(res.message || "Lỗi");
