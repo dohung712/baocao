@@ -982,7 +982,7 @@
               <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kiểm tra nguồn file đang nạp, thời điểm cập nhật, trạng thái Firebase Realtime và tra cứu toàn bộ bản ghi thô.</p>
             </div>
             <button onclick="refreshCloudMeta(true)" class="text-xs font-bold px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-500/20 transition flex items-center gap-2">
-              <i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Kiểm tra lại Cloud</span>
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Đồng bộ lại từ Cloud</span>
             </button>
           </div>
         </div>
@@ -2732,6 +2732,9 @@
           if (isCloudInitialized && stockRef) {
             updateCloudBadge('SYNCING', 'Đang đồng bộ Cloud...');
             const nowTimeStr = new Date().toLocaleString('vi-VN');
+            const cloudVer = Date.now();
+            lastCloudKey = String(cloudVer);
+            dataMeta.source = 'EXCEL';
             
             // 1. Cập nhật mốc snapshot lên Cloud
             if (savedSnapshots) {
@@ -2741,6 +2744,7 @@
             // 2. Cập nhật dữ liệu tồn kho trực tiếp lên Cloud
             stockRef.set(allRecords).then(() => {
               metaRef.set({
+                version: cloudVer,
                 lastUpdated: nowTimeStr,
                 fileName: file.name,
                 totalRows: allRecords.length
@@ -3553,22 +3557,115 @@
     let auditPage = 1;
     const AUDIT_PAGE_SIZE = 100;
 
+    // ---------- ĐỒNG BỘ REALTIME TỪ FIREBASE ----------
+    let lastCloudKey = null;       // "phiên bản" dữ liệu đã nạp (version hoặc lastUpdated|rows)
+    let cloudFetching = false;
+    let cloudRetryTimer = null;
+    let cloudLastSyncAt = null;
+    const metaKey = m => m ? String(m.version || ((m.lastUpdated || '') + '|' + (m.totalRows || '') + '|' + (m.fileName || ''))) : null;
+
+    function normalizeCloudRecords(raw) {
+      const arr = Array.isArray(raw) ? raw : Object.values(raw || {});
+      return arr.filter(r => r && r.store && r.product).map(r => {
+        const p = parseProductDetails(r.product);
+        return {
+          store: String(r.store), city_code: r.city_code || extractCityCode(r.store), city: r.city || extractCityName(r.store),
+          code: String(r.code || ''), product: String(r.product), capacity: p.capacity, color: p.color,
+          total: Number(r.total) || 0, available: Number(r.available) || 0, in_transit: Number(r.in_transit) || 0,
+          ordered: Number(r.ordered) || 0, saleable: Number(r.saleable) || 0
+        };
+      });
+    }
+
+    function applyCloudData(recs, meta, key) {
+      const keepStore = document.getElementById('selectedStoreSelect')?.value;
+      allRecords = recs;
+      dataMeta = { source: 'CLOUD', fileName: (meta && meta.fileName) || 'Firebase Cloud', loadedAt: new Date().toLocaleString('vi-VN') };
+      lastCloudKey = key;
+      cloudLastSyncAt = new Date().toLocaleString('vi-VN');
+      auditPage = 1;
+      const sel = document.getElementById('auditCityFilter'); if (sel) sel.innerHTML = '';
+      populateColorDropdown();
+      initApp();
+      if (keepStore) {
+        const s = document.getElementById('selectedStoreSelect');
+        if (s && [...s.options].some(o => o.value === keepStore)) { s.value = keepStore; renderStoreDetailView(); }
+      }
+      renderCurrentMode();
+      lucide.createIcons();
+    }
+
+    function mergeCloudSnapshots() {
+      if (!snapshotsRef) return Promise.resolve();
+      return snapshotsRef.once('value').then(snap => {
+        const val = snap.val();
+        if (!val || typeof val !== 'object') return;
+        Object.keys(val).forEach(k => { if (val[k] && val[k].data) savedSnapshots[k] = val[k]; });
+        const autos = Object.keys(savedSnapshots).filter(k => k.startsWith('snap_auto_')).sort();
+        if (autos.length) activeBaselineId = autos[autos.length - 1];
+        saveSnapshotsToStorage();
+        populateSnapshotSelector();
+      }).catch(e => console.warn('Không đọc được snapshots Cloud:', e));
+    }
+
+    function fetchStockFromCloud(meta, force) {
+      if (!stockRef) return Promise.resolve();
+      const key = metaKey(meta);
+      if (!force && key && key === lastCloudKey) return Promise.resolve();
+      if (cloudFetching) return Promise.resolve();
+      cloudFetching = true;
+      updateCloudBadge('SYNCING', 'Đang tải dữ liệu mới từ Cloud...');
+      return stockRef.once('value').then(snap => {
+        const recs = normalizeCloudRecords(snap.val());
+        if (!recs.length) { updateCloudBadge('ONLINE', 'Cloud Live (chưa có dữ liệu)'); return; }
+        const isUpdate = lastCloudKey !== null;
+        applyCloudData(recs, meta, key);
+        updateCloudBadge('ONLINE', `Cloud Live · ${fmtN(recs.length)} dòng · ${(meta && meta.lastUpdated) || cloudLastSyncAt}`);
+        if (isUpdate) showToast(`🔄 Có dữ liệu mới từ Cloud (${(meta && meta.fileName) || 'file mới'}) — đã cập nhật tự động.`);
+        return mergeCloudSnapshots();
+      }).catch(err => {
+        console.error('Lỗi tải Cloud:', err);
+        cloudMetaError = err && err.message ? err.message : 'Không tải được dữ liệu';
+        updateCloudBadge('ERROR', 'Lỗi tải Cloud — đang thử lại');
+        lastCloudKey = null;
+        clearTimeout(cloudRetryTimer);
+        cloudRetryTimer = setTimeout(() => fetchStockFromCloud(meta, true), 15000);
+      }).finally(() => {
+        cloudFetching = false;
+        if (currentMode === 'AUDIT') renderAuditView();
+      });
+    }
+
     function setupCloudWatchers() {
       try {
         if (!db) return;
         db.ref('.info/connected').on('value', snap => {
+          const was = firebaseConnected;
           firebaseConnected = snap.val() === true;
+          if (firebaseConnected && was === false) {          // vừa có mạng lại -> đối chiếu ngay
+            metaRef.once('value').then(s => fetchStockFromCloud(s.val(), false));
+          }
           if (currentMode === 'AUDIT') renderAuditView();
         });
+        // Lắng nghe mốc metadata (nhẹ): có phiên bản mới -> tự tải dữ liệu mới
         metaRef.on('value', snap => {
           cloudMeta = snap.val() || null;
           cloudMetaError = null;
           cloudMetaCheckedAt = new Date().toLocaleString('vi-VN');
+          if (cloudMeta) fetchStockFromCloud(cloudMeta, false);
           if (currentMode === 'AUDIT') renderAuditView();
         }, err => {
           cloudMetaError = err && err.message ? err.message : 'Không đọc được metadata';
+          updateCloudBadge('ERROR', 'Lỗi quyền đọc Cloud');
           if (currentMode === 'AUDIT') renderAuditView();
         });
+        // Tab bị ngủ (điện thoại / chuyển tab) -> khi quay lại tự đối chiếu phiên bản
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && metaRef) {
+            metaRef.once('value').then(s => { cloudMeta = s.val() || null; cloudMetaCheckedAt = new Date().toLocaleString('vi-VN'); if (cloudMeta) fetchStockFromCloud(cloudMeta, false); }).catch(() => {});
+          }
+        });
+        window.addEventListener('online', () => { try { db.goOnline(); } catch (e) {} });
       } catch (e) { console.warn('setupCloudWatchers:', e); }
     }
 
@@ -3576,8 +3673,8 @@
       if (!isCloudInitialized || !metaRef) { showToast('Firebase chưa khởi tạo (đang chạy chế độ Local).'); return; }
       metaRef.once('value').then(snap => {
         cloudMeta = snap.val() || null; cloudMetaError = null; cloudMetaCheckedAt = new Date().toLocaleString('vi-VN');
-        if (showMsg) showToast(cloudMeta ? 'Đã kiểm tra lại Cloud: có dữ liệu.' : 'Cloud chưa có metadata (chưa ai up file lên).');
-        renderAuditView(); lucide.createIcons();
+        if (!cloudMeta) { if (showMsg) showToast('Cloud chưa có dữ liệu (chưa ai up file lên).'); renderAuditView(); lucide.createIcons(); return; }
+        return fetchStockFromCloud(cloudMeta, true).then(() => { if (showMsg) showToast('Đã đồng bộ lại dữ liệu từ Cloud.'); renderAuditView(); lucide.createIcons(); });
       }).catch(err => {
         cloudMetaError = err.message; if (showMsg) showToast('Lỗi đọc Cloud: ' + err.message);
         renderAuditView(); lucide.createIcons();
@@ -3608,7 +3705,7 @@
       const models = new Set(list.map(r => r.product)).size;
       const provs = new Set(list.map(r => r.city)).size;
 
-      const srcLabel = dataMeta.source === 'EXCEL' ? 'File Excel (nạp phiên này)' : 'Dữ liệu nhúng sẵn';
+      const srcLabel = dataMeta.source === 'EXCEL' ? 'File Excel (nạp phiên này)' : (dataMeta.source === 'CLOUD' ? 'Tự động tải từ Firebase Cloud (realtime)' : '⚠ Dữ liệu nhúng sẵn trong HTML — có thể cũ, đang chờ Cloud');
       const fbOk = firebaseConnected === true;
       const fbText = !isCloudInitialized ? 'Chưa khởi tạo (Local)' : (firebaseConnected === null ? 'Đang kiểm tra...' : (fbOk ? 'Đã kết nối Realtime' : 'Mất kết nối'));
       const fbCls = !isCloudInitialized ? 'text-rose-500' : (firebaseConnected === null ? 'text-amber-500' : (fbOk ? 'text-emerald-500' : 'text-rose-500'));
