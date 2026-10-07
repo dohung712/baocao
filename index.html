@@ -106,6 +106,9 @@
       <button onclick="switchTab('cleaning')" id="tab-cleaning" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
         🧹 Vệ Sinh
       </button>
+      <button onclick="switchTab('busy')" id="tab-busy" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
+        📅 Lịch Bận
+      </button>
       <button onclick="switchTab('store-ranking')" id="tab-store-ranking" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
         🏢 BXH Siêu Thị
       </button>
@@ -465,6 +468,27 @@
       <div id="clMonthSummary" class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 text-xs space-y-1"></div>
     </section>
 
+    <!-- ================= TAB: LỊCH BẬN VIỆC / OFF ================= -->
+    <section id="sec-busy" class="hidden space-y-3">
+      <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-1.5">
+          <h3 class="text-xs md:text-sm font-bold text-slate-800">📅 Lịch Bận Việc / OFF</h3>
+          <div class="flex items-center gap-1">
+            <button onclick="bzShiftMonth(-1)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs">‹</button>
+            <span id="bzMonthLabel" class="px-2 text-xs font-black text-slate-800 whitespace-nowrap min-w-[90px] text-center"></span>
+            <button onclick="bzShiftMonth(1)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs">›</button>
+            <button onclick="bzToday()" class="px-2 py-1 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-[11px]">Hôm nay</button>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-500 leading-snug">Chạm vào ngày → <b>chọn tên</b> → <b>chọn Bận việc (kèm tick Ca 1–6) hoặc OFF</b>. Ngày <b>Thứ 2–Thứ 6</b> tối đa <b>3 bạn</b>/ngày, ai chọn sau khi đủ 3 người sẽ báo <b>đăng ký muộn</b>. Thứ 7 &amp; CN không giới hạn. Đã đăng ký thì không tự xóa được, chỉ Quản lý xóa.</p>
+        <div id="bzGrid" class="grid grid-cols-7 gap-1"></div>
+        <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500 pt-1">
+          <span><b class="text-amber-600">Bận</b> = Bận việc</span><span><b class="text-rose-600">OFF</b> = Nghỉ</span><span>🔒 Đủ 3 người</span><span class="text-slate-400">+ Còn trống</span>
+        </div>
+      </div>
+      <div id="bzMonthSummary" class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 text-xs space-y-1"></div>
+    </section>
+
     <section id="sec-store-ranking" class="hidden space-y-3">
       <div class="bg-white p-3.5 md:p-4 rounded-xl shadow-sm border border-slate-200 space-y-2.5">
         <div class="flex justify-between items-center cursor-pointer" onclick="toggleInputStoreData()">
@@ -709,25 +733,27 @@
             <div class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-black">AI</div>
             <div class="bg-white p-2.5 rounded-xl rounded-tl-none border shadow-sm text-slate-700 max-w-[90%] leading-relaxed">
               👋 Xin chào Quản Lý! Tôi là trợ lý AI tra cứu thi đua.<br/>
-              • Bấm trực tiếp vào <b>tên nhân viên</b> ở hàng nút phía trên để kiểm tra toàn diện.<br/>
-              • Hoặc dùng các nút tra cứu nhanh bên dưới: <i>"Ai tăng ca?"</i>, <i>"Nhân viên nguy cơ cao"</i>, <i>"Môn yếu nhất"</i>...
+              • Chọn 1 trong <b>5 nhóm</b> bên dưới (mỗi nhóm 10 câu hỏi) rồi bấm câu cần hỏi.<br/>
+              • Nhóm <b>📝 Báo cáo</b> cho biết <b>cụ thể ngày nào</b> nhân viên chưa báo cáo.<br/>
+              • Hoặc gõ tự do, VD: <i>"Bình chưa báo cáo ngày nào"</i>, <i>"hôm qua ai thiếu báo cáo"</i>, <i>"ai OFF hôm nay"</i>.
             </div>
           </div>
         </div>
 
         <form onsubmit="handleChatSubmit(event)" class="flex gap-1.5">
-          <input type="text" id="chatInput" placeholder="Nhập tên nhân viên, môn hoặc từ khóa (VD: nguy cơ, tăng ca, Laptop)..." class="flex-1 border rounded-lg p-2 text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium">
+          <input type="text" id="chatInput" placeholder="Hỏi tự do (VD: Bình chưa báo cáo ngày nào, hôm qua ai thiếu báo cáo, ai OFF hôm nay)..." class="flex-1 border rounded-lg p-2 text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium">
           <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow flex items-center gap-1">
             <span>Gửi</span> 🚀
           </button>
         </form>
 
-        <div class="flex flex-wrap gap-1 pt-0.5">
-          <button onclick="quickAsk('nguy cơ cao')" class="text-[9px] bg-rose-50 text-rose-700 hover:bg-rose-100 px-2 py-0.5 rounded border border-rose-200 font-bold">⚠️ Nhân viên nguy cơ cao</button>
-          <button onclick="quickAsk('môn yếu nhất')" class="text-[9px] bg-amber-50 text-amber-800 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-200 font-bold">📉 Môn tỷ lệ đạt thấp nhất</button>
-          <button onclick="quickAsk('tăng ca')" class="text-[9px] bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200 font-bold">⏰ Ai tăng ca?</button>
-          <button onclick="quickAsk('hôm nay')" class="text-[9px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-0.5 rounded border font-bold">📅 Tiến độ hôm nay</button>
-          <button onclick="quickAsk('top sao')" class="text-[9px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 font-bold">⭐ Top sao dẫn đầu</button>
+        <!-- 5 nhóm x 10 câu hỏi -->
+        <div class="space-y-1.5 pt-0.5">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-600">
+            <span>💡 50 câu hỏi nhanh — chọn nhóm rồi bấm câu hỏi:</span>
+          </div>
+          <div id="cbGroupTabs" class="flex flex-wrap gap-1"></div>
+          <div id="cbQuestionList" class="grid grid-cols-1 md:grid-cols-2 gap-1"></div>
         </div>
       </div>
     </section>
@@ -760,15 +786,12 @@
           <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-950 space-y-1">
             <p>• <b>Tính độc lập theo từng nhân sự và từng môn</b>: Cột <b>CHUỖI</b> trên dòng môn nào sẽ đếm chính xác số ngày liên tiếp nhân viên đó chưa đạt chỉ tiêu của riêng môn đó.</p>
             <p>• <b>Cơ chế ngắt chuỗi</b>: Khi nhân viên có 1 ca đạt Target (≥100%), chuỗi của môn đó tự động ngắt và đưa về 0 ngày.</p>
-            <p>• <b>Ngày không có báo cáo</b> (nghỉ/OFF/quên báo): bỏ qua, chuỗi giữ nguyên. <b>Chọn Tăng ca</b> (không trừ sao): chuỗi giữ nguyên, không +1.</p>
+            <p>• <b>Ngày không có báo cáo</b> (nghỉ/OFF/quên báo): bỏ qua, chuỗi giữ nguyên. <b>Chọn Tăng ca</b> (không trừ sao): chuỗi giữ nguyên, không +1, cho tới khi Về số mới ngắt. <b>Đã bị trừ sao</b> thì chuỗi của môn đó <b>về 0</b> (tính lại từ ngày hôm sau).</p>
             <p>• Hệ số phạt tính theo chuỗi của <b>các ngày trước ngày đang báo cáo</b> (không tính chính ngày đó).</p>
             <p>• <b>Ngưỡng chế tài (Cài Đặt Ngưỡng Tăng Ca &amp; Chế Tài):</b> chỉ trừ sao khi số ở cột CHUỖI ≥ <b>Chuỗi ngày TRỪ SAO</b>, chỉ được Tăng ca khi CHUỖI ≥ <b>Chuỗi ngày TĂNG CA</b>. CHUỖI nhỏ hơn cả hai: <b>chỉ ghi nhận chuỗi</b> (không trừ sao, không tăng ca) nhưng chuỗi vẫn +1.</p>
             <p>• <b>Hệ số phạt lũy tiến theo chuỗi chưa về số:</b></p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-1.5 mt-1 font-semibold text-[11px]">
-              <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi các ngày trước &lt; 4 (rớt ngày 1-4): <b>Trừ 1 lần sao (1.0x)</b></div>
-              <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi các ngày trước 4 - 5 (rớt ngày thứ 5-6): <b>Trừ 1.5 lần sao (1.5x)</b></div>
-              <div class="bg-white p-1.5 rounded border border-amber-200">Chuỗi các ngày trước ≥ 6 (rớt ngày thứ 7+): <b>Trừ 2.0 lần sao (2.0x)</b></div>
-            </div>
+            <div id="rulePenaltyTiers" class="grid grid-cols-1 md:grid-cols-4 gap-1.5 mt-1 font-semibold text-[11px]"></div>
+            <p class="text-[10px] text-slate-500">(Bảng này tự cập nhật theo phần <b>Hệ Số Phạt Lũy Tiến</b> trong tab Quản Lý.)</p>
           </div>
         </div>
 
@@ -970,6 +993,45 @@
         </div>
       </div>
 
+      <!-- Hệ số phạt lũy tiến -->
+      <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
+        <div class="flex justify-between items-center border-b pb-1.5">
+          <h2 class="text-xs md:text-sm font-bold text-slate-800">📈 Hệ Số Phạt Lũy Tiến Theo Chuỗi Chưa Về Số</h2>
+          <button onclick="penTiersChanged(true)" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black shadow transition">💾 Lưu Hệ Số</button>
+        </div>
+        <p class="text-[10px] text-slate-500 leading-snug">Tính theo <b>chuỗi các ngày trước</b> ngày đang báo cáo (không tính chính ngày đó). Số sao trừ = sao phạt của môn × hệ số. Chỉnh xong bấm Lưu (hoặc rời ô nhập sẽ tự lưu).</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+          <div class="border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50">
+            <div class="font-black text-slate-700">Bậc 1</div>
+            <div class="text-[10px] text-slate-500">Chuỗi &lt; <b id="penLblT2a">4</b></div>
+            <label class="block text-[10px] font-bold">Hệ số (x):</label>
+            <input type="number" step="0.1" min="0" id="cfgPenM1" onchange="penTiersChanged()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div class="border border-amber-200 rounded-lg p-2 space-y-1 bg-amber-50">
+            <div class="font-black text-amber-800">Bậc 2</div>
+            <label class="block text-[10px] font-bold">Chuỗi từ (≥):</label>
+            <input type="number" step="1" min="1" id="cfgPenT2" onchange="penTiersChanged()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+            <label class="block text-[10px] font-bold">Hệ số (x):</label>
+            <input type="number" step="0.1" min="0" id="cfgPenM2" onchange="penTiersChanged()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div class="border border-orange-200 rounded-lg p-2 space-y-1 bg-orange-50">
+            <div class="font-black text-orange-800">Bậc 3</div>
+            <label class="block text-[10px] font-bold">Chuỗi từ (≥):</label>
+            <input type="number" step="1" min="1" id="cfgPenT3" onchange="penTiersChanged()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+            <label class="block text-[10px] font-bold">Hệ số (x):</label>
+            <input type="number" step="0.1" min="0" id="cfgPenM3" onchange="penTiersChanged()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div class="border border-rose-200 rounded-lg p-2 space-y-1 bg-rose-50">
+            <div class="font-black text-rose-800">Bậc 4</div>
+            <label class="block text-[10px] font-bold">Chuỗi từ (≥):</label>
+            <input type="number" step="1" min="1" id="cfgPenT4" onchange="penTiersChanged()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+            <label class="block text-[10px] font-bold">Hệ số (x):</label>
+            <input type="number" step="0.1" min="0" id="cfgPenM4" onchange="penTiersChanged()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+        <div id="penTiersPreview" class="text-[11px] text-slate-600 space-y-0.5"></div>
+      </div>
+
       <!-- Reset chuỗi ngày -->
       <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-1.5">
         <h3 class="text-xs font-bold text-amber-900">🔄 Quản Lý Reset Chuỗi Ngày Về 0</h3>
@@ -1048,6 +1110,30 @@
         <button onclick="clCloseModal()" class="text-slate-400 hover:text-slate-700 font-black text-lg leading-none px-1">✕</button>
       </div>
       <div id="clModalBody" class="space-y-3 text-xs"></div>
+    </div>
+  </div>
+
+  <!-- MODAL CHI TIẾT NGÀY BẬN VIỆC / OFF -->
+  <div id="busyDayModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 z-50" onclick="if (event.target === this) bzCloseModal()">
+    <div class="bg-white w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl p-4 shadow-2xl space-y-3">
+      <div class="flex items-start justify-between gap-2 border-b pb-2">
+        <div>
+          <h3 class="text-sm font-black text-slate-900">📅 Đăng ký Bận việc / OFF</h3>
+          <p id="bzModalDate" class="text-xs font-bold text-orange-600"></p>
+        </div>
+        <button onclick="bzCloseModal()" class="text-slate-400 hover:text-slate-700 font-black text-lg leading-none px-1">✕</button>
+      </div>
+      <div id="bzModalBody" class="space-y-3 text-xs"></div>
+    </div>
+  </div>
+
+  <!-- POPUP ĐĂNG KÝ MUỘN (người thứ 4) -->
+  <div id="busyLateModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 z-[60]">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-3 text-center">
+      <div class="text-4xl">⏰</div>
+      <h3 class="text-base font-black text-rose-600">ĐÃ ĐĂNG KÝ MUỘN!</h3>
+      <p id="bzLateText" class="text-xs text-slate-600 leading-relaxed"></p>
+      <button onclick="document.getElementById('busyLateModal').classList.add('hidden')" class="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-black shadow">Đã hiểu</button>
     </div>
   </div>
 
@@ -1267,7 +1353,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-01 · v6";
+    const APP_VERSION = "2026-10-01 · v7";
 
     function fmtSyncTime(ts) {
       const n = Number(ts);
@@ -1413,8 +1499,9 @@
       lateLogs: [], // Nhật ký nộp trễ sau 22h20
       tiktok: [], // Báo cáo link TikTok (Thứ 3 & Thứ 6)
       veSinh: [], // Lịch vệ sinh: đăng ký ngày + ảnh báo cáo
+      lichBan: [], // Lịch bận việc / OFF: {date, staffId, staffName, type: 'BAN'|'OFF'}
       lockedDates: [], // Danh sách ngày bị khóa
-      config: { STREAK_OVERTIME: 3, STREAK_PENALTY_STAR: 5, STREAK_ALERT_EMAIL: 7, MANAGER_EMAIL: "", AUTO_STREAK_ENABLED: "ON", DOUBLE_BONUS_RATE: 150, ALLOW_STAFF_EDIT_STREAK: "OFF" }
+      config: { STREAK_OVERTIME: 3, STREAK_PENALTY_STAR: 5, STREAK_ALERT_EMAIL: 7, MANAGER_EMAIL: "", AUTO_STREAK_ENABLED: "ON", DOUBLE_BONUS_RATE: 150, ALLOW_STAFF_EDIT_STREAK: "OFF", PEN_T2_MIN: 4, PEN_T3_MIN: 6, PEN_T4_MIN: 8, PEN_M1: 1, PEN_M2: 1.5, PEN_M3: 2, PEN_M4: 5 }
     };
 
     let currentStoreData = [...RAW_STORE_DATA];
@@ -1752,6 +1839,12 @@
       state.lateLogs = data.lateLogs || state.lateLogs || [];
       state.tiktok = data.tiktok || state.tiktok || [];
       state.veSinh = data.veSinh || state.veSinh || [];
+      if (Array.isArray(data.lichBan)) {
+        const localOnly = (state.lichBan || []).filter(r => r.localOnly && !data.lichBan.some(x => x.date === r.date && x.staffId === r.staffId));
+        state.lichBan = data.lichBan.concat(localOnly);
+      } else { state.lichBan = state.lichBan || []; }
+      try { renderPenaltyTierViews(); } catch (e) {}
+      try { const secBz = document.getElementById('sec-busy'); if (secBz && !secBz.classList.contains('hidden')) renderBusyTab(); } catch (e) {}
       try { const secCl = document.getElementById('sec-cleaning'); if (secCl && !secCl.classList.contains('hidden')) renderCleaningTab(); } catch (e) {}
       state.lockedDates = data.lockedDates || state.lockedDates || [];
       if (data.config) { state.config = data.config; applyTabVisibility(); }
@@ -1811,6 +1904,11 @@
         penalty: getCfgNum('TIKTOK_PENALTY', 300),
         minLinks: Math.max(1, getCfgNum('TIKTOK_MIN_LINKS', 1))
       };
+    }
+    function penCfgField(id, key) {
+      const el = document.getElementById(id);
+      if (el && el.value !== "") return el.value;
+      return (state.config && state.config[key] !== undefined) ? state.config[key] : "";
     }
     function ttCfgField(id, key) {
       const el = document.getElementById(id);
@@ -2045,11 +2143,6 @@
     function clThumb(id) { return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1000`; }
     function clViewUrl(id) { return `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`; }
     function clReported(rec) { return !!(rec && rec.photos && rec.photos.length >= 3); }
-    function clUpdateStar(staffId, totalStar) {
-      if (totalStar === null || totalStar === undefined) return;
-      const st = (state.nhanSu || []).find(ns => ns.id === staffId);
-      if (st) { st.totalStar = Number(totalStar) || 0; st.baseStar = st.totalStar; }
-    }
     function clPersist() { try { localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state)); } catch (e) {} }
 
     function clShiftMonth(n) {
@@ -2095,66 +2188,6 @@
       return { html, reg, done, overdue, dim };
     }
 
-    // ---- Thống kê vệ sinh theo người + báo cáo trễ + phạt sao (luật giống computeVeSinhLate trong Code.gs) ----
-    // Trễ = nộp ảnh sau ngày vệ sinh, hoặc quá ngày mà chưa nộp. Đếm theo từng người, từng tháng.
-    // Lần 1: -300 · Lần 2: -500 · Lần 3 trở đi: -800/lần (đổi ở CauHinh_QL: VS_PENALTY_1/2/3). Chỉ phạt từ ngày VESINH_START_DATE.
-    function clPenalty(n) {
-      const c = state.config || {};
-      const p1 = Number(c.VS_PENALTY_1) || 300, p2 = Number(c.VS_PENALTY_2) || 500, p3 = Number(c.VS_PENALTY_3) || 800;
-      return n <= 1 ? p1 : (n === 2 ? p2 : p3);
-    }
-    function clDM(date) { return date ? `${date.slice(8, 10)}/${date.slice(5, 7)}` : ''; }
-    function clLateStats(records, y, m, today) {
-      const start = (state.config && state.config.VESINH_START_DATE) || today;
-      const prefix = `${y}-${clPad(m + 1)}`;
-      const by = {};
-      (records || []).filter(r => r.date && r.date.startsWith(prefix))
-        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
-        .forEach(r => {
-          const s = by[r.staffId] || (by[r.staffId] = { staffId: r.staffId, name: r.staffName, total: 0, onTime: 0, pending: 0, late: 0, penalty: 0, counted: 0, items: [] });
-          s.total++;
-          let how = '';
-          if (clReported(r)) {
-            if (r.reportDate && r.reportDate > r.date) how = `nộp ${clDM(r.reportDate)}`; else s.onTime++;
-          } else if (r.date < today) how = 'chưa nộp';
-          else s.pending++;
-          if (how) {
-            s.late++;
-            let no = 0, pen = 0;
-            if (r.date >= start) { s.counted++; no = s.counted; pen = clPenalty(no); s.penalty += pen; }
-            s.items.push({ date: r.date, how, no, pen });
-          }
-        });
-      return Object.values(by).sort((a, b) => b.late - a.late || b.total - a.total || String(a.name).localeCompare(String(b.name), 'vi'));
-    }
-    function clStatsHtml(y, m, today) {
-      const rows = clLateStats(state.veSinh, y, m, today);
-      if (!rows.length) return '';
-      const lateRows = rows.filter(r => r.late > 0);
-      const totalPen = rows.reduce((a, r) => a + r.penalty, 0);
-      let h = `<div class="border-t pt-2 mt-1 space-y-1.5">
-        <div class="font-black text-slate-700">📊 Chi tiết từng người — Tháng ${m + 1}/${y}</div>
-        <div class="overflow-x-auto"><table class="w-full text-[11px] border-collapse">
-          <thead><tr class="bg-slate-100 text-slate-600"><th class="text-left p-1.5">Nhân viên</th><th class="p-1.5">Số lần VS</th><th class="p-1.5">Đúng hạn</th><th class="p-1.5">Chờ tới ngày</th><th class="p-1.5 text-rose-600">Báo cáo trễ</th><th class="p-1.5 text-rose-600">Trừ sao</th></tr></thead><tbody>` +
-        rows.map(r => `<tr class="border-t ${r.late ? 'bg-rose-50/60' : ''}">
-          <td class="p-1.5 font-bold text-slate-800">${ttEsc(r.name)}</td>
-          <td class="p-1.5 text-center font-black">${r.total}</td>
-          <td class="p-1.5 text-center text-emerald-700 font-bold">${r.onTime}</td>
-          <td class="p-1.5 text-center text-slate-500">${r.pending}</td>
-          <td class="p-1.5 text-center font-black ${r.late ? 'text-rose-600' : 'text-slate-400'}">${r.late}</td>
-          <td class="p-1.5 text-center font-black ${r.penalty ? 'text-rose-600' : 'text-slate-400'}">${r.penalty ? '-' + r.penalty.toLocaleString('vi-VN') : '0'}</td></tr>`).join('') +
-        `</tbody></table></div>`;
-      if (lateRows.length) {
-        h += `<div class="bg-rose-50 border border-rose-200 rounded-lg p-2 space-y-1"><div class="font-black text-rose-700">⏰ Ai báo cáo trễ? (tổng trừ ${totalPen.toLocaleString('vi-VN')} sao)</div>` +
-          lateRows.map(r => `<div class="text-[11px] text-rose-800"><b>${ttEsc(r.name)}</b>: trễ <b>${r.late} lần</b> — ` +
-            r.items.map(it => `${clDM(it.date)} (${it.how}${it.no ? `, lần ${it.no}: -${it.pen}` : ', trước ngày áp dụng phạt'})`).join('; ') + `</div>`).join('') + `</div>`;
-      } else {
-        h += `<div class="text-[11px] text-emerald-700 font-bold">✅ Chưa có ai báo cáo trễ trong tháng này.</div>`;
-      }
-      h += `<div class="text-[10px] text-slate-500 leading-snug">📜 Quy định: báo cáo trễ lần 1 trừ <b>${clPenalty(1)}</b> sao · lần 2 trừ <b>${clPenalty(2)}</b> sao · lần 3 trở lên mỗi lần trừ <b>${clPenalty(3)}</b> sao (đếm theo từng người, mỗi tháng tính lại). Trễ = nộp ảnh sau ngày vệ sinh hoặc quá ngày mà chưa nộp.</div></div>`;
-      return h;
-    }
-
     function renderCleaningTab() {
       const grid = document.getElementById('clGrid');
       if (!grid) return;
@@ -2171,7 +2204,6 @@
         if (res.overdue.length) {
           h += `<div class="text-[11px] text-rose-700">⚠️ ` + res.overdue.map(r => `${ttEsc(r.staffName)} (${r.date.slice(8, 10)}/${r.date.slice(5, 7)})`).join(', ') + `</div>`;
         }
-        h += clStatsHtml(y, m, today);
         sum.innerHTML = h;
       }
     }
@@ -2351,7 +2383,6 @@
         if (res.status === "success") {
           state.veSinh = (state.veSinh || []).filter(v => v.date !== date);
           state.veSinh.push(res.record);
-          clUpdateStar(res.record.staffId, res.totalStar);
           clPersist();
           clPhotos = [null, null, null];
           showToastMessage("✅ " + res.message);
@@ -2379,7 +2410,6 @@
         if (res.status === "success") {
           if (onlyPhotos && rec) { rec.photos = []; rec.reportDate = ""; rec.reportTime = ""; }
           else state.veSinh = (state.veSinh || []).filter(v => v.date !== date);
-          clUpdateStar(res.staffId, res.totalStar);
           clPersist();
           showToastMessage("✅ " + res.message);
         } else alert(res.message || "Lỗi");
@@ -2388,11 +2418,195 @@
       clRenderModal();
     }
 
+
+    // ================= LỊCH BẬN VIỆC / OFF =================
+    // Chọn ngày -> chọn tên -> chọn Bận việc / OFF. Ngày T2-T6 tối đa 3 người; người thứ 4 bị báo "đăng ký muộn".
+    // T7 & CN: không giới hạn, không hiện popup đăng ký muộn.
+    const BZ_MAX = 3;
+    const BZ_TYPE = { BAN: { label: 'Bận việc', short: 'Bận', cls: 'text-amber-700', bg: 'bg-amber-100' }, OFF: { label: 'OFF', short: 'OFF', cls: 'text-rose-700', bg: 'bg-rose-100' } };
+    let bzView = { y: new Date().getFullYear(), m: new Date().getMonth() };
+    let bzSelDate = "";
+
+    function bzShiftTxt(r) { return (r.type !== 'OFF' && Array.isArray(r.shifts) && r.shifts.length) ? 'Ca ' + r.shifts.slice().sort().join(',') : ''; }
+    function bzToggleShifts() {
+      const t = document.querySelector('input[name="bzType"]:checked');
+      const box = document.getElementById('bzShiftBox');
+      if (box) box.classList.toggle('hidden', !(t && t.value === 'BAN'));
+    }
+    function bzIsWeekday(date) { const w = ttParse(date).getDay(); return w >= 1 && w <= 5; }
+    function bzOn(date) { return (state.lichBan || []).filter(r => r.date === date); }
+    function bzPersist() { try { localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state)); } catch (e) {} }
+    function bzShiftMonth(n) {
+      let m = bzView.m + n, y = bzView.y;
+      while (m < 0) { m += 12; y--; }
+      while (m > 11) { m -= 12; y++; }
+      bzView = { y, m };
+      renderBusyTab();
+    }
+    function bzToday() { const d = new Date(); bzView = { y: d.getFullYear(), m: d.getMonth() }; renderBusyTab(); }
+
+    function renderBusyTab() {
+      const grid = document.getElementById('bzGrid');
+      if (!grid) return;
+      const today = localDateStr(new Date());
+      const { y, m } = bzView;
+      document.getElementById('bzMonthLabel').innerText = `Tháng ${m + 1}/${y}`;
+      const first = new Date(y, m, 1, 12);
+      const offset = (first.getDay() + 6) % 7;
+      const dim = new Date(y, m + 1, 0).getDate();
+      let html = CL_DOW.map((d, i) => `<div class="text-center text-[10px] md:text-xs font-black ${i >= 5 ? 'text-rose-500' : 'text-slate-500'} py-0.5">${d}</div>`).join('');
+      for (let i = 0; i < offset; i++) html += '<div></div>';
+      const perStaff = {};
+      for (let d = 1; d <= dim; d++) {
+        const date = `${y}-${clPad(m + 1)}-${clPad(d)}`;
+        const recs = bzOn(date);
+        const isToday = date === today, isPast = date < today, wd = bzIsWeekday(date);
+        const full = wd && recs.length >= BZ_MAX;
+        recs.forEach(r => { const k = r.staffName; perStaff[k] = perStaff[k] || { BAN: 0, OFF: 0 }; perStaff[k][r.type === 'OFF' ? 'OFF' : 'BAN']++; });
+        let cls = isPast ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-200 hover:border-orange-400';
+        if (full) cls = 'bg-rose-50 border-rose-300';
+        else if (recs.length) cls = isPast ? 'bg-slate-50 border-slate-200' : 'bg-orange-50 border-orange-200';
+        const names = recs.map(r => { const t = BZ_TYPE[r.type === 'OFF' ? 'OFF' : 'BAN']; const sh = bzShiftTxt(r); return `<span class="block truncate ${t.cls}">${ttEsc(clShort(r.staffName))} <span class="opacity-70">${t.short}${sh ? ' ' + sh.replace('Ca ', 'C') : ''}</span></span>`; }).join('');
+        const empty = (!recs.length && !isPast) ? '<span class="text-slate-300 text-sm leading-none">+</span>' : '';
+        html += `<button onclick="bzOpenDay('${date}')" class="min-h-[60px] md:min-h-[84px] rounded-lg border p-1 text-left flex flex-col justify-between transition ${cls} ${isToday ? 'ring-2 ring-orange-500' : ''}">
+          <span class="flex items-center justify-between w-full"><span class="text-[10px] md:text-xs font-black ${isToday ? 'text-orange-600' : 'text-slate-500'}">${d}</span>${full ? '<span class="text-[9px]">🔒</span>' : (wd && recs.length ? `<span class="text-[9px] font-bold text-slate-400">${recs.length}/${BZ_MAX}</span>` : '')}</span>
+          <span class="text-[9px] md:text-[11px] font-bold leading-tight w-full">${names}${empty}</span></button>`;
+      }
+      grid.innerHTML = html;
+      const sum = document.getElementById('bzMonthSummary');
+      if (sum) {
+        const rows = Object.entries(perStaff).sort((a, b) => (b[1].BAN + b[1].OFF) - (a[1].BAN + a[1].OFF));
+        sum.innerHTML = `<div class="font-bold text-slate-700">📊 Tháng ${m + 1}/${y}</div>` + (rows.length
+          ? `<div class="flex flex-wrap gap-1.5">` + rows.map(([n, c]) => `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">${ttEsc(n)}: <span class="text-amber-700">Bận ${c.BAN}</span> · <span class="text-rose-700">OFF ${c.OFF}</span></span>`).join('') + `</div>`
+          : `<div class="text-slate-400">Chưa có ai đăng ký trong tháng này.</div>`);
+      }
+    }
+
+    function bzOpenDay(date) {
+      bzSelDate = date;
+      document.getElementById('busyDayModal').classList.remove('hidden');
+      bzRenderModal();
+    }
+    function bzCloseModal() { document.getElementById('busyDayModal').classList.add('hidden'); bzSelDate = ""; }
+
+    function bzRenderModal() {
+      const date = bzSelDate;
+      if (!date) return;
+      const today = localDateStr(new Date());
+      const recs = bzOn(date);
+      const wd = bzIsWeekday(date);
+      document.getElementById('bzModalDate').innerText = clDateLabel(date) + (date === today ? ' (hôm nay)' : '');
+      let h = `<div class="space-y-1"><div class="font-bold text-slate-700">Đã đăng ký ${wd ? `(<span class="${recs.length >= BZ_MAX ? 'text-rose-600' : 'text-orange-600'}">${recs.length}/${BZ_MAX}</span>)` : `(${recs.length})`}:</div>`;
+      if (!recs.length) h += `<div class="text-slate-400">Chưa có ai.</div>`;
+      recs.forEach(r => {
+        const t = BZ_TYPE[r.type === 'OFF' ? 'OFF' : 'BAN'];
+        h += `<div class="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
+          <span class="font-bold text-slate-800">${ttEsc(r.staffName)}${bzShiftTxt(r) ? ` <span class="text-[10px] font-black text-rose-600">(${bzShiftTxt(r)})</span>` : ''}${r.localOnly ? ' <span class="text-[10px] text-amber-600">(chỉ trên máy này)</span>' : ''}</span>
+          <span class="flex items-center gap-1.5"><span class="px-2 py-0.5 rounded-full text-[11px] font-black ${t.bg} ${t.cls}">${t.label}</span>
+          ${isManagerUnlocked ? `<button onclick="bzDelete('${date}','${ttEsc(r.staffId)}')" class="text-rose-500 hover:bg-rose-50 rounded px-1 font-black">✕</button>` : ''}</span></div>`;
+      });
+      h += `</div>`;
+      if (date < today) {
+        h += `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-500">Ngày đã qua, không thể đăng ký thêm.</div>`;
+      } else {
+        h += `<div class="border-t pt-2 space-y-2">
+          <div><label class="block font-bold text-slate-700 mb-0.5">1. Chọn tên:</label>
+            <select id="bzRegStaff" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-xs bg-white"><option value="">-- Chọn nhân viên --</option>${state.nhanSu.map(ns => `<option value="${ttEsc(ns.id)}">${ttEsc(ns.name)}</option>`).join('')}</select></div>
+          <div><label class="block font-bold text-slate-700 mb-0.5">2. Chọn loại:</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer"><input type="radio" name="bzType" value="BAN" onchange="bzToggleShifts()" class="peer hidden" checked><div class="text-center py-2 rounded-lg border-2 border-slate-200 font-black text-slate-500 peer-checked:border-amber-500 peer-checked:bg-amber-50 peer-checked:text-amber-700">💼 Bận việc</div></label>
+              <label class="cursor-pointer"><input type="radio" name="bzType" value="OFF" onchange="bzToggleShifts()" class="peer hidden"><div class="text-center py-2 rounded-lg border-2 border-slate-200 font-black text-slate-500 peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:text-rose-700">🏖️ OFF</div></label>
+            </div></div>
+          <div id="bzShiftBox" class="space-y-1">
+            <label class="block font-bold text-slate-700 mb-0.5">3. Tick ca bận việc:</label>
+            <div class="grid grid-cols-6 gap-1">${[1, 2, 3, 4, 5, 6].map(n => `<label class="cursor-pointer"><input type="checkbox" name="bzShift" value="${n}" class="peer hidden"><div class="text-center py-1.5 rounded-lg border-2 border-slate-200 font-black text-slate-500 peer-checked:border-rose-500 peer-checked:bg-rose-500 peer-checked:text-white">Ca ${n}</div></label>`).join('')}</div>
+            <p class="text-[11px] font-black text-red-600 leading-snug">⚠️ Ghi rõ CA BẬN VIỆC để Quản lý sắp ca ngược lại (không xếp bạn vào các ca đã tick).</p>
+          </div>
+          <button id="btnBzRegister" onclick="bzRegister()" class="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-black shadow">✍️ Đăng ký</button>
+        </div>`;
+      }
+      if (!isManagerUnlocked && recs.length) {
+        h += `<div class="border-t pt-2"><button onclick="if (verifyManagerAccess()) bzRenderModal()" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600">🔐 Thao tác Quản lý (xóa)</button></div>`;
+      }
+      document.getElementById('bzModalBody').innerHTML = h;
+      bzToggleShifts();
+    }
+
+    function bzShowLate(date, recs) {
+      document.getElementById('bzLateText').innerHTML = `${ttEsc(clDateLabel(date))} đã đủ <b>${BZ_MAX}</b> bạn đăng ký bận việc/OFF:<br><b class="text-slate-800">${recs.map(r => ttEsc(r.staffName) + ' (' + BZ_TYPE[r.type === 'OFF' ? 'OFF' : 'BAN'].short + (bzShiftTxt(r) ? ' ' + bzShiftTxt(r) : '') + ')').join(', ')}</b><br>Bạn đăng ký muộn rồi, vui lòng chọn ngày khác hoặc liên hệ Quản lý.`;
+      document.getElementById('busyLateModal').classList.remove('hidden');
+    }
+
+    async function bzRegister() {
+      const sel = document.getElementById('bzRegStaff');
+      const staffId = sel ? sel.value : '';
+      if (!staffId) { alert("Vui lòng chọn tên nhân viên!"); return; }
+      const typeEl = document.querySelector('input[name="bzType"]:checked');
+      const type = typeEl ? typeEl.value : 'BAN';
+      const staff = state.nhanSu.find(ns => ns.id === staffId);
+      const date = bzSelDate;
+      if (date < localDateStr(new Date())) { alert("Không thể đăng ký ngày đã qua!"); return; }
+      const shifts = type === 'BAN' ? Array.from(document.querySelectorAll('input[name="bzShift"]:checked')).map(x => Number(x.value)).sort() : [];
+      if (type === 'BAN' && !shifts.length) { alert("Vui lòng tick ít nhất 1 ca bận việc (Ca 1–6) để Quản lý sắp ca!"); return; }
+
+      const btn = document.getElementById('btnBzRegister');
+      if (btn) { btn.disabled = true; btn.innerText = "⏳ ĐANG ĐĂNG KÝ..."; }
+      const restore = () => { const b = document.getElementById('btnBzRegister'); if (b) { b.disabled = false; b.innerText = "✍️ Đăng ký"; } };
+
+      // Lấy dữ liệu mới nhất trước khi kiểm tra giới hạn (tránh 2 người cùng chọn)
+      try { const fresh = await safeFetchJSON(`${API_URL}?_t=${Date.now()}`); if (fresh && Array.isArray(fresh.lichBan)) { applyStateData(fresh); } } catch (e) {}
+
+      let recs = bzOn(date);
+      if (recs.some(r => r.staffId === staffId)) { alert(`${staff.name} đã đăng ký ngày này rồi!`); restore(); bzRenderModal(); return; }
+      if (bzIsWeekday(date) && recs.length >= BZ_MAX) { restore(); bzRenderModal(); renderBusyTab(); bzShowLate(date, recs); return; }
+
+      try {
+        const res = await ttPost({ action: "REGISTER_BUSY", date, staffId, staffName: staff.name, type, shifts, max: bzIsWeekday(date) ? BZ_MAX : 0 });
+        if (res.status === "success") {
+          state.lichBan = (state.lichBan || []).filter(r => !(r.date === date && r.staffId === staffId));
+          state.lichBan.push(Object.assign({ date, staffId, staffName: staff.name, type }, res.record || {}, { shifts }));
+          bzPersist();
+          showToastMessage(`✅ ${staff.name} đã đăng ký ${BZ_TYPE[type].label}`);
+        } else if (res.status === "full") {
+          if (Array.isArray(res.records)) { state.lichBan = (state.lichBan || []).filter(r => r.date !== date).concat(res.records); bzPersist(); }
+          renderBusyTab(); bzRenderModal(); bzShowLate(date, bzOn(date)); return;
+        } else if (/action|unknown|không hỗ trợ|not support/i.test(String(res.message || ''))) {
+          bzSaveLocal(date, staff, type, shifts);
+        } else { alert(res.message || "Không đăng ký được!"); }
+      } catch (e) {
+        if (/HTML|trang lỗi|JSON/i.test(String(e.message))) bzSaveLocal(date, staff, type, shifts);
+        else alert("Lỗi đăng ký: " + e.message);
+      }
+      renderBusyTab();
+      bzRenderModal();
+    }
+
+    // Máy chủ chưa cài bản Apps Script mới -> tạm lưu trên máy này
+    function bzSaveLocal(date, staff, type, shifts) {
+      state.lichBan = (state.lichBan || []).filter(r => !(r.date === date && r.staffId === staff.id));
+      state.lichBan.push({ date, staffId: staff.id, staffName: staff.name, type, shifts: shifts || [], localOnly: true });
+      bzPersist();
+      showToastMessage("⚠️ Đã lưu tạm trên máy này (Apps Script chưa cập nhật)");
+    }
+
+    async function bzDelete(date, staffId) {
+      if (!verifyManagerAccess()) return;
+      const rec = bzOn(date).find(r => r.staffId === staffId);
+      if (!rec || !confirm(`Xóa đăng ký ${BZ_TYPE[rec.type === 'OFF' ? 'OFF' : 'BAN'].label} của ${rec.staffName} ngày ${clDateLabel(date)}?`)) return;
+      try { if (!rec.localOnly) { const res = await ttPost({ action: "DELETE_BUSY", date, staffId }); if (res.status !== "success") { alert(res.message || "Lỗi xóa"); return; } } } catch (e) { alert("Lỗi: " + e.message); return; }
+      state.lichBan = (state.lichBan || []).filter(r => !(r.date === date && r.staffId === staffId));
+      bzPersist();
+      showToastMessage("✅ Đã xóa đăng ký");
+      renderBusyTab();
+      bzRenderModal();
+    }
+
     // ---- ẨN / HIỆN TAB MENU (lưu trong config HIDDEN_TABS, dạng "history-logs,chatbot") ----
     const HIDEABLE_TABS = [
       ['history-logs', '🕒 Lịch Sử'],
       ['tiktok', '📱 TikTok'],
       ['cleaning', '🧹 Vệ Sinh'],
+      ['busy', '📅 Lịch Bận'],
       ['store-ranking', '🏢 BXH Siêu Thị'],
       ['dashboard', '🏆 BXH Cá Nhân'],
       ['items-management', '📋 Môn'],
@@ -2438,7 +2652,7 @@
     }
 
     function switchTab(tab) {
-      ['report', 'history-logs', 'tiktok', 'cleaning', 'store-ranking', 'dashboard', 'items-management', 'chatbot', 'rules-structure', 'manager'].forEach(t => {
+      ['report', 'history-logs', 'tiktok', 'cleaning', 'busy', 'store-ranking', 'dashboard', 'items-management', 'chatbot', 'rules-structure', 'manager'].forEach(t => {
         const sec = document.getElementById('sec-' + t);
         if (sec) sec.classList.toggle('hidden', t !== tab);
         const btn = document.getElementById('tab-' + t);
@@ -2452,6 +2666,8 @@
       if (tab === 'history-logs') renderHistoryLogsTable();
       if (tab === 'tiktok') renderTiktokTab();
       if (tab === 'cleaning') renderCleaningTab();
+      if (tab === 'busy') renderBusyTab();
+      if (tab === 'chatbot') renderChatbotStaffButtons();
       if (tab === 'store-ranking') renderStoreTable();
       if (tab === 'items-management') renderManagerSettings();
     }
@@ -2555,11 +2771,18 @@
       if (beforeDate) records = records.filter(k => k.date < beforeDate);
       records.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
+      // Đi ngược từ ngày gần nhất:
+      //  - Về số (>=100%)                -> ngắt chuỗi (về 0)
+      //  - Đã bị TRỪ SAO (Dùng sao)      -> chuỗi về 0, chỉ đếm các ngày SAU lần trừ sao đó
+      //  - Tăng ca                       -> giữ nguyên chuỗi (không +1, không ngắt) cho tới khi Về số
+      //  - Chưa về + Ghi nhận chuỗi      -> +1
+      //  - Ngày không báo cáo            -> bỏ qua (giữ nguyên)
       let streak = 0;
       for (let r of records) {
         if (r.status === "Về số") break;
         if (r.status !== "Chưa về") continue;
         if (r.compensation === "TANG_CA") continue;
+        if (r.compensation === "DUNG_SAO" && Number(r.starChange) < 0) break;
         streak++;
       }
       return streak;
@@ -2573,12 +2796,22 @@
       return isFinite(v) && v >= 0 ? v : def;
     }
 
-    function getPenaltyMultiplier(streak) {
-      if (streak >= 6) return 2.0;
-      if (streak >= 4) return 1.5;
-      if (streak >= 2) return 1.0;
-      return 1.0;
+    // Hệ số phạt lũy tiến (chỉnh trong tab Quản Lý): 4 bậc theo chuỗi các ngày trước
+    function getPenaltyTiers() {
+      return {
+        t2: getCfgNum('PEN_T2_MIN', 4), t3: getCfgNum('PEN_T3_MIN', 6), t4: getCfgNum('PEN_T4_MIN', 8),
+        m1: getCfgNum('PEN_M1', 1), m2: getCfgNum('PEN_M2', 1.5), m3: getCfgNum('PEN_M3', 2), m4: getCfgNum('PEN_M4', 5)
+      };
     }
+    function getPenaltyMultiplier(streak) {
+      const t = getPenaltyTiers();
+      if (streak >= t.t4) return t.m4;
+      if (streak >= t.t3) return t.m3;
+      if (streak >= t.t2) return t.m2;
+      return t.m1;
+    }
+    function fmtMult(m) { return (Math.round(m * 100) / 100).toString(); }
+
 
     // ================= RENDER BẢNG BÁO CÁO NGÀY =================
     function renderItemsTable() {
@@ -2674,8 +2907,10 @@
           : `<span class="px-2 py-0.2 rounded-full text-xs font-black inline-block ${itemStreakDays > 0 ? 'bg-red-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}">${itemStreakDays}</span>`;
 
         let penaltyTag = "";
-        if (itemStreakDays >= 6) penaltyTag = `<div class="text-[8px] font-black text-rose-700 bg-rose-100 rounded px-1 mt-0.5">-2.0x</div>`;
-        else if (itemStreakDays >= 4) penaltyTag = `<div class="text-[8px] font-black text-amber-700 bg-amber-100 rounded px-1 mt-0.5">-1.5x</div>`;
+        if (penaltyMultiplier > 1) {
+          const tagCls = penaltyMultiplier >= 2 ? 'text-rose-700 bg-rose-100' : 'text-amber-700 bg-amber-100';
+          penaltyTag = `<div class="text-[8px] font-black ${tagCls} rounded px-1 mt-0.5">-${fmtMult(penaltyMultiplier)}x</div>`;
+        }
 
         return `
           <tr class="border-b border-slate-200 hover:bg-slate-50 transition" data-item="${item.name}" data-target="${item.target}" data-bonus="${item.bonusStar}" data-penalty="${item.penaltyStar}" data-x2="${item.isX2}" data-comp="${initialComp}" data-multiplier="${penaltyMultiplier}" data-streak="${itemStreakDays}">
@@ -2806,12 +3041,11 @@
           btnOt.disabled = false;
 
           const penalty = Number(row.dataset.penalty) || 100;
-          const multiplier = Number(row.dataset.multiplier) || 1.0;
-          const neededPenalty = Math.round(penalty * multiplier);
-
           // ---- NGƯỠNG CHẾ TÀI (Cài Đặt): so trực tiếp SỐ Ở CỘT "CHUỖI" của dòng môn (chuỗi các ngày trước, không tính hôm nay) ----
           const streakInput = row.querySelector('.row-streak');
           const curStreak = streakInput ? (Number(streakInput.value) || 0) : (Number(row.dataset.streak) || 0);
+          const multiplier = getPenaltyMultiplier(curStreak); // theo bảng hệ số ở tab Quản Lý (cập nhật cả khi sửa CHUỖI)
+          const neededPenalty = Math.round(penalty * multiplier);
           const canOT = curStreak >= getCfgNum('STREAK_OVERTIME', 3);
           const canPen = curStreak >= getCfgNum('STREAK_PENALTY_STAR', 5);
 
@@ -3571,180 +3805,480 @@
       }).catch(() => { prompt("Copy nội dung:", text); });
     }
 
-    // ================= CHATBOT AI TRA CỨU =================
+    // ================= CHATBOT AI TRA CỨU (5 NHÓM x 10 CÂU HỎI) =================
+    function cbNorm(x) { return String(x || '').replace(/Đ/g, 'D').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase().trim(); }
+    function cbToday() { return localDateStr(new Date()); }
+    function cbFmt(d) { return d.slice(8, 10) + '/' + d.slice(5, 7); }
+    function cbDow(d) { const w = ttParse(d).getDay(); return w === 0 ? 'CN' : 'T' + (w + 1); }
+    function cbB(x) { return `<b>${ttEsc(x)}</b>`; }
+    function cbChip(d, cls) { return `<span class="inline-block ${cls || 'bg-rose-50 text-rose-700 border-rose-200'} border rounded px-1 mr-0.5 mb-0.5 text-[10px] font-bold">${cbFmt(d)}·${cbDow(d)}</span>`; }
+    function cbChips(list, max, cls) { max = max || 16; return list.slice(0, max).map(d => cbChip(d, cls)).join('') + (list.length > max ? `<span class="text-[10px] text-slate-500"> +${list.length - max} ngày nữa</span>` : ''); }
+    function cbRange(from, to) { const out = []; if (!from || !to || from > to) return out; let d = from, g = 0; while (d <= to && g++ < 400) { out.push(d); d = ttAddDays(d, 1); } return out; }
+    function cbMonthStart(t) { return t.slice(0, 8) + '01'; }
+    function cbWeekStart(t) { return ttAddDays(t, -((ttParse(t).getDay() + 6) % 7)); }
+    function cbRank(title, rows, fmt, empty) {
+      if (!rows.length) return `<b>${title}</b><br/>${empty || 'Chưa có dữ liệu.'}`;
+      return `<b>${title}</b><br/>` + rows.map((r, i) => `${i + 1}. ${fmt(r)}`).join('<br/>');
+    }
+
+    // ---- nút copy tin nhắn nhắc ----
+    const cbCopyStore = [];
+    function cbCopyBtn(text) {
+      cbCopyStore.push(text);
+      return `<div class="pt-1"><button onclick="cbCopy(${cbCopyStore.length - 1})" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 border text-slate-600">📋 Copy tin nhắn nhắc</button></div>`;
+    }
+    function cbCopy(i) {
+      const t = cbCopyStore[i] || '';
+      if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => showToastMessage('✅ Đã copy tin nhắn!')).catch(() => prompt('Copy nội dung:', t));
+      else prompt('Copy nội dung:', t);
+    }
+
+    // ---- chỉ mục báo cáo: ai đã báo cáo ngày nào ----
+    function cbIndex() {
+      const byStaff = {}, any = new Set(), first = {};
+      (state.ketQua || []).forEach(k => {
+        const d = String(k.date || '').slice(0, 10);
+        if (!d) return;
+        any.add(d);
+        (byStaff[k.staffId] = byStaff[k.staffId] || new Set()).add(d);
+        if (!first[k.staffId] || d < first[k.staffId]) first[k.staffId] = d;
+      });
+      return { byStaff, any, first };
+    }
+    function cbIsOff(id, d) { return (state.lichBan || []).some(r => r.staffId === id && r.date === d && r.type === 'OFF'); }
+    // Ngày thiếu báo cáo: chỉ tính ngày có ít nhất 1 người báo cáo (ngày nghỉ chung bỏ qua), bỏ ngày có lịch OFF,
+    // và chỉ tính từ ngày nhân viên có báo cáo đầu tiên.
+    function cbMissingDays(ns, from, to, idx) {
+      const f = idx.first[ns.id];
+      const start = f && f > from ? f : from;
+      const have = idx.byStaff[ns.id] || new Set();
+      return cbRange(start, to).filter(d => idx.any.has(d) && !have.has(d) && !cbIsOff(ns.id, d));
+    }
+    const CB_NOTE = '<div class="mt-1 text-[10px] text-slate-400 leading-snug">Ngày không ai báo cáo (nghỉ chung) và ngày nhân viên có lịch OFF không tính là thiếu. Chưa tính hôm nay.</div>';
+
+    function cbMissingOn(date, label) {
+      const idx = cbIndex(), today = cbToday();
+      const done = [], miss = [], off = [];
+      state.nhanSu.forEach(ns => {
+        if ((idx.byStaff[ns.id] || new Set()).has(date)) done.push(ns);
+        else if (cbIsOff(ns.id, date)) off.push(ns);
+        else miss.push(ns);
+      });
+      let h = `<b>📝 Báo cáo ${label} (${cbFmt(date)}·${cbDow(date)}):</b> đã nộp <b>${done.length}/${state.nhanSu.length}</b><br/>`;
+      h += miss.length ? `• ⚠️ Chưa báo cáo (${miss.length}): ${miss.map(n => cbB(n.name)).join(', ')}<br/>` : `• 🌟 Tất cả đã báo cáo đầy đủ!<br/>`;
+      if (off.length) h += `• 🏖️ OFF có lịch (không tính thiếu): ${off.map(n => ttEsc(n.name)).join(', ')}<br/>`;
+      if (date === today) h += `<span class="text-[10px] text-slate-500">Hạn nộp chuẩn trước 22h20.</span>`;
+      if (miss.length) h += cbCopyBtn(`📢 NHẮC BÁO CÁO ${label.toUpperCase()} ${cbFmt(date)}: ${miss.map(n => n.name).join(', ')} chưa nộp báo cáo, anh/chị vào nộp giúp ạ.`);
+      return h;
+    }
+
+    function cbMatrix(from, to, title) {
+      if (from > to) return `<b>${title}</b><br/>Chưa có ngày nào cần kiểm tra trong khoảng này (tính đến hết hôm qua).`;
+      const idx = cbIndex(), rows = [], ok = [];
+      state.nhanSu.forEach(ns => { const m = cbMissingDays(ns, from, to, idx); if (m.length) rows.push({ ns, m }); else ok.push(ns); });
+      rows.sort((a, b) => b.m.length - a.m.length);
+      let h = `<b>${title}</b> <span class="text-[10px] text-slate-400">(${cbFmt(from)} → ${cbFmt(to)})</span><br/>`;
+      if (!rows.length) h += '🌟 Không ai thiếu báo cáo!';
+      rows.forEach(r => { h += `<div class="mt-1">• <b>${ttEsc(r.ns.name)}</b> — thiếu <b class="text-rose-600">${r.m.length}</b> ngày:<br/>${cbChips(r.m)}</div>`; });
+      if (ok.length && rows.length) h += `<div class="mt-1 text-[11px] text-emerald-700">✅ Đủ báo cáo: ${ok.map(n => ttEsc(n.name)).join(', ')}</div>`;
+      h += CB_NOTE;
+      if (rows.length) h += cbCopyBtn(`📢 NHẮC BÁO CÁO THIẾU (${cbFmt(from)} → ${cbFmt(to)}):\n` + rows.map(r => `• ${r.ns.name}: ${r.m.map(cbFmt).join(', ')}`).join('\n') + `\nAnh/chị kiểm tra và bổ sung giúp ạ.`);
+      return h;
+    }
+
+    function cbStaffMissing(ns) {
+      const today = cbToday(), idx = cbIndex(), y = ttAddDays(today, -1);
+      const m = cbMissingDays(ns, ttAddDays(today, -30), y, idx);
+      const doneToday = (idx.byStaff[ns.id] || new Set()).has(today);
+      let h = `<b>📝 ${ttEsc(ns.name)} — ngày chưa báo cáo (30 ngày gần nhất):</b><br/>`;
+      h += m.length ? `• Thiếu <b class="text-rose-600">${m.length}</b> ngày:<br/>${cbChips(m, 40)}<br/>` : `• 🌟 Không thiếu ngày nào!<br/>`;
+      h += `• Hôm nay (${cbFmt(today)}): ${doneToday ? '✅ đã báo cáo' : (cbIsOff(ns.id, today) ? '🏖️ OFF có lịch' : '⚠️ <b>chưa báo cáo</b>')}`;
+      h += CB_NOTE;
+      if (m.length) h += cbCopyBtn(`📢 ${ns.name} chưa báo cáo các ngày: ${m.map(cbFmt).join(', ')}. Vào bổ sung giúp ạ.`);
+      return h;
+    }
+
+    // ---- số liệu tháng theo nhân viên ----
+    function cbMonthMap() {
+      const mk = cbToday().slice(0, 7), map = {};
+      (state.ketQua || []).forEach(k => {
+        if (String(k.date || '').slice(0, 7) !== mk) return;
+        const m = map[k.staffId] = map[k.staffId] || { plus: 0, minus: 0, disc: 0, pass: 0, fail: 0, use: 0, ot: 0 };
+        const v = Number(k.starChange) || 0;
+        if (v > 0) m.plus += v; else if (v < 0) m.minus += -v;
+        if (String(k.itemName).startsWith('[Kỷ Luật]')) { m.disc += -v; return; }
+        if (k.status === 'Về số') m.pass++;
+        if (k.status === 'Chưa về') { m.fail++; if (k.compensation === 'TANG_CA') m.ot++; else if (k.compensation === 'DUNG_SAO') m.use++; }
+      });
+      return map;
+    }
+    function cbMM(map, id) { return map[id] || { plus: 0, minus: 0, disc: 0, pass: 0, fail: 0, use: 0, ot: 0 }; }
+    function cbTop(key, n, asc, filterFn) {
+      const map = cbMonthMap();
+      const rows = state.nhanSu.map(ns => ({ ns, v: typeof key === 'function' ? key(cbMM(map, ns.id), ns) : cbMM(map, ns.id)[key] })).filter(r => filterFn ? filterFn(r.v) : r.v > 0);
+      rows.sort((a, b) => asc ? a.v - b.v : b.v - a.v);
+      return rows.slice(0, n);
+    }
+    function cbAllStreaks() {
+      const out = [];
+      state.nhanSu.forEach(ns => (state.thiDua || []).forEach(td => { const s = calculateStaffItemStreak(ns.id, td.name); if (s > 0) out.push({ ns, item: td.name, s }); }));
+      return out;
+    }
+    function cbStreakList(min, title, empty) {
+      const rows = cbAllStreaks().filter(r => r.s >= min).sort((a, b) => b.s - a.s);
+      if (!rows.length) return `🌟 ${empty}`;
+      const by = {};
+      rows.forEach(r => (by[r.ns.id] = by[r.ns.id] || { ns: r.ns, items: [] }).items.push(r));
+      let h = `<b>${title}</b><br/>`;
+      Object.values(by).forEach(g => {
+        h += `• <b>${ttEsc(g.ns.name)}</b> [${ttEsc(g.ns.group)}]:<br/>` + g.items.map(it => `&nbsp;&nbsp;- <i>${ttEsc(it.item)}</i>: <b>${it.s} ngày</b> (phạt ${fmtMult(getPenaltyMultiplier(it.s))}x)`).join('<br/>') + '<br/>';
+      });
+      return h;
+    }
+    function cbItemRows(fn) { return (state.ketQua || []).filter(k => !String(k.itemName).startsWith('[Kỷ Luật]') && (k.status === 'Về số' || k.status === 'Chưa về') && (!fn || fn(k))); }
+    function cbItemStats(rows) {
+      const st = {};
+      rows.forEach(k => { const o = st[k.itemName] = st[k.itemName] || { total: 0, pass: 0, fail: 0 }; o.total++; if (k.status === 'Về số') o.pass++; else o.fail++; });
+      return Object.keys(st).map(n => ({ name: n, ...st[n], rate: st[n].total ? Math.round(st[n].pass * 100 / st[n].total) : 0 }));
+    }
+
+    // ---- lịch bận / OFF / vệ sinh ----
+    function cbBusyOn(d) { return (state.lichBan || []).filter(r => r.date === d); }
+    function cbBusyTxt(recs) { return recs.map(r => `<b>${ttEsc(r.staffName)}</b> <span class="font-bold ${r.type === 'OFF' ? 'text-rose-600' : 'text-amber-600'}">${r.type === 'OFF' ? 'OFF' : 'Bận' + (bzShiftTxt(r) ? ' ' + bzShiftTxt(r) : '')}</span>`).join(', '); }
+    function cbBusyDay(d, label) {
+      const recs = cbBusyOn(d);
+      return `<b>📅 Bận việc / OFF ${label} (${cbFmt(d)}·${cbDow(d)}):</b><br/>` + (recs.length ? `${cbBusyTxt(recs)}<br/><span class="text-[10px] text-slate-500">${recs.length}/3 người</span>` : 'Chưa ai đăng ký.');
+    }
+    function cbCleanOn(d) { return (state.veSinh || []).find(v => v.date === d); }
+
+    // ---- hồ sơ 1 nhân viên ----
+    function cbProfile(ns) {
+      const today = cbToday(), idx = cbIndex(), mk = today.slice(0, 7), mm = cbMM(cbMonthMap(), ns.id);
+      const streaks = (state.thiDua || []).map(td => ({ n: td.name, s: calculateStaffItemStreak(ns.id, td.name) })).filter(x => x.s >= 2);
+      const miss = cbMissingDays(ns, ttAddDays(today, -30), ttAddDays(today, -1), idx);
+      const late = (state.lateLogs || []).filter(l => l.staffId === ns.id && String(l.date).startsWith(mk));
+      const tt = ttPenaltyRows(ns.id, today);
+      const busy = (state.lichBan || []).filter(r => r.staffId === ns.id && r.date >= today).sort((a, b) => a.date < b.date ? -1 : 1).slice(0, 5);
+      const cl = (state.veSinh || []).filter(v => (v.staffId === ns.id || v.staffName === ns.name) && v.date >= cbMonthStart(today)).sort((a, b) => a.date < b.date ? -1 : 1);
+      const doneToday = (idx.byStaff[ns.id] || new Set()).has(today);
+      let h = `<b>👤 ${ttEsc(ns.name)} (${ttEsc(ns.id)})</b> — ${ttEsc(ns.group)} | <b class="text-amber-600">${ns.totalStar || 0} ⭐</b><br/>`;
+      h += `• Hôm nay: ${doneToday ? '✅ đã báo cáo' : (cbIsOff(ns.id, today) ? '🏖️ OFF có lịch' : '⚠️ chưa báo cáo')}<br/>`;
+      h += `• Tháng này: +${mm.plus}⭐ / -${mm.minus}⭐ | về số ${mm.pass}, chưa về ${mm.fail} | tăng ca ${mm.ot} | dùng sao ${mm.use}<br/>`;
+      h += miss.length ? `• ⚠️ Thiếu báo cáo 30 ngày: <b class="text-rose-600">${miss.length}</b> ngày — ${cbChips(miss, 10)}<br/>` : `• ✅ Không thiếu ngày báo cáo nào (30 ngày)<br/>`;
+      h += late.length ? `• ⏰ Nộp trễ 22h20 tháng này: <b>${late.length}</b> lần<br/>` : '';
+      h += streaks.length ? `• ⚠️ Rớt chuỗi: <i>${streaks.map(x => ttEsc(x.n) + ' (' + x.s + ' ngày, phạt ' + fmtMult(getPenaltyMultiplier(x.s)) + 'x)').join(', ')}</i><br/>` : `• 🌟 Không có môn rớt chuỗi ≥ 2 ngày<br/>`;
+      h += tt.length ? `• 📱 Nợ link TikTok: ${tt.map(r => ttEsc(r.itemName.replace('[Kỷ Luật] TikTok trễ hạn ', ''))).join(', ')}<br/>` : '';
+      h += busy.length ? `• 📅 Sắp tới: ${busy.map(r => `${cbFmt(r.date)} <b class="${r.type === 'OFF' ? 'text-rose-600' : 'text-amber-600'}">${r.type === 'OFF' ? 'OFF' : 'Bận' + (bzShiftTxt(r) ? ' ' + bzShiftTxt(r) : '')}</b>`).join(', ')}<br/>` : '';
+      h += cl.length ? `• 🧹 Vệ sinh tháng này: ${cl.map(v => cbFmt(v.date) + (v.photos && v.photos.length >= 3 ? '✅' : '')).join(', ')}` : '';
+      return h;
+    }
+
+    // ================= 5 NHÓM x 10 CÂU HỎI =================
+    // Mỗi câu: [nhãn, [từ khóa không dấu], hàm trả về HTML]
+    const CB_GROUPS = [
+      { icon: '📝', name: 'Báo cáo', on: 'bg-rose-600 text-white border-rose-600', off: 'bg-rose-50 text-rose-700 border-rose-200', q: [
+        ['Hôm nay ai chưa báo cáo?', ['hom nay chua bao cao', 'hom nay ai chua', 'chua bao cao hom nay', 'hom nay thieu bao cao', 'tien do hom nay', 'hom nay'], () => cbMissingOn(cbToday(), 'hôm nay')],
+        ['Hôm qua ai không báo cáo?', ['hom qua chua bao cao', 'hom qua khong bao cao', 'hom qua ai', 'hom qua thieu', 'hom qua'], () => cbMissingOn(ttAddDays(cbToday(), -1), 'hôm qua')],
+        ['Tuần này ai thiếu báo cáo ngày nào?', ['tuan nay thieu bao cao', 'tuan nay chua bao cao', 'tuan nay ai thieu', 'bao cao tuan nay', 'thieu bao cao tuan'], () => { const t = cbToday(); return cbMatrix(cbWeekStart(t), ttAddDays(t, -1), '📝 Thiếu báo cáo TUẦN NÀY'); }],
+        ['Tháng này ai thiếu báo cáo ngày nào?', ['thang nay thieu bao cao', 'thang nay chua bao cao', 'ngay nao chua bao cao', 'chua bao cao ngay nao', 'ngay chua bao cao', 'thieu bao cao', 'chua bao cao'], () => { const t = cbToday(); return cbMatrix(cbMonthStart(t), ttAddDays(t, -1), '📝 Thiếu báo cáo THÁNG NÀY'); }],
+        ['Ai thiếu báo cáo nhiều nhất tháng?', ['thieu bao cao nhieu nhat', 'thieu nhieu nhat', 'quen bao cao nhieu', 'bo bao cao nhieu'], () => {
+          const t = cbToday(), idx = cbIndex();
+          const rows = state.nhanSu.map(ns => ({ ns, m: cbMissingDays(ns, cbMonthStart(t), ttAddDays(t, -1), idx) })).filter(r => r.m.length).sort((a, b) => b.m.length - a.m.length).slice(0, 5);
+          return cbRank('🏴 TOP THIẾU BÁO CÁO NHIỀU NHẤT THÁNG NÀY', rows, r => `<b>${ttEsc(r.ns.name)}</b>: thiếu <b class="text-rose-600">${r.m.length}</b> ngày (${r.m.slice(0, 6).map(cbFmt).join(', ')}${r.m.length > 6 ? '…' : ''})`, '🌟 Không ai thiếu báo cáo!') + CB_NOTE;
+        }],
+        ['Ai báo cáo đủ 100% tháng này?', ['bao cao du thang', 'du bao cao', 'khong thieu bao cao', 'chuyen can', 'bao cao 100'], () => {
+          const t = cbToday(), idx = cbIndex();
+          const ok = state.nhanSu.filter(ns => !cbMissingDays(ns, cbMonthStart(t), ttAddDays(t, -1), idx).length);
+          return `<b>🏅 BÁO CÁO ĐỦ 100% THÁNG NÀY (${ok.length}/${state.nhanSu.length}):</b><br/>` + (ok.length ? ok.map(n => ttEsc(n.name)).join(', ') : 'Chưa có ai.') + CB_NOTE;
+        }],
+        ['Ngày nào thiếu nhiều người nhất?', ['ngay nao thieu nhieu nguoi', 'ngay thieu nhieu nhat', 'ngay nao nhieu nguoi chua', 'ngay thieu nhieu'], () => {
+          const t = cbToday(), idx = cbIndex(), days = cbRange(cbMonthStart(t), ttAddDays(t, -1)).filter(d => idx.any.has(d));
+          const rows = days.map(d => ({ d, who: state.nhanSu.filter(ns => !(idx.byStaff[ns.id] || new Set()).has(d) && !cbIsOff(ns.id, d) && (!idx.first[ns.id] || idx.first[ns.id] <= d)) })).filter(r => r.who.length).sort((a, b) => b.who.length - a.who.length).slice(0, 5);
+          return cbRank('📆 NGÀY THIẾU BÁO CÁO NHIỀU NHẤT (THÁNG NÀY)', rows, r => `${cbChip(r.d)} thiếu <b class="text-rose-600">${r.who.length}</b> người: ${r.who.map(n => ttEsc(n.name)).join(', ')}`, '🌟 Không ngày nào thiếu báo cáo!');
+        }],
+        ['Ai nộp trễ sau 22h20 tháng này?', ['nop tre', 'tre 22h20', 'sau 22h20', 'nop muon', 'bao cao tre'], () => {
+          const mk = cbToday().slice(0, 7), by = {};
+          (state.lateLogs || []).filter(l => String(l.date).startsWith(mk)).forEach(l => { const o = by[l.staffId] = by[l.staffId] || { n: 0, p: 0, days: [] }; o.n++; o.p += Number(l.penalty) || 0; o.days.push(String(l.date).slice(0, 10)); });
+          const rows = Object.keys(by).map(id => ({ ns: state.nhanSu.find(n => n.id === id), ...by[id] })).filter(r => r.ns).sort((a, b) => b.n - a.n);
+          return cbRank('⏰ NỘP TRỄ SAU 22H20 THÁNG NÀY', rows, r => `<b>${ttEsc(r.ns.name)}</b>: ${r.n} lần (-${r.p}⭐) — ${r.days.map(cbFmt).join(', ')}`, '🌟 Không ai nộp trễ trong tháng này!');
+        }],
+        ['Ai thiếu báo cáo liên tiếp ≥ 2 ngày?', ['thieu lien tiep', 'bo bao cao lien tiep', 'lien tiep chua bao cao', 'nghi bao cao lien tiep', 'lien tiep bao cao'], () => {
+          const t = cbToday(), idx = cbIndex(), y = ttAddDays(t, -1), from = ttAddDays(t, -30), rows = [];
+          state.nhanSu.forEach(ns => {
+            const f = idx.first[ns.id], st = f && f > from ? f : from, have = idx.byStaff[ns.id] || new Set();
+            const days = cbRange(st, y).filter(d => idx.any.has(d) && !cbIsOff(ns.id, d));
+            const run = []; for (let i = days.length - 1; i >= 0; i--) { if (have.has(days[i])) break; run.unshift(days[i]); }
+            if (run.length >= 2) rows.push({ ns, run });
+          });
+          rows.sort((a, b) => b.run.length - a.run.length);
+          return cbRank('🚨 THIẾU BÁO CÁO LIÊN TIẾP (tính đến hôm qua)', rows, r => `<b>${ttEsc(r.ns.name)}</b>: <b class="text-rose-600">${r.run.length}</b> ngày liên tiếp<br/>${cbChips(r.run, 20)}`, '🌟 Không ai thiếu báo cáo liên tiếp từ 2 ngày!');
+        }],
+        ['Soạn tin nhắc báo cáo hôm nay', ['nhac bao cao', 'tin nhac', 'soan tin', 'nhac nho'], () => {
+          const t = cbToday(), idx = cbIndex();
+          const miss = state.nhanSu.filter(ns => !(idx.byStaff[ns.id] || new Set()).has(t) && !cbIsOff(ns.id, t));
+          if (!miss.length) return '🌟 Hôm nay tất cả đã báo cáo, không cần nhắc!';
+          const msg = `📢 NHẮC BÁO CÁO NGÀY ${cbFmt(t)}\n` + miss.map(ns => { const m = cbMissingDays(ns, cbMonthStart(t), ttAddDays(t, -1), idx); return `• ${ns.name}: chưa báo cáo hôm nay` + (m.length ? ` (còn thiếu: ${m.map(cbFmt).join(', ')})` : ''); }).join('\n') + `\nHạn nộp trước 22h20, nộp trễ bị phạt sao.`;
+          return `<b>📋 Tin nhắn nhắc đã soạn:</b><br/><pre class="whitespace-pre-wrap bg-slate-50 border rounded p-2 text-[11px] font-sans">${ttEsc(msg)}</pre>` + cbCopyBtn(msg);
+        }]
+      ] },
+
+      { icon: '⭐', name: 'Sao & Xếp hạng', on: 'bg-amber-500 text-white border-amber-500', off: 'bg-amber-50 text-amber-800 border-amber-200', q: [
+        ['Top 5 sao dẫn đầu', ['top sao', 'dan dau', 'nhieu sao nhat', 'xep hang sao'], () => cbRank('🏆 TOP 5 QUỸ SAO DẪN ĐẦU', [...state.nhanSu].sort((a, b) => (Number(b.totalStar) || 0) - (Number(a.totalStar) || 0)).slice(0, 5), n => `<b>${ttEsc(n.name)}</b> [${ttEsc(n.group)}]: <b class="text-amber-600">${n.totalStar || 0} ⭐</b>`)],
+        ['5 người sao thấp nhất', ['sao thap nhat', 'it sao nhat', 'cuoi bang', 'bottom'], () => cbRank('📉 5 NGƯỜI QUỸ SAO THẤP NHẤT', [...state.nhanSu].sort((a, b) => (Number(a.totalStar) || 0) - (Number(b.totalStar) || 0)).slice(0, 5), n => `<b>${ttEsc(n.name)}</b> [${ttEsc(n.group)}]: <b class="text-rose-600">${n.totalStar || 0} ⭐</b>`)],
+        ['Tổng sao toàn siêu thị', ['tong sao', 'trung binh sao', 'sao toan sieu thi'], () => {
+          const v = state.nhanSu.map(n => Number(n.totalStar) || 0), sum = v.reduce((a, b) => a + b, 0);
+          return `<b>🏢 QUỸ SAO TOÀN SIÊU THỊ</b><br/>• Tổng: <b class="text-amber-600">${sum} ⭐</b> (${v.length} nhân sự)<br/>• Trung bình: <b>${v.length ? Math.round(sum / v.length) : 0} ⭐</b>/người<br/>• Cao nhất: <b>${Math.max(...v, 0)}</b> | Thấp nhất: <b>${v.length ? Math.min(...v) : 0}</b>`;
+        }],
+        ['Ai được cộng nhiều sao nhất tháng?', ['cong nhieu sao', 'thuong nhieu nhat', 'duoc cong nhieu'], () => cbRank('🎁 CỘNG SAO NHIỀU NHẤT THÁNG NÀY', cbTop('plus', 5), r => `<b>${ttEsc(r.ns.name)}</b>: <b class="text-emerald-600">+${r.v} ⭐</b>`, 'Chưa ai được cộng sao trong tháng này.')],
+        ['Ai bị trừ nhiều sao nhất tháng?', ['tru nhieu sao', 'bi tru nhieu', 'mat nhieu sao'], () => cbRank('💸 BỊ TRỪ SAO NHIỀU NHẤT THÁNG NÀY', cbTop('minus', 5), r => `<b>${ttEsc(r.ns.name)}</b>: <b class="text-rose-600">-${r.v} ⭐</b>`, '🌟 Chưa ai bị trừ sao trong tháng này.')],
+        ['So sánh TGDĐ và Topzone', ['so sanh tgdd', 'tgdd vs', 'topzone', 'bo phan'], () => {
+          const g = {};
+          state.nhanSu.forEach(n => { const k = n.group || '-'; const o = g[k] = g[k] || { c: 0, s: 0 }; o.c++; o.s += Number(n.totalStar) || 0; });
+          return '<b>⚖️ SO SÁNH BỘ PHẬN</b><br/>' + Object.keys(g).map(k => `• <b>${ttEsc(k)}</b>: ${g[k].c} người | tổng <b class="text-amber-600">${g[k].s} ⭐</b> | TB <b>${Math.round(g[k].s / g[k].c)} ⭐</b>`).join('<br/>');
+        }],
+        ['Ai có sao dưới 1000?', ['duoi 1000', 'sao duoi', 'sao thap'], () => { const r = state.nhanSu.filter(n => (Number(n.totalStar) || 0) < 1000).sort((a, b) => (Number(a.totalStar) || 0) - (Number(b.totalStar) || 0)); return cbRank('⚠️ NHÂN VIÊN DƯỚI 1000 ⭐', r, n => `<b>${ttEsc(n.name)}</b>: <b class="text-rose-600">${n.totalStar || 0} ⭐</b>`, '🌟 Không ai dưới 1000 sao.'); }],
+        ['Biến động sao hôm nay', ['bien dong sao', 'sao hom nay'], () => {
+          const t = cbToday(), by = {};
+          (state.ketQua || []).filter(k => String(k.date).slice(0, 10) === t).forEach(k => { by[k.staffId] = (by[k.staffId] || 0) + (Number(k.starChange) || 0); });
+          const rows = Object.keys(by).map(id => ({ ns: state.nhanSu.find(n => n.id === id), v: by[id] })).filter(r => r.ns).sort((a, b) => b.v - a.v);
+          return cbRank(`📈 BIẾN ĐỘNG SAO HÔM NAY (${cbFmt(t)})`, rows, r => `<b>${ttEsc(r.ns.name)}</b>: <b class="${r.v >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${r.v > 0 ? '+' : ''}${r.v} ⭐</b>`, 'Hôm nay chưa có báo cáo nào.');
+        }],
+        ['Sao ròng tháng này cao nhất', ['sao rong', 'lai rong', 'tang sao thang'], () => cbRank('💎 SAO RÒNG THÁNG NÀY (cộng - trừ) CAO NHẤT', cbTop(m => m.plus - m.minus, 5, false, v => v !== 0), r => `<b>${ttEsc(r.ns.name)}</b>: <b class="${r.v >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${r.v > 0 ? '+' : ''}${r.v} ⭐</b>`, 'Chưa có dữ liệu tháng này.')],
+        ['Ai cách Top 1 ít sao nhất?', ['cach top 1', 'khoang cach', 'duoi kip'], () => {
+          const sorted = [...state.nhanSu].sort((a, b) => (Number(b.totalStar) || 0) - (Number(a.totalStar) || 0));
+          if (sorted.length < 2) return 'Chưa đủ dữ liệu.';
+          const top = Number(sorted[0].totalStar) || 0;
+          return cbRank(`🏃 KHOẢNG CÁCH SAO VỚI TOP 1 (${ttEsc(sorted[0].name)} - ${top}⭐)`, sorted.slice(1, 6), n => `<b>${ttEsc(n.name)}</b>: kém <b>${top - (Number(n.totalStar) || 0)} ⭐</b>`);
+        }]
+      ] },
+
+      { icon: '⚠️', name: 'Kỷ luật & Nguy cơ', on: 'bg-violet-600 text-white border-violet-600', off: 'bg-violet-50 text-violet-700 border-violet-200', q: [
+        ['Nhân viên nguy cơ cao (chuỗi ≥ 2)', ['nguy co cao', 'nguy co', 'chua ve'], () => cbStreakList(2, '⚠️ NGUY CƠ CAO (chuỗi chưa về ≥ 2 ngày):', 'Tin vui! Không ai rớt target liên tiếp từ 2 ngày.')],
+        ['Ai đang bị phạt hệ số bậc 2 trở lên?', ['chuoi 4', 'chuoi tu 4', 'bac 2', 'he so 1.5', 'phat 1.5'], () => { const t = getPenaltyTiers(); return cbStreakList(t.t2, `🔥 CHUỖI ≥ ${t.t2} NGÀY (phạt từ ${fmtMult(t.m2)}x):`, `Không ai có chuỗi từ ${t.t2} ngày.`); }],
+        ['Ai đang bị phạt hệ số bậc 3 trở lên?', ['chuoi 6', 'chuoi tu 6', 'bac 3', 'phat 2x', 'nghiem trong'], () => { const t = getPenaltyTiers(); return cbStreakList(t.t3, `🚨 CHUỖI ≥ ${t.t3} NGÀY (phạt từ ${fmtMult(t.m3)}x):`, `Không ai có chuỗi từ ${t.t3} ngày.`); }],
+        ['Ai tăng ca tháng này?', ['tang ca'], () => cbRank('⏰ TĂNG CA THÁNG NÀY', cbTop('ot', 20), r => `<b>${ttEsc(r.ns.name)}</b>: ${r.v} lần`, '⏰ Tháng này chưa ghi nhận lượt tăng ca nào.')],
+        ['Ai sắp chạm ngưỡng tăng ca?', ['sap cham nguong', 'sap tang ca', 'can tang ca', 'nguong tang ca'], () => {
+          const n = getCfgNum('STREAK_OVERTIME', 3);
+          const rows = cbAllStreaks().filter(r => r.s >= n - 1).sort((a, b) => b.s - a.s);
+          return cbRank(`⏳ SẮP / ĐÃ CHẠM NGƯỠNG TĂNG CA (cấu hình: ${n} ngày)`, rows, r => `<b>${ttEsc(r.ns.name)}</b> — <i>${ttEsc(r.item)}</i>: <b>${r.s} ngày</b> ${r.s >= n ? '🔴 đã chạm' : '🟡 sắp chạm'}`, '🌟 Chưa ai gần ngưỡng.');
+        }],
+        ['Ai dùng sao bù nhiều nhất?', ['dung sao', 'bu sao'], () => cbRank('⭐ DÙNG SAO BÙ NHIỀU NHẤT THÁNG NÀY', cbTop('use', 5), r => `<b>${ttEsc(r.ns.name)}</b>: ${r.v} lượt`, 'Tháng này chưa ai dùng sao bù.')],
+        ['Ai không rớt target nào tháng này?', ['khong rot', 'giu chuoi', 'toan ve so', 'khong chua ve'], () => {
+          const map = cbMonthMap(), ok = state.nhanSu.filter(n => cbMM(map, n.id).pass > 0 && cbMM(map, n.id).fail === 0);
+          return `<b>🌟 KHÔNG RỚT TARGET NÀO THÁNG NÀY (${ok.length}):</b><br/>` + (ok.length ? ok.map(n => `${ttEsc(n.name)} (${cbMM(map, n.id).pass} môn đạt)`).join(', ') : 'Chưa có ai.');
+        }],
+        ['Ai rớt target nhiều nhất tháng?', ['rot target nhieu', 'chua ve nhieu nhat', 'rot nhieu nhat'], () => cbRank('📉 RỚT TARGET NHIỀU NHẤT THÁNG NÀY', cbTop('fail', 5), r => `<b>${ttEsc(r.ns.name)}</b>: ${r.v} lượt chưa về`, '🌟 Chưa ai rớt target tháng này.')],
+        ['Top 5 chuỗi rớt dài nhất', ['chuoi dai nhat', 'chuoi lau nhat', 'chuoi cao nhat'], () => cbRank('🔗 TOP 5 CHUỖI RỚT DÀI NHẤT', cbAllStreaks().sort((a, b) => b.s - a.s).slice(0, 5), r => `<b>${ttEsc(r.ns.name)}</b> — <i>${ttEsc(r.item)}</i>: <b>${r.s} ngày</b>`, '🌟 Không ai đang rớt chuỗi.')],
+        ['Ai bị phạt kỷ luật nhiều nhất?', ['phat ky luat', 'bi phat nhieu', 'ky luat nhieu'], () => cbRank('🚫 PHẠT KỶ LUẬT NHIỀU NHẤT THÁNG (nộp trễ, TikTok…)', cbTop('disc', 5), r => `<b>${ttEsc(r.ns.name)}</b>: <b class="text-rose-600">-${r.v} ⭐</b>`, '🌟 Tháng này chưa ai bị phạt kỷ luật.')]
+      ] },
+
+      { icon: '📊', name: 'Môn thi đua', on: 'bg-emerald-600 text-white border-emerald-600', off: 'bg-emerald-50 text-emerald-700 border-emerald-200', q: [
+        ['Top 5 môn yếu nhất', ['mon yeu nhat', 'mon yeu', 'ty le thap nhat', 'thap nhat'], () => cbRank('📉 TOP 5 MÔN TỶ LỆ VỀ SỐ THẤP NHẤT', cbItemStats(cbItemRows()).sort((a, b) => a.rate - b.rate).slice(0, 5), m => `<b>${ttEsc(m.name)}</b>: <b>${m.rate}%</b> (${m.total} lượt)`)],
+        ['Top 5 môn mạnh nhất', ['mon manh nhat', 'mon tot nhat', 'ty le cao nhat'], () => cbRank('📈 TOP 5 MÔN TỶ LỆ VỀ SỐ CAO NHẤT', cbItemStats(cbItemRows()).sort((a, b) => b.rate - a.rate).slice(0, 5), m => `<b>${ttEsc(m.name)}</b>: <b>${m.rate}%</b> (${m.total} lượt)`)],
+        ['Môn chưa về nhiều nhất hôm nay', ['mon chua ve hom nay', 'mon rot hom nay'], () => { const t = cbToday(); return cbRank(`🔻 MÔN CHƯA VỀ NHIỀU NHẤT HÔM NAY (${cbFmt(t)})`, cbItemStats(cbItemRows(k => String(k.date).slice(0, 10) === t)).filter(m => m.fail > 0).sort((a, b) => b.fail - a.fail).slice(0, 6), m => `<b>${ttEsc(m.name)}</b>: ${m.fail}/${m.total} người chưa về`, 'Hôm nay chưa có môn nào chưa về (hoặc chưa có báo cáo).'); }],
+        ['Môn về số nhiều nhất hôm nay', ['mon ve so hom nay', 'mon dat hom nay'], () => { const t = cbToday(); return cbRank(`🔺 MÔN VỀ SỐ NHIỀU NHẤT HÔM NAY (${cbFmt(t)})`, cbItemStats(cbItemRows(k => String(k.date).slice(0, 10) === t)).filter(m => m.pass > 0).sort((a, b) => b.pass - a.pass).slice(0, 6), m => `<b>${ttEsc(m.name)}</b>: ${m.pass}/${m.total} người về số`, 'Hôm nay chưa có môn nào về số (hoặc chưa có báo cáo).'); }],
+        ['Danh sách môn nhân đôi (x2)', ['mon x2', 'nhan doi', 'he so x2'], () => cbRank('✨ MÔN ĐANG NHÂN ĐÔI (x2)', (state.thiDua || []).filter(t => t.isX2), t => `<b>${ttEsc(t.name)}</b> (+${t.bonusStar}⭐ / -${t.penaltyStar}⭐)`, 'Hiện không có môn x2.')],
+        ['Môn nào nhiều người đang rớt chuỗi?', ['mon nhieu nguoi rot', 'mon rot chuoi', 'mon nhieu nguoi'], () => {
+          const by = {}; cbAllStreaks().filter(r => r.s >= 2).forEach(r => { by[r.item] = (by[r.item] || 0) + 1; });
+          return cbRank('🔗 MÔN CÓ NHIỀU NGƯỜI RỚT CHUỖI (≥ 2 ngày)', Object.keys(by).map(k => ({ k, n: by[k] })).sort((a, b) => b.n - a.n).slice(0, 6), r => `<b>${ttEsc(r.k)}</b>: ${r.n} người`, '🌟 Không có môn nào bị rớt chuỗi.');
+        }],
+        ['Tỷ lệ về số toàn tháng', ['ty le dat thang', 'ty le dat tong', 'ty le ve so', 'tong ty le'], () => {
+          const mk = cbToday().slice(0, 7), rows = cbItemRows(k => String(k.date).slice(0, 7) === mk), p = rows.filter(k => k.status === 'Về số').length;
+          return `<b>📊 TỶ LỆ VỀ SỐ THÁNG NÀY</b><br/>• Tổng lượt báo: <b>${rows.length}</b><br/>• Về số: <b class="text-emerald-600">${p}</b> | Chưa về: <b class="text-rose-600">${rows.length - p}</b><br/>• Tỷ lệ đạt: <b>${rows.length ? Math.round(p * 100 / rows.length) : 0}%</b>`;
+        }],
+        ['Môn ít được báo cáo nhất', ['mon it duoc bao cao', 'mon it nguoi bao cao', 'mon chua ai bao'], () => {
+          const mk = cbToday().slice(0, 7), st = cbItemStats(cbItemRows(k => String(k.date).slice(0, 7) === mk)), cnt = {}; st.forEach(s2 => cnt[s2.name] = s2.total);
+          const rows = (state.thiDua || []).map(t => ({ name: t.name, n: cnt[t.name] || 0 })).sort((a, b) => a.n - b.n).slice(0, 5);
+          return cbRank('🔍 MÔN ÍT ĐƯỢC BÁO CÁO NHẤT THÁNG NÀY', rows, r => `<b>${ttEsc(r.name)}</b>: ${r.n} lượt`);
+        }],
+        ['Môn thưởng sao cao nhất', ['mon thuong cao', 'thuong sao cao nhat', 'mon nhieu sao'], () => cbRank('💰 MÔN THƯỞNG SAO CAO NHẤT', [...(state.thiDua || [])].sort((a, b) => (Number(b.bonusStar) || 0) - (Number(a.bonusStar) || 0)).slice(0, 5), t => `<b>${ttEsc(t.name)}</b>: +${t.bonusStar}⭐ / phạt -${t.penaltyStar}⭐${t.isX2 ? ' ✨x2' : ''}`)],
+        ['Môn bị tăng ca / dùng sao nhiều nhất', ['mon tang ca nhieu', 'mon bu nhieu', 'mon tang ca'], () => {
+          const mk = cbToday().slice(0, 7), by = {};
+          cbItemRows(k => String(k.date).slice(0, 7) === mk && k.status === 'Chưa về').forEach(k => { const o = by[k.itemName] = by[k.itemName] || { ot: 0, use: 0 }; if (k.compensation === 'TANG_CA') o.ot++; else if (k.compensation === 'DUNG_SAO') o.use++; });
+          return cbRank('🛠️ MÔN CHƯA VỀ PHẢI BÙ NHIỀU NHẤT THÁNG NÀY', Object.keys(by).map(k => ({ k, ...by[k] })).sort((a, b) => (b.ot + b.use) - (a.ot + a.use)).slice(0, 6), r => `<b>${ttEsc(r.k)}</b>: tăng ca ${r.ot} | dùng sao ${r.use}`, 'Chưa có dữ liệu.');
+        }]
+      ] },
+
+      { icon: '📅', name: 'Lịch & Vận hành', on: 'bg-sky-600 text-white border-sky-600', off: 'bg-sky-50 text-sky-700 border-sky-200', q: [
+        ['Hôm nay ai bận việc / OFF?', ['hom nay ai ban', 'hom nay ban', 'hom nay off', 'hom nay nghi', 'ai off hom nay', 'ai ban hom nay'], () => cbBusyDay(cbToday(), 'hôm nay')],
+        ['Ngày mai ai bận việc / OFF?', ['ngay mai ban', 'ngay mai off', 'mai ai ban', 'mai ai off', 'ngay mai'], () => cbBusyDay(ttAddDays(cbToday(), 1), 'ngày mai')],
+        ['Lịch bận / OFF tuần này', ['lich ban tuan nay', 'tuan nay ban', 'tuan nay off', 'lich off', 'lich ban'], () => {
+          const ws = cbWeekStart(cbToday());
+          return '<b>📅 LỊCH BẬN / OFF TUẦN NÀY</b><br/>' + cbRange(ws, ttAddDays(ws, 6)).map(d => { const r = cbBusyOn(d); return `• ${cbFmt(d)}·${cbDow(d)}: ${r.length ? cbBusyTxt(r) : '<span class="text-slate-400">trống</span>'}`; }).join('<br/>');
+        }],
+        ['Ngày nào đã đủ 3 người bận / OFF?', ['du 3 nguoi', 'ngay da du', 'het cho', 'ngay full'], () => {
+          const t = cbToday(), rows = cbRange(t, ttAddDays(t, 45)).filter(d => { const w = ttParse(d).getDay(); return w >= 1 && w <= 5 && cbBusyOn(d).length >= 3; });
+          return cbRank('🔒 NGÀY ĐÃ ĐỦ 3 NGƯỜI (45 ngày tới, T2–T6)', rows, d => `${cbChip(d, 'bg-rose-50 text-rose-700 border-rose-200')} ${cbBusyTxt(cbBusyOn(d))}`, 'Chưa có ngày nào đủ 3 người.');
+        }],
+        ['Ai OFF nhiều nhất tháng này?', ['off nhieu nhat', 'nghi nhieu nhat', 'ai off nhieu'], () => {
+          const mk = cbToday().slice(0, 7), by = {};
+          (state.lichBan || []).filter(r => r.date.startsWith(mk) && r.type === 'OFF').forEach(r => { by[r.staffName] = (by[r.staffName] || 0) + 1; });
+          return cbRank('🏖️ OFF NHIỀU NHẤT THÁNG NÀY', Object.keys(by).map(k => ({ k, n: by[k] })).sort((a, b) => b.n - a.n).slice(0, 6), r => `<b>${ttEsc(r.k)}</b>: ${r.n} ngày`, 'Tháng này chưa ai đăng ký OFF.');
+        }],
+        ['Hôm nay ai vệ sinh?', ['hom nay ai ve sinh', 've sinh hom nay', 'ai ve sinh'], () => {
+          const t = cbToday(), r = cbCleanOn(t);
+          return `<b>🧹 Vệ sinh hôm nay (${cbFmt(t)}):</b><br/>` + (r ? `<b>${ttEsc(r.staffName)}</b> — ${r.photos && r.photos.length >= 3 ? '✅ đã nộp 3 ảnh' : '⏳ chưa nộp ảnh'}` : '⚠️ Chưa ai đăng ký vệ sinh hôm nay.');
+        }],
+        ['Lịch vệ sinh tuần này & quá hạn', ['lich ve sinh', 've sinh tuan nay', 'qua han ve sinh', 'chua nop anh'], () => {
+          const t = cbToday(), ws = cbWeekStart(t);
+          let h = '<b>🧹 LỊCH VỆ SINH TUẦN NÀY</b><br/>' + cbRange(ws, ttAddDays(ws, 6)).map(d => { const r = cbCleanOn(d); return `• ${cbFmt(d)}·${cbDow(d)}: ` + (r ? `<b>${ttEsc(r.staffName)}</b> ${r.photos && r.photos.length >= 3 ? '✅' : (d < t ? '⚠️ quá hạn chưa nộp ảnh' : '🧹')}` : '<span class="text-slate-400">trống</span>'); }).join('<br/>');
+          const od = (state.veSinh || []).filter(v => v.date < t && !(v.photos && v.photos.length >= 3) && v.date.startsWith(t.slice(0, 7)));
+          if (od.length) h += `<br/><b class="text-rose-600">⚠️ Quá hạn chưa nộp ảnh tháng này:</b> ` + od.map(v => `${ttEsc(v.staffName)} (${cbFmt(v.date)})`).join(', ');
+          return h;
+        }],
+        ['Ngày vệ sinh còn trống 7 ngày tới', ['ve sinh con trong', 'ngay ve sinh trong', 'chua co ai ve sinh', 've sinh trong'], () => {
+          const t = cbToday(), rows = cbRange(t, ttAddDays(t, 6)).filter(d => !cbCleanOn(d));
+          return `<b>🧹 NGÀY CHƯA AI ĐĂNG KÝ VỆ SINH (7 ngày tới):</b><br/>` + (rows.length ? cbChips(rows, 10, 'bg-amber-50 text-amber-800 border-amber-200') : '🌟 7 ngày tới đã có người đăng ký đủ!');
+        }],
+        ['Ai nợ link TikTok?', ['no tiktok', 'no link', 'tiktok'], () => {
+          const t = cbToday(), rows = state.nhanSu.map(ns => ({ ns, r: ttPenaltyRows(ns.id, t) })).filter(x => x.r.length);
+          return cbRank('📱 NỢ LINK TIKTOK (bị trừ vào báo cáo cuối ngày)', rows, x => `<b>${ttEsc(x.ns.name)}</b>: ${x.r.map(r => ttEsc(r.itemName.replace('[Kỷ Luật] TikTok trễ hạn ', ''))).join(', ')} (-${x.r.reduce((s, r) => s + Math.abs(r.starChange), 0)}⭐)`, '🌟 Không ai nợ link TikTok.');
+        }],
+        ['Ngày đang khóa chốt sổ', ['khoa chot', 'ngay khoa', 'chot so'], () => { const l = (state.lockedDates || []).slice().sort(); return '<b>🔒 NGÀY ĐANG KHÓA CHỐT SỔ:</b><br/>' + (l.length ? cbChips(l, 30, 'bg-slate-100 text-slate-700 border-slate-300') : 'Chưa có ngày nào bị khóa.'); }]
+      ] }
+    ];
+
+    let cbActiveGroup = 0;
+
+    function renderChatbotQuestions() {
+      const tabs = document.getElementById('cbGroupTabs'), list = document.getElementById('cbQuestionList');
+      if (!tabs || !list) return;
+      tabs.innerHTML = CB_GROUPS.map((g, i) => `<button type="button" onclick="cbSetGroup(${i})" class="text-[10px] md:text-[11px] font-black px-2.5 py-1 rounded-full border transition ${i === cbActiveGroup ? g.on : g.off}">${g.icon} ${g.name}</button>`).join('');
+      const g = CB_GROUPS[cbActiveGroup];
+      let h = '';
+      if (cbActiveGroup === 0) {
+        h += `<div class="md:col-span-2 flex flex-wrap items-center gap-1 bg-rose-50 border border-rose-200 rounded-lg p-1.5">
+          <span class="text-[10px] font-black text-rose-800 whitespace-nowrap">🔎 Check 1 người:</span>
+          <select id="cbStaffPick" class="flex-1 min-w-[120px] border border-rose-200 rounded px-1.5 py-1 text-[11px] bg-white"><option value="">-- Chọn nhân viên --</option>${state.nhanSu.map(n => `<option value="${ttEsc(n.id)}">${ttEsc(n.name)}</option>`).join('')}</select>
+          <button type="button" onclick="cbAskStaffMissing()" class="text-[10px] font-black px-2 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white whitespace-nowrap">Xem ngày chưa báo cáo</button></div>`;
+      }
+      h += g.q.map((q, i) => `<button type="button" onclick="cbAsk(${cbActiveGroup},${i})" class="text-left text-[11px] font-bold px-2 py-1.5 rounded-lg border ${g.off} hover:brightness-95 transition">${i + 1}. ${ttEsc(q[0])}</button>`).join('');
+      list.innerHTML = h;
+    }
+    function cbSetGroup(i) { cbActiveGroup = i; renderChatbotQuestions(); }
+    function cbAskStaffMissing() {
+      const sel = document.getElementById('cbStaffPick');
+      const ns = sel && state.nhanSu.find(n => n.id === sel.value);
+      if (!ns) { showToastMessage('⚠️ Hãy chọn nhân viên trước!'); return; }
+      chatPost(`${ns.name} chưa báo cáo ngày nào?`, cbStaffMissing(ns));
+    }
+    function cbAsk(g, i) {
+      const q = CB_GROUPS[g].q[i];
+      let html;
+      try { html = q[2](); } catch (e) { html = `⚠️ Lỗi khi tra cứu: ${ttEsc(e.message)}`; }
+      chatPost(q[0], html);
+    }
+
     function renderChatbotStaffButtons() {
       const container = document.getElementById('chatbotStaffTagContainer');
-      if (!container) return;
-
-      container.innerHTML = state.nhanSu.map(ns => {
-        const isTopzone = ns.group.toLowerCase().includes('topzone');
-        const bgBadge = isTopzone ? 'bg-black text-amber-300' : 'bg-indigo-50 text-indigo-700 border border-indigo-200';
-        return `
-          <button type="button" onclick="quickAsk('${ns.name}')" class="px-2 py-0.5 rounded-lg text-[10px] font-bold ${bgBadge} hover:scale-105 transition shadow-sm whitespace-nowrap">
-            👤 ${ns.name} (${ns.totalStar || 0}⭐)
-          </button>
-        `;
-      }).join('');
+      if (container) {
+        container.innerHTML = state.nhanSu.map(ns => {
+          const isTopzone = String(ns.group || '').toLowerCase().includes('topzone');
+          const bgBadge = isTopzone ? 'bg-black text-amber-300' : 'bg-indigo-50 text-indigo-700 border border-indigo-200';
+          return `<button type="button" data-id="${ttEsc(ns.id)}" onclick="cbAskProfile(this.dataset.id)" class="px-2 py-0.5 rounded-lg text-[10px] font-bold ${bgBadge} hover:scale-105 transition shadow-sm whitespace-nowrap">👤 ${ttEsc(ns.name)} (${ns.totalStar || 0}⭐)</button>`;
+        }).join('');
+      }
+      renderChatbotQuestions();
     }
+    function cbAskProfile(id) { const ns = state.nhanSu.find(n => n.id === id); if (ns) chatPost(ns.name, cbProfile(ns)); }
 
-    function clearChatLog() {
-      document.getElementById('chatMessagesContainer').innerHTML = '';
-    }
-
-    function quickAsk(keyword) {
-      document.getElementById('chatInput').value = keyword;
-      processChatMessage(keyword);
-    }
-
+    function clearChatLog() { document.getElementById('chatMessagesContainer').innerHTML = ''; }
+    function quickAsk(keyword) { document.getElementById('chatInput').value = keyword; processChatMessage(keyword); }
     function handleChatSubmit(e) {
       e.preventDefault();
-      const input = document.getElementById('chatInput');
-      const query = input.value.trim();
+      const input = document.getElementById('chatInput'), query = input.value.trim();
       if (!query) return;
       processChatMessage(query);
       input.value = '';
     }
-
-    function processChatMessage(query) {
+    function chatPost(userText, botHtml) {
       const container = document.getElementById('chatMessagesContainer');
-      
-      const userMsg = document.createElement('div');
-      userMsg.className = "flex gap-2 items-start justify-end";
-      userMsg.innerHTML = `
-        <div class="bg-indigo-600 text-white p-2 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] text-xs font-semibold">
-          ${query}
-        </div>
-      `;
-      container.appendChild(userMsg);
-
-      const botResponse = generateAIResponse(query);
-      const botMsg = document.createElement('div');
-      botMsg.className = "flex gap-2 items-start";
-      botMsg.innerHTML = `
-        <div class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-black">AI</div>
-        <div class="bg-white p-2.5 rounded-xl rounded-tl-none border shadow-sm text-slate-800 max-w-[90%] leading-relaxed text-xs">
-          ${botResponse}
-        </div>
-      `;
-      container.appendChild(botMsg);
+      const u = document.createElement('div');
+      u.className = "flex gap-2 items-start justify-end";
+      u.innerHTML = `<div class="bg-indigo-600 text-white p-2 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] text-xs font-semibold">${ttEsc(userText)}</div>`;
+      container.appendChild(u);
+      const b = document.createElement('div');
+      b.className = "flex gap-2 items-start";
+      b.innerHTML = `<div class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-black shrink-0">AI</div><div class="bg-white p-2.5 rounded-xl rounded-tl-none border shadow-sm text-slate-800 max-w-[92%] leading-relaxed text-xs">${botHtml}</div>`;
+      container.appendChild(b);
       container.scrollTop = container.scrollHeight;
+    }
+    function processChatMessage(query) { chatPost(query, generateAIResponse(query)); }
+
+    // Tìm nhân viên trong câu hỏi (mã, tên đầy đủ hoặc tên gọi), không phân biệt dấu
+    function cbFindStaff(qn) {
+      const tokens = qn.split(/[^a-z0-9]+/).filter(Boolean), exact = [], short = [];
+      state.nhanSu.forEach(ns => {
+        const full = cbNorm(ns.name), id = String(ns.id).toLowerCase();
+        if (tokens.includes(id) || (full.length > 3 && qn.includes(full))) exact.push(ns);
+        else { const parts = full.split(/\s+/), last = parts[parts.length - 1]; if (last && last.length >= 2 && tokens.includes(last)) short.push(ns); }
+      });
+      return exact.length ? exact : short;
     }
 
     function generateAIResponse(query) {
-      const q = query.toLowerCase().trim();
-
-      if (q.includes("nguy cơ") || q.includes("nguy co") || q.includes("chưa về") || q.includes("chua ve")) {
-        const riskStaff = [];
-        state.nhanSu.forEach(ns => {
-          let badStreakItems = [];
-          state.thiDua.forEach(td => {
-            const streak = calculateStaffItemStreak(ns.id, td.name);
-            if (streak >= 2) {
-              badStreakItems.push({ name: td.name, streak: streak, multiplier: getPenaltyMultiplier(streak) });
-            }
-          });
-          if (badStreakItems.length > 0) {
-            riskStaff.push({ name: ns.name, group: ns.group, items: badStreakItems });
+      const qn = cbNorm(query);
+      try {
+        const found = cbFindStaff(qn);
+        if (found.length > 1) return `🤔 Có ${found.length} nhân viên khớp: ${found.map(n => `<b>${ttEsc(n.name)}</b>`).join(', ')}. Bạn gõ rõ họ tên hoặc mã nhân viên giúp mình nhé!`;
+        if (found.length === 1) {
+          const ns = found[0];
+          if (/(chua|thieu|quen|bo|khong).{0,12}bao cao|bao cao.{0,10}(chua|thieu)|ngay nao/.test(qn)) return cbStaffMissing(ns);
+          if (/\b(ban|off|nghi|lich)\b/.test(qn)) {
+            const recs = (state.lichBan || []).filter(r => r.staffId === ns.id && r.date >= cbToday()).sort((a, b) => a.date < b.date ? -1 : 1);
+            return `<b>📅 Lịch bận / OFF sắp tới của ${ttEsc(ns.name)}:</b><br/>` + (recs.length ? recs.map(r => `• ${cbFmt(r.date)}·${cbDow(r.date)}: <b class="${r.type === 'OFF' ? 'text-rose-600' : 'text-amber-600'}">${r.type === 'OFF' ? 'OFF' : 'Bận việc' + (bzShiftTxt(r) ? ' (' + bzShiftTxt(r) + ')' : '')}</b>`).join('<br/>') : 'Chưa đăng ký ngày nào.');
           }
-        });
-
-        if (riskStaff.length === 0) {
-          return "🌟 <b>Tin rất vui!</b> Hiện tại toàn siêu thị không có nhân viên nào có chuỗi rớt target liên tiếp từ 2 ngày trở lên.";
+          return cbProfile(ns);
         }
+        let best = null, bestLen = 0;
+        CB_GROUPS.forEach(g => g.q.forEach(q => {
+          const kws = q[1].concat([cbNorm(q[0]).replace(/[^a-z0-9 ]/g, '').trim()]);
+          kws.forEach(k => { if (k && qn.includes(k) && k.length > bestLen) { best = q; bestLen = k.length; } });
+        }));
+        if (best) return best[2]();
+      } catch (e) { return `⚠️ Lỗi khi tra cứu: ${ttEsc(e.message)}`; }
+      return `🤔 Mình chưa hiểu <i>"${ttEsc(query)}"</i>. Hãy chọn 1 trong <b>5 nhóm câu hỏi</b> bên dưới, bấm <b>tên nhân viên</b>, hoặc gõ kiểu: <i>"Bình chưa báo cáo ngày nào"</i>, <i>"tháng này ai thiếu báo cáo"</i>.`;
+    }
 
-        let res = `<b>⚠️ DANH SÁCH NHÂN VIÊN NGUY CƠ CAO (Chuỗi chưa về ≥ 2 ngày):</b><br/>`;
-        riskStaff.forEach(r => {
-          res += `• <b>${r.name}</b> [${r.group}]:<br/>`;
-          r.items.forEach(it => {
-            res += `   - <i>${it.name}</i>: Chưa về <b>${it.streak} ngày liên tiếp</b> (Mức phạt: <b>${it.multiplier}x</b>)<br/>`;
-          });
-        });
-        return res;
+
+    // ================= HỆ SỐ PHẠT LŨY TIẾN (tab Quản Lý) =================
+    function penTierDescriptions() {
+      const t = getPenaltyTiers();
+      const lo2 = t.t2, lo3 = t.t3, lo4 = t.t4;
+      const rng = (a, b) => (b - a === 1 ? `ngày thứ ${a + 1}` : `ngày thứ ${a + 1}-${b}`);
+      return [
+        { cls: 'border-slate-200', cond: `Chuỗi các ngày trước &lt; ${lo2}`, fall: lo2 >= 1 ? `rớt ngày 1-${lo2}` : '', mult: t.m1 },
+        { cls: 'border-amber-200', cond: `Chuỗi các ngày trước ${lo2} - ${Math.max(lo2, lo3 - 1)}`, fall: `rớt ${rng(lo2, lo3)}`, mult: t.m2 },
+        { cls: 'border-orange-200', cond: `Chuỗi các ngày trước ${lo3} - ${Math.max(lo3, lo4 - 1)}`, fall: `rớt ${rng(lo3, lo4)}`, mult: t.m3 },
+        { cls: 'border-rose-200', cond: `Chuỗi các ngày trước ≥ ${lo4}`, fall: `rớt ngày thứ ${lo4 + 1}+`, mult: t.m4 }
+      ];
+    }
+    function renderPenaltyTierViews() {
+      const d = penTierDescriptions(), t = getPenaltyTiers();
+      const box = document.getElementById('rulePenaltyTiers');
+      if (box) box.innerHTML = d.map(x => `<div class="bg-white p-1.5 rounded border ${x.cls}">${x.cond} (${x.fall}): <b>Trừ ${fmtMult(x.mult)} lần sao (${fmtMult(x.mult)}x)</b></div>`).join('');
+      const pv = document.getElementById('penTiersPreview');
+      if (pv) {
+        const warn = !(t.t2 < t.t3 && t.t3 < t.t4) ? '<div class="text-rose-600 font-bold">⚠️ Các mốc chuỗi nên tăng dần: Bậc 2 &lt; Bậc 3 &lt; Bậc 4.</div>' : '';
+        pv.innerHTML = d.map((x, i) => `<div>• <b>Bậc ${i + 1}</b>: ${x.cond} (${x.fall}) → trừ <b>${fmtMult(x.mult)}x</b> sao</div>`).join('') + warn;
       }
-
-      if (q.includes("yếu nhất") || q.includes("thấp nhất") || q.includes("mon yeu")) {
-        const stats = {};
-        state.ketQua.forEach(k => {
-          if (!stats[k.itemName]) stats[k.itemName] = { total: 0, passed: 0 };
-          stats[k.itemName].total++;
-          if (k.status === "Về số") stats[k.itemName].passed++;
-        });
-
-        const list = Object.keys(stats).map(name => {
-          const item = stats[name];
-          const rate = item.total > 0 ? (item.passed / item.total) * 100 : 0;
-          return { name, rate: rate.toFixed(0), total: item.total };
-        }).sort((a, b) => a.rate - b.rate).slice(0, 5);
-
-        let res = `<b>📉 TOP 5 MÔN THI ĐUA CÓ TỶ LỆ VỀ SỐ THẤP NHẤT:</b><br/>`;
-        list.forEach((m, idx) => {
-          res += `${idx + 1}. <b>${m.name}</b>: Tỷ lệ đạt <b>${m.rate}%</b> (${m.total} lượt báo)<br/>`;
-        });
-        return res;
-      }
-
-      if (q.includes("top sao") || q.includes("dẫn đầu")) {
-        const top = [...state.nhanSu].sort((a, b) => (Number(b.totalStar) || 0) - (Number(a.totalStar) || 0)).slice(0, 5);
-        let res = `<b>🏆 TOP 5 NHÂN SỰ DẪN ĐẦU QUỸ SAO THI ĐUA:</b><br/>`;
-        top.forEach((ns, idx) => {
-          res += `${idx + 1}. <b>${ns.name}</b> [${ns.group}]: <b class="text-amber-600">${ns.totalStar || 0} ⭐</b><br/>`;
-        });
-        return res;
-      }
-
-      if (q.includes("tăng ca") || q.includes("tang ca")) {
-        const overtimeLogs = state.ketQua.filter(k => k.compensation === "TANG_CA");
-        if (overtimeLogs.length === 0) return "⏰ Trong tháng chưa ghi nhận lượt đăng ký tăng ca nào.";
-        const staffMap = {};
-        overtimeLogs.forEach(l => { staffMap[l.staffName] = (staffMap[l.staffName] || 0) + 1; });
-        let res = `<b>⏰ Danh sách nhân viên đăng ký tăng ca trong tháng:</b><br/>`;
-        for (let name in staffMap) res += `• <b>${name}</b>: ${staffMap[name]} lần tăng ca<br/>`;
-        return res;
-      }
-
-      if (q.includes("hôm nay") || q.includes("hom nay")) {
-        const todayStr = document.getElementById('reportDate').value;
-        const todayLogs = state.ketQua.filter(k => k.date === todayStr);
-        const reportedIds = [...new Set(todayLogs.map(l => l.staffId))];
-        const unReported = state.nhanSu.filter(ns => !reportedIds.includes(ns.id));
-        let res = `<b>📅 Tình hình báo cáo ngày ${todayStr}:</b><br/>`;
-        res += `• Đã nộp báo cáo: <b>${reportedIds.length}/${state.nhanSu.length}</b> nhân sự<br/>`;
-        if (unReported.length > 0) res += `• ⚠️ Chưa báo cáo: ${unReported.map(u => `<b>${u.name}</b>`).join(', ')}`;
-        else res += `• 🌟 Tất cả nhân sự đã gửi báo cáo đầy đủ!`;
-        return res;
-      }
-
-      const foundStaff = state.nhanSu.find(ns => 
-        q.includes(ns.id.toLowerCase()) || 
-        q.includes(ns.name.toLowerCase()) ||
-        cleanName(ns.name).includes(cleanName(q))
-      );
-
-      if (foundStaff) {
-        const logs = state.ketQua.filter(k => k.staffId === foundStaff.id);
-        const otCount = logs.filter(k => k.compensation === "TANG_CA").length;
-        const uniqueDays = [...new Set(logs.map(l => l.date))];
-
-        let badStreaks = [];
-        state.thiDua.forEach(td => {
-          const streak = calculateStaffItemStreak(foundStaff.id, td.name);
-          if (streak >= 2) {
-            badStreaks.push(`${td.name} (${streak} ngày, phạt ${getPenaltyMultiplier(streak)}x)`);
-          }
-        });
-
-        let res = `<b>👤 THÔNG TIN NHÂN SỰ: ${foundStaff.name} (${foundStaff.id})</b><br/>`;
-        res += `• Bộ phận: <b>${foundStaff.group}</b> | Quỹ sao: <b class="text-amber-600">${foundStaff.totalStar || 0} ⭐</b><br/>`;
-        res += `• Đã nộp báo cáo: <b>${uniqueDays.length} ngày</b> | Tăng ca: <b>${otCount} lần ⏰</b><br/>`;
-        if (badStreaks.length > 0) {
-          res += `• ⚠️ <b>Môn rớt chuỗi liên tiếp:</b> <i>${badStreaks.join(', ')}</i>`;
-        } else {
-          res += `• 🌟 <b>Kỷ luật thi đua:</b> Rất tốt, không có môn nào bị rớt chuỗi liên tiếp!`;
-        }
-        return res;
-      }
-
-      return `🤔 Chưa tìm thấy thông tin phù hợp với từ khóa <i>"${query}"</i>. Hãy bấm tên nhân viên ở hàng nút phía trên để tra cứu tức thì!`;
+      const l = document.getElementById('penLblT2a'); if (l) l.innerText = t.t2;
+    }
+    function loadPenaltyTierInputs() {
+      const t = getPenaltyTiers();
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+      set('cfgPenT2', t.t2); set('cfgPenT3', t.t3); set('cfgPenT4', t.t4);
+      set('cfgPenM1', t.m1); set('cfgPenM2', t.m2); set('cfgPenM3', t.m3); set('cfgPenM4', t.m4);
+      renderPenaltyTierViews();
+    }
+    function penTiersChanged(manual) {
+      const val = (id, def) => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : def; };
+      state.config = state.config || {};
+      state.config.PEN_T2_MIN = val('cfgPenT2', 4); state.config.PEN_T3_MIN = val('cfgPenT3', 6); state.config.PEN_T4_MIN = val('cfgPenT4', 8);
+      state.config.PEN_M1 = val('cfgPenM1', 1); state.config.PEN_M2 = val('cfgPenM2', 1.5); state.config.PEN_M3 = val('cfgPenM3', 2); state.config.PEN_M4 = val('cfgPenM4', 5);
+      renderPenaltyTierViews();
+      try { if (typeof calculateAllRowsRealtime === 'function') calculateAllRowsRealtime(); } catch (e) {}
+      if (manual) { executeAutoSave(true); showToastMessage('✅ Đã lưu hệ số phạt lũy tiến'); } else triggerAutoSave();
     }
 
     // ================= TAB CẤU HÌNH QL: BẢNG QUẢN TRỊ NHÂN SỰ VÀ SAO =================
@@ -3763,6 +4297,7 @@
       const elEditStreak = document.getElementById('cfgAllowStaffEditStreak');
       if (elEditStreak) elEditStreak.value = cfg.ALLOW_STAFF_EDIT_STREAK || "OFF";
       renderTabVisibilityList();
+      loadPenaltyTierInputs();
       const ttS = document.getElementById('ttCfgStart'); if (ttS) ttS.value = cfg.TIKTOK_START_DATE ? String(cfg.TIKTOK_START_DATE).slice(0, 10) : "";
       const ttR = document.getElementById('ttCfgReward'); if (ttR) ttR.value = (cfg.TIKTOK_REWARD !== undefined && cfg.TIKTOK_REWARD !== "") ? cfg.TIKTOK_REWARD : 300;
       const ttP = document.getElementById('ttCfgPenalty'); if (ttP) ttP.value = (cfg.TIKTOK_PENALTY !== undefined && cfg.TIKTOK_PENALTY !== "") ? cfg.TIKTOK_PENALTY : 300;
@@ -4013,6 +4548,8 @@
         DOUBLE_BONUS_RATE: document.getElementById('cfgDoubleRate').value,
         ALLOW_STAFF_EDIT_STREAK: document.getElementById('cfgAllowStaffEditStreak') ? document.getElementById('cfgAllowStaffEditStreak').value : "OFF",
         HIDDEN_TABS: collectHiddenTabsFromUI(),
+        PEN_T2_MIN: penCfgField('cfgPenT2', 'PEN_T2_MIN'), PEN_T3_MIN: penCfgField('cfgPenT3', 'PEN_T3_MIN'), PEN_T4_MIN: penCfgField('cfgPenT4', 'PEN_T4_MIN'),
+        PEN_M1: penCfgField('cfgPenM1', 'PEN_M1'), PEN_M2: penCfgField('cfgPenM2', 'PEN_M2'), PEN_M3: penCfgField('cfgPenM3', 'PEN_M3'), PEN_M4: penCfgField('cfgPenM4', 'PEN_M4'),
         TIKTOK_START_DATE: ttCfgField('ttCfgStart', 'TIKTOK_START_DATE'),
         TIKTOK_REWARD: ttCfgField('ttCfgReward', 'TIKTOK_REWARD'),
         TIKTOK_PENALTY: ttCfgField('ttCfgPenalty', 'TIKTOK_PENALTY'),
