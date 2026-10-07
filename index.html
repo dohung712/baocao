@@ -470,6 +470,11 @@
 
     <!-- ================= TAB: LỊCH BẬN VIỆC / OFF ================= -->
     <section id="sec-busy" class="hidden space-y-3">
+      <div class="flex gap-1.5">
+        <button id="bzTabBtnReg" onclick="bzSubTab('reg')" class="px-3 py-1 rounded-lg text-xs font-black bg-orange-500 text-white shadow">📝 Đăng ký Bận / OFF</button>
+        <button id="bzTabBtnShift" onclick="bzSubTab('shift')" class="px-3 py-1 rounded-lg text-xs font-black bg-slate-100 text-slate-600 hover:bg-slate-200">🗓️ Ca làm việc (kiểm tra trùng)</button>
+      </div>
+      <div id="bzSubReg" class="space-y-3">
       <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-1.5">
           <h3 class="text-xs md:text-sm font-bold text-slate-800">📅 Lịch Bận Việc / OFF</h3>
@@ -487,6 +492,20 @@
         </div>
       </div>
       <div id="bzMonthSummary" class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 text-xs space-y-1"></div>
+      </div>
+
+      <div id="bzSubShift" class="hidden space-y-3">
+        <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
+          <h3 class="text-xs md:text-sm font-bold text-slate-800 border-b pb-1.5">🗓️ Dán bảng "Quản lý phân ca" từ HRM để kiểm tra trùng ngày Bận / OFF</h3>
+          <p class="text-[11px] text-slate-600 leading-snug">Vào HRM → Quản lý phân ca → bấm <b>Xem</b> → kéo chọn toàn bộ bảng (từ chữ <b>"Nhân viên"</b> đến hết hàng nhân viên cuối) → <b>Ctrl+C</b> → bấm vào ô bên dưới → <b>Ctrl+V</b>. Tool tự kiểm tra ngay.</p>
+          <textarea id="bzShiftText" rows="5" placeholder="Dán (Ctrl+V) bảng phân ca vào đây..." class="w-full border border-slate-300 rounded-lg p-2 text-[11px] font-mono outline-none focus:ring-2 focus:ring-orange-400"></textarea>
+          <div class="flex gap-2">
+            <button onclick="bzCheckShift()" class="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-black shadow">🔍 Kiểm tra</button>
+            <button onclick="bzClearShift()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold">🗑️ Xóa</button>
+          </div>
+        </div>
+        <div id="bzShiftResult" class="space-y-2"></div>
+      </div>
     </section>
 
     <section id="sec-store-ranking" class="hidden space-y-3">
@@ -1030,6 +1049,16 @@
           </div>
         </div>
         <div id="penTiersPreview" class="text-[11px] text-slate-600 space-y-0.5"></div>
+      </div>
+
+      <!-- Quy tắc riêng theo môn -->
+      <div class="bg-white rounded-xl p-3 shadow-sm border border-violet-200 space-y-2">
+        <div class="flex justify-between items-center border-b pb-1.5">
+          <h2 class="text-xs md:text-sm font-bold text-violet-800">🎯 Quy Tắc TĂNG CA / TRỪ SAO Riêng Cho Từng Môn</h2>
+          <button onclick="itemRuleAdd()" class="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-black shadow transition">＋ Thêm môn</button>
+        </div>
+        <p class="text-[10px] text-slate-500 leading-snug">Môn nào được thêm ở đây sẽ dùng ngưỡng <b>riêng</b>; các môn còn lại vẫn dùng ngưỡng chung ở phía trên. So với số ở cột <b>CHUỖI</b> (số ngày chưa về liên tiếp của các ngày trước). Để trống ô = dùng ngưỡng chung. Tick <b>Chỉ tăng ca</b> = môn này khi tới ngưỡng sẽ <b>tự tăng ca, không trừ sao</b>. Các môn có quy tắc riêng hiện nhãn <b class="text-violet-700">RIÊNG</b> trong bảng báo cáo.</p>
+        <div id="itemRulesList" class="space-y-1.5"></div>
       </div>
 
       <!-- Reset chuỗi ngày -->
@@ -2473,6 +2502,7 @@
           <span class="text-[9px] md:text-[11px] font-bold leading-tight w-full">${names}${empty}</span></button>`;
       }
       grid.innerHTML = html;
+      try { if (bzSchedule && !document.getElementById('bzSubShift').classList.contains('hidden')) bzRenderShift(); } catch (e) {}
       const sum = document.getElementById('bzMonthSummary');
       if (sum) {
         const rows = Object.entries(perStaff).sort((a, b) => (b[1].BAN + b[1].OFF) - (a[1].BAN + a[1].OFF));
@@ -2601,6 +2631,290 @@
       bzRenderModal();
     }
 
+    // ================= CA LÀM VIỆC: dán bảng phân ca HRM & đối chiếu Bận / OFF =================
+    const BZ_CA_HOURS = [1.5, 3, 3, 3, 3, 1];
+    let bzSchedule = null;
+
+    function bzNums(txt, max) {
+      const out = [], re = /\d+(?:[.,]\d+)?/g; let m;
+      while ((m = re.exec(txt)) && out.length < max) out.push(parseFloat(m[0].replace(',', '.')));
+      return out;
+    }
+    function bzRowNums(text, labelRe, need) {
+      const m = labelRe.exec(text);
+      if (!m) return null;
+      const arr = bzNums(text.slice(m.index + m[0].length), need);
+      return arr.length === need ? arr : null;
+    }
+
+    // Dựng lại vị trí ca khi bản copy làm mất ô trống: duyệt từng cột (Ca) theo thời gian, dùng dòng
+    // "Nhân sự trong ca" (số người mỗi cột) + "Giờ công đã xếp ca" (giờ mỗi người) làm ràng buộc.
+    // Quy hoạch động có nhớ trạng thái (cột, vị trí con trỏ của từng NV) nên rất nhanh.
+    function bzSolve(emps, cnt, hrs, n) {
+      const h = cnt.map((c, i) => c > 0 ? hrs[i] / c : -1);
+      const E = emps.length, ptr = emps.map(() => 0), memo = new Map();
+      const LIMIT = 600000;
+      let aborted = false;
+      const match = (e, c) => { const v = emps[e].values; return ptr[e] < v.length && cnt[c] > 0 && Math.abs(h[c] - v[ptr[e]]) < 1e-6; };
+      function feasible(c) {
+        for (let e = 0; e < E; e++) {
+          const vals = emps[e].values; let j = c;
+          for (let k = ptr[e]; k < vals.length; k++) {
+            while (j < n && !(cnt[j] > 0 && Math.abs(h[j] - vals[k]) < 1e-6)) j++;
+            if (j >= n) return false;
+            j++;
+          }
+        }
+        return true;
+      }
+      // liệt kê các tổ hợp NV làm ở cột c; fn(chosen) trả true để dừng
+      function eachChoice(c, fn) {
+        const elig = []; for (let e = 0; e < E; e++) if (match(e, c)) elig.push(e);
+        const need = cnt[c]; if (elig.length < need) return false;
+        const chosen = [];
+        function comb(i) {
+          if (chosen.length === need) return fn(chosen);
+          if (elig.length - i < need - chosen.length) return false;
+          chosen.push(elig[i]); if (comb(i + 1)) return true; chosen.pop();
+          return comb(i + 1);
+        }
+        return comb(0);
+      }
+      function count(c) {
+        if (aborted) return 0;
+        const key = c + '|' + ptr.join(',');
+        if (memo.has(key)) return memo.get(key);
+        if (memo.size > LIMIT) { aborted = true; return 0; }
+        let total = 0;
+        if (c === n) total = ptr.every((p, i) => p === emps[i].values.length) ? 1 : 0;
+        else if (feasible(c)) {
+          eachChoice(c, ch => { ch.forEach(e => ptr[e]++); total += count(c + 1); ch.forEach(e => ptr[e]--); return total >= 2 || aborted; });
+        }
+        total = Math.min(total, 2);
+        memo.set(key, total);
+        return total;
+      }
+      const total = count(0);
+      if (aborted || total === 0) return { sols: [], aborted };
+      const pick = emps.map(() => []);
+      for (let c = 0; c < n; c++) {
+        let done = false;
+        eachChoice(c, ch => {
+          ch.forEach(e => ptr[e]++);
+          const ok = count(c + 1) > 0;
+          if (ok) { ch.forEach(e => pick[e].push(c)); done = true; return true; }
+          ch.forEach(e => ptr[e]--);
+          return false;
+        });
+        if (!done && cnt[c] > 0) return { sols: [], aborted: true };
+      }
+      return { sols: total === 1 ? [pick] : [pick, pick], aborted: false };
+    }
+
+    // ---- Đọc từ HTML của clipboard (giữ nguyên ô trống) ----
+    function bzCellsFromRow(row, n, nd) {
+      const all = [row].concat(Array.from(row.querySelectorAll('*')));
+      for (const D of all) {
+        const k = D.children.length;
+        if (k >= n && k <= n + 3) return Array.from(D.children).slice(k - n).map(x => x.textContent);
+      }
+      for (const D of all) { // ô được gom theo ngày: nd nhóm x 6 ca
+        if (D.children.length === nd && Array.from(D.children).every(ch => ch.children.length === 6)) {
+          const out = []; Array.from(D.children).forEach(ch => Array.from(ch.children).forEach(x => out.push(x.textContent)));
+          return out;
+        }
+      }
+      return null;
+    }
+    function bzParseHtmlStaff(html, n, nd) {
+      if (!html || typeof DOMParser === 'undefined') return null;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const idRe = /^\s*(\d{4,8})\s*-\s*([^\d\s][^\t\n]*?)\s*$/;
+      const leaves = Array.from(doc.body.querySelectorAll('*')).filter(el => el.children.length === 0 && idRe.test(el.textContent));
+      if (!leaves.length) return null;
+      const out = [];
+      for (const lf of leaves) {
+        const m = idRe.exec(lf.textContent);
+        let row = lf, cells = null;
+        while (row) {
+          if (leaves.some(o => o !== lf && row.contains(o))) break;
+          cells = bzCellsFromRow(row, n, nd);
+          if (cells) break;
+          row = row.parentElement;
+        }
+        if (!cells) return null;
+        out.push({ hrmId: m[1], name: m[2].trim(), cells: cells.map(x => { const mm = /\d+(?:[.,]\d+)?/.exec(x); return mm ? parseFloat(mm[0].replace(',', '.')) : 0; }) });
+      }
+      return out;
+    }
+
+    function bzParseSchedule(text, html) {
+      const res = { ok: false, msg: '', days: [], staff: [], method: '', unique: true, check: null };
+      const t = String(text || '').replace(/\r/g, '');
+      // ---- ngày trong tuần ----
+      const sm = /Từ ngày[\s\S]{0,25}?(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t);
+      const sy = sm ? +sm[3] : new Date().getFullYear(), smo = sm ? +sm[2] : 0;
+      const dre = /(T[2-7]|CN)\s*\((\d{1,2})\/(\d{1,2})\)/g; let m; const seen = {};
+      while ((m = dre.exec(t)) && res.days.length < 7) {
+        const key = m[2] + '/' + m[3]; if (seen[key]) continue; seen[key] = 1;
+        const y = (smo && +m[3] < smo) ? sy + 1 : sy;
+        res.days.push({ label: m[1], date: `${y}-${String(m[3]).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}` });
+      }
+      if (!res.days.length) { res.msg = 'Không thấy dòng ngày (VD: "T2 (05/10)"). Hãy copy cả phần tiêu đề bảng (từ chữ "Nhân viên").'; return res; }
+      const nd = res.days.length, n = nd * 6;
+      const cnt = bzRowNums(t, /(?:^|\n)[ \t]*Nhân sự trong ca/, n);
+      const hrs = bzRowNums(t, /(?:^|\n)[ \t]*Giờ công đã xếp ca/, n);
+
+      const finish = () => {
+        if (hrs) { // đối chiếu tổng giờ từng cột với dòng "Giờ công đã xếp ca"
+          let ok = 0; for (let c = 0; c < n; c++) if (Math.abs(res.staff.reduce((s2, st) => s2 + (st.cells[c] || 0), 0) - hrs[c]) < 0.01) ok++;
+          res.check = { ok, total: n };
+        }
+        res.ok = true; return res;
+      };
+
+      // ---- chế độ 1: HTML của clipboard (giữ ô trống) ----
+      const hs = bzParseHtmlStaff(html, n, nd);
+      if (hs && hs.length) { res.method = 'html'; res.staff = hs; return finish(); }
+
+      // ---- khối nhân viên theo văn bản ----
+      const lines = t.split('\n'), emps = [];
+      const empRe = /^(?:[^\t]*\t)*?\s*(\d{4,8})\s*-\s*([^\t]+?)\s*(?:\t(.*))?$/;
+      const stopRe = /^\s*(KHỐI|CHÍNH SÁCH|NGHIỆP VỤ|KẾ TOÁN|NGÀNH HÀNG|Copyright)/;
+      let cur = null;
+      lines.forEach(line => {
+        if (stopRe.test(line)) { cur = null; return; }
+        if (/^\s*BP\s/.test(line)) { cur = null; return; }
+        const em = empRe.exec(line);
+        if (em && /^\d/.test(em[1])) { cur = { hrmId: em[1], name: em[2].trim(), rest: em[3] || '', body: [] }; emps.push(cur); return; }
+        if (cur) cur.body.push(line);
+      });
+      if (!emps.length) { res.msg = 'Không thấy dòng nhân viên (VD: "18450 - Hùng").'; return res; }
+
+      // ---- chế độ 2: văn bản có tab, giữ ô trống ----
+      if (emps.every(e => e.rest.split('\t').length >= n)) {
+        res.method = 'tab';
+        emps.forEach(e => {
+          const f = e.rest.split('\t'), cells = (f.length >= n + 1 ? f.slice(1, 1 + n) : f.slice(0, n)).map(x => parseFloat(String(x).replace(',', '.')) || 0);
+          res.staff.push({ hrmId: e.hrmId, name: e.name, cells });
+        });
+        return finish();
+      }
+
+      // ---- chế độ 3: văn bản mất ô trống -> ước đoán bằng ràng buộc ----
+      const parsed = emps.map(e => { const nums = bzNums(e.rest + ' \t ' + e.body.join(' \t '), 400); return { e, total: nums[0], values: nums.slice(1) }; });
+      if (!cnt || !hrs) { res.msg = 'Bản copy không giữ ô trống và thiếu 2 dòng "Giờ công đã xếp ca" / "Nhân sự trong ca". Hãy copy cả phần tiêu đề bảng.'; return res; }
+      const totalVals = parsed.reduce((s2, p) => s2 + p.values.length, 0), totalCnt = cnt.reduce((a, b) => a + b, 0);
+      if (totalVals !== totalCnt) { res.msg = `Số ca của nhân viên đã dán (${totalVals}) không khớp dòng "Nhân sự trong ca" (${totalCnt}). Có thể thiếu nhân viên — hãy copy đủ toàn bộ bảng.`; return res; }
+      const { sols, aborted } = bzSolve(parsed, cnt, hrs, n);
+      if (!sols.length) { res.msg = aborted ? 'Bảng quá phức tạp để dựng lại vị trí ca tự động.' : 'Không dựng được vị trí ca từ dữ liệu đã dán (số liệu không khớp).'; return res; }
+      res.method = 'guess'; res.unique = sols.length === 1;
+      parsed.forEach((p, i) => {
+        const cells = new Array(n).fill(0);
+        p.values.forEach((v, k) => { cells[sols[0][i][k]] = v; });
+        res.staff.push({ hrmId: p.e.hrmId, name: p.e.name, cells });
+      });
+      return finish();
+    }
+
+    // ---- đối chiếu & hiển thị ----
+    function bzMatchStaff(st) {
+      const byId = (state.nhanSu || []).find(ns => String(ns.id) === String(st.hrmId));
+      if (byId) return byId;
+      const nn = cbNorm(st.name), last = nn.split(/\s+/).pop();
+      const c = (state.nhanSu || []).filter(ns => { const f = cbNorm(ns.name); return f === nn || f.split(/\s+/).pop() === last; });
+      return c.length === 1 ? c[0] : null;
+    }
+
+    function bzSubTab(t) {
+      const reg = document.getElementById('bzSubReg'), sh = document.getElementById('bzSubShift');
+      if (!reg || !sh) return;
+      reg.classList.toggle('hidden', t !== 'reg'); sh.classList.toggle('hidden', t !== 'shift');
+      const on = 'px-3 py-1 rounded-lg text-xs font-black bg-orange-500 text-white shadow', off = 'px-3 py-1 rounded-lg text-xs font-black bg-slate-100 text-slate-600 hover:bg-slate-200';
+      document.getElementById('bzTabBtnReg').className = t === 'reg' ? on : off;
+      document.getElementById('bzTabBtnShift').className = t === 'shift' ? on : off;
+      if (t === 'shift') bzRenderShift();
+    }
+
+    let bzPasteHtml = '';
+    function bzInitShiftTab() {
+      const ta = document.getElementById('bzShiftText');
+      if (ta && !ta.dataset.bound) {
+        ta.dataset.bound = '1';
+        ta.addEventListener('paste', e => { bzPasteHtml = (e.clipboardData && e.clipboardData.getData('text/html')) || ''; setTimeout(bzCheckShift, 50); });
+        ta.addEventListener('input', () => { if (!ta.value.trim()) bzPasteHtml = ''; });
+      }
+      if (!bzSchedule) { try { const raw = localStorage.getItem('BZ_SHIFT_SCHEDULE'); if (raw) bzSchedule = JSON.parse(raw); } catch (e) {} }
+    }
+    function bzClearShift() {
+      bzSchedule = null; bzPasteHtml = '';
+      const ta = document.getElementById('bzShiftText'); if (ta) ta.value = '';
+      try { localStorage.removeItem('BZ_SHIFT_SCHEDULE'); } catch (e) {}
+      bzRenderShift();
+    }
+    function bzCheckShift() {
+      const ta = document.getElementById('bzShiftText');
+      const text = ta ? ta.value : '';
+      if (!text.trim()) { showToastMessage('⚠️ Hãy dán bảng phân ca vào ô trước!'); return; }
+      const sch = bzParseSchedule(text, bzPasteHtml);
+      if (sch.ok) { bzSchedule = sch; try { localStorage.setItem('BZ_SHIFT_SCHEDULE', JSON.stringify(sch)); } catch (e) {} }
+      else bzSchedule = null;
+      bzRenderShift(sch.msg);
+    }
+
+    function bzRenderShift(errMsg) {
+      bzInitShiftTab();
+      const box = document.getElementById('bzShiftResult');
+      if (!box) return;
+      if (!bzSchedule) {
+        box.innerHTML = errMsg ? `<div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-2 text-xs font-bold">⚠️ ${ttEsc(errMsg)}</div>` : '<div class="text-[11px] text-slate-400">Chưa có dữ liệu. Dán bảng phân ca vào ô phía trên rồi bấm Kiểm tra.</div>';
+        return;
+      }
+      const sch = bzSchedule, days = sch.days, conflicts = [], warns = [], unmatched = [];
+      const dayBad = {};
+      const body = sch.staff.map(st => {
+        const ns = bzMatchStaff(st);
+        if (!ns) unmatched.push(st.name);
+        let tds = '';
+        days.forEach((d, di) => {
+          const rec = ns ? (state.lichBan || []).find(r => r.staffId === ns.id && r.date === d.date) : null;
+          const worked = []; for (let c = 0; c < 6; c++) if ((st.cells[di * 6 + c] || 0) > 0) worked.push(c + 1);
+          const isOff = !!rec && rec.type === 'OFF';
+          const banSh = rec && !isOff ? (rec.shifts || []) : [];
+          let bad = [];
+          if (isOff) bad = worked.slice(); else if (rec && banSh.length) bad = worked.filter(c => banSh.includes(c));
+          const lbl = `${d.label} ${d.date.slice(8, 10)}/${d.date.slice(5, 7)}`;
+          if (isOff && bad.length) { conflicts.push({ d: d.date, h: `⛔ <b>${ttEsc(ns.name)}</b> — ${lbl}: đăng ký <b>OFF</b> nhưng bị xếp <b>Ca ${bad.join(', ')}</b>` }); dayBad[di] = 1; }
+          else if (bad.length) { conflicts.push({ d: d.date, h: `⛔ <b>${ttEsc(ns.name)}</b> — ${lbl}: đăng ký bận <b>Ca ${banSh.join(', ')}</b> nhưng bị xếp <b>Ca ${bad.join(', ')}</b>` }); dayBad[di] = 1; }
+          else if (rec && !isOff && !banSh.length && worked.length) warns.push(`⚠️ <b>${ttEsc(ns.name)}</b> — ${lbl}: đăng ký Bận (chưa ghi ca) mà được xếp Ca ${worked.join(', ')} — hỏi lại nhân viên`);
+          for (let c = 0; c < 6; c++) {
+            const v = st.cells[di * 6 + c] || 0, ca = c + 1;
+            let cls = 'text-center w-[26px] min-w-[26px] h-6 text-[10px] ' + (c === 0 ? 'border-l-2 border-l-slate-300 ' : 'border-l border-l-slate-100 '), txt = '';
+            if (bad.includes(ca)) { cls += 'bg-red-700 text-white font-black ring-1 ring-inset ring-red-900'; txt = v; }
+            else if (v > 0) { cls += 'bg-sky-100 text-slate-700'; txt = v; }
+            else if (banSh.includes(ca)) { cls += 'bg-amber-200 text-amber-800 font-black'; txt = 'B'; }
+            else if (isOff) { cls += 'bg-rose-100 text-rose-400'; txt = ''; }
+            tds += `<td class="${cls}">${txt}</td>`;
+          }
+        });
+        return `<tr class="border-b border-slate-100"><td class="sticky left-0 z-10 bg-white px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap border-r ${ns ? 'text-slate-800' : 'text-slate-400 italic'}">${ttEsc(st.name)} <span class="text-slate-400 font-normal">${ttEsc(st.hrmId)}</span>${ns ? '' : ' (chưa khớp NV)'}</td>${tds}</tr>`;
+      }).join('');
+      const head1 = days.map((d, di) => `<th colspan="6" class="border-l-2 border-l-slate-300 text-[10px] py-0.5 ${dayBad[di] ? 'bg-red-700 text-white' : (d.label === 'T7' || d.label === 'CN' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-700')}">${d.label} (${d.date.slice(8, 10)}/${d.date.slice(5, 7)})</th>`).join('');
+      const head2 = days.map(() => [1, 2, 3, 4, 5, 6].map(c => `<th class="text-[9px] text-slate-400 font-bold">C${c}</th>`).join('')).join('');
+      conflicts.sort((a, b) => a.d < b.d ? -1 : 1);
+      let h = '';
+      if (sch.method === 'guess') h += `<div class="bg-amber-50 border border-amber-300 text-amber-900 rounded-lg p-2 text-[11px] font-bold leading-snug">⚠️ Bản copy làm mất ô trống nên vị trí Ca chỉ là <u>ước đoán</u>${sch.unique ? '' : ' (có nhiều cách xếp khả dĩ)'} — kết quả bên dưới có thể sai. Hãy dùng <b>Ctrl+V trực tiếp</b> vào ô dán (không dán qua ứng dụng khác) để lấy được vị trí Ca chính xác.</div>`;
+      if (sch.check) h += `<div class="text-[10px] ${sch.check.ok === sch.check.total ? 'text-emerald-600' : 'text-amber-600'} font-bold">${sch.check.ok === sch.check.total ? '✓' : '⚠️'} Tổng giờ công khớp ${sch.check.ok}/${sch.check.total} cột so với dòng "Giờ công đã xếp ca"${sch.check.ok === sch.check.total ? '' : ' — có thể thiếu nhân viên hoặc đọc sai ô'}.</div>`;
+      h += conflicts.length
+        ? `<div class="bg-red-50 border-2 border-red-600 rounded-lg p-2 space-y-0.5 text-xs text-red-800"><div class="font-black text-red-700 text-sm">🚨 PHÁT HIỆN ${conflicts.length} XẾP CA TRÙNG NGÀY BẬN / OFF</div>${conflicts.map(c => `<div>${c.h}</div>`).join('')}</div>`
+        : `<div class="bg-emerald-50 border border-emerald-300 rounded-lg p-2 text-xs font-bold text-emerald-700">✅ Không có nhân viên nào bị xếp ca trùng ngày Bận / OFF đã đăng ký.</div>`;
+      if (warns.length) h += `<div class="bg-amber-50 border border-amber-300 rounded-lg p-2 text-[11px] text-amber-900 space-y-0.5">${warns.map(w => `<div>${w}</div>`).join('')}</div>`;
+      if (unmatched.length) h += `<div class="text-[10px] text-slate-500">ℹ️ Chưa khớp được với danh sách nhân sự trong app (không đối chiếu được): <b>${unmatched.map(ttEsc).join(', ')}</b>. Mã NV trong HRM cần trùng mã NV trong app, hoặc tên gọi trùng duy nhất.</div>`;
+      h += `<div class="overflow-x-auto border rounded-lg"><table class="border-collapse"><thead><tr><th class="sticky left-0 z-10 bg-slate-100 text-[10px] px-1.5 text-left">Nhân viên</th>${head1}</tr><tr><th class="sticky left-0 z-10 bg-white"></th>${head2}</tr></thead><tbody>${body}</tbody></table></div>`;
+      h += `<div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500"><span><b class="inline-block w-3 h-3 align-middle bg-red-700 rounded-sm"></b> Xếp trúng ca Bận / ngày OFF</span><span><b class="inline-block w-3 h-3 align-middle bg-sky-100 border rounded-sm"></b> Ca làm bình thường</span><span><b class="inline-block w-3 h-3 align-middle bg-amber-200 rounded-sm"></b> B = ca đã đăng ký bận (không bị xếp)</span><span><b class="inline-block w-3 h-3 align-middle bg-rose-100 rounded-sm"></b> Ngày OFF (không bị xếp)</span></div>`;
+      box.innerHTML = h;
+    }
+
     // ---- ẨN / HIỆN TAB MENU (lưu trong config HIDDEN_TABS, dạng "history-logs,chatbot") ----
     const HIDEABLE_TABS = [
       ['history-logs', '🕒 Lịch Sử'],
@@ -2666,7 +2980,7 @@
       if (tab === 'history-logs') renderHistoryLogsTable();
       if (tab === 'tiktok') renderTiktokTab();
       if (tab === 'cleaning') renderCleaningTab();
-      if (tab === 'busy') renderBusyTab();
+      if (tab === 'busy') { renderBusyTab(); bzInitShiftTab(); }
       if (tab === 'chatbot') renderChatbotStaffButtons();
       if (tab === 'store-ranking') renderStoreTable();
       if (tab === 'items-management') renderManagerSettings();
@@ -2891,7 +3205,8 @@
       const allowEditStreak = state.config && state.config.ALLOW_STAFF_EDIT_STREAK === "ON";
 
       tbody.innerHTML = items.map((item, index) => {
-        const x2Tag = item.isX2 ? `<span class="ml-1 text-[8px] font-black bg-rose-500 text-white px-1 py-0.2 rounded">X2</span>` : '';
+        const thrTag = getItemRules()[item.name] ? `<span class="ml-1 text-[8px] font-black bg-violet-600 text-white px-1 rounded" title="Quy tắc riêng: ${(function () { const t = getItemThresholds(item.name); return 'Tăng ca ≥ ' + t.ot + ' ngày' + (isFinite(t.pen) ? ', trừ sao ≥ ' + t.pen + ' ngày' : ', không trừ sao'); })()}">RIÊNG</span>` : '';
+        const x2Tag = thrTag + (item.isX2 ? `<span class="ml-1 text-[8px] font-black bg-rose-500 text-white px-1 py-0.2 rounded">X2</span>` : '');
         const yestRecord = state.ketQua.find(k => k.staffId === staffId && k.itemName === item.name && k.date === yesterdayStr);
         const yestActual = yestRecord ? yestRecord.actual : "-";
 
@@ -3046,8 +3361,9 @@
           const curStreak = streakInput ? (Number(streakInput.value) || 0) : (Number(row.dataset.streak) || 0);
           const multiplier = getPenaltyMultiplier(curStreak); // theo bảng hệ số ở tab Quản Lý (cập nhật cả khi sửa CHUỖI)
           const neededPenalty = Math.round(penalty * multiplier);
-          const canOT = curStreak >= getCfgNum('STREAK_OVERTIME', 3);
-          const canPen = curStreak >= getCfgNum('STREAK_PENALTY_STAR', 5);
+          const thr = getItemThresholds(row.dataset.item); // ngưỡng riêng của môn (nếu có), không thì dùng ngưỡng chung
+          const canOT = curStreak >= thr.ot;
+          const canPen = curStreak >= thr.pen;
 
           if (!canOT && !canPen) {
             // Chưa tới ngưỡng nào: chỉ ghi nhận chuỗi, không trừ sao, không tăng ca
@@ -4058,9 +4374,8 @@
         ['Ai đang bị phạt hệ số bậc 3 trở lên?', ['chuoi 6', 'chuoi tu 6', 'bac 3', 'phat 2x', 'nghiem trong'], () => { const t = getPenaltyTiers(); return cbStreakList(t.t3, `🚨 CHUỖI ≥ ${t.t3} NGÀY (phạt từ ${fmtMult(t.m3)}x):`, `Không ai có chuỗi từ ${t.t3} ngày.`); }],
         ['Ai tăng ca tháng này?', ['tang ca'], () => cbRank('⏰ TĂNG CA THÁNG NÀY', cbTop('ot', 20), r => `<b>${ttEsc(r.ns.name)}</b>: ${r.v} lần`, '⏰ Tháng này chưa ghi nhận lượt tăng ca nào.')],
         ['Ai sắp chạm ngưỡng tăng ca?', ['sap cham nguong', 'sap tang ca', 'can tang ca', 'nguong tang ca'], () => {
-          const n = getCfgNum('STREAK_OVERTIME', 3);
-          const rows = cbAllStreaks().filter(r => r.s >= n - 1).sort((a, b) => b.s - a.s);
-          return cbRank(`⏳ SẮP / ĐÃ CHẠM NGƯỠNG TĂNG CA (cấu hình: ${n} ngày)`, rows, r => `<b>${ttEsc(r.ns.name)}</b> — <i>${ttEsc(r.item)}</i>: <b>${r.s} ngày</b> ${r.s >= n ? '🔴 đã chạm' : '🟡 sắp chạm'}`, '🌟 Chưa ai gần ngưỡng.');
+          const rows = cbAllStreaks().filter(r => r.s >= getItemThresholds(r.item).ot - 1).sort((a, b) => b.s - a.s);
+          return cbRank('⏳ SẮP / ĐÃ CHẠM NGƯỠNG TĂNG CA (theo từng môn)', rows, r => { const n = getItemThresholds(r.item).ot; return `<b>${ttEsc(r.ns.name)}</b> — <i>${ttEsc(r.item)}</i>: <b>${r.s}/${n} ngày</b> ${r.s >= n ? '🔴 đã chạm' : '🟡 sắp chạm'}`; }, '🌟 Chưa ai gần ngưỡng.');
         }],
         ['Ai dùng sao bù nhiều nhất?', ['dung sao', 'bu sao'], () => cbRank('⭐ DÙNG SAO BÙ NHIỀU NHẤT THÁNG NÀY', cbTop('use', 5), r => `<b>${ttEsc(r.ns.name)}</b>: ${r.v} lượt`, 'Tháng này chưa ai dùng sao bù.')],
         ['Ai không rớt target nào tháng này?', ['khong rot', 'giu chuoi', 'toan ve so', 'khong chua ve'], () => {
@@ -4281,6 +4596,90 @@
       if (manual) { executeAutoSave(true); showToastMessage('✅ Đã lưu hệ số phạt lũy tiến'); } else triggerAutoSave();
     }
 
+
+    // ================= QUY TẮC TĂNG CA / TRỪ SAO RIÊNG THEO MÔN =================
+    // Lưu trong config.ITEM_RULES (chuỗi JSON): { "Tên môn": { ot: 2, pen: "", noPen: true } }
+    function getItemRules() {
+      try {
+        const r = state.config && state.config.ITEM_RULES;
+        if (!r) return {};
+        const o = typeof r === 'string' ? JSON.parse(r) : r;
+        return (o && typeof o === 'object') ? o : {};
+      } catch (e) { return {}; }
+    }
+    function getItemThresholds(name) {
+      const r = getItemRules()[name];
+      const num = v => (v !== undefined && v !== null && String(v).trim() !== '' && isFinite(Number(v)) && Number(v) >= 0) ? Number(v) : null;
+      let ot = getCfgNum('STREAK_OVERTIME', 3), pen = getCfgNum('STREAK_PENALTY_STAR', 5);
+      if (r) {
+        const o = num(r.ot), p = num(r.pen);
+        if (o !== null) ot = o;
+        if (r.noPen) pen = Infinity; else if (p !== null) pen = p;
+      }
+      return { ot, pen, custom: !!r };
+    }
+    function itemRuleRowHtml(name, r) {
+      r = r || {};
+      const opts = (state.thiDua || []).map(t => `<option value="${ttEsc(t.name)}" ${t.name === name ? 'selected' : ''}>${ttEsc(t.name)}</option>`).join('');
+      return `<div class="ir-row grid grid-cols-12 gap-1.5 items-end bg-violet-50/60 border border-violet-100 rounded-lg p-1.5">
+        <div class="col-span-12 md:col-span-4"><label class="block text-[10px] font-bold text-slate-600">Môn</label>
+          <select class="ir-name w-full border rounded p-1 text-xs font-bold bg-white" onchange="itemRulesChanged()">${opts}</select></div>
+        <div class="col-span-4 md:col-span-2"><label class="block text-[10px] font-bold text-slate-600">Tăng ca khi chuỗi ≥</label>
+          <input type="number" min="0" step="1" value="${r.ot !== undefined && r.ot !== null ? ttEsc(r.ot) : ''}" placeholder="chung" class="ir-ot w-full border rounded p-1 text-xs font-bold text-center" onchange="itemRulesChanged()"></div>
+        <div class="col-span-4 md:col-span-2"><label class="block text-[10px] font-bold text-slate-600">Trừ sao khi chuỗi ≥</label>
+          <input type="number" min="0" step="1" value="${r.pen !== undefined && r.pen !== null ? ttEsc(r.pen) : ''}" placeholder="chung" class="ir-pen w-full border rounded p-1 text-xs font-bold text-center" onchange="itemRulesChanged()"></div>
+        <label class="col-span-3 md:col-span-3 flex items-center gap-1 text-[11px] font-bold text-violet-800 pb-1"><input type="checkbox" class="ir-nopen" ${r.noPen ? 'checked' : ''} onchange="itemRulesChanged()"> Chỉ tăng ca</label>
+        <button type="button" onclick="itemRuleDelete(this)" class="col-span-1 pb-1 text-rose-500 hover:bg-rose-50 rounded font-black text-sm">✕</button>
+        <div class="ir-preview col-span-12 text-[10px] text-slate-500"></div>
+      </div>`;
+    }
+    function itemRulesRender() {
+      const box = document.getElementById('itemRulesList');
+      if (!box) return;
+      const rules = getItemRules(), names = Object.keys(rules);
+      box.innerHTML = names.length ? names.map(n => itemRuleRowHtml(n, rules[n])).join('') : '<div class="text-[11px] text-slate-400 italic">Chưa có môn nào có quy tắc riêng — tất cả đang dùng ngưỡng chung.</div>';
+      box.dataset.ready = '1';
+      itemRulesPreview();
+    }
+    function itemRulesCollect() {
+      const out = {};
+      document.querySelectorAll('#itemRulesList .ir-row').forEach(row => {
+        const name = row.querySelector('.ir-name').value;
+        if (!name) return;
+        const ot = row.querySelector('.ir-ot').value.trim(), pen = row.querySelector('.ir-pen').value.trim(), noPen = row.querySelector('.ir-nopen').checked;
+        out[name] = { ot: ot === '' ? '' : Number(ot), pen: pen === '' ? '' : Number(pen), noPen };
+      });
+      return out;
+    }
+    function itemRulesPreview() {
+      document.querySelectorAll('#itemRulesList .ir-row').forEach(row => {
+        const name = row.querySelector('.ir-name').value, t = getItemThresholds(name);
+        row.querySelector('.ir-preview').innerHTML = `→ <b>${ttEsc(name)}</b>: chuỗi ≥ <b class="text-indigo-600">${t.ot}</b> ngày thì được/phải <b>tăng ca</b>; ` + (isFinite(t.pen) ? `chuỗi ≥ <b class="text-rose-600">${t.pen}</b> ngày thì <b>trừ sao</b>.` : '<b class="text-rose-600">không trừ sao</b> (chỉ tăng ca).');
+      });
+    }
+    function itemRulesJson() { return JSON.stringify(itemRulesCollect()); }
+    function itemRulesChanged() {
+      state.config = state.config || {};
+      state.config.ITEM_RULES = itemRulesJson();
+      itemRulesPreview();
+      try { if (typeof calculateAllRowsRealtime === 'function') calculateAllRowsRealtime(); } catch (e) {}
+      triggerAutoSave();
+    }
+    function itemRuleAdd() {
+      const used = new Set(Object.keys(itemRulesCollect()));
+      const free = (state.thiDua || []).find(t => !used.has(t.name));
+      if (!free) { showToastMessage('⚠️ Tất cả các môn đã có quy tắc riêng!'); return; }
+      const box = document.getElementById('itemRulesList');
+      if (!box.querySelector('.ir-row')) box.innerHTML = '';
+      box.insertAdjacentHTML('beforeend', itemRuleRowHtml(free.name, { ot: 2, pen: '', noPen: true }));
+      itemRulesChanged();
+    }
+    function itemRuleDelete(btn) {
+      btn.closest('.ir-row').remove();
+      if (!document.querySelector('#itemRulesList .ir-row')) itemRulesRender();
+      itemRulesChanged();
+    }
+
     // ================= TAB CẤU HÌNH QL: BẢNG QUẢN TRỊ NHÂN SỰ VÀ SAO =================
     function renderManagerSettings() {
       const cfg = state.config || {};
@@ -4298,6 +4697,7 @@
       if (elEditStreak) elEditStreak.value = cfg.ALLOW_STAFF_EDIT_STREAK || "OFF";
       renderTabVisibilityList();
       loadPenaltyTierInputs();
+      itemRulesRender();
       const ttS = document.getElementById('ttCfgStart'); if (ttS) ttS.value = cfg.TIKTOK_START_DATE ? String(cfg.TIKTOK_START_DATE).slice(0, 10) : "";
       const ttR = document.getElementById('ttCfgReward'); if (ttR) ttR.value = (cfg.TIKTOK_REWARD !== undefined && cfg.TIKTOK_REWARD !== "") ? cfg.TIKTOK_REWARD : 300;
       const ttP = document.getElementById('ttCfgPenalty'); if (ttP) ttP.value = (cfg.TIKTOK_PENALTY !== undefined && cfg.TIKTOK_PENALTY !== "") ? cfg.TIKTOK_PENALTY : 300;
@@ -4548,6 +4948,7 @@
         DOUBLE_BONUS_RATE: document.getElementById('cfgDoubleRate').value,
         ALLOW_STAFF_EDIT_STREAK: document.getElementById('cfgAllowStaffEditStreak') ? document.getElementById('cfgAllowStaffEditStreak').value : "OFF",
         HIDDEN_TABS: collectHiddenTabsFromUI(),
+        ITEM_RULES: document.getElementById('itemRulesList') && document.getElementById('itemRulesList').dataset.ready === '1' ? itemRulesJson() : ((state.config && state.config.ITEM_RULES) || ''),
         PEN_T2_MIN: penCfgField('cfgPenT2', 'PEN_T2_MIN'), PEN_T3_MIN: penCfgField('cfgPenT3', 'PEN_T3_MIN'), PEN_T4_MIN: penCfgField('cfgPenT4', 'PEN_T4_MIN'),
         PEN_M1: penCfgField('cfgPenM1', 'PEN_M1'), PEN_M2: penCfgField('cfgPenM2', 'PEN_M2'), PEN_M3: penCfgField('cfgPenM3', 'PEN_M3'), PEN_M4: penCfgField('cfgPenM4', 'PEN_M4'),
         TIKTOK_START_DATE: ttCfgField('ttCfgStart', 'TIKTOK_START_DATE'),
