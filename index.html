@@ -48,6 +48,11 @@
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 pb-20 text-[13px]">
+  <!-- CẢNH BÁO BÁO CÁO CHƯA LÊN SHEET -->
+  <div id="pendingBanner" class="hidden fixed top-0 inset-x-0 z-[70] bg-red-600 text-white text-xs font-black px-3 py-2 shadow-lg flex flex-wrap items-center justify-between gap-2">
+    <span id="pendingBannerText"></span>
+    <button onclick="retryPendingReports(false)" id="pendingRetryBtn" class="px-3 py-1 bg-white text-red-700 rounded-lg font-black shadow">🔁 Gửi lại ngay</button>
+  </div>
   <div class="max-w-5xl mx-auto p-1.5 md:p-6 space-y-2 md:space-y-4">
     
     <!-- Header Thông Minh & Đồng Bộ Ngầm 1 Giờ/Lần -->
@@ -1051,13 +1056,18 @@
         <div id="penTiersPreview" class="text-[11px] text-slate-600 space-y-0.5"></div>
       </div>
 
-      <!-- Quy tắc riêng theo môn -->
+      <!-- Quy tắc riêng theo môn / siêu thị / nhân viên -->
       <div class="bg-white rounded-xl p-3 shadow-sm border border-violet-200 space-y-2">
-        <div class="flex justify-between items-center border-b pb-1.5">
-          <h2 class="text-xs md:text-sm font-bold text-violet-800">🎯 Quy Tắc TĂNG CA / TRỪ SAO Riêng Cho Từng Môn</h2>
-          <button onclick="itemRuleAdd()" class="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-black shadow transition">＋ Thêm môn</button>
+        <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-1.5">
+          <h2 class="text-xs md:text-sm font-bold text-violet-800">🎯 Quy Tắc TĂNG CA / TRỪ SAO Riêng (theo Môn · Siêu thị · Nhân viên)</h2>
+          <div class="flex items-center gap-1.5">
+            <button onclick="irAdd()" class="px-3 py-1 bg-violet-100 hover:bg-violet-200 text-violet-800 rounded-lg text-xs font-black transition">＋ Thêm quy tắc</button>
+            <button onclick="irRevert()" id="irBtnRevert" class="hidden px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition">↩️ Hủy thay đổi</button>
+            <button onclick="irSave()" id="irBtnSave" class="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-black shadow transition">💾 Lưu quy tắc</button>
+          </div>
         </div>
-        <p class="text-[10px] text-slate-500 leading-snug">Môn nào được thêm ở đây sẽ dùng ngưỡng <b>riêng</b>; các môn còn lại vẫn dùng ngưỡng chung ở phía trên. So với số ở cột <b>CHUỖI</b> (số ngày chưa về liên tiếp của các ngày trước). Để trống ô = dùng ngưỡng chung. Tick <b>Chỉ tăng ca</b> = môn này khi tới ngưỡng sẽ <b>tự tăng ca, không trừ sao</b>. Các môn có quy tắc riêng hiện nhãn <b class="text-violet-700">RIÊNG</b> trong bảng báo cáo.</p>
+        <p class="text-[10px] text-slate-500 leading-snug">Mỗi dòng = 1 quy tắc. Chọn <b>Môn</b> (hoặc "Tất cả các môn"), <b>Siêu thị</b> (tick 1 hoặc cả 2 siêu thị) và <b>Nhân viên</b> (mở hộp chọn, tick 1 hoặc nhiều người cùng lúc; không tick = tất cả). Ưu tiên khi trùng: <b>nhân viên cụ thể &gt; siêu thị &gt; tất cả</b>, và môn cụ thể &gt; "tất cả các môn". Ô ngưỡng để trống = dùng ngưỡng chung phía trên. Tick <b>Chỉ tăng ca</b> = tới ngưỡng thì tự tăng ca, không trừ sao. So với số ở cột <b>CHUỖI</b> (các ngày trước, không tính hôm nay). <b class="text-rose-600">Chỉnh xong phải bấm 💾 Lưu quy tắc mới có hiệu lực.</b></p>
+        <div id="irDirtyNote" class="hidden text-[11px] font-black text-amber-700 bg-amber-50 border border-amber-300 rounded-lg px-2 py-1">⚠️ Có thay đổi chưa lưu — bấm "💾 Lưu quy tắc" để áp dụng.</div>
         <div id="itemRulesList" class="space-y-1.5"></div>
       </div>
 
@@ -1864,6 +1874,7 @@
         state.thiDua = DEFAULT_THI_DUA;
       }
       state.ketQua = data.ketQua || [];
+      mergePendingReports();
       state.deXuat = data.deXuat || [];
       state.lateLogs = data.lateLogs || state.lateLogs || [];
       state.tiktok = data.tiktok || state.tiktok || [];
@@ -3205,7 +3216,7 @@
       const allowEditStreak = state.config && state.config.ALLOW_STAFF_EDIT_STREAK === "ON";
 
       tbody.innerHTML = items.map((item, index) => {
-        const thrTag = getItemRules()[item.name] ? `<span class="ml-1 text-[8px] font-black bg-violet-600 text-white px-1 rounded" title="Quy tắc riêng: ${(function () { const t = getItemThresholds(item.name); return 'Tăng ca ≥ ' + t.ot + ' ngày' + (isFinite(t.pen) ? ', trừ sao ≥ ' + t.pen + ' ngày' : ', không trừ sao'); })()}">RIÊNG</span>` : '';
+        const thrTag = getItemThresholds(item.name, staffId).custom ? `<span class="ml-1 text-[8px] font-black bg-violet-600 text-white px-1 rounded" title="Quy tắc riêng: ${(function () { const t = getItemThresholds(item.name, staffId); return 'Tăng ca ≥ ' + t.ot + ' ngày' + (isFinite(t.pen) ? ', trừ sao ≥ ' + t.pen + ' ngày' : ', không trừ sao'); })()}">RIÊNG</span>` : '';
         const x2Tag = thrTag + (item.isX2 ? `<span class="ml-1 text-[8px] font-black bg-rose-500 text-white px-1 py-0.2 rounded">X2</span>` : '');
         const yestRecord = state.ketQua.find(k => k.staffId === staffId && k.itemName === item.name && k.date === yesterdayStr);
         const yestActual = yestRecord ? yestRecord.actual : "-";
@@ -3361,7 +3372,7 @@
           const curStreak = streakInput ? (Number(streakInput.value) || 0) : (Number(row.dataset.streak) || 0);
           const multiplier = getPenaltyMultiplier(curStreak); // theo bảng hệ số ở tab Quản Lý (cập nhật cả khi sửa CHUỖI)
           const neededPenalty = Math.round(penalty * multiplier);
-          const thr = getItemThresholds(row.dataset.item); // ngưỡng riêng của môn (nếu có), không thì dùng ngưỡng chung
+          const thr = getItemThresholds(row.dataset.item, staffId); // ngưỡng riêng của môn (nếu có), không thì dùng ngưỡng chung
           const canOT = curStreak >= thr.ot;
           const canPen = curStreak >= thr.pen;
 
@@ -3610,38 +3621,115 @@
       staff.baseStar = staff.totalStar;
       localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
 
-      let syncSuccess = false;
-      let serverMsg = "";
-      try {
-        const res = await fetch(API_URL, { 
-          method: "POST", 
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload) 
-        });
-        const textResp = await res.text();
-        if (textResp.trim().startsWith("<")) {
-          syncSuccess = false;
-        } else {
-          try {
-            const j = JSON.parse(textResp);
-            syncSuccess = (j.status === "success");
-            if (!syncSuccess) serverMsg = j.message || "Server từ chối báo cáo";
-          } catch (parseErr) { syncSuccess = false; }
-        }
-      } catch (e) {
-        syncSuccess = null; // chưa xác nhận được phản hồi từ Sheet
-      } finally {
-        btn.disabled = false;
-        btn.innerText = "🚀 GỬI BÁO CÁO CHO QL";
-      }
+      // Giữ báo cáo trong hàng chờ cho tới khi Sheet xác nhận ĐÃ GHI + đọc lại thấy đủ dữ liệu
+      pendingAdd(payload);
+      const out = await postReportWithVerify(payload, n => { btn.innerText = `⏳ ĐANG LƯU LÊN SHEET (lần ${n}/3)...`; });
+      btn.disabled = false;
+      btn.innerText = "🚀 GỬI BÁO CÁO CHO QL";
 
-      showToastMessage(syncSuccess === true ? "✅ Đã đồng bộ Google Sheets thành công!" : (syncSuccess === null ? "⚠️ Đã lưu cục bộ, CHƯA xác nhận được phản hồi từ Sheet — bấm 🔄 Đồng bộ để kiểm tra. Đang tải ảnh..." : `⚠️ ${serverMsg || "Đã lưu cục bộ!"} Đang tải ảnh...`));
-      await exportReportImage(true);
+      if (out.ok) {
+        pendingRemove(staffId, selectedDate);
+        showToastMessage("✅ Đã lưu lên Google Sheets và kiểm tra khớp dữ liệu! Đang tải ảnh...");
+        await exportReportImage(true);
+      } else {
+        alert(`⚠️ BÁO CÁO CHƯA ĐƯỢC LƯU LÊN SHEET!\n\nLý do: ${out.msg}\n\n• Báo cáo đã được giữ lại trên máy này, app sẽ tự gửi lại mỗi phút.\n• KHÔNG gửi ảnh vào nhóm cho tới khi thấy thông báo ✅.\n• Có thể bấm "Gửi lại ngay" ở khung đỏ phía trên màn hình.`);
+      }
 
       renderDashboard();
       renderHistoryLogsTable();
       renderManagerSettings();
     }
+
+    // ================= HÀNG CHỜ BÁO CÁO (chống mất dữ liệu khi Sheet chưa ghi) =================
+    const PENDING_KEY = 'PENDING_DAILY_REPORTS';
+    let pendingBusy = false;
+    function pendingLoad() { try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch (e) { return []; } }
+    function pendingSave(a) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(a)); } catch (e) {} renderPendingBanner(); }
+    function pendingAdd(payload) {
+      const a = pendingLoad().filter(p => !(p.payload.staffId === payload.staffId && p.payload.date === payload.date));
+      a.push({ payload, ts: Date.now() });
+      pendingSave(a);
+    }
+    function pendingRemove(staffId, date) { pendingSave(pendingLoad().filter(p => !(p.payload.staffId === staffId && p.payload.date === date))); }
+    function renderPendingBanner() {
+      const el = document.getElementById('pendingBanner'); if (!el) return;
+      const a = pendingLoad();
+      el.classList.toggle('hidden', !a.length);
+      if (a.length) {
+        document.getElementById('pendingBannerText').innerText = `⚠️ ${a.length} báo cáo CHƯA lên Sheet: ` + a.map(p => `${p.payload.staffName} (${p.payload.date})`).join(', ') + ' — đừng gửi ảnh vào nhóm cho tới khi lưu xong!';
+      }
+    }
+    // Dữ liệu trên Sheet đã có đủ các môn của báo cáo (đúng số thực đạt) chưa?
+    function pendRowsMatch(pl, rows) {
+      const items = (pl.reports || []).filter(r => !String(r.itemName).startsWith('[Kỷ Luật]'));
+      if (!items.length) return rows.length > 0;
+      return items.every(r => rows.some(k => k.itemName === r.itemName && Number(k.actual) === Number(r.actual)));
+    }
+    async function pendingVerify(pl) {
+      try {
+        const data = await safeFetchJSON(`${API_URL}?_t=${Date.now()}`);
+        if (!data || !Array.isArray(data.ketQua)) return false;
+        return pendRowsMatch(pl, data.ketQua.filter(k => k.staffId === pl.staffId && String(k.date).slice(0, 10) === pl.date));
+      } catch (e) { return false; }
+    }
+    // Gửi tối đa maxTry lần; chỉ coi là thành công khi Sheet trả success VÀ đọc lại thấy dữ liệu
+    async function postReportWithVerify(payload, onTry, maxTry) {
+      maxTry = maxTry || 3;
+      let lastMsg = '';
+      for (let i = 1; i <= maxTry; i++) {
+        if (onTry) onTry(i);
+        try {
+          const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+          const txt = await res.text();
+          if (txt.trim().startsWith("<")) lastMsg = 'Google Sheet trả về trang lỗi (có thể đang quá tải)';
+          else {
+            let j = null; try { j = JSON.parse(txt); } catch (e) {}
+            if (j && j.status === "success") {
+              if (await pendingVerify(payload)) return { ok: true };
+              lastMsg = 'Sheet báo đã nhận nhưng đọc lại chưa thấy dữ liệu';
+            } else lastMsg = (j && j.message) || 'Sheet từ chối báo cáo';
+          }
+        } catch (e) { lastMsg = 'Mất kết nối mạng / không phản hồi'; }
+        if (i < maxTry) await new Promise(r => setTimeout(r, 1500 * i));
+      }
+      return { ok: false, msg: lastMsg };
+    }
+    async function retryPendingReports(silent) {
+      if (pendingBusy) return;
+      const a = pendingLoad(); if (!a.length) return;
+      pendingBusy = true;
+      const btn = document.getElementById('pendingRetryBtn'); if (btn && !silent) { btn.disabled = true; btn.innerText = '⏳ Đang gửi...'; }
+      let okCount = 0;
+      for (const p of a) {
+        const out = await postReportWithVerify(p.payload, null, silent ? 1 : 3);
+        if (out.ok) { pendingRemove(p.payload.staffId, p.payload.date); okCount++; }
+      }
+      pendingBusy = false;
+      if (btn) { btn.disabled = false; btn.innerText = '🔁 Gửi lại ngay'; }
+      if (okCount) { showToastMessage(`✅ Đã lưu thành công ${okCount} báo cáo đang chờ lên Sheet!`); try { await loadData(true); } catch (e) {} }
+      else if (!silent) showToastMessage('⚠️ Vẫn chưa lưu được lên Sheet — kiểm tra mạng rồi thử lại.');
+    }
+    // Sau mỗi lần tải dữ liệu từ Sheet: báo cáo chưa được Sheet ghi nhận thì GIỮ LẠI, không để bị ghi đè mất
+    function mergePendingReports() {
+      const pend = pendingLoad(); if (!pend.length) { renderPendingBanner(); return; }
+      const keep = [];
+      pend.forEach(p => {
+        const pl = p.payload, same = k => k.staffId === pl.staffId && String(k.date).slice(0, 10) === pl.date;
+        const rows = state.ketQua.filter(same);
+        if (pendRowsMatch(pl, rows)) return; // Sheet đã có đủ -> bỏ khỏi hàng chờ
+        keep.push(p);
+        const staff = state.nhanSu.find(n => n.id === pl.staffId);
+        const oldSum = rows.reduce((x, k) => x + (Number(k.starChange) || 0), 0);
+        state.ketQua = state.ketQua.filter(k => !same(k));
+        (pl.reports || []).forEach(r => state.ketQua.push({ date: pl.date, staffId: pl.staffId, staffName: pl.staffName, itemName: r.itemName, actual: r.actual, rate: r.rate, starChange: r.starChange, status: r.status, compensation: r.compensation }));
+        const newSum = (pl.reports || []).reduce((x, r) => x + (Number(r.starChange) || 0), 0);
+        if (staff) { staff.totalStar = (Number(staff.totalStar) || 0) - oldSum + newSum; staff.baseStar = staff.totalStar; }
+      });
+      if (keep.length !== pend.length) pendingSave(keep); else renderPendingBanner();
+    }
+    setInterval(() => retryPendingReports(true), 60000);
+    window.addEventListener('DOMContentLoaded', () => { renderPendingBanner(); setTimeout(() => retryPendingReports(true), 4000); });
+    window.addEventListener('online', () => retryPendingReports(true));
 
     // ================= ĐẶC QUYỀN QL: XÓA LỊCH SỬ BÁO CÁO =================
     async function promptDeleteSingleLogRecord(date, staffId, itemName) {
@@ -4374,8 +4462,8 @@
         ['Ai đang bị phạt hệ số bậc 3 trở lên?', ['chuoi 6', 'chuoi tu 6', 'bac 3', 'phat 2x', 'nghiem trong'], () => { const t = getPenaltyTiers(); return cbStreakList(t.t3, `🚨 CHUỖI ≥ ${t.t3} NGÀY (phạt từ ${fmtMult(t.m3)}x):`, `Không ai có chuỗi từ ${t.t3} ngày.`); }],
         ['Ai tăng ca tháng này?', ['tang ca'], () => cbRank('⏰ TĂNG CA THÁNG NÀY', cbTop('ot', 20), r => `<b>${ttEsc(r.ns.name)}</b>: ${r.v} lần`, '⏰ Tháng này chưa ghi nhận lượt tăng ca nào.')],
         ['Ai sắp chạm ngưỡng tăng ca?', ['sap cham nguong', 'sap tang ca', 'can tang ca', 'nguong tang ca'], () => {
-          const rows = cbAllStreaks().filter(r => r.s >= getItemThresholds(r.item).ot - 1).sort((a, b) => b.s - a.s);
-          return cbRank('⏳ SẮP / ĐÃ CHẠM NGƯỠNG TĂNG CA (theo từng môn)', rows, r => { const n = getItemThresholds(r.item).ot; return `<b>${ttEsc(r.ns.name)}</b> — <i>${ttEsc(r.item)}</i>: <b>${r.s}/${n} ngày</b> ${r.s >= n ? '🔴 đã chạm' : '🟡 sắp chạm'}`; }, '🌟 Chưa ai gần ngưỡng.');
+          const rows = cbAllStreaks().filter(r => r.s >= getItemThresholds(r.item, r.ns.id).ot - 1).sort((a, b) => b.s - a.s);
+          return cbRank('⏳ SẮP / ĐÃ CHẠM NGƯỠNG TĂNG CA (theo từng môn)', rows, r => { const n = getItemThresholds(r.item, r.ns.id).ot; return `<b>${ttEsc(r.ns.name)}</b> — <i>${ttEsc(r.item)}</i>: <b>${r.s}/${n} ngày</b> ${r.s >= n ? '🔴 đã chạm' : '🟡 sắp chạm'}`; }, '🌟 Chưa ai gần ngưỡng.');
         }],
         ['Ai dùng sao bù nhiều nhất?', ['dung sao', 'bu sao'], () => cbRank('⭐ DÙNG SAO BÙ NHIỀU NHẤT THÁNG NÀY', cbTop('use', 5), r => `<b>${ttEsc(r.ns.name)}</b>: ${r.v} lượt`, 'Tháng này chưa ai dùng sao bù.')],
         ['Ai không rớt target nào tháng này?', ['khong rot', 'giu chuoi', 'toan ve so', 'khong chua ve'], () => {
@@ -4597,88 +4685,153 @@
     }
 
 
-    // ================= QUY TẮC TĂNG CA / TRỪ SAO RIÊNG THEO MÔN =================
-    // Lưu trong config.ITEM_RULES (chuỗi JSON): { "Tên môn": { ot: 2, pen: "", noPen: true } }
-    function getItemRules() {
-      try {
-        const r = state.config && state.config.ITEM_RULES;
-        if (!r) return {};
-        const o = typeof r === 'string' ? JSON.parse(r) : r;
-        return (o && typeof o === 'object') ? o : {};
-      } catch (e) { return {}; }
+    // ================= QUY TẮC TĂNG CA / TRỪ SAO RIÊNG (MÔN · SIÊU THỊ · NHÂN VIÊN) =================
+    // Lưu trong config.ITEM_RULES (chuỗi JSON, mảng):
+    // [{ item:'Laptop'|'*', stores:[]|['TGDĐ']|['TGDĐ','Topzone'], staffIds:[]|['<mã NV>',...], ot:'', pen:'', noPen:false }]
+    // stores = [] hoặc staffIds = [] nghĩa là TẤT CẢ.
+    let irDraft = [], irDirty = false;
+    const IR_STORES = ['TGDĐ', 'Topzone'];
+
+    function irNormRules(raw) { // tương thích các bản cũ (object theo môn / store, staffId dạng chuỗi)
+      let o = raw;
+      try { if (typeof raw === 'string') o = raw ? JSON.parse(raw) : []; } catch (e) { o = []; }
+      const nz = v => (v === undefined || v === null) ? '' : v;
+      const arr = v => Array.isArray(v) ? v.filter(Boolean).map(String) : (v ? [String(v)] : []);
+      const conv = (k, r) => ({
+        item: k || r.item || '*',
+        stores: Array.isArray(r.stores) ? arr(r.stores) : (r.store && r.store !== 'ALL' ? [r.store] : []),
+        staffIds: Array.isArray(r.staffIds) ? arr(r.staffIds) : arr(r.staffId),
+        ot: nz(r.ot), pen: nz(r.pen), noPen: !!r.noPen
+      });
+      if (Array.isArray(o)) return o.map(r => conv(null, r));
+      if (o && typeof o === 'object') return Object.keys(o).map(k => conv(k, o[k]));
+      return [];
     }
-    function getItemThresholds(name) {
-      const r = getItemRules()[name];
+    function getItemRules() { return irNormRules(state.config && state.config.ITEM_RULES); }
+    function irStoreMatch(ns, stores) {
+      if (!stores || !stores.length) return true;
+      const g = cbNorm(ns.group || '');
+      return stores.some(st => { const t = cbNorm(st); return g === t || (t === 'topzone' && g.includes('topzone')) || (t === 'tgdd' && g.includes('tgd')); });
+    }
+    // Ngưỡng áp dụng cho 1 môn + 1 nhân viên. Ưu tiên: nhân viên chọn riêng > siêu thị chọn riêng > tất cả;
+    // môn cụ thể > "tất cả các môn". Quy tắc cụ thể nhất thắng hoàn toàn (ô trống = ngưỡng chung).
+    function getItemThresholds(name, staffId) {
+      const ns = staffId ? (state.nhanSu || []).find(n => n.id === staffId) : null;
       const num = v => (v !== undefined && v !== null && String(v).trim() !== '' && isFinite(Number(v)) && Number(v) >= 0) ? Number(v) : null;
+      const matches = getItemRules().filter(r => (r.item === '*' || r.item === name)
+        && (!r.staffIds.length || r.staffIds.includes(staffId))
+        && (!r.stores.length || (ns && irStoreMatch(ns, r.stores))));
+      const score = r => (r.staffIds.length ? 100 : 0) + (r.stores.length ? 10 : 0) + (r.item !== '*' ? 1 : 0);
+      matches.sort((a, b) => score(b) - score(a));
       let ot = getCfgNum('STREAK_OVERTIME', 3), pen = getCfgNum('STREAK_PENALTY_STAR', 5);
+      const r = matches[0];
       if (r) {
-        const o = num(r.ot), p = num(r.pen);
-        if (o !== null) ot = o;
-        if (r.noPen) pen = Infinity; else if (p !== null) pen = p;
+        if (num(r.ot) !== null) ot = num(r.ot);
+        if (r.noPen) pen = Infinity; else if (num(r.pen) !== null) pen = num(r.pen);
       }
-      return { ot, pen, custom: !!r };
+      return { ot, pen, custom: matches.length > 0 };
     }
-    function itemRuleRowHtml(name, r) {
-      r = r || {};
-      const opts = (state.thiDua || []).map(t => `<option value="${ttEsc(t.name)}" ${t.name === name ? 'selected' : ''}>${ttEsc(t.name)}</option>`).join('');
-      return `<div class="ir-row grid grid-cols-12 gap-1.5 items-end bg-violet-50/60 border border-violet-100 rounded-lg p-1.5">
-        <div class="col-span-12 md:col-span-4"><label class="block text-[10px] font-bold text-slate-600">Môn</label>
-          <select class="ir-name w-full border rounded p-1 text-xs font-bold bg-white" onchange="itemRulesChanged()">${opts}</select></div>
-        <div class="col-span-4 md:col-span-2"><label class="block text-[10px] font-bold text-slate-600">Tăng ca khi chuỗi ≥</label>
-          <input type="number" min="0" step="1" value="${r.ot !== undefined && r.ot !== null ? ttEsc(r.ot) : ''}" placeholder="chung" class="ir-ot w-full border rounded p-1 text-xs font-bold text-center" onchange="itemRulesChanged()"></div>
-        <div class="col-span-4 md:col-span-2"><label class="block text-[10px] font-bold text-slate-600">Trừ sao khi chuỗi ≥</label>
-          <input type="number" min="0" step="1" value="${r.pen !== undefined && r.pen !== null ? ttEsc(r.pen) : ''}" placeholder="chung" class="ir-pen w-full border rounded p-1 text-xs font-bold text-center" onchange="itemRulesChanged()"></div>
-        <label class="col-span-3 md:col-span-3 flex items-center gap-1 text-[11px] font-bold text-violet-800 pb-1"><input type="checkbox" class="ir-nopen" ${r.noPen ? 'checked' : ''} onchange="itemRulesChanged()"> Chỉ tăng ca</label>
-        <button type="button" onclick="itemRuleDelete(this)" class="col-span-1 pb-1 text-rose-500 hover:bg-rose-50 rounded font-black text-sm">✕</button>
-        <div class="ir-preview col-span-12 text-[10px] text-slate-500"></div>
-      </div>`;
+
+    function irLoad() { if (!irDirty) irDraft = getItemRules().map(irCloneRule); irRender(); }
+    function irCloneRule(r) { return Object.assign({}, r, { stores: (r.stores || []).slice(), staffIds: (r.staffIds || []).slice() }); }
+    function irMarkDirty(d) {
+      irDirty = d;
+      const n = document.getElementById('irDirtyNote'), rv = document.getElementById('irBtnRevert'), sv = document.getElementById('irBtnSave');
+      if (n) n.classList.toggle('hidden', !d);
+      if (rv) rv.classList.toggle('hidden', !d);
+      if (sv) sv.className = d ? 'px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-black shadow transition animate-pulse' : 'px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-black shadow transition';
     }
-    function itemRulesRender() {
+    function irStoreLabel(r) { return !r.stores.length || r.stores.length >= IR_STORES.length ? 'Tất cả siêu thị' : r.stores.join(' + '); }
+    function irStaffLabel(r) {
+      if (!r.staffIds.length) return 'Tất cả nhân viên';
+      const names = r.staffIds.map(id => { const n = state.nhanSu.find(x => x.id === id); return n ? n.name : id; });
+      return names.length <= 2 ? names.join(', ') : `${names.length} nhân viên`;
+    }
+    function irPreviewText(r) {
+      const itemTxt = r.item === '*' ? 'tất cả các môn' : r.item;
+      const num = v => (v !== '' && v !== null && v !== undefined && isFinite(Number(v)));
+      const stTxt = !r.stores.length || r.stores.length >= IR_STORES.length ? 'mọi siêu thị' : '<b>' + ttEsc(r.stores.join(' + ')) + '</b>';
+      const nvTxt = !r.staffIds.length ? 'mọi nhân viên' : '<b>' + r.staffIds.map(id => { const n = state.nhanSu.find(x => x.id === id); return ttEsc(n ? n.name : id); }).join(', ') + '</b>';
+      const ot = num(r.ot) ? `tăng ca khi chuỗi ≥ <b class="text-indigo-600">${r.ot}</b>` : `tăng ca theo ngưỡng chung (${getCfgNum('STREAK_OVERTIME', 3)})`;
+      const pen = r.noPen ? '<b class="text-rose-600">không trừ sao</b> (chỉ tăng ca)' : (num(r.pen) ? `trừ sao khi chuỗi ≥ <b class="text-rose-600">${r.pen}</b>` : `trừ sao theo ngưỡng chung (${getCfgNum('STREAK_PENALTY_STAR', 5)})`);
+      return `→ <b>${ttEsc(itemTxt)}</b> · ${stTxt} · ${nvTxt}: ${ot}; ${pen}.`;
+    }
+    function irRowHtml(r, i) {
+      const items = '<option value="*">⭐ Tất cả các môn</option>' + (state.thiDua || []).map(t => `<option value="${ttEsc(t.name)}" ${t.name === r.item ? 'selected' : ''}>${ttEsc(t.name)}</option>`).join('');
+      const sel = 'w-full border rounded p-1 text-xs font-bold bg-white';
+      const inp = 'w-full border rounded p-1 text-xs font-bold text-center';
+      const dd = 'ir-dd relative'; const sumCls = 'cursor-pointer list-none border rounded p-1 text-xs font-bold bg-white flex justify-between items-center gap-1 select-none';
+      const panel = 'absolute left-0 right-0 z-30 mt-0.5 bg-white border border-slate-300 rounded-lg shadow-lg p-1.5 max-h-52 overflow-y-auto min-w-[180px]';
+      const storeBox = `<details class="${dd}"><summary class="${sumCls}"><span id="irSumStore-${i}" class="truncate">${ttEsc(irStoreLabel(r))}</span><span class="text-slate-400">▾</span></summary>
+        <div class="${panel}">${IR_STORES.map(st => `<label class="flex items-center gap-1.5 text-xs font-bold py-0.5"><input type="checkbox" ${r.stores.includes(st) ? 'checked' : ''} onchange="irToggle(${i},'stores',this.dataset.v,this.checked)" data-v="${ttEsc(st)}"> ${ttEsc(st)}</label>`).join('')}
+        <div class="text-[10px] text-slate-400 pt-1">Không tick = tất cả siêu thị</div></div></details>`;
+      const staffBox = `<details class="${dd}"><summary class="${sumCls}"><span id="irSumStaff-${i}" class="truncate">${ttEsc(irStaffLabel(r))}</span><span class="text-slate-400">▾</span></summary>
+        <div class="${panel}"><div class="flex gap-1 pb-1 border-b mb-1"><button type="button" onclick="irStaffAll(${i},true)" class="text-[10px] font-black px-1.5 py-0.5 rounded bg-violet-100 text-violet-800">Chọn hết</button><button type="button" onclick="irStaffAll(${i},false)" class="text-[10px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">Bỏ chọn</button></div>
+        ${(state.nhanSu || []).map(n => `<label class="flex items-center gap-1.5 text-xs font-bold py-0.5"><input type="checkbox" class="ir-staff-${i}" ${r.staffIds.includes(n.id) ? 'checked' : ''} onchange="irToggle(${i},'staffIds',this.dataset.v,this.checked)" data-v="${ttEsc(n.id)}"> ${ttEsc(n.name)} <span class="text-[10px] text-slate-400 font-normal">${ttEsc(n.group || '')}</span></label>`).join('')}
+        <div class="text-[10px] text-slate-400 pt-1">Không tick = tất cả nhân viên</div></div></details>`;
+      return `<div class="grid grid-cols-12 gap-1.5 items-end bg-violet-50/60 border border-violet-100 rounded-lg p-1.5">
+        <div class="col-span-12 md:col-span-3"><label class="block text-[10px] font-bold text-slate-600">Môn</label><select class="${sel}" onchange="irSet(${i},'item',this.value)">${items}</select></div>
+        <div class="col-span-6 md:col-span-2"><label class="block text-[10px] font-bold text-slate-600">Siêu thị (chọn 1 hoặc 2)</label>${storeBox}</div>
+        <div class="col-span-6 md:col-span-3"><label class="block text-[10px] font-bold text-slate-600">Nhân viên (chọn 1 hoặc nhiều)</label>${staffBox}</div>
+        <div class="col-span-4 md:col-span-1"><label class="block text-[10px] font-bold text-slate-600">Tăng ca ≥</label><input type="number" min="0" step="1" value="${ttEsc(r.ot)}" placeholder="chung" class="${inp}" oninput="irSet(${i},'ot',this.value)"></div>
+        <div class="col-span-4 md:col-span-1"><label class="block text-[10px] font-bold text-slate-600">Trừ sao ≥</label><input type="number" min="0" step="1" value="${ttEsc(r.pen)}" placeholder="chung" class="${inp}" oninput="irSet(${i},'pen',this.value)"></div>
+        <label class="col-span-3 md:col-span-1 flex items-center gap-1 text-[10px] font-bold text-violet-800 pb-1 leading-tight"><input type="checkbox" ${r.noPen ? 'checked' : ''} onchange="irSet(${i},'noPen',this.checked)"> Chỉ tăng ca</label>
+        <button type="button" onclick="irDelete(${i})" class="col-span-1 pb-1 text-rose-500 hover:bg-rose-50 rounded font-black text-sm">✕</button>
+        <div id="irPrev-${i}" class="col-span-12 text-[10px] text-slate-500">${irPreviewText(r)}</div></div>`;
+    }
+    function irRender() {
       const box = document.getElementById('itemRulesList');
       if (!box) return;
-      const rules = getItemRules(), names = Object.keys(rules);
-      box.innerHTML = names.length ? names.map(n => itemRuleRowHtml(n, rules[n])).join('') : '<div class="text-[11px] text-slate-400 italic">Chưa có môn nào có quy tắc riêng — tất cả đang dùng ngưỡng chung.</div>';
-      box.dataset.ready = '1';
-      itemRulesPreview();
+      box.innerHTML = irDraft.length ? irDraft.map(irRowHtml).join('') : '<div class="text-[11px] text-slate-400 italic">Chưa có quy tắc riêng — tất cả đang dùng ngưỡng chung. Bấm "＋ Thêm quy tắc".</div>';
+      irMarkDirty(irDirty);
     }
-    function itemRulesCollect() {
-      const out = {};
-      document.querySelectorAll('#itemRulesList .ir-row').forEach(row => {
-        const name = row.querySelector('.ir-name').value;
-        if (!name) return;
-        const ot = row.querySelector('.ir-ot').value.trim(), pen = row.querySelector('.ir-pen').value.trim(), noPen = row.querySelector('.ir-nopen').checked;
-        out[name] = { ot: ot === '' ? '' : Number(ot), pen: pen === '' ? '' : Number(pen), noPen };
-      });
-      return out;
+    function irRefreshRow(i) {
+      const r = irDraft[i]; if (!r) return;
+      const p = document.getElementById('irPrev-' + i); if (p) p.innerHTML = irPreviewText(r);
+      const a = document.getElementById('irSumStore-' + i); if (a) a.textContent = irStoreLabel(r);
+      const b = document.getElementById('irSumStaff-' + i); if (b) b.textContent = irStaffLabel(r);
+      irMarkDirty(true);
     }
-    function itemRulesPreview() {
-      document.querySelectorAll('#itemRulesList .ir-row').forEach(row => {
-        const name = row.querySelector('.ir-name').value, t = getItemThresholds(name);
-        row.querySelector('.ir-preview').innerHTML = `→ <b>${ttEsc(name)}</b>: chuỗi ≥ <b class="text-indigo-600">${t.ot}</b> ngày thì được/phải <b>tăng ca</b>; ` + (isFinite(t.pen) ? `chuỗi ≥ <b class="text-rose-600">${t.pen}</b> ngày thì <b>trừ sao</b>.` : '<b class="text-rose-600">không trừ sao</b> (chỉ tăng ca).');
-      });
+    function irSet(i, field, val) { if (!irDraft[i]) return; irDraft[i][field] = val; irRefreshRow(i); }
+    function irToggle(i, field, val, on) {
+      const r = irDraft[i]; if (!r) return;
+      const set = new Set(r[field]); if (on) set.add(val); else set.delete(val);
+      r[field] = Array.from(set); irRefreshRow(i);
     }
-    function itemRulesJson() { return JSON.stringify(itemRulesCollect()); }
-    function itemRulesChanged() {
+    function irStaffAll(i, on) {
+      const r = irDraft[i]; if (!r) return;
+      r.staffIds = on ? state.nhanSu.map(n => n.id) : [];
+      document.querySelectorAll('.ir-staff-' + i).forEach(cb => cb.checked = on);
+      irRefreshRow(i);
+    }
+    function irAdd() {
+      irDraft.push({ item: (state.thiDua && state.thiDua[0]) ? state.thiDua[0].name : '*', stores: [], staffIds: [], ot: 2, pen: '', noPen: true });
+      irMarkDirty(true); irRender();
+    }
+    function irDelete(i) { irDraft.splice(i, 1); irMarkDirty(true); irRender(); }
+    function irRevert() { irDirty = false; irDraft = getItemRules().map(irCloneRule); irRender(); }
+    function irSave() {
+      const clean = [], seen = {};
+      for (const r of irDraft) {
+        const ot = String(r.ot).trim(), pen = String(r.pen).trim(), nm = r.item === '*' ? 'Tất cả các môn' : r.item;
+        if ((ot !== '' && !(Number(ot) >= 0)) || (pen !== '' && !(Number(pen) >= 0))) { alert('Ngưỡng chuỗi phải là số ≥ 0!'); return; }
+        if (ot === '' && pen === '' && !r.noPen) { alert(`Quy tắc "${nm}" chưa nhập ngưỡng nào (hãy nhập số ngày hoặc tick "Chỉ tăng ca")!`); return; }
+        const stores = IR_STORES.filter(x => r.stores.includes(x)), staffIds = r.staffIds.slice().sort();
+        const key = [r.item, stores.join(','), staffIds.join(',')].join('|');
+        if (seen[key]) { alert(`Có 2 quy tắc trùng đối tượng (môn · siêu thị · nhân viên): ${nm}. Hãy gộp lại thành 1!`); return; }
+        seen[key] = 1;
+        clean.push({ item: r.item, stores, staffIds: r.staffIds.slice(), ot: ot === '' ? '' : Number(ot), pen: pen === '' ? '' : Number(pen), noPen: !!r.noPen });
+      }
       state.config = state.config || {};
-      state.config.ITEM_RULES = itemRulesJson();
-      itemRulesPreview();
+      state.config.ITEM_RULES = JSON.stringify(clean);
+      irDirty = false; irDraft = clean.map(irCloneRule); irRender();
+      executeAutoSave(true);
+      showToastMessage(`✅ Đã lưu ${clean.length} quy tắc riêng`);
+      try { renderItemsTable(); } catch (e) {}
       try { if (typeof calculateAllRowsRealtime === 'function') calculateAllRowsRealtime(); } catch (e) {}
-      triggerAutoSave();
     }
-    function itemRuleAdd() {
-      const used = new Set(Object.keys(itemRulesCollect()));
-      const free = (state.thiDua || []).find(t => !used.has(t.name));
-      if (!free) { showToastMessage('⚠️ Tất cả các môn đã có quy tắc riêng!'); return; }
-      const box = document.getElementById('itemRulesList');
-      if (!box.querySelector('.ir-row')) box.innerHTML = '';
-      box.insertAdjacentHTML('beforeend', itemRuleRowHtml(free.name, { ot: 2, pen: '', noPen: true }));
-      itemRulesChanged();
-    }
-    function itemRuleDelete(btn) {
-      btn.closest('.ir-row').remove();
-      if (!document.querySelector('#itemRulesList .ir-row')) itemRulesRender();
-      itemRulesChanged();
-    }
+    // đóng hộp chọn khi bấm ra ngoài
+    document.addEventListener('click', e => { document.querySelectorAll('#itemRulesList details[open]').forEach(d => { if (!d.contains(e.target)) d.removeAttribute('open'); }); });
 
     // ================= TAB CẤU HÌNH QL: BẢNG QUẢN TRỊ NHÂN SỰ VÀ SAO =================
     function renderManagerSettings() {
@@ -4697,7 +4850,7 @@
       if (elEditStreak) elEditStreak.value = cfg.ALLOW_STAFF_EDIT_STREAK || "OFF";
       renderTabVisibilityList();
       loadPenaltyTierInputs();
-      itemRulesRender();
+      irLoad();
       const ttS = document.getElementById('ttCfgStart'); if (ttS) ttS.value = cfg.TIKTOK_START_DATE ? String(cfg.TIKTOK_START_DATE).slice(0, 10) : "";
       const ttR = document.getElementById('ttCfgReward'); if (ttR) ttR.value = (cfg.TIKTOK_REWARD !== undefined && cfg.TIKTOK_REWARD !== "") ? cfg.TIKTOK_REWARD : 300;
       const ttP = document.getElementById('ttCfgPenalty'); if (ttP) ttP.value = (cfg.TIKTOK_PENALTY !== undefined && cfg.TIKTOK_PENALTY !== "") ? cfg.TIKTOK_PENALTY : 300;
@@ -4948,7 +5101,7 @@
         DOUBLE_BONUS_RATE: document.getElementById('cfgDoubleRate').value,
         ALLOW_STAFF_EDIT_STREAK: document.getElementById('cfgAllowStaffEditStreak') ? document.getElementById('cfgAllowStaffEditStreak').value : "OFF",
         HIDDEN_TABS: collectHiddenTabsFromUI(),
-        ITEM_RULES: document.getElementById('itemRulesList') && document.getElementById('itemRulesList').dataset.ready === '1' ? itemRulesJson() : ((state.config && state.config.ITEM_RULES) || ''),
+        ITEM_RULES: (state.config && state.config.ITEM_RULES) || '',
         PEN_T2_MIN: penCfgField('cfgPenT2', 'PEN_T2_MIN'), PEN_T3_MIN: penCfgField('cfgPenT3', 'PEN_T3_MIN'), PEN_T4_MIN: penCfgField('cfgPenT4', 'PEN_T4_MIN'),
         PEN_M1: penCfgField('cfgPenM1', 'PEN_M1'), PEN_M2: penCfgField('cfgPenM2', 'PEN_M2'), PEN_M3: penCfgField('cfgPenM3', 'PEN_M3'), PEN_M4: penCfgField('cfgPenM4', 'PEN_M4'),
         TIKTOK_START_DATE: ttCfgField('ttCfgStart', 'TIKTOK_START_DATE'),
