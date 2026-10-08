@@ -835,7 +835,7 @@
           <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-950 space-y-1">
             <p>• <b>Tính độc lập theo từng nhân sự và từng môn</b>: Cột <b>CHUỖI</b> trên dòng môn nào sẽ đếm chính xác số ngày liên tiếp nhân viên đó chưa đạt chỉ tiêu của riêng môn đó.</p>
             <p>• <b>Cơ chế ngắt chuỗi</b>: Khi nhân viên có 1 ca đạt Target (≥100%), chuỗi của môn đó tự động ngắt và đưa về 0 ngày.</p>
-            <p>• <b>Ngày không có báo cáo</b> (nghỉ/OFF/quên báo): bỏ qua, chuỗi giữ nguyên. <b>Chọn Tăng ca</b> (không trừ sao): chuỗi giữ nguyên, không +1, cho tới khi Về số mới ngắt. <b>Đã bị trừ sao</b> thì chuỗi của môn đó <b>về 0</b> (tính lại từ ngày hôm sau).</p>
+            <p>• <b>Ngày không có báo cáo</b> (nghỉ/OFF/quên báo): bỏ qua, chuỗi giữ nguyên. <b>Chọn Tăng ca</b> (không trừ sao): chuỗi giữ nguyên, không +1, cho tới khi Về số mới ngắt. <b>Bị trừ sao</b> thì chuỗi của môn đó vẫn <b>+1</b> (chỉ về 0 khi Về số hoặc Quản lý reset).</p>
             <p>• Hệ số phạt tính theo chuỗi của <b>các ngày trước ngày đang báo cáo</b> (không tính chính ngày đó).</p>
             <p>• <b>Ngưỡng chế tài (Cài Đặt Ngưỡng Tăng Ca &amp; Chế Tài):</b> chỉ trừ sao khi số ở cột CHUỖI ≥ <b>Chuỗi ngày TRỪ SAO</b>, chỉ được Tăng ca khi CHUỖI ≥ <b>Chuỗi ngày TĂNG CA</b>. CHUỖI nhỏ hơn cả hai: <b>chỉ ghi nhận chuỗi</b> (không trừ sao, không tăng ca) nhưng chuỗi vẫn +1.</p>
             <p>• <b>Hệ số phạt lũy tiến theo chuỗi chưa về số:</b></p>
@@ -1459,6 +1459,7 @@
     // Phân biệt: mất mạng thật  <->  có mạng nhưng Apps Script đang lỗi (lỗi script không kèm CORS nên trình duyệt chỉ báo "Failed to fetch")
     async function diagnoseSyncFailure(err) {
       const msg = String((err && err.message) || err || '');
+      if (err && err.fromServer) return 'Google Sheet/Apps Script báo lỗi: ' + msg + ' — mở Apps Script > Executions để xem chi tiết.';
       if (/HTML/i.test(msg)) return 'Google trả về trang lỗi: Apps Script đang lỗi, chưa Deploy đúng bản, hoặc hết quota trong ngày.';
       if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'Thiết bị đang MẤT MẠNG (wifi/4G).';
       try {
@@ -1885,7 +1886,9 @@
           lastFreshAt = Date.now(); okLoad = true; lastSyncHint = '';
           if (!isBackground) showToastMessage("✅ Đồng bộ dữ liệu thành công!");
         } else {
-          throw new Error((data && data.message) ? data.message : "Phản hồi từ Google Sheet không hợp lệ");
+          const se = new Error((data && data.message) ? data.message : "Phản hồi từ Google Sheet không hợp lệ");
+          se.fromServer = !!(data && data.message);
+          throw se;
         }
       } catch (err) {
         lastSyncHint = await diagnoseSyncFailure(err);
@@ -3149,7 +3152,7 @@
 
       // Đi ngược từ ngày gần nhất:
       //  - Về số (>=100%)                -> ngắt chuỗi (về 0)
-      //  - Đã bị TRỪ SAO (Dùng sao)      -> chuỗi về 0, chỉ đếm các ngày SAU lần trừ sao đó
+      //  - Chưa về + Dùng sao (kể cả bị trừ sao) -> +1 (trừ sao KHÔNG làm chuỗi về 0)
       //  - Tăng ca                       -> giữ nguyên chuỗi (không +1, không ngắt) cho tới khi Về số
       //  - Chưa về + Ghi nhận chuỗi      -> +1
       //  - Ngày không báo cáo            -> bỏ qua (giữ nguyên)
@@ -3158,7 +3161,6 @@
         if (r.status === "Về số") break;
         if (r.status !== "Chưa về") continue;
         if (r.compensation === "TANG_CA") continue;
-        if (r.compensation === "DUNG_SAO" && Number(r.starChange) < 0) break;
         streak++;
       }
       return streak;
@@ -3263,6 +3265,8 @@
           return st === "chung" || st === grp || (grp.includes("topzone") && st.includes("topzone")) || (grp.includes("tgdd") && st.includes("tgd"));
         });
       }
+
+      items = dedupeItemsByName(items, group); // 1 môn chỉ 1 dòng (tránh trùng "Chung" + siêu thị, hoặc môn gán riêng có ở cả 2 siêu thị)
 
       const allowEditStreak = state.config && state.config.ALLOW_STAFF_EDIT_STREAK === "ON";
 
@@ -3779,8 +3783,8 @@
     // ---- Popup thống kê nhân viên khi chọn tên ----
     function cbStaffItems(staff) {
       const grp = String(staff.group || '').toLowerCase();
-      if (staff.assignedItems && staff.assignedItems.length > 0) return state.thiDua.filter(td => staff.assignedItems.includes(td.name));
-      return state.thiDua.filter(td => { const st = String(td.store || '').toLowerCase(); return st === 'chung' || st === grp || (grp.includes('topzone') && st.includes('topzone')) || (grp.includes('tgdd') && st.includes('tgd')); });
+      if (staff.assignedItems && staff.assignedItems.length > 0) return dedupeItemsByName(state.thiDua.filter(td => staff.assignedItems.includes(td.name)), staff.group);
+      return dedupeItemsByName(state.thiDua.filter(td => { const st = String(td.store || '').toLowerCase(); return st === 'chung' || st === grp || (grp.includes('topzone') && st.includes('topzone')) || (grp.includes('tgdd') && st.includes('tgd')); }), staff.group);
     }
     function cbStaffAlertHtml(ns, date) {
       const rows = cbStaffItems(ns).map(it => {
@@ -4868,6 +4872,69 @@
     let irDraft = [], irDirty = false;
     const IR_STORES = ['TGDĐ', 'Topzone'];
 
+    // Gộp môn trùng tên cho 1 nhân viên: cùng 1 môn khai ở nhiều siêu thị (vd "Laptop" có ở TGDĐ và Topzone,
+    // hoặc "Chung" + "TGDĐ") chỉ lấy 1 dòng, ưu tiên dòng đúng siêu thị của nhân viên, sau đó tới "Chung".
+    // Tránh hiện 2 dòng cùng môn trong báo cáo (gửi lên bị cộng/trừ sao 2 lần).
+    function dedupeItemsByName(list, group) {
+      const g = cbNorm(group || '');
+      const score = td => {
+        const st = cbNorm(td.store || '');
+        if (st === g || (g.includes('topzone') && st.includes('topzone')) || (g.includes('tgd') && st.includes('tgd'))) return 2;
+        return st === 'chung' ? 1 : 0;
+      };
+      const order = [], best = {};
+      (list || []).forEach(td => {
+        if (!Object.prototype.hasOwnProperty.call(best, td.name)) { order.push(td.name); best[td.name] = td; }
+        else if (score(td) > score(best[td.name])) best[td.name] = td;
+      });
+      return order.map(n => best[n]);
+    }
+
+    // ---- Ô chọn MÔN trong quy tắc riêng: ghi rõ siêu thị, không còn hiện 2 dòng trùng tên ----
+    function irStoreKey(st) { const g = cbNorm(st || ''); return g.includes('topzone') ? 'Topzone' : (g.includes('tgd') ? 'TGDĐ' : 'Chung'); }
+    function irItemIndex() {
+      const idx = {}, order = [];
+      (state.thiDua || []).forEach(t => {
+        if (!idx[t.name]) { idx[t.name] = new Set(); order.push(t.name); }
+        idx[t.name].add(irStoreKey(t.store));
+      });
+      return { idx, order };
+    }
+    // Giá trị option đang được chọn của 1 quy tắc: "*" | "Tên" (dùng chung) | "TGDĐ::Tên" | "Topzone::Tên" | "!Tên" (môn đã bị xóa)
+    function irItemSelected(r, ix) {
+      if (r.item === '*') return '*';
+      const set = ix.idx[r.item];
+      if (!set) return '!' + r.item;
+      const sts = (r.stores || []).filter(x => IR_STORES.includes(x));
+      if (sts.length === 1 && set.has(sts[0])) return sts[0] + '::' + r.item;
+      if ((set.has('TGDĐ') && set.has('Topzone')) || set.has('Chung')) return r.item;
+      return Array.from(set)[0] + '::' + r.item;
+    }
+    function irItemOptionsHtml(r) {
+      const ix = irItemIndex(), sel = irItemSelected(r, ix);
+      const opt = (v, label) => `<option value="${ttEsc(v)}" ${v === sel ? 'selected' : ''}>${ttEsc(label)}</option>`;
+      const shared = ix.order.filter(n => (ix.idx[n].has('TGDĐ') && ix.idx[n].has('Topzone')) || ix.idx[n].has('Chung'));
+      const tzn = ix.order.filter(n => ix.idx[n].has('Topzone')), tgd = ix.order.filter(n => ix.idx[n].has('TGDĐ'));
+      let h = `<option value="*" ${sel === '*' ? 'selected' : ''}>⭐ Tất cả các môn</option>`;
+      if (sel.charAt(0) === '!') h += `<option value="${ttEsc(sel)}" selected>⚠️ ${ttEsc(sel.slice(1))} (không còn trong danh mục)</option>`;
+      if (shared.length) h += `<optgroup label="🏬 Dùng chung (TGDĐ + Topzone)">` + shared.map(n => opt(n, `${n}  [${Array.from(ix.idx[n]).join(' + ')}]`)).join('') + `</optgroup>`;
+      if (tgd.length) h += `<optgroup label="🏬 Chỉ TGDĐ">` + tgd.map(n => opt('TGDĐ::' + n, `${n}  [TGDĐ]`)).join('') + `</optgroup>`;
+      if (tzn.length) h += `<optgroup label="🏬 Chỉ Topzone">` + tzn.map(n => opt('Topzone::' + n, `${n}  [Topzone]`)).join('') + `</optgroup>`;
+      return h;
+    }
+    // Chọn môn của 1 siêu thị -> tự khóa đúng siêu thị đó; chọn môn dùng chung -> áp dụng mọi siêu thị
+    function irPickItem(i, v) {
+      const r = irDraft[i]; if (!r) return;
+      if (v.charAt(0) === '!') return;
+      if (v === '*') r.item = '*';
+      else {
+        const k = v.indexOf('::');
+        if (k > 0) { r.item = v.slice(k + 2); r.stores = [v.slice(0, k)]; }
+        else { r.item = v; r.stores = []; }
+      }
+      irMarkDirty(true); irRender();
+    }
+
     function irNormRules(raw) { // tương thích các bản cũ (object theo môn / store, staffId dạng chuỗi)
       let o = raw;
       try { if (typeof raw === 'string') o = raw ? JSON.parse(raw) : []; } catch (e) { o = []; }
@@ -4930,32 +4997,10 @@
       const nvTxt = !r.staffIds.length ? 'mọi nhân viên' : '<b>' + r.staffIds.map(id => { const n = state.nhanSu.find(x => x.id === id); return ttEsc(n ? n.name : id); }).join(', ') + '</b>';
       const ot = num(r.ot) ? `tăng ca khi chuỗi ≥ <b class="text-indigo-600">${r.ot}</b>` : `tăng ca theo ngưỡng chung (${getCfgNum('STREAK_OVERTIME', 3)})`;
       const pen = r.noPen ? '<b class="text-rose-600">không trừ sao</b> (chỉ tăng ca)' : (num(r.pen) ? `trừ sao khi chuỗi ≥ <b class="text-rose-600">${r.pen}</b>` : `trừ sao theo ngưỡng chung (${getCfgNum('STREAK_PENALTY_STAR', 5)})`);
-      const w = irStoreWarning(r);
-      return `→ <b>${ttEsc(itemTxt)}</b> · ${stTxt} · ${nvTxt}: ${ot}; ${pen}.` + (w ? ` <span class="text-rose-600 font-black">${ttEsc(w)}</span>` : '');
-    }
-    // Danh sách môn cho ô chọn: gộp môn trùng tên giữa các siêu thị thành 1 dòng và ghi rõ môn đó thuộc siêu thị nào
-    function irItemOptions(current) {
-      const map = {}, order = [];
-      (state.thiDua || []).forEach(t => {
-        if (!map[t.name]) { map[t.name] = { name: t.name, stores: [] }; order.push(t.name); }
-        const st = t.store || 'Chung';
-        if (!map[t.name].stores.includes(st)) map[t.name].stores.push(st);
-      });
-      const list = order.map(n => map[n]);
-      if (current && current !== '*' && !map[current]) list.push({ name: current, stores: ['?'], missing: true });
-      return list;
-    }
-    // Môn của quy tắc có thực sự tồn tại ở siêu thị đã tick không (môn "Chung" áp dụng cho mọi siêu thị)
-    function irStoreWarning(r) {
-      if (r.item === '*' || !r.stores || !r.stores.length) return '';
-      const defs = (state.thiDua || []).filter(t => t.name === r.item);
-      if (!defs.length) return '⚠️ Môn này không còn trong danh mục thi đua.';
-      if (defs.some(t => String(t.store).toLowerCase() === 'chung')) return '';
-      const ok = defs.some(t => irStoreMatch({ group: t.store }, r.stores));
-      return ok ? '' : `⚠️ Môn "${r.item}" chỉ có ở ${defs.map(t => t.store).join(' + ')}, không có ở ${r.stores.join(' + ')} → quy tắc này sẽ không có tác dụng.`;
+      return `→ <b>${ttEsc(itemTxt)}</b> · ${stTxt} · ${nvTxt}: ${ot}; ${pen}.`;
     }
     function irRowHtml(r, i) {
-      const items = '<option value="*">⭐ Tất cả các môn</option>' + irItemOptions(r.item).map(o => `<option value="${ttEsc(o.name)}" ${o.name === r.item ? 'selected' : ''}>${ttEsc(o.name)} — ${ttEsc(o.stores.join(' + '))}${o.missing ? ' (môn không còn trong danh mục)' : ''}</option>`).join('');
+      const items = irItemOptionsHtml(r);
       const sel = 'w-full border rounded p-1 text-xs font-bold bg-white';
       const inp = 'w-full border rounded p-1 text-xs font-bold text-center';
       const dd = 'ir-dd relative'; const sumCls = 'cursor-pointer list-none border rounded p-1 text-xs font-bold bg-white flex justify-between items-center gap-1 select-none';
@@ -4968,7 +5013,7 @@
         ${(state.nhanSu || []).map(n => `<label class="flex items-center gap-1.5 text-xs font-bold py-0.5"><input type="checkbox" class="ir-staff-${i}" ${r.staffIds.includes(n.id) ? 'checked' : ''} onchange="irToggle(${i},'staffIds',this.dataset.v,this.checked)" data-v="${ttEsc(n.id)}"> ${ttEsc(n.name)} <span class="text-[10px] text-slate-400 font-normal">${ttEsc(n.group || '')}</span></label>`).join('')}
         <div class="text-[10px] text-slate-400 pt-1">Không tick = tất cả nhân viên</div></div></details>`;
       return `<div class="grid grid-cols-12 gap-1.5 items-end bg-violet-50/60 border border-violet-100 rounded-lg p-1.5">
-        <div class="col-span-12 md:col-span-3"><label class="block text-[10px] font-bold text-slate-600">Môn</label><select class="${sel}" onchange="irSet(${i},'item',this.value)">${items}</select></div>
+        <div class="col-span-12 md:col-span-3"><label class="block text-[10px] font-bold text-slate-600">Môn (kèm siêu thị)</label><select class="${sel}" onchange="irPickItem(${i},this.value)">${items}</select></div>
         <div class="col-span-6 md:col-span-2"><label class="block text-[10px] font-bold text-slate-600">Siêu thị (chọn 1 hoặc 2)</label>${storeBox}</div>
         <div class="col-span-6 md:col-span-3"><label class="block text-[10px] font-bold text-slate-600">Nhân viên (chọn 1 hoặc nhiều)</label>${staffBox}</div>
         <div class="col-span-4 md:col-span-1"><label class="block text-[10px] font-bold text-slate-600">Tăng ca ≥</label><input type="number" min="0" step="1" value="${ttEsc(r.ot)}" placeholder="chung" class="${inp}" oninput="irSet(${i},'ot',this.value)"></div>
@@ -5003,7 +5048,8 @@
       irRefreshRow(i);
     }
     function irAdd() {
-      irDraft.push({ item: (state.thiDua && state.thiDua[0]) ? state.thiDua[0].name : '*', stores: [], staffIds: [], ot: 2, pen: '', noPen: true });
+      const f0 = (state.thiDua && state.thiDua[0]) || null;
+      irDraft.push({ item: f0 ? f0.name : '*', stores: (f0 && irStoreKey(f0.store) !== 'Chung') ? [irStoreKey(f0.store)] : [], staffIds: [], ot: 2, pen: '', noPen: true });
       irMarkDirty(true); irRender();
     }
     function irDelete(i) { irDraft.splice(i, 1); irMarkDirty(true); irRender(); }
@@ -5014,7 +5060,6 @@
         const ot = String(r.ot).trim(), pen = String(r.pen).trim(), nm = r.item === '*' ? 'Tất cả các môn' : r.item;
         if ((ot !== '' && !(Number(ot) >= 0)) || (pen !== '' && !(Number(pen) >= 0))) { alert('Ngưỡng chuỗi phải là số ≥ 0!'); return; }
         if (ot === '' && pen === '' && !r.noPen) { alert(`Quy tắc "${nm}" chưa nhập ngưỡng nào (hãy nhập số ngày hoặc tick "Chỉ tăng ca")!`); return; }
-        { const w = irStoreWarning(r); if (w) { alert(`Quy tắc "${nm}": ${w}`); return; } }
         const stores = IR_STORES.filter(x => r.stores.includes(x)), staffIds = r.staffIds.slice().sort();
         const key = [r.item, stores.join(','), staffIds.join(',')].join('|');
         if (seen[key]) { alert(`Có 2 quy tắc trùng đối tượng (môn · siêu thị · nhân viên): ${nm}. Hãy gộp lại thành 1!`); return; }
