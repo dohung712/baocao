@@ -133,6 +133,9 @@
       <button onclick="switchTab('cv')" id="tab-cv" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
         🗂️ CV
       </button>
+      <button onclick="switchTab('notes')" id="tab-notes" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
+        📚 Nội dung
+      </button>
       <button onclick="switchTab('store-ranking')" id="tab-store-ranking" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
         🏢 BXH Siêu Thị
       </button>
@@ -581,11 +584,31 @@
             <span id="stMonthLabel" class="px-2 text-xs font-black text-slate-800 whitespace-nowrap min-w-[90px] text-center"></span>
             <button onclick="stShiftMonth(1)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs">›</button>
             <button onclick="stToday()" class="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px]">Tháng này</button>
-            <button onclick="stCopy()" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">📋 Copy</button>
+            <button onclick="stCopy()" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">📋 Copy báo cáo</button>
+            <button onclick="stCsv()" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">⬇️ CSV</button>
           </div>
         </div>
         <p class="text-[10px] text-slate-500 leading-snug">Bấm vào tên nhân viên để xem chi tiết: ngày bận/OFF, <b>link TikTok đã đăng</b>, ngày vệ sinh, ngày chạy Roadshow. Vệ sinh &amp; Roadshow tính số lần <b>đã nộp báo cáo</b> (số trong ngoặc là số lần đăng ký).</p>
+        <div id="stFilters"></div>
         <div id="stBody" class="space-y-1.5"></div>
+      </div>
+    </section>
+
+    <!-- ================= TAB NỘI DUNG QUAN TRỌNG ================= -->
+    <section id="sec-notes" class="hidden space-y-3">
+      <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-1.5">
+          <h3 class="text-xs md:text-sm font-bold text-slate-800">📚 Nội Dung Quan Trọng <span id="notesCount" class="text-[10px] font-normal text-slate-400"></span></h3>
+          <div class="flex items-center gap-1">
+            <button onclick="notesLoad(true)" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">🔄 Làm mới</button>
+            <button onclick="ncOpen()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] whitespace-nowrap">➕ Triển khai nội dung (QL)</button>
+          </div>
+        </div>
+        <input id="notesSearch" type="search" oninput="notesSearchInput(this.value)" placeholder="🔍 Tìm nhanh: iPhone, bảo hành, quy trình đổi trả, CTKM..." class="w-full border rounded-lg p-2 text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+        <div id="notesChips" class="flex flex-wrap gap-1"></div>
+        <label class="flex items-center gap-1.5 text-[11px] text-slate-500 cursor-pointer"><input type="checkbox" id="notesShowExpired" onchange="renderNotesTab()" class="w-3.5 h-3.5 accent-indigo-600"> Hiện cả CTKM đã hết hạn <span id="notesExpiredCount"></span></label>
+        <div id="notesList" class="space-y-1.5"></div>
+        <button id="notesMore" onclick="notesState.limit += 30; renderNotesTab()" class="hidden w-full py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">Xem thêm</button>
       </div>
     </section>
 
@@ -846,6 +869,16 @@
             <span>Gửi</span> 🚀
           </button>
         </form>
+
+        <div class="flex flex-wrap items-center gap-1 text-[10px]">
+          <span class="font-bold text-slate-600">📚 Tìm nội dung quan trọng:</span>
+          <button onclick="quickAsk('CTKM có thời hạn đang chạy')" class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-black">⏳ CTKM có thời hạn</button>
+          <button onclick="quickAsk('CTKM lâu dài')" class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black">🎁 CTKM lâu dài</button>
+          <button onclick="quickAsk('phục vụ')" class="px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-black">🤝 Phục vụ</button>
+          <button onclick="quickAsk('quy trình')" class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-black">📋 Quy trình</button>
+          <button onclick="quickAsk('chính sách')" class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-black">📜 Chính sách</button>
+          <span class="text-slate-400">hoặc gõ: <i>"chính sách bảo hành iPhone"</i></span>
+        </div>
 
         <!-- 5 nhóm x 10 câu hỏi -->
         <div class="space-y-1.5 pt-0.5">
@@ -1228,6 +1261,43 @@
     </div>
   </div>
 
+  <!-- MODAL TRIỂN KHAI NỘI DUNG (Quản lý) -->
+  <div id="noteComposerModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 z-50">
+    <div class="bg-white w-full max-w-lg max-h-[94vh] overflow-y-auto rounded-2xl p-4 shadow-2xl space-y-2.5 text-xs">
+      <div class="flex items-start justify-between gap-2 border-b pb-2">
+        <div><h3 class="text-sm font-black text-slate-900">➕ Triển khai nội dung mới</h3><p class="text-[10px] text-slate-500">Dán text, thêm link, úp ảnh/file. AI tự xếp vào đúng mục, file lưu Google Drive, nhân viên thấy sau khi đồng bộ.</p></div>
+        <button onclick="ncClose()" class="text-slate-400 hover:text-slate-700 font-black text-lg leading-none px-1">✕</button>
+      </div>
+      <textarea id="ncText" rows="6" onpaste="ncOnPaste(event)" placeholder="Dán nội dung triển khai ở đây (CTKM, chính sách, quy trình...). Có thể dán ảnh chụp màn hình trực tiếp (Ctrl+V)." class="w-full border rounded-lg p-2 font-medium outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
+      <textarea id="ncLinks" rows="2" placeholder="Link bổ sung (mỗi dòng 1 link: Drive, Zalo, web...). Link trong nội dung cũng tự nhận." class="w-full border rounded-lg p-2 font-medium outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
+      <label class="block text-center border-2 border-dashed border-indigo-300 hover:border-indigo-500 rounded-lg p-2.5 cursor-pointer font-bold text-indigo-700">📎 Chọn ảnh / file (PDF, Word, Excel, PowerPoint, TXT)
+        <input id="ncFileInput" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="ncAddFiles(this.files); this.value=''" class="hidden"></label>
+      <div id="ncFiles" class="grid grid-cols-2 gap-1.5"></div>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label class="block font-bold text-slate-700 mb-0.5">Tiêu đề <span class="font-normal text-slate-400">(để trống = AI tự đặt)</span></label><input id="ncTitle" type="text" class="w-full border rounded-lg p-1.5 font-semibold outline-none focus:ring-2 focus:ring-indigo-400"></div>
+        <div><label class="block font-bold text-slate-700 mb-0.5">Danh mục</label><select id="ncCat" onchange="ncCatChanged()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-400 bg-white"><option value="">🤖 Tự động (AI nhận diện)</option><option value="ctkm_tg">⏳ CTKM có thời hạn</option><option value="ctkm_ld">🎁 CTKM lâu dài</option><option value="phuc_vu">🤝 Phục vụ</option><option value="quy_trinh">📋 Quy trình</option><option value="chinh_sach">📜 Chính sách</option><option value="khac">📌 Khác</option></select></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label class="block font-bold text-slate-700 mb-0.5">Áp dụng từ <span class="font-normal text-slate-400">(CTKM có thời hạn)</span></label><input id="ncFrom" type="date" class="w-full border rounded-lg p-1.5 font-semibold outline-none focus:ring-2 focus:ring-indigo-400"></div>
+        <div><label class="block font-bold text-slate-700 mb-0.5">Đến hết ngày</label><input id="ncTo" type="date" class="w-full border rounded-lg p-1.5 font-semibold outline-none focus:ring-2 focus:ring-indigo-400"></div>
+      </div>
+      <label class="flex items-center gap-1.5 font-bold text-slate-700 cursor-pointer"><input id="ncPin" type="checkbox" class="w-4 h-4 accent-indigo-600"> 📌 Ghim lên đầu danh sách</label>
+      <div id="ncAiBox" class="hidden rounded-lg border p-2 text-[11px] leading-snug"></div>
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button id="btnNcAi" onclick="ncPreviewAi()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-black">🤖 Xem AI phân loại trước</button>
+        <button id="btnNcSubmit" onclick="ncSubmit()" class="flex-1 min-w-[160px] py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-black shadow">📤 Đăng &amp; đồng bộ Drive</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XEM CHI TIẾT NỘI DUNG -->
+  <div id="noteViewModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 z-50" onclick="if (event.target === this) notesCloseView()">
+    <div class="bg-white w-full max-w-lg max-h-[94vh] overflow-y-auto rounded-2xl p-4 shadow-2xl space-y-2.5 text-xs">
+      <div class="flex justify-end"><button onclick="notesCloseView()" class="text-slate-400 hover:text-slate-700 font-black text-lg leading-none px-1">✕</button></div>
+      <div id="noteViewBody" class="space-y-2.5"></div>
+    </div>
+  </div>
+
   <!-- MODAL ROADSHOW (1 ngày, nhiều người) -->
   <div id="rsDayModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 z-50" onclick="if (event.target === this) rsCloseModal()">
     <div class="bg-white w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl p-4 shadow-2xl space-y-3">
@@ -1482,7 +1552,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-11 · v13";
+    const APP_VERSION = "2026-10-11 · v15";
     let lastFreshAt = 0; // lần gần nhất tải dữ liệu mới từ Sheet thành công
 
     function fmtSyncTime(ts) {
@@ -2051,6 +2121,7 @@
       try { const secCl = document.getElementById('sec-cleaning'); if (secCl && !secCl.classList.contains('hidden')) renderCleaningTab(); } catch (e) {}
       state.roadshow = Array.isArray(data.roadshow) ? data.roadshow : (state.roadshow || []);
       try { cvRefreshVisible(); } catch (e) {}
+      try { notesLoadSoon(); } catch (e) {}
       state.lockedDates = data.lockedDates || state.lockedDates || [];
       if (data.config) { state.config = data.config; applyTabVisibility(); }
       if (data.storeContestData && data.storeContestData.length > 0) currentStoreData = data.storeContestData;
@@ -2958,44 +3029,499 @@
       const s = String(u || '');
       return /^https?:\/\//i.test(s) ? `<a href="${ttEsc(s)}" target="_blank" rel="noopener noreferrer" class="text-fuchsia-700 underline break-all">${ttEsc(s)}</a>` : `<span class="break-all">${ttEsc(s)}</span>`;
     }
+    // ---- Bộ lọc Thống kê: theo NHÂN VIÊN và/hoặc theo HOẠT ĐỘNG ----
+    let stFilter = { staff: '', act: '' };
+    const ST_ACTS = [['ban', '📅 Bận việc'], ['off', '🛌 OFF'], ['tiktok', '📱 TikTok'], ['vs', '🧹 Vệ sinh'], ['rs', '🏃 Roadshow']];
+    const stActLabel = a => (ST_ACTS.find(x => x[0] === a) || ['', ''])[1];
+
+    // Danh sách mục chi tiết của 1 hoạt động (text thuần, chưa escape): dùng chung cho màn hình, copy và CSV
+    function stItems(r, act) {
+      if (act === 'ban') return r.ban.map(x => ({ t: stFmtD(x.date) + (bzShiftTxt(x) ? ` (${bzShiftTxt(x)})` : ''), links: [] }));
+      if (act === 'off') return r.off.map(x => ({ t: stFmtD(x.date), links: [] }));
+      if (act === 'tiktok') return r.tt.map(t => ({ t: `Nộp ${stFmtD(t.submitDate)} (kỳ ${stFmtD(t.due)}, ${t.status})`, links: t.links || [] }));
+      if (act === 'vs') return r.vsAll.map(v => ({ t: stFmtD(v.date) + (clReported(v) ? ' ✅' : ' (chưa nộp ảnh)'), links: [] }));
+      if (act === 'rs') return r.rsAll.map(v => ({ t: stFmtD(v.date) + (v.time ? ' ' + v.time : '') + (rsReported(v) ? ` ✅ ${Number(v.km) || 0}km/${Number(v.minutes) || 0}p` : ' (chưa nộp)'), links: [] }));
+      return [];
+    }
+    function stCount(r, act) { return act === 'ban' ? r.ban.length : act === 'off' ? r.off.length : act === 'tiktok' ? r.tt.length : act === 'vs' ? r.vsDone.length : r.rsDone.length; }
+    function stCountLabel(r, act) {
+      if (act === 'tiktok') return `${r.tt.length} lần${r.links ? ` (${r.links} link)` : ''}`;
+      if (act === 'vs') return `${r.vsDone.length} lần${r.vsAll.length !== r.vsDone.length ? ` (đk ${r.vsAll.length})` : ''}`;
+      if (act === 'rs') return `${r.rsDone.length} lần${r.rsAll.length !== r.rsDone.length ? ` (đk ${r.rsAll.length})` : ''}`;
+      return `${stCount(r, act)} lần`;
+    }
+    function stActHtml(r, act) {
+      const it = stItems(r, act); if (!it.length) return '<span class="text-slate-400">—</span>';
+      if (it.some(i => i.links.length)) return '<ul class="list-disc pl-4 space-y-0.5">' + it.map(i => `<li>${ttEsc(i.t)}${i.links.length ? ': ' + i.links.map(stLinkHtml).join('<br>') : ''}</li>`).join('') + '</ul>';
+      return ttEsc(it.map(i => i.t).join(', '));
+    }
+    function stActText(r, act) {
+      const it = stItems(r, act); if (!it.length) return '—';
+      return it.map(i => i.t + (i.links.length ? ': ' + i.links.join(' ') : '')).join('; ');
+    }
+    function stSetFilter() {
+      stFilter = { staff: (document.getElementById('stStaffSel') || {}).value || '', act: (document.getElementById('stActSel') || {}).value || '' };
+      renderStatsTab();
+    }
+    function stTiles(t) {
+      return `<div class="grid grid-cols-2 md:grid-cols-5 gap-1.5 text-center">
+        <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-orange-700">📅 Bận việc</div><div class="text-base font-black text-orange-700">${t.ban}</div></div>
+        <div class="bg-rose-50 border border-rose-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-rose-700">🛌 OFF</div><div class="text-base font-black text-rose-700">${t.off}</div></div>
+        <div class="bg-fuchsia-50 border border-fuchsia-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-fuchsia-700">📱 Lần đăng TikTok</div><div class="text-base font-black text-fuchsia-700">${t.tt}</div></div>
+        <div class="bg-teal-50 border border-teal-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-teal-700">🧹 Vệ sinh (đã nộp)</div><div class="text-base font-black text-teal-700">${t.vs}</div></div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 col-span-2 md:col-span-1"><div class="text-[10px] font-bold text-emerald-700">🏃 Roadshow (đã nộp)</div><div class="text-base font-black text-emerald-700">${t.rs}</div></div>
+      </div>`;
+    }
+    function stTot(list) { return list.reduce((a, r) => ({ ban: a.ban + r.ban.length, off: a.off + r.off.length, tt: a.tt + r.tt.length, vs: a.vs + r.vsDone.length, rs: a.rs + r.rsDone.length }), { ban: 0, off: 0, tt: 0, vs: 0, rs: 0 }); }
+    function stChipsHtml(r) {
+      return `<span class="text-orange-700 font-bold">📅 Bận ${r.ban.length}${r.off.length ? ` · OFF ${r.off.length}` : ''}</span>
+        <span class="text-fuchsia-700 font-bold">📱 TikTok ${r.tt.length}${r.links ? ` (${r.links} link)` : ''}</span>
+        <span class="text-teal-700 font-bold">🧹 VS ${r.vsDone.length}${r.vsAll.length !== r.vsDone.length ? ` (đk ${r.vsAll.length})` : ''}</span>
+        <span class="text-emerald-700 font-bold">🏃 RS ${r.rsDone.length}${r.rsAll.length !== r.rsDone.length ? ` (đk ${r.rsAll.length})` : ''}</span>`;
+    }
+    function stDetailAll(r) {
+      return ST_ACTS.map(([a, lb]) => `<div><b>${lb}${a === 'ban' || a === 'off' ? '' : ''}:</b> ${stActHtml(r, a)}</div>`).join('');
+    }
+
     function renderStatsTab() {
       const box = document.getElementById('stBody'); if (!box) return;
       document.getElementById('stMonthLabel').innerText = `Tháng ${stView.m + 1}/${stView.y}`;
       const rows = stCompute();
-      const tot = rows.reduce((a, r) => ({ ban: a.ban + r.ban.length, off: a.off + r.off.length, tt: a.tt + r.tt.length, vs: a.vs + r.vsDone.length, rs: a.rs + r.rsDone.length }), { ban: 0, off: 0, tt: 0, vs: 0, rs: 0 });
-      let h = `<div class="grid grid-cols-2 md:grid-cols-5 gap-1.5 text-center">
-        <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-orange-700">📅 Bận việc</div><div class="text-base font-black text-orange-700">${tot.ban}</div></div>
-        <div class="bg-rose-50 border border-rose-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-rose-700">🛌 OFF</div><div class="text-base font-black text-rose-700">${tot.off}</div></div>
-        <div class="bg-fuchsia-50 border border-fuchsia-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-fuchsia-700">📱 Lần đăng TikTok</div><div class="text-base font-black text-fuchsia-700">${tot.tt}</div></div>
-        <div class="bg-teal-50 border border-teal-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-teal-700">🧹 Vệ sinh (đã nộp)</div><div class="text-base font-black text-teal-700">${tot.vs}</div></div>
-        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 col-span-2 md:col-span-1"><div class="text-[10px] font-bold text-emerald-700">🏃 Roadshow (đã nộp)</div><div class="text-base font-black text-emerald-700">${tot.rs}</div></div>
-      </div>`;
-      rows.forEach(r => {
-        const any = r.ban.length + r.off.length + r.tt.length + r.vsAll.length + r.rsAll.length;
-        h += `<details class="border rounded-xl bg-white ${any ? '' : 'opacity-60'}">
-          <summary class="cursor-pointer p-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-            <b class="text-slate-800 min-w-[110px]">${ttEsc(r.ns.name)}</b>
-            <span class="text-orange-700 font-bold">📅 Bận ${r.ban.length}${r.off.length ? ` · OFF ${r.off.length}` : ''}</span>
-            <span class="text-fuchsia-700 font-bold">📱 TikTok ${r.tt.length}${r.links ? ` (${r.links} link)` : ''}</span>
-            <span class="text-teal-700 font-bold">🧹 VS ${r.vsDone.length}${r.vsAll.length !== r.vsDone.length ? ` (đk ${r.vsAll.length})` : ''}</span>
-            <span class="text-emerald-700 font-bold">🏃 RS ${r.rsDone.length}${r.rsAll.length !== r.rsDone.length ? ` (đk ${r.rsAll.length})` : ''}</span>
-          </summary>
-          <div class="px-3 pb-2 pt-1 space-y-1.5 text-[11px] text-slate-700 border-t">
-            <div><b>📅 Bận việc:</b> ${r.ban.length ? r.ban.map(x => stFmtD(x.date) + (bzShiftTxt(x) ? ` (${bzShiftTxt(x)})` : '')).join(', ') : '—'}${r.off.length ? `<br><b>🛌 OFF:</b> ${r.off.map(x => stFmtD(x.date)).join(', ')}` : ''}</div>
-            <div><b>📱 TikTok:</b> ${r.tt.length ? '<ul class="list-disc pl-4 space-y-0.5">' + r.tt.map(t => `<li>Nộp ${stFmtD(t.submitDate)} (kỳ ${stFmtD(t.due)}, ${ttEsc(t.status)}): ${t.links.map(stLinkHtml).join('<br>')}</li>`).join('') + '</ul>' : '—'}</div>
-            <div><b>🧹 Vệ sinh:</b> ${r.vsAll.length ? r.vsAll.map(v => stFmtD(v.date) + (clReported(v) ? ' ✅' : ' (chưa nộp ảnh)')).join(', ') : '—'}</div>
-            <div><b>🏃 Roadshow:</b> ${r.rsAll.length ? r.rsAll.map(v => stFmtD(v.date) + (v.time ? ' ' + v.time : '') + (rsReported(v) ? ` ✅ ${Number(v.km) || 0}km/${Number(v.minutes) || 0}p` : ' (chưa nộp)')).join(', ') : '—'}</div>
-          </div></details>`;
-      });
+      if (stFilter.staff && !rows.some(r => r.ns.id === stFilter.staff)) stFilter.staff = '';
+      const fb = document.getElementById('stFilters');
+      if (fb) fb.innerHTML = `<div class="grid grid-cols-2 gap-2">
+        <div><label class="block text-[10px] font-bold text-slate-500 mb-0.5">👤 Xem theo nhân viên</label>
+          <select id="stStaffSel" onchange="stSetFilter()" class="w-full border rounded-lg p-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-400 bg-white"><option value="">Tất cả nhân viên</option>${state.nhanSu.map(ns => `<option value="${ttEsc(ns.id)}" ${ns.id === stFilter.staff ? 'selected' : ''}>${ttEsc(ns.name)}</option>`).join('')}</select></div>
+        <div><label class="block text-[10px] font-bold text-slate-500 mb-0.5">📋 Xem theo hoạt động</label>
+          <select id="stActSel" onchange="stSetFilter()" class="w-full border rounded-lg p-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-400 bg-white"><option value="">Tất cả hoạt động</option>${ST_ACTS.map(([a, lb]) => `<option value="${a}" ${a === stFilter.act ? 'selected' : ''}>${lb}</option>`).join('')}</select></div></div>`;
+      const { staff, act } = stFilter;
+      const list = staff ? rows.filter(r => r.ns.id === staff) : rows;
+      let h = '';
+      if (!staff && !act) {
+        // Tổng quan toàn team
+        h += stTiles(stTot(rows));
+        rows.forEach(r => {
+          const any = r.ban.length + r.off.length + r.tt.length + r.vsAll.length + r.rsAll.length;
+          h += `<details class="border rounded-xl bg-white ${any ? '' : 'opacity-60'}">
+            <summary class="cursor-pointer p-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs"><b class="text-slate-800 min-w-[110px]">${ttEsc(r.ns.name)}</b>${stChipsHtml(r)}</summary>
+            <div class="px-3 pb-2 pt-1 space-y-1.5 text-[11px] text-slate-700 border-t">${stDetailAll(r)}</div></details>`;
+        });
+      } else if (staff && !act) {
+        // 1 nhân viên, mọi hoạt động
+        const r = list[0];
+        h += `<div class="border rounded-xl bg-white p-2.5 space-y-2"><div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs"><b class="text-slate-900 text-sm">${ttEsc(r.ns.name)}</b>${stChipsHtml(r)}</div>${stTiles(stTot([r]))}
+          <div class="space-y-1.5 text-[11px] text-slate-700 border-t pt-2">${ST_ACTS.map(([a, lb]) => `<div><b>${lb} (${stCountLabel(r, a)}):</b> ${stActHtml(r, a)}</div>`).join('')}</div></div>`;
+      } else {
+        // Theo hoạt động (tất cả nhân viên, hoặc 1 nhân viên)
+        const items = list.map(r => ({ r, n: stCount(r, act) })).sort((a, b) => b.n - a.n || a.r.ns.name.localeCompare(b.r.ns.name, 'vi'));
+        const total = items.reduce((s, x) => s + x.n, 0), who = items.filter(x => x.n > 0).length;
+        h += `<div class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700">${stActLabel(act)}: tổng <b class="text-indigo-700">${total}</b> lần${staff ? '' : ` · <b>${who}/${items.length}</b> nhân viên có hoạt động`}</div>`;
+        items.forEach((x, i) => {
+          h += `<div class="border rounded-xl bg-white p-2 ${x.n ? '' : 'opacity-50'}"><div class="flex items-center justify-between gap-2 text-xs"><b class="text-slate-800">${staff ? '' : (i + 1) + '. '}${ttEsc(x.r.ns.name)}</b><span class="font-black text-indigo-700">${stCountLabel(x.r, act)}</span></div><div class="text-[11px] text-slate-700 mt-1">${stActHtml(x.r, act)}</div></div>`;
+        });
+      }
       box.innerHTML = h;
     }
+
+    // Báo cáo dạng chữ (dán Zalo) theo bộ lọc đang chọn
     function stCopy() {
-      const rows = stCompute();
-      const lines = [`THỐNG KÊ CÔNG VIỆC THÁNG ${stView.m + 1}/${stView.y}`, 'Tên | Bận | OFF | TikTok (link) | Vệ sinh | RS'];
-      rows.forEach(r => lines.push(`${r.ns.name} | ${r.ban.length} | ${r.off.length} | ${r.tt.length} (${r.links}) | ${r.vsDone.length} | ${r.rsDone.length}`));
+      const rows = stCompute(), { staff, act } = stFilter, list = staff ? rows.filter(r => r.ns.id === staff) : rows;
+      const head = `THỐNG KÊ CÔNG VIỆC THÁNG ${stView.m + 1}/${stView.y}` + (staff && list[0] ? ` — ${list[0].ns.name}` : '') + (act ? ` — ${stActLabel(act)}` : '');
+      const lines = [head];
+      if (!staff && !act) {
+        lines.push('Tên | Bận | OFF | TikTok (link) | Vệ sinh | RS');
+        rows.forEach(r => lines.push(`${r.ns.name} | ${r.ban.length} | ${r.off.length} | ${r.tt.length} (${r.links}) | ${r.vsDone.length} | ${r.rsDone.length}`));
+      } else if (staff && !act) {
+        ST_ACTS.forEach(([a, lb]) => lines.push(`${lb}: ${stCountLabel(list[0], a)} — ${stActText(list[0], a)}`));
+      } else {
+        const items = list.map(r => ({ r, n: stCount(r, act) })).sort((a, b) => b.n - a.n || a.r.ns.name.localeCompare(b.r.ns.name, 'vi'));
+        const has = items.filter(x => x.n > 0), none = items.filter(x => x.n === 0);
+        lines.push(`Tổng: ${items.reduce((s, x) => s + x.n, 0)} lần`);
+        has.forEach((x, i) => lines.push(`${staff ? '-' : (i + 1) + '.'} ${x.r.ns.name}: ${stCountLabel(x.r, act)} — ${stActText(x.r, act)}`));
+        if (!staff && none.length) lines.push(`Chưa có: ${none.map(x => x.r.ns.name).join(', ')}`);
+      }
       const txt = lines.join('\n');
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => showToastMessage('✅ Đã copy thống kê'), () => prompt('Copy nội dung:', txt));
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => showToastMessage('✅ Đã copy báo cáo'), () => prompt('Copy nội dung:', txt));
       else prompt('Copy nội dung:', txt);
+    }
+
+    // Tải file CSV (mở được bằng Excel) theo bộ lọc đang chọn
+    function stCsv() {
+      const rows = stCompute(), { staff, act } = stFilter, list = staff ? rows.filter(r => r.ns.id === staff) : rows;
+      const safe = v => { const s = String(v == null ? '' : v); return /^[=+\-@]/.test(s) ? "'" + s : s; };
+      const q = v => '"' + safe(v).replace(/"/g, '""') + '"';
+      const lines = [];
+      if (!staff && !act) {
+        lines.push(['Nhân viên', 'Mã NV', 'Bận việc', 'OFF', 'Lần đăng TikTok', 'Số link TikTok', 'Vệ sinh (đã nộp)', 'Vệ sinh (đăng ký)', 'Roadshow (đã nộp)', 'Roadshow (đăng ký)']);
+        rows.forEach(r => lines.push([r.ns.name, r.ns.id, r.ban.length, r.off.length, r.tt.length, r.links, r.vsDone.length, r.vsAll.length, r.rsDone.length, r.rsAll.length]));
+      } else {
+        lines.push(['Nhân viên', 'Mã NV', 'Hoạt động', 'Chi tiết', 'Link']);
+        const acts = act ? [act] : ST_ACTS.map(a => a[0]);
+        list.forEach(r => acts.forEach(a => stItems(r, a).forEach(i => lines.push([r.ns.name, r.ns.id, stActLabel(a).replace(/^\S+\s/, ''), i.t, i.links.join(' ')]))));
+      }
+      const csv = '\ufeff' + lines.map(l => l.map(q).join(',')).join('\r\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = `thong-ke-${stView.y}-${clPad(stView.m + 1)}${staff ? '-' + staff : ''}${act ? '-' + act : ''}.csv`;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    }
+
+    // ================= NỘI DUNG QUAN TRỌNG: đăng (QL) · xem lại · tìm nhanh · chatbot =================
+    const NOTE_CATS = [
+      ['ctkm_tg', '⏳ CTKM có thời hạn', 'rose'], ['ctkm_ld', '🎁 CTKM lâu dài', 'orange'], ['phuc_vu', '🤝 Phục vụ', 'teal'],
+      ['quy_trinh', '📋 Quy trình', 'indigo'], ['chinh_sach', '📜 Chính sách', 'purple'], ['khac', '📌 Khác', 'slate']
+    ];
+    const NOTE_COLOR = {
+      rose: { bd: 'border-l-rose-500', chip: 'bg-rose-100 text-rose-700', on: 'bg-rose-600 text-white' },
+      orange: { bd: 'border-l-orange-500', chip: 'bg-orange-100 text-orange-700', on: 'bg-orange-600 text-white' },
+      teal: { bd: 'border-l-teal-500', chip: 'bg-teal-100 text-teal-700', on: 'bg-teal-600 text-white' },
+      indigo: { bd: 'border-l-indigo-500', chip: 'bg-indigo-100 text-indigo-700', on: 'bg-indigo-600 text-white' },
+      purple: { bd: 'border-l-purple-500', chip: 'bg-purple-100 text-purple-700', on: 'bg-purple-600 text-white' },
+      slate: { bd: 'border-l-slate-400', chip: 'bg-slate-200 text-slate-700', on: 'bg-slate-700 text-white' }
+    };
+    const NOTES_CACHE_KEY = 'APP_NOTES_CACHE';
+    const NOTE_STOP = new Set(['la', 'cua', 'nao', 'co', 'khong', 'the', 'cho', 'toi', 'em', 'minh', 've', 'tim', 'xem', 'tra', 'cuu', 'cac', 'nhung', 'mot', 'duoc', 'khi', 'gi', 'hoi', 'va', 'voi', 'tai', 'o', 'nay', 'hom', 'the', 'ai', 'bao', 'nhieu', 'sao', 'lam', 'phai', 'can']);
+    const NOTE_CATWORDS = new Set(['ctkm', 'khuyen', 'mai', 'chinh', 'sach', 'quy', 'trinh', 'phuc', 'vu', 'noi', 'dung', 'quan', 'trong', 'lau', 'dai', 'thoi', 'han', 'dang', 'chay', 'hien', 'tai', 'lieu', 'huong', 'dan', 'het', 'da']);
+    let notesState = { list: [], loaded: false, loading: false, lastLoad: 0, cat: '', q: '', limit: 30, soon: false, err: '' };
+    let notesViewId = '', notesEditing = false;
+    let managerPass = '';
+    let ncFiles = [], ncMeta = { summary: '', tags: [], by: 'QL', aiCat: '' }, ncBusy = false;
+
+    function notesCat(k) { return NOTE_CATS.find(c => c[0] === k) || NOTE_CATS[5]; }
+    function notesSaveCache() {
+      try { localStorage.setItem(NOTES_CACHE_KEY, JSON.stringify({ t: Date.now(), list: notesState.list })); return; } catch (e) {}
+      try { localStorage.setItem(NOTES_CACHE_KEY, JSON.stringify({ t: Date.now(), list: notesState.list.map(n => Object.assign({}, n, { text: String(n.text || '').slice(0, 1200) })) })); }
+      catch (e2) { try { localStorage.removeItem(NOTES_CACHE_KEY); } catch (e3) {} }
+    }
+    (function notesBootCache() {
+      try { const c = JSON.parse(localStorage.getItem(NOTES_CACHE_KEY) || 'null'); if (c && Array.isArray(c.list)) { notesState.list = c.list; notesState.loaded = true; } } catch (e) {}
+    })();
+
+    async function notesLoad(force) {
+      if (notesState.loading) return;
+      if (!force && Date.now() - notesState.lastLoad < 60000) return;
+      notesState.loading = true; notesState.err = '';
+      try {
+        const out = await safeFetchJSON(API_URL + '?action=notes&_t=' + Date.now(), { cache: 'no-store' });
+        if (out && out.status === 'success' && Array.isArray(out.notes)) { notesState.list = out.notes; notesState.loaded = true; notesState.lastLoad = Date.now(); notesSaveCache(); }
+        else if (out && out.status === 'success') notesState.err = 'Apps Script chưa là bản mới có mục Nội dung (cần Deploy → New version).';
+        else if (out && out.message) notesState.err = out.message;
+      } catch (e) { notesState.err = 'Không tải được nội dung: ' + e.message; }
+      notesState.loading = false;
+      if (force && notesState.err) showToastMessage('⚠️ ' + notesState.err);
+      renderNotesTab();
+    }
+    function notesLoadSoon() {   // tải ngầm sau khi dữ liệu chính đã xong, không tranh băng thông lúc mở app
+      if (notesState.soon) { notesLoad(false); return; }
+      notesState.soon = true; setTimeout(() => notesLoad(false), 2500);
+    }
+
+    function notesStatus(n, today) {
+      if (n.category !== 'ctkm_tg') return { k: 'none', label: '' };
+      if (n.validTo && n.validTo < today) return { k: 'expired', label: 'Đã hết hạn ' + stFmtD(n.validTo) };
+      if (n.validFrom && n.validFrom > today) return { k: 'soon', label: 'Từ ' + stFmtD(n.validFrom) };
+      if (n.validTo) { const left = Math.round((ttParse(n.validTo) - ttParse(today)) / 86400000); return { k: 'active', label: left <= 0 ? 'Hết hạn hôm nay' : `Còn ${left} ngày (đến ${stFmtD(n.validTo)})` }; }
+      return { k: 'active', label: 'Đang áp dụng' };
+    }
+    function notesStatusChip(st) {
+      if (st.k === 'none') return '';
+      const cls = st.k === 'expired' ? 'bg-slate-200 text-slate-600' : st.k === 'soon' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+      return `<span class="text-[10px] font-black px-1.5 py-0.5 rounded ${cls}">${ttEsc(st.label)}</span>`;
+    }
+
+    // ---- tìm kiếm (dùng chung cho tab và chatbot) ----
+    function notesParse(q) {
+      const qn = cbNorm(q).trim(), cats = [];
+      if (/(ctkm|khuyen mai|uu dai)/.test(qn)) {
+        if (/(lau dai|thuong xuyen)/.test(qn)) cats.push('ctkm_ld');
+        else if (/(thoi han|dang chay|hien nay|hien tai|co han)/.test(qn)) cats.push('ctkm_tg');
+        else cats.push('ctkm_tg', 'ctkm_ld');
+      }
+      if (/phuc vu/.test(qn)) cats.push('phuc_vu');
+      if (/(quy trinh|huong dan)/.test(qn)) cats.push('quy_trinh');
+      if (/chinh sach/.test(qn)) cats.push('chinh_sach');
+      const hasCat = cats.length > 0;
+      const tokens = qn.split(/[^a-z0-9]+/).filter(t => t.length >= 2 && !NOTE_STOP.has(t) && !(hasCat && NOTE_CATWORDS.has(t)) && !/^(noi|dung|tai|lieu)$/.test(t));
+      return { qn, cats, tokens, wantExpired: /(het han|da het|ket thuc|cu)/.test(qn) };
+    }
+    const notesWords = s => ' ' + cbNorm(s).replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+    function notesHay(n) {
+      if (!n._h) n._h = { t: notesWords(n.title), g: notesWords((n.tags || []).join(' ')), s: notesWords(n.summary), c: notesWords(n.text), f: notesWords((n.files || []).map(f => f.name).join(' ') + ' ' + (n.links || []).join(' ')) };
+      return n._h;
+    }
+    // Khớp theo đầu TỪ (gõ "iphon" vẫn ra iPhone) nhưng không khớp chuỗi con giữa từ ("hanh" không khớp "thanh")
+    function notesScore(n, tokens, qnw) {
+      const h = notesHay(n); let score = 0, matched = 0;
+      tokens.forEach(t => {
+        const w = ' ' + t; let s = 0;
+        if (h.t.includes(w)) s += 6; if (h.g.includes(w)) s += 5; if (h.s.includes(w)) s += 3; if (h.f.includes(w)) s += 2;
+        if (h.c.includes(w)) s += 1 + Math.min(2, h.c.split(w).length - 2);
+        if (s) matched++; score += s;
+      });
+      if (qnw.length >= 4 && h.t.includes(' ' + qnw)) score += 10;
+      return { score, matched };
+    }
+    function notesRank(list, pq) {
+      const qnw = pq.qn.replace(/[^a-z0-9]+/g, ' ').trim();
+      let rows = list.map(n => {
+        if (pq.tokens.length) { const r = notesScore(n, pq.tokens, qnw); return { n, sc: r.score, m: r.matched }; }
+        return { n, sc: pq.cats.length && pq.cats.includes(n.category) ? 1 : 0, m: 0 };
+      }).filter(x => x.sc > 0);
+      if (pq.tokens.length) {
+        // giữ nội dung khớp ≥ nửa số từ khóa, hoặc khớp nhiều nhất có thể (gõ thừa chữ như "điện thoại iPhone" vẫn ra iPhone)
+        const best = rows.reduce((m, x) => Math.max(m, x.m), 0), need = Math.min(best, Math.ceil(pq.tokens.length / 2));
+        rows = rows.filter(x => x.m >= need);
+        rows.forEach(x => { x.sc += x.m * 3 + (pq.cats.includes(x.n.category) ? 6 : 0); });
+      }
+      return rows;
+    }
+
+    function notesFiltered() {
+      const today = localDateStr(new Date());
+      const cb = document.getElementById('notesShowExpired'), showExp = !!(cb && cb.checked);
+      const withSt = notesState.list.map(n => ({ n, st: notesStatus(n, today), sc: 0 }));
+      const expiredCount = withSt.filter(x => x.st.k === 'expired').length;
+      let arr = showExp ? withSt : withSt.filter(x => x.st.k !== 'expired');
+      const counts = { all: arr.length }; NOTE_CATS.forEach(c => { counts[c[0]] = arr.filter(x => x.n.category === c[0]).length; });
+      if (notesState.cat) arr = arr.filter(x => x.n.category === notesState.cat);
+      const pq = notesParse(notesState.q), searching = notesState.q.trim().length > 0;
+      if (searching) {
+        const ranked = notesRank(arr.map(x => x.n), pq), map = {}; ranked.forEach(r => { map[r.n.id] = r.sc; });
+        arr = arr.filter(x => map[x.n.id]).map(x => Object.assign(x, { sc: map[x.n.id] }));
+      }
+      arr.sort((a, b) => (searching ? (b.sc - a.sc) : 0) || (Number(b.n.pin) - Number(a.n.pin)) || ((a.st.k === 'expired') - (b.st.k === 'expired')) || String(b.n.date + b.n.time).localeCompare(String(a.n.date + a.n.time)));
+      return { arr, counts, expiredCount, searching };
+    }
+
+    function notesSearchInput(v) { notesState.q = v || ''; notesState.limit = 30; renderNotesTab(); }
+    function notesSetCat(k) { notesState.cat = notesState.cat === k ? '' : k; notesState.limit = 30; renderNotesTab(); }
+    function notesGoSearch(q) {
+      switchTab('notes'); notesState.q = q || ''; notesState.cat = '';
+      const el = document.getElementById('notesSearch'); if (el) el.value = notesState.q;
+      renderNotesTab();
+    }
+
+    function notesCardHtml(x) {
+      const n = x.n, c = notesCat(n.category), col = NOTE_COLOR[c[2]];
+      const snippet = String(n.summary || n.text || '').replace(/\s+/g, ' ').slice(0, 170);
+      const imgs = (n.files || []).filter(f => /^image\//.test(f.mime)), docs = (n.files || []).length - imgs.length;
+      const thumb = imgs[0] ? `<img src="https://drive.google.com/thumbnail?id=${encodeURIComponent(imgs[0].id)}&sz=w200" loading="lazy" alt="" class="w-14 h-14 object-cover rounded-lg border bg-slate-100 shrink-0">` : '';
+      return `<div onclick="notesOpen('${ttEsc(n.id)}')" class="cursor-pointer border border-l-4 ${col.bd} rounded-xl bg-white hover:shadow-md transition p-2.5 flex gap-2 ${x.st.k === 'expired' ? 'opacity-60' : ''}">
+        <div class="flex-1 min-w-0 space-y-1">
+          <div class="flex flex-wrap items-center gap-1.5"><span class="text-[10px] font-black px-1.5 py-0.5 rounded ${col.chip}">${c[1]}</span>${n.pin ? '<span class="text-xs">📌</span>' : ''}${notesStatusChip(x.st)}<span class="text-[10px] text-slate-400 ml-auto">${n.date ? stFmtD(n.date) : ''}</span></div>
+          <div class="font-black text-sm text-slate-800 leading-snug">${ttEsc(n.title)}</div>
+          ${snippet ? `<div class="text-[11px] text-slate-600 leading-snug">${ttEsc(snippet)}</div>` : ''}
+          <div class="flex items-center gap-2 text-[10px] text-slate-500">${(n.links || []).length ? `<span>🔗 ${n.links.length} link</span>` : ''}${imgs.length ? `<span>🖼️ ${imgs.length} ảnh</span>` : ''}${docs ? `<span>📎 ${docs} file</span>` : ''}</div>
+        </div>${thumb}</div>`;
+    }
+
+    function renderNotesTab() {
+      const list = document.getElementById('notesList'); if (!list) return;
+      const f = notesFiltered();
+      const chips = document.getElementById('notesChips');
+      if (chips) chips.innerHTML = `<button onclick="notesSetCat('')" class="px-2.5 py-1 rounded-full text-[11px] font-black ${notesState.cat ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-white'}">Tất cả (${f.counts.all})</button>` +
+        NOTE_CATS.map(c => `<button onclick="notesSetCat('${c[0]}')" class="px-2.5 py-1 rounded-full text-[11px] font-black ${notesState.cat === c[0] ? NOTE_COLOR[c[2]].on : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${c[1]} (${f.counts[c[0]]})</button>`).join('');
+      const ec = document.getElementById('notesExpiredCount'); if (ec) ec.innerText = f.expiredCount ? `(${f.expiredCount})` : '';
+      const total = document.getElementById('notesCount'); if (total) total.innerText = notesState.loading ? '· đang tải...' : `· ${notesState.list.length} nội dung`;
+      const shown = f.arr.slice(0, notesState.limit);
+      let h = shown.map(notesCardHtml).join('');
+      if (!shown.length) {
+        h = notesState.err ? `<div class="bg-rose-50 border border-rose-200 rounded-xl p-3 text-rose-700 text-xs">⚠️ ${ttEsc(notesState.err)}</div>`
+          : `<div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center text-xs text-slate-500">${notesState.loading && !notesState.loaded ? '⏳ Đang tải nội dung...' : (f.searching ? 'Không có nội dung nào khớp từ khóa này.' : 'Chưa có nội dung nào. Quản lý bấm <b>➕ Triển khai nội dung</b> để đăng.')}</div>`;
+      }
+      list.innerHTML = h;
+      const more = document.getElementById('notesMore');
+      if (more) { more.classList.toggle('hidden', f.arr.length <= notesState.limit); more.innerText = `Xem thêm (${f.arr.length - notesState.limit} nội dung nữa)`; }
+    }
+
+    // ---- xem chi tiết ----
+    function notesLinkify(s) { return ttEsc(s).replace(/(https?:\/\/[^\s<]+)/g, u => `<a href="${u}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 underline break-all">${u}</a>`); }
+    function notesFileIcon(f) { const m = String(f.mime || ''); return /pdf/.test(m) ? '📕' : /word/.test(m) ? '📘' : /(excel|spreadsheet|csv)/.test(m) ? '📗' : /(powerpoint|presentation)/.test(m) ? '📙' : '📎'; }
+    function notesOpen(id) {
+      if (!notesState.list.some(n => n.id === id)) return;
+      notesViewId = id; notesEditing = false;
+      document.getElementById('noteViewModal').classList.remove('hidden'); notesRenderView();
+    }
+    function notesCloseView() { document.getElementById('noteViewModal').classList.add('hidden'); notesViewId = ''; notesEditing = false; }
+    function notesRenderView() {
+      const n = notesState.list.find(x => x.id === notesViewId), box = document.getElementById('noteViewBody'); if (!n || !box) return;
+      const c = notesCat(n.category), col = NOTE_COLOR[c[2]], st = notesStatus(n, localDateStr(new Date()));
+      if (notesEditing) {
+        box.innerHTML = `<div class="font-black text-sm text-slate-900">✏️ Sửa nội dung</div>
+          <div><label class="block font-bold text-slate-700 mb-0.5">Tiêu đề</label><input id="neTitle" value="${ttEsc(n.title)}" class="w-full border rounded-lg p-1.5 font-semibold outline-none focus:ring-2 focus:ring-indigo-400"></div>
+          <div class="grid grid-cols-3 gap-2">
+            <div><label class="block font-bold text-slate-700 mb-0.5">Danh mục</label><select id="neCat" class="w-full border rounded-lg p-1.5 font-bold bg-white">${NOTE_CATS.map(k => `<option value="${k[0]}" ${k[0] === n.category ? 'selected' : ''}>${k[1]}</option>`).join('')}</select></div>
+            <div><label class="block font-bold text-slate-700 mb-0.5">Từ ngày</label><input id="neFrom" type="date" value="${ttEsc(n.validFrom || '')}" class="w-full border rounded-lg p-1.5"></div>
+            <div><label class="block font-bold text-slate-700 mb-0.5">Đến hết</label><input id="neTo" type="date" value="${ttEsc(n.validTo || '')}" class="w-full border rounded-lg p-1.5"></div>
+          </div>
+          <div><label class="block font-bold text-slate-700 mb-0.5">Nội dung</label><textarea id="neText" rows="7" class="w-full border rounded-lg p-2 font-medium outline-none focus:ring-2 focus:ring-indigo-400">${ttEsc(n.text)}</textarea></div>
+          <div class="flex gap-2"><button onclick="notesSaveEdit()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-black">💾 Lưu</button><button onclick="notesEditing=false; notesRenderView()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-bold text-slate-600">Hủy</button></div>`;
+        return;
+      }
+      const imgs = (n.files || []).filter(f => /^image\//.test(f.mime)), docs = (n.files || []).filter(f => !/^image\//.test(f.mime));
+      const src = n.by === 'AI' ? '🤖 AI phân loại' : n.by === 'QL' ? '✋ Quản lý chọn mục' : '🔤 Phân loại theo từ khóa';
+      box.innerHTML = `<div class="space-y-1.5">
+          <div class="flex flex-wrap items-center gap-1.5"><span class="text-[10px] font-black px-1.5 py-0.5 rounded ${col.chip}">${c[1]}</span>${n.pin ? '<span class="text-xs">📌 Ghim</span>' : ''}${notesStatusChip(st)}</div>
+          <h3 class="text-base font-black text-slate-900 leading-snug">${ttEsc(n.title)}</h3>
+          <div class="text-[10px] text-slate-400">Đăng ${n.date ? stFmtD(n.date) : ''} ${ttEsc(n.time || '')}${n.author ? ' · ' + ttEsc(n.author) : ''} · ${src}${n.category === 'ctkm_tg' && (n.validFrom || n.validTo) ? ` · Áp dụng ${n.validFrom ? stFmtD(n.validFrom) : '...'} → ${n.validTo ? stFmtD(n.validTo) : '...'}` : ''}</div>
+        </div>
+        ${n.text ? `<div class="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap break-words bg-slate-50 border border-slate-200 rounded-xl p-2.5">${notesLinkify(n.text)}</div>` : ''}
+        ${imgs.length ? `<div class="grid grid-cols-2 gap-1.5">${imgs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer"><img src="${clThumb(f.id)}" alt="${ttEsc(f.name)}" loading="lazy" class="w-full max-h-64 object-contain rounded-lg border bg-slate-100"></a>`).join('')}</div>` : ''}
+        ${docs.length ? `<div class="space-y-1">${docs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 border rounded-lg p-2 bg-white hover:bg-slate-50 font-bold text-slate-700"><span class="text-lg">${notesFileIcon(f)}</span><span class="break-all">${ttEsc(f.name)}</span></a>`).join('')}</div>` : ''}
+        ${(n.links || []).length ? `<div class="space-y-1">${n.links.map(u => `<a href="${ttEsc(u)}" target="_blank" rel="noopener noreferrer" class="block border rounded-lg p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold break-all">🔗 ${ttEsc(u.length > 90 ? u.slice(0, 90) + '…' : u)}</a>`).join('')}</div>` : ''}
+        <div class="flex flex-wrap gap-1.5 pt-1 border-t">
+          <button onclick="notesCopy()" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black">📋 Copy nội dung</button>
+          <button onclick="notesMgr('edit')" class="px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-black">✏️ Sửa (QL)</button>
+          <button onclick="notesMgr('pin')" class="px-2.5 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-black">${n.pin ? '📌 Bỏ ghim' : '📌 Ghim'} (QL)</button>
+          <button onclick="notesMgr('del')" class="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-black">🗑️ Xóa (QL)</button>
+        </div>`;
+    }
+    function notesCopy() {
+      const n = notesState.list.find(x => x.id === notesViewId); if (!n) return;
+      const txt = [n.title, '', n.text, ...(n.links || []).map(u => '🔗 ' + u), ...(n.files || []).map(f => '📎 ' + f.name + ': ' + clViewUrl(f.id))].join('\n').trim();
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => showToastMessage('✅ Đã copy nội dung'), () => prompt('Copy nội dung:', txt));
+      else prompt('Copy nội dung:', txt);
+    }
+    async function notesMgr(act) {
+      const n = notesState.list.find(x => x.id === notesViewId); if (!n) return;
+      if (!verifyManagerAccess()) return;
+      if (act === 'edit') { notesEditing = true; notesRenderView(); return; }
+      try {
+        if (act === 'pin') { await notesUpdate(n.id, { pin: !n.pin }); showToastMessage(n.pin ? '📌 Đã ghim' : 'Đã bỏ ghim'); }
+        if (act === 'del') {
+          if (!confirm(`Xóa nội dung "${n.title}"? File đính kèm trên Drive cũng bị xóa.`)) return;
+          const res = await ttPost({ action: 'DELETE_NOTE', mpin: managerPass, id: n.id });
+          if (res.status !== 'success') { alert(res.message || 'Không xóa được!'); return; }
+          notesState.list = notesState.list.filter(x => x.id !== n.id); notesSaveCache(); notesCloseView(); renderNotesTab(); showToastMessage('✅ ' + res.message);
+        }
+      } catch (e) { alert('Lỗi: ' + e.message); }
+    }
+    async function notesUpdate(id, fields) {
+      const res = await ttPost(Object.assign({ action: 'UPDATE_NOTE', mpin: managerPass, id }, fields));
+      if (res.status !== 'success') { alert(res.message || 'Không cập nhật được!'); throw new Error(res.message || 'update'); }
+      const i = notesState.list.findIndex(x => x.id === id);
+      if (i >= 0) { const o = res.note; delete o.row; notesState.list[i] = o; }
+      notesSaveCache(); renderNotesTab(); notesRenderView();
+    }
+    async function notesSaveEdit() {
+      const g = id => (document.getElementById(id) || {}).value || '';
+      try { await notesUpdate(notesViewId, { title: g('neTitle'), category: g('neCat'), validFrom: g('neFrom'), validTo: g('neTo'), text: g('neText') }); notesEditing = false; notesRenderView(); showToastMessage('✅ Đã lưu'); } catch (e) {}
+    }
+
+    // ---- Quản lý đăng nội dung ----
+    function ncOpen() {
+      if (!verifyManagerAccess()) return;
+      ncFiles = []; ncMeta = { summary: '', tags: [], by: 'QL', aiCat: '' };
+      ['ncText', 'ncLinks', 'ncTitle', 'ncFrom', 'ncTo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      document.getElementById('ncCat').value = ''; document.getElementById('ncPin').checked = false;
+      document.getElementById('ncAiBox').classList.add('hidden');
+      ncRenderFiles(); document.getElementById('noteComposerModal').classList.remove('hidden');
+    }
+    function ncClose() { if (ncBusy) return; document.getElementById('noteComposerModal').classList.add('hidden'); }
+    function ncCatChanged() { ncMeta.by = 'QL'; }
+    function ncRenderFiles() {
+      const box = document.getElementById('ncFiles'); if (!box) return;
+      box.innerHTML = ncFiles.map((f, i) => `<div class="relative border rounded-lg p-1.5 bg-slate-50 flex items-center gap-1.5">
+        ${f.preview ? `<img src="${f.preview}" class="w-10 h-10 object-cover rounded border">` : `<span class="text-xl">${notesFileIcon(f)}</span>`}
+        <span class="text-[10px] font-bold text-slate-700 break-all leading-tight flex-1">${ttEsc(f.name)}<br><span class="font-normal text-slate-400">${(f.base64.length * 0.75 / 1048576).toFixed(1)} MB</span></span>
+        <button onclick="ncRemoveFile(${i})" class="text-rose-500 font-black px-1">✕</button></div>`).join('');
+    }
+    function ncRemoveFile(i) { ncFiles.splice(i, 1); ncRenderFiles(); }
+    function ncReadB64(file) {
+      return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(new Error('Không đọc được file ' + file.name)); r.readAsDataURL(file); });
+    }
+    const NC_EXT_MIME = { pdf: 'application/pdf', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', txt: 'text/plain', csv: 'text/csv' };
+    async function ncAddFiles(files) {
+      const arr = Array.from(files || []);
+      for (const f of arr) {
+        if (ncFiles.length >= 8) { alert('Tối đa 8 file mỗi lần đăng!'); break; }
+        try {
+          if (/^image\//.test(f.type) && !/svg/.test(f.type)) {
+            const out = await clCompress(f, 1600, 0.8);
+            ncFiles.push({ name: (f.name ? f.name.replace(/\.[^.]+$/, '') : 'anh_' + Date.now()) + '.jpg', mime: 'image/jpeg', base64: out.base64, preview: out.preview });
+          } else {
+            const ext = (f.name.split('.').pop() || '').toLowerCase(), mime = NC_EXT_MIME[ext];
+            if (!mime) { alert(`File "${f.name}" không hỗ trợ. Chọn ảnh, PDF, Word, Excel, PowerPoint, TXT hoặc CSV.`); continue; }
+            if (f.size > 5 * 1048576) { alert(`File "${f.name}" lớn hơn 5MB. Hãy nén lại hoặc gửi bằng link.`); continue; }
+            ncFiles.push({ name: f.name, mime, base64: await ncReadB64(f) });
+          }
+        } catch (e) { alert(e.message); }
+      }
+      ncRenderFiles();
+    }
+    function ncOnPaste(e) {
+      const cd = e.clipboardData; if (!cd) return;
+      const imgs = Array.from(cd.items || []).filter(it => it.kind === 'file' && /^image\//.test(it.type)).map(it => it.getAsFile()).filter(Boolean);
+      if (imgs.length && !Array.from(cd.types || []).includes('text/plain')) { e.preventDefault(); ncAddFiles(imgs); showToastMessage('📎 Đã thêm ảnh dán'); }
+    }
+    function ncGather() {
+      const v = id => (document.getElementById(id) || {}).value || '';
+      const links = v('ncLinks').split(/\r?\n/).map(s => s.trim()).filter(s => /^https?:\/\//i.test(s));
+      return { text: v('ncText'), links, title: v('ncTitle').trim(), cat: v('ncCat'), from: v('ncFrom'), to: v('ncTo'), pin: !!(document.getElementById('ncPin') || {}).checked };
+    }
+    async function ncClassifyCall(g) {
+      const res = await ttPost({ action: 'CLASSIFY_NOTE', text: g.text, links: g.links, fileNames: ncFiles.map(f => f.name), images: ncFiles.filter(f => /^image\//.test(f.mime)).slice(0, 3).map(f => ({ mime: f.mime, base64: f.base64 })) });
+      if (res.status !== 'success') throw new Error(res.message || 'Không phân loại được');
+      return res.result;
+    }
+    function ncApplyResult(r) {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+      if (!document.getElementById('ncTitle').value.trim()) set('ncTitle', r.title || '');
+      set('ncCat', r.category); set('ncFrom', r.validFrom || ''); set('ncTo', r.validTo || '');
+      ncMeta = { summary: r.summary || '', tags: r.tags || [], by: r.by || 'RULE', aiCat: r.category };
+      const box = document.getElementById('ncAiBox'); box.classList.remove('hidden');
+      box.className = 'rounded-lg border p-2 text-[11px] leading-snug ' + (r.by === 'AI' ? 'bg-indigo-50 border-indigo-200 text-indigo-800' : 'bg-amber-50 border-amber-200 text-amber-800');
+      box.innerHTML = `${r.by === 'AI' ? '🤖 <b>AI nhận diện:</b>' : '🔤 <b>Phân loại theo từ khóa:</b>'} ${ttEsc(r.categoryLabel || '')}${r.validFrom || r.validTo ? ` · áp dụng ${r.validFrom ? stFmtD(r.validFrom) : '...'} → ${r.validTo ? stFmtD(r.validTo) : '...'}` : ''}<br>${r.summary ? '📝 ' + ttEsc(r.summary) + '<br>' : ''}${(r.tags || []).length ? '🏷️ ' + r.tags.map(ttEsc).join(', ') + '<br>' : ''}${r.note ? '⚠️ ' + ttEsc(r.note) + '<br>' : ''}<span class="text-slate-500">Không đúng mục? Đổi ở ô Danh mục rồi bấm Đăng.</span>`;
+    }
+    async function ncPreviewAi() {
+      if (ncBusy) return; const g = ncGather();
+      if (!g.text.trim() && !g.links.length && !ncFiles.length) { alert('Hãy dán nội dung hoặc thêm ảnh/file trước!'); return; }
+      const btn = document.getElementById('btnNcAi'); btn.disabled = true; btn.innerText = '⏳ AI đang đọc...';
+      try { ncApplyResult(await ncClassifyCall(g)); } catch (e) { alert('Lỗi: ' + e.message); }
+      btn.disabled = false; btn.innerText = '🤖 Xem AI phân loại trước';
+    }
+    async function ncSubmit() {
+      if (ncBusy) return;
+      if (!verifyManagerAccess()) return;
+      let g = ncGather();
+      if (!g.text.trim() && !g.links.length && !ncFiles.length) { alert('Chưa có nội dung, link hoặc file nào để đăng!'); return; }
+      ncBusy = true;
+      const btn = document.getElementById('btnNcSubmit'); btn.disabled = true;
+      try {
+        if (!g.cat) { btn.innerText = '🤖 AI đang phân loại...'; ncApplyResult(await ncClassifyCall(g)); g = ncGather(); }
+        const by = (g.cat === ncMeta.aiCat) ? ncMeta.by : 'QL';
+        btn.innerText = '⏳ Đang đăng & lưu Drive...';
+        const res = await ttPost({ action: 'POST_NOTE', mpin: managerPass, author: 'Quản lý', title: g.title, text: g.text, links: g.links, category: g.cat, by, summary: ncMeta.summary, tags: ncMeta.tags, validFrom: g.from, validTo: g.to, pin: g.pin, files: ncFiles.map(f => ({ name: f.name, mime: f.mime, base64: f.base64 })) });
+        if (res.status !== 'success') { alert(res.message || 'Không đăng được!'); }
+        else {
+          notesState.list.unshift(res.note); notesSaveCache(); notesState.cat = ''; notesState.q = '';
+          const s = document.getElementById('notesSearch'); if (s) s.value = '';
+          ncBusy = false; ncClose(); renderNotesTab(); showToastMessage('✅ ' + res.message);
+        }
+      } catch (e) { alert('Lỗi: ' + e.message); }
+      ncBusy = false; btn.disabled = false; btn.innerText = '📤 Đăng & đồng bộ Drive';
+    }
+
+    // ---- chatbot: tìm nội dung quan trọng ----
+    function notesChatAnswer(query, pq, explicit) {
+      const q = String(query || '');
+      if (!notesState.list.length) return explicit ? `📚 Chưa có nội dung quan trọng nào (hoặc đang tải). Mở tab <b>📚 Nội dung</b> để xem.` : '';
+      const today = localDateStr(new Date());
+      let pool = notesState.list.filter(n => pq.wantExpired || notesStatus(n, today).k !== 'expired');
+      let ranked = notesRank(pool, pq);
+      if (!pq.tokens.length && !pq.cats.length) ranked = [];
+      ranked.sort((a, b) => (b.sc - a.sc) || (Number(b.n.pin) - Number(a.n.pin)) || String(b.n.date + b.n.time).localeCompare(String(a.n.date + a.n.time)));
+      if (!ranked.length) return explicit ? `📚 Mình chưa thấy nội dung nào khớp <i>"${ttEsc(q)}"</i>. Thử từ khóa khác (tên sản phẩm, chương trình...) hoặc mở tab <b>📚 Nội dung</b>.` : '';
+      const top = ranked.slice(0, 5);
+      let h = `<b>📚 Tìm thấy ${ranked.length} nội dung</b>${ranked.length > top.length ? ` (hiện ${top.length} mới/khớp nhất)` : ''}:<br/>`;
+      top.forEach(x => {
+        const n = x.n, c = notesCat(n.category), st = notesStatus(n, today), col = NOTE_COLOR[c[2]];
+        const snip = String(n.summary || n.text || '').replace(/\s+/g, ' ').slice(0, 150);
+        h += `<div class="border rounded-lg p-1.5 my-1 bg-slate-50 space-y-0.5"><div><span class="text-[9px] font-black px-1 py-0.5 rounded ${col.chip}">${c[1]}</span> ${notesStatusChip(st)}</div><div class="font-black">${ttEsc(n.title)}</div>${snip ? `<div class="text-[11px] text-slate-600">${ttEsc(snip)}</div>` : ''}<button onclick="notesOpen('${ttEsc(n.id)}')" class="text-[11px] font-black text-indigo-600 hover:underline">📖 Xem đầy đủ${(n.files || []).length || (n.links || []).length ? ' · link/file' : ''}</button></div>`;
+      });
+      h += `<button onclick="notesGoSearch(${JSON.stringify(q).replace(/"/g, '&quot;')})" class="text-[11px] font-black text-slate-600 hover:underline">👉 Xem tất cả trong tab 📚 Nội dung</button>`;
+      return h;
     }
 
     function cvRefreshVisible() {
@@ -3476,6 +4002,7 @@
     const HIDEABLE_TABS = [
       ['history-logs', '🕒 Lịch Sử'],
       ['cv', '🗂️ CV'],
+      ['notes', '📚 Nội dung'],
       ['store-ranking', '🏢 BXH Siêu Thị'],
       ['dashboard', '🏆 BXH Cá Nhân'],
       ['items-management', '📋 Môn'],
@@ -3530,7 +4057,7 @@
     let cvCur = 'tiktok';
     function switchTab(tab) {
       if (CV_SUBS.includes(tab)) { cvCur = tab; tab = 'cv'; }
-      ['report', 'history-logs', 'cv', 'store-ranking', 'dashboard', 'items-management', 'chatbot', 'rules-structure', 'manager'].forEach(t => {
+      ['report', 'history-logs', 'cv', 'notes', 'store-ranking', 'dashboard', 'items-management', 'chatbot', 'rules-structure', 'manager'].forEach(t => {
         const sec = document.getElementById('sec-' + t);
         if (sec) sec.classList.toggle('hidden', t !== tab);
         const btn = document.getElementById('tab-' + t);
@@ -3557,6 +4084,7 @@
         if (cvCur === 'roadshow') renderRoadshowTab();
         if (cvCur === 'stats') renderStatsTab();
       }
+      if (tab === 'notes') { renderNotesTab(); notesLoad(false); }
       if (tab === 'chatbot') renderChatbotStaffButtons();
       if (tab === 'store-ranking') renderStoreTable();
       if (tab === 'items-management') renderManagerSettings();
@@ -3566,7 +4094,7 @@
       if (isManagerUnlocked) return true;
       const pass = prompt("🔐 Nhập mật khẩu Quản Lý để thực hiện quyền này:");
       if (pass === "2026") {
-        isManagerUnlocked = true;
+        isManagerUnlocked = true; managerPass = pass;
         const b = document.getElementById('badgeManagerActive');
         if (b) b.classList.remove('hidden');
         renderHistoryLogsTable();
@@ -5324,12 +5852,15 @@
           }
           return cbProfile(ns);
         }
+        const nq = notesParse(query), explicitNote = nq.cats.length > 0 || /\b(noi dung|tai lieu)\b/.test(qn);
+        if (explicitNote) { const nr = notesChatAnswer(query, nq, true); if (nr) return nr; }
         let best = null, bestLen = 0;
         CB_GROUPS.forEach(g => g.q.forEach(q => {
           const kws = q[1].concat([cbNorm(q[0]).replace(/[^a-z0-9 ]/g, '').trim()]);
           kws.forEach(k => { if (k && qn.includes(k) && k.length > bestLen) { best = q; bestLen = k.length; } });
         }));
         if (best) return best[2]();
+        const nr2 = notesChatAnswer(query, nq, false); if (nr2) return nr2;
       } catch (e) { return `⚠️ Lỗi khi tra cứu: ${ttEsc(e.message)}`; }
       return `🤔 Mình chưa hiểu <i>"${ttEsc(query)}"</i>. Hãy chọn 1 trong <b>5 nhóm câu hỏi</b> bên dưới, bấm <b>tên nhân viên</b>, hoặc gõ kiểu: <i>"Bình chưa báo cáo ngày nào"</i>, <i>"tháng này ai thiếu báo cáo"</i>.`;
     }
