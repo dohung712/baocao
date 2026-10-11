@@ -1927,23 +1927,28 @@
         }
       }
 
+      // Bản clone chỉ để chụp ảnh: bỏ data-item & id tbody để các hàm tính toán/đồng bộ không quét nhầm dòng của clone
+      clone.querySelectorAll('tr[data-item]').forEach(tr => tr.removeAttribute('data-item'));
+      const cloneTbody = clone.querySelector('#itemsTableBody'); if (cloneTbody) cloneTbody.removeAttribute('id');
       clone.style.position = "absolute";
       clone.style.top = "-9999px";
       clone.style.left = "-9999px";
       document.body.appendChild(clone);
 
       try {
-        const canvas = await html2canvas(clone, { 
-          scale: 2.2, 
+        const canvas = await Promise.race([html2canvas(clone, { 
+          scale: 1.5, 
           useCORS: true, 
           backgroundColor: "#ffffff",
           width: 850,
           windowWidth: 850,
           logging: false
-        });
+        }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('xử lý ảnh quá lâu, hãy bấm xuất ảnh lại hoặc chụp màn hình')), 25000))
+        ]);
 
-        const image = canvas.toDataURL("image/png");
-        const filename = `BaoCao_${staffName.replace(/\s+/g, '_')}_${dateStr}.png`;
+        const image = canvas.toDataURL("image/jpeg", 0.92);
+        const filename = `BaoCao_${staffName.replace(/\s+/g, '_')}_${dateStr}.jpg`;
 
         // Tự kích hoạt tải file về máy
         const link = document.createElement('a');
@@ -4380,12 +4385,17 @@
       calculateAllRowsRealtime();
     }
 
+    // Chỉ lấy dòng môn thật (có ô nhập số liệu), bỏ qua mọi bản clone dùng để xuất ảnh
+    function getLiveItemRows() {
+      return Array.from(document.querySelectorAll('#itemsTableBody tr[data-item]')).filter(r => r.querySelector('.row-actual') && !r.closest('.export-canvas-mode'));
+    }
+
     // ================= TÍNH TOÁN REALTIME =================
     function calculateAllRowsRealtime() {
       const staffId = document.getElementById('staffSelect').value;
       if (!staffId) return;
       const staff = state.nhanSu.find(ns => ns.id === staffId);
-      const rows = Array.from(document.querySelectorAll('#itemsTableBody tr[data-item]'));
+      const rows = Array.from(getLiveItemRows());
       const selectedDate = document.getElementById('reportDate').value;
       const masterStars = staff ? getStaffOpeningStars(staff, selectedDate) : 0;
 
@@ -4601,7 +4611,7 @@
       if (!(await submitFreshGuard())) return; // bắt buộc dùng cài đặt mới nhất của Quản lý
 
       const staff = state.nhanSu.find(ns => ns.id === staffId);
-      const rows = document.querySelectorAll('#itemsTableBody tr[data-item]');
+      const rows = getLiveItemRows();
       if (rows.length === 0) return;
 
       const selectedDate = document.getElementById('reportDate').value;
@@ -4635,7 +4645,7 @@
       closeSubmitConfirmModal();
       const staffId = document.getElementById('staffSelect').value;
       const staff = state.nhanSu.find(ns => ns.id === staffId);
-      const rows = document.querySelectorAll('#itemsTableBody tr[data-item]');
+      const rows = getLiveItemRows();
       const selectedDate = document.getElementById('reportDate').value;
 
       const lateCheck = checkLateSubmission(staffId, selectedDate);
@@ -4809,11 +4819,11 @@
       if (!data || !Array.isArray(data.nhanSu)) { alert('⚠️ Không kết nối được Google Sheet để kiểm tra bản cập nhật mới nhất của Quản lý.\n\nKiểm tra mạng rồi bấm gửi lại.'); return false; }
       if (cfgSig(data.thiDua, data.config) === cfgSig(state.thiDua, state.config)) { lastFreshAt = Date.now(); return true; }
       const snap = {};
-      document.querySelectorAll('#itemsTableBody tr[data-item]').forEach(r => { snap[r.dataset.item] = r.querySelector('.row-actual').value; });
+      getLiveItemRows().forEach(r => { snap[r.dataset.item] = r.querySelector('.row-actual').value; });
       try { safeCacheSave(data); } catch (e) {}
       applyStateData(data); lastFreshAt = Date.now();
       renderItemsTable();
-      document.querySelectorAll('#itemsTableBody tr[data-item]').forEach(r => { if (snap[r.dataset.item] !== undefined) r.querySelector('.row-actual').value = snap[r.dataset.item]; });
+      getLiveItemRows().forEach(r => { if (snap[r.dataset.item] !== undefined) r.querySelector('.row-actual').value = snap[r.dataset.item]; });
       calculateAllRowsRealtime();
       alert('🔔 Quản lý vừa cập nhật cài đặt / môn thi đua.\n\nApp đã tải bản mới và giữ lại số liệu bạn nhập. Hãy kiểm tra lại các dòng rồi bấm gửi lần nữa.');
       return false;
