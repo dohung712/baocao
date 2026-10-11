@@ -93,7 +93,7 @@
           </span>
         </div>
         <p class="text-[10px] md:text-xs text-indigo-200 mt-0.5">
-          Tự động đồng bộ 1 tiếng/lần | Quỹ sao RT đồng bộ BXH | Chế tài nộp trễ sau 22h20 (-100⭐ lũy tiến)
+          Tự động đồng bộ 5 phút/lần + mỗi khi mở lại app | Quỹ sao RT đồng bộ BXH | Chế tài nộp trễ sau 22h20 (-100⭐ lũy tiến)
         </p>
         <p class="text-[10px] text-indigo-300 mt-0.5 font-mono">
           Phiên bản: <b id="lblAppVersion" class="text-white">-</b> · Đồng bộ dữ liệu lúc: <b id="lblLastSync" class="text-white">chưa có</b>
@@ -1417,7 +1417,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-07 · v9";
+    const APP_VERSION = "2026-10-11 · v10";
     let lastFreshAt = 0; // lần gần nhất tải dữ liệu mới từ Sheet thành công
 
     function fmtSyncTime(ts) {
@@ -1597,26 +1597,34 @@
     let isShortNamesActive = true;
     let activeModalItemName = "";
     let tableSortState = {};
-    let syncCountdownSeconds = 3600;
+    const SYNC_EVERY_SEC = 300;
+    let syncCountdownSeconds = SYNC_EVERY_SEC;
 
     document.getElementById('reportDate').value = localDateStr();
     document.getElementById('delLogDateInput').value = localDateStr();
     document.getElementById('lockDateInput').value = localDateStr();
 
     async function safeFetchJSON(url, options = {}) {
-      const res = await fetch(url, options);
-      const text = await res.text();
+      // Timeout 25s cho GET: tránh treo vô hạn khi Apps Script khởi động chậm / mạng yếu
+      let timer = null;
+      if (!options.method && !options.signal && typeof AbortController !== 'undefined') {
+        const ac = new AbortController(); options = Object.assign({}, options, { signal: ac.signal });
+        timer = setTimeout(() => ac.abort(), 25000);
+      }
+      let res, text;
+      try { res = await fetch(url, options); text = await res.text(); }
+      finally { if (timer) clearTimeout(timer); }
       if (text.trim().startsWith("<") || text.includes("<!DOCTYPE") || text.includes("<html")) {
         throw new Error("Phản hồi là HTML");
       }
       return JSON.parse(text);
     }
 
-    // Đếm lùi tự động sync ngầm 1 tiếng/lần
+    // Đếm lùi tự động sync ngầm 5 phút/lần
     setInterval(() => {
       syncCountdownSeconds--;
       if (syncCountdownSeconds <= 0) {
-        syncCountdownSeconds = 3600;
+        syncCountdownSeconds = SYNC_EVERY_SEC;
         loadData(true);
       }
       const m = Math.floor(syncCountdownSeconds / 60);
@@ -1850,8 +1858,24 @@
       initFastLoad();
     });
 
+    // Điện thoại giữ tab mở hàng giờ -> khi mở lại màn hình/quay lại app thì tự kiểm tra bản tool + tải dữ liệu mới
+    let _lastResume = 0;
+    function resumeSync() {
+      const now = Date.now();
+      if (now - _lastResume < 15000) return; _lastResume = now;
+      checkToolVersion().then(v => {
+        if (v === 'NEW') { freshShow('newtool'); return; }
+        if (now - lastFreshAt > 60000) loadData(true);
+      });
+    }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') resumeSync(); });
+    window.addEventListener('online', () => { _lastResume = 0; resumeSync(); });
+    window.addEventListener('pageshow', e => { if (e.persisted) { _lastResume = 0; resumeSync(); } });
+
     function initFastLoad() {
       updateSyncInfoLabel();
+      // Kiểm tra bản tool mới ngay khi mở (không chờ nhân viên chọn tên)
+      checkToolVersion().then(v => { if (v === 'NEW') freshShow('newtool'); });
       const cachedData = localStorage.getItem('APP_STORE_DATA_CACHE');
       if (cachedData) {
         try {
@@ -1881,7 +1905,7 @@
         if (data && Array.isArray(data.nhanSu)) {
           localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(data));
           applyStateData(data);
-          syncCountdownSeconds = 3600;
+          syncCountdownSeconds = SYNC_EVERY_SEC;
           markSyncOk();
           lastFreshAt = Date.now(); okLoad = true; lastSyncHint = '';
           if (!isBackground) showToastMessage("✅ Đồng bộ dữ liệu thành công!");
