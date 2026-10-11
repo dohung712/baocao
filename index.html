@@ -545,6 +545,13 @@
 
     <!-- ================= TAB CV > ROADSHOW ================= -->
     <section id="sec-roadshow" class="hidden space-y-3">
+      <div class="bg-white rounded-xl p-3 shadow-sm border border-indigo-200 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-xs md:text-sm font-bold text-slate-800">📌 Lịch RS chung do Quản lý xếp</h3>
+          <button onclick="rsToggleQl()" class="text-[11px] font-black px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white whitespace-nowrap">🛠️ QL xếp lịch</button>
+        </div>
+        <div id="rsQlPanel" class="hidden space-y-2"></div>
+      </div>
       <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-1.5">
           <h3 class="text-xs md:text-sm font-bold text-slate-800">🏃 Lịch Roadshow</h3>
@@ -555,7 +562,7 @@
             <button onclick="rsToday()" class="px-2 py-1 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-[11px]">Hôm nay</button>
           </div>
         </div>
-        <p class="text-[10px] text-slate-500 leading-snug">Chạm vào ngày để <b>đăng ký</b> (<b>nhiều bạn cùng ngày được</b>) hoặc <b>nộp báo cáo</b>. Mỗi người báo cáo riêng: <b>tối thiểu 3 ảnh</b> (trước khi chạy · App Strava · Loa &amp; USB ở khu vực sạc pin), mỗi lần chạy <b>≥ 30 phút và ≥ 5 km</b>. Đã đăng ký thì không tự xóa được, chỉ Quản lý xóa.</p>
+        <p class="text-[10px] text-slate-500 leading-snug">Chạm vào ngày để <b>đăng ký theo giờ</b> (sáng <b>6h–10h30</b>, chiều <b>15h–18h</b>, mỗi 30 phút; nhiều bạn cùng khung được) hoặc <b>nộp báo cáo</b>. Lịch có nhãn <b>📌 QL xếp</b> là do Quản lý xếp sẵn. Mỗi lượt chạy báo cáo riêng: <b>tối thiểu 3 ảnh</b> (trước khi chạy · App Strava · Loa &amp; USB ở khu vực sạc pin), mỗi lần chạy <b>≥ 30 phút và ≥ 5 km</b>. Đã đăng ký thì không tự xóa được, chỉ Quản lý xóa.</p>
         <div id="rsGrid" class="grid grid-cols-7 gap-1"></div>
         <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500 pt-1">
           <span>🏃 Đã đăng ký</span><span>✅ Tất cả đã nộp</span><span>⚠️ Quá ngày chưa nộp</span><span class="text-slate-400">+ Còn trống</span>
@@ -1475,7 +1482,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-11 · v12";
+    const APP_VERSION = "2026-10-11 · v13";
     let lastFreshAt = 0; // lần gần nhất tải dữ liệu mới từ Sheet thành công
 
     function fmtSyncTime(ts) {
@@ -2617,7 +2624,7 @@
     }
 
 
-    // ================= ROADSHOW (1 ngày nhiều người, mỗi người báo cáo riêng) =================
+    // ================= ROADSHOW (đăng ký THEO GIỜ; 1 khung giờ nhiều người; mỗi lượt báo cáo riêng) =================
     const RS_MIN_KM = 5, RS_MIN_MIN = 30;
     const RS_SLOTS = [
       { t: 'Trước khi chạy', d: 'POSM Roadshow + Loa + USB + người Vàng', req: true },
@@ -2627,15 +2634,27 @@
       { t: 'Ảnh thêm 2', d: 'không bắt buộc', req: false },
       { t: 'Ảnh thêm 3', d: 'không bắt buộc', req: false }
     ];
+    // Khung giờ: sáng 6:00–10:30, chiều 15:00–18:00, cách nhau 30 phút
+    const RS_TIMES = (function () {
+      const out = [], p = n => String(n).padStart(2, '0');
+      const add = (h1, m1, h2, m2) => { for (let t = h1 * 60 + m1; t <= h2 * 60 + m2; t += 30) out.push(p(Math.floor(t / 60)) + ':' + p(t % 60)); };
+      add(6, 0, 10, 30); add(15, 0, 18, 0);
+      return out;
+    })();
     let rsView = { y: new Date().getFullYear(), m: new Date().getMonth() };
-    let rsSelDate = "", rsReportFor = "";
+    let rsSelDate = "", rsReportFor = "";           // rsReportFor = "mãNV|giờ"
     let rsPhotos = [null, null, null, null, null, null];
+    let rsQl = { date: "", time: RS_TIMES[0], ids: [] };
 
-    function rsOn(date) { return (state.roadshow || []).filter(r => r.date === date); }
-    function rsRec(date, staffId) { return (state.roadshow || []).find(r => r.date === date && r.staffId === staffId); }
+    function rsTimeLabel(t) { if (!t) return 'chưa rõ giờ'; const a = t.split(':'); return Number(a[0]) + 'h' + (a[1] === '00' ? '' : a[1]); }
+    function rsNowHM() { const d = new Date(); return clPad(d.getHours()) + ':' + clPad(d.getMinutes()); }
+    function rsSortFn(a, b) { return String(a.time || '').localeCompare(String(b.time || '')) || String(a.staffName).localeCompare(String(b.staffName), 'vi'); }
+    function rsOn(date) { return (state.roadshow || []).filter(r => r.date === date).sort(rsSortFn); }
+    function rsRec(date, staffId, time) { return (state.roadshow || []).find(r => r.date === date && r.staffId === staffId && (r.time || '') === (time || '')); }
     function rsReported(r) { return !!(r && r.photos && r.photos.length >= 3); }
+    function rsCanReport(r, today) { return r.date < today || (r.date === today && (!r.time || r.time <= rsNowHM())); }
     function rsPersist() { try { safeCacheSave(state); } catch (e) {} }
-    function rsPut(rec) { state.roadshow = (state.roadshow || []).filter(r => !(r.date === rec.date && r.staffId === rec.staffId)); state.roadshow.push(rec); rsPersist(); }
+    function rsPut(rec) { state.roadshow = (state.roadshow || []).filter(r => !(r.date === rec.date && r.staffId === rec.staffId && (r.time || '') === (rec.time || ''))); state.roadshow.push(rec); rsPersist(); }
     function rsShiftMonth(n) {
       let m = rsView.m + n, y = rsView.y;
       while (m < 0) { m += 12; y--; }
@@ -2666,11 +2685,12 @@
           const done = recs.filter(rsReported).length, pend = recs.length - done;
           regTotal += recs.length; doneTotal += done;
           if (isPast) recs.filter(r => !rsReported(r)).forEach(r => overdue.push(r));
-          const names = recs.slice(0, 2).map(r => ttEsc(clShort(r.staffName))).join(', ') + (recs.length > 2 ? ` +${recs.length - 2}` : '');
-          if (pend === 0) { cls = 'bg-emerald-50 border-emerald-300'; inner = `<span class="text-emerald-700">✅ ${recs.length}<br>${names}</span>`; }
-          else if (isPast) { cls = 'bg-rose-50 border-rose-300'; inner = `<span class="text-rose-700">⚠️ ${done}/${recs.length}<br>${names}</span>`; }
-          else if (isToday) { cls = 'bg-amber-50 border-amber-300'; inner = `<span class="text-amber-700">🏃 ${recs.length}<br>${names}</span>`; }
-          else { cls = 'bg-orange-50 border-orange-300'; inner = `<span class="text-orange-700">🏃 ${recs.length}<br>${names}</span>`; }
+          const slots = Array.from(new Set(recs.map(r => rsTimeLabel(r.time))));
+          const t1 = slots.slice(0, 2).join(', ') + (slots.length > 2 ? ` +${slots.length - 2}` : '');
+          if (pend === 0) { cls = 'bg-emerald-50 border-emerald-300'; inner = `<span class="text-emerald-700">✅ ${recs.length}<br>${t1}</span>`; }
+          else if (isPast) { cls = 'bg-rose-50 border-rose-300'; inner = `<span class="text-rose-700">⚠️ ${done}/${recs.length}<br>${t1}</span>`; }
+          else if (isToday) { cls = 'bg-amber-50 border-amber-300'; inner = `<span class="text-amber-700">🏃 ${recs.length}<br>${t1}</span>`; }
+          else { cls = 'bg-orange-50 border-orange-300'; inner = `<span class="text-orange-700">🏃 ${recs.length}<br>${t1}</span>`; }
         } else if (isPast) { cls = 'bg-slate-50 border-slate-100'; inner = ''; }
         html += `<button onclick="rsOpenDay('${date}')" class="min-h-[52px] md:min-h-[72px] rounded-lg border p-1 text-left flex flex-col justify-between transition ${cls} ${isToday ? 'ring-2 ring-orange-500' : ''}">
           <span class="text-[10px] md:text-xs font-black ${isToday ? 'text-orange-700' : 'text-slate-500'}">${d}</span>
@@ -2679,11 +2699,12 @@
       grid.innerHTML = html;
       const sum = document.getElementById('rsMonthSummary');
       if (sum) {
-        let h = `<div class="font-bold text-slate-700">🏃 Tháng ${m + 1}/${y}: <b class="text-orange-700">${regTotal}</b> lượt đăng ký · đã nộp báo cáo <b class="text-emerald-600">${doneTotal}</b>`;
+        let h = `<div class="font-bold text-slate-700">🏃 Tháng ${m + 1}/${y}: <b class="text-orange-700">${regTotal}</b> lượt chạy · đã nộp báo cáo <b class="text-emerald-600">${doneTotal}</b>`;
         h += overdue.length ? ` · <b class="text-rose-600">${overdue.length} lượt quá ngày chưa nộp</b></div>` : `</div>`;
-        if (overdue.length) h += `<div class="text-[11px] text-rose-700">⚠️ ` + overdue.map(r => `${ttEsc(r.staffName)} (${r.date.slice(8, 10)}/${r.date.slice(5, 7)})`).join(', ') + `</div>`;
+        if (overdue.length) h += `<div class="text-[11px] text-rose-700">⚠️ ` + overdue.map(r => `${ttEsc(r.staffName)} (${r.date.slice(8, 10)}/${r.date.slice(5, 7)} ${rsTimeLabel(r.time)})`).join(', ') + `</div>`;
         sum.innerHTML = h;
       }
+      if (document.getElementById('rsQlPanel') && !document.getElementById('rsQlPanel').classList.contains('hidden')) rsRenderQl();
     }
 
     function rsOpenDay(date) {
@@ -2695,44 +2716,53 @@
 
     function rsRenderModal() {
       const date = rsSelDate; if (!date) return;
-      const today = localDateStr(new Date());
+      const today = localDateStr(new Date()), nowHM = rsNowHM();
       const recs = rsOn(date);
       document.getElementById('rsModalDate').innerText = clDateLabel(date) + (date === today ? ' (hôm nay)' : '');
       let h = '';
       if (recs.length) {
-        h += `<div class="font-bold text-slate-700">Đã đăng ký: ${recs.length} bạn</div>`;
-        recs.forEach(rec => {
-          const rep = rsReported(rec);
-          h += `<div class="border rounded-xl p-2.5 space-y-1.5 ${rep ? 'bg-emerald-50 border-emerald-200' : (date < today ? 'bg-rose-50 border-rose-200' : 'bg-orange-50 border-orange-200')}">
-            <div class="flex items-center justify-between gap-2">
-              <b class="text-slate-800 text-sm">${ttEsc(rec.staffName)}</b>
-              <span class="text-[10px] font-black ${rep ? 'text-emerald-700' : (date < today ? 'text-rose-600' : 'text-orange-700')}">${rep ? '✅ Đã nộp' : (date < today ? '⚠️ Chưa nộp (quá ngày)' : (date === today ? '⏳ Chờ nộp' : '🏃 Đã đăng ký'))}</span>
-            </div>`;
-          if (rep) {
-            h += `<div class="text-[10px] text-slate-500">Nộp lúc ${ttEsc(rec.reportTime || '')} ${rec.reportDate ? ttEsc(rec.reportDate.slice(8, 10) + '/' + rec.reportDate.slice(5, 7)) : ''} · <b>${Number(rec.km) || 0} km</b> · <b>${Number(rec.minutes) || 0} phút</b></div>
-              <div class="grid grid-cols-3 gap-1.5">` + rec.photos.map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${clThumb(id)}" alt="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh')}" title="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh thêm')}" loading="lazy" class="w-full h-20 object-cover rounded-lg border bg-slate-100"></a>`).join('') + `</div>`;
-          } else if (date <= today && rsReportFor !== rec.staffId) {
-            h += `<button onclick="rsStartReport('${ttEsc(rec.staffId)}')" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black">📷 Nộp báo cáo của ${ttEsc(clShort(rec.staffName))}</button>`;
-          } else if (date > today) {
-            h += `<div class="text-[10px] text-slate-500">Báo cáo mở từ ngày chạy.</div>`;
-          }
-          if (!rep && rsReportFor === rec.staffId) h += rsUploadFormHtml(rec);
-          if (isManagerUnlocked) {
-            h += `<div class="flex flex-wrap gap-1.5 pt-1">
-              ${rep ? `<button onclick="rsDelete('${date}','${ttEsc(rec.staffId)}', true)" class="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">🗑️ Xóa ảnh (cho nộp lại)</button>` : ''}
-              <button onclick="rsDelete('${date}','${ttEsc(rec.staffId)}', false)" class="px-2 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold">🗑️ Xóa đăng ký</button></div>`;
-          }
-          h += `</div>`;
+        h += `<div class="font-bold text-slate-700">Đã đăng ký: ${recs.length} lượt chạy</div>`;
+        const groups = {};
+        recs.forEach(r => { (groups[r.time || ''] = groups[r.time || ''] || []).push(r); });
+        Object.keys(groups).sort().forEach(t => {
+          h += `<div class="font-black text-orange-700 text-xs border-b border-orange-200 pt-1">🕒 ${rsTimeLabel(t)}${t ? ' (' + t + ')' : ''} · ${groups[t].length} bạn</div>`;
+          groups[t].forEach(rec => {
+            const rep = rsReported(rec), key = rec.staffId + '|' + (rec.time || ''), late = date < today;
+            h += `<div class="border rounded-xl p-2.5 space-y-1.5 ${rep ? 'bg-emerald-50 border-emerald-200' : (late ? 'bg-rose-50 border-rose-200' : 'bg-orange-50 border-orange-200')}">
+              <div class="flex items-center justify-between gap-2">
+                <b class="text-slate-800 text-sm">${ttEsc(rec.staffName)}${rec.source === 'QL' ? ' <span class="text-[9px] font-black px-1 py-0.5 rounded bg-indigo-100 text-indigo-700 align-middle">📌 QL xếp</span>' : ''}</b>
+                <span class="text-[10px] font-black ${rep ? 'text-emerald-700' : (late ? 'text-rose-600' : 'text-orange-700')}">${rep ? '✅ Đã nộp' : (late ? '⚠️ Chưa nộp (quá ngày)' : (rsCanReport(rec, today) ? '⏳ Chờ nộp' : '🏃 Đã đăng ký'))}</span>
+              </div>`;
+            if (rep) {
+              h += `<div class="text-[10px] text-slate-500">Nộp lúc ${ttEsc(rec.reportTime || '')} ${rec.reportDate ? ttEsc(rec.reportDate.slice(8, 10) + '/' + rec.reportDate.slice(5, 7)) : ''} · <b>${Number(rec.km) || 0} km</b> · <b>${Number(rec.minutes) || 0} phút</b></div>
+                <div class="grid grid-cols-3 gap-1.5">` + rec.photos.map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${clThumb(id)}" alt="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh')}" title="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh thêm')}" loading="lazy" class="w-full h-20 object-cover rounded-lg border bg-slate-100"></a>`).join('') + `</div>`;
+            } else if (rsCanReport(rec, today) && rsReportFor !== key) {
+              h += `<button onclick="rsStartReport('${ttEsc(rec.staffId)}','${ttEsc(rec.time || '')}')" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black">📷 Nộp báo cáo của ${ttEsc(clShort(rec.staffName))}</button>`;
+            } else if (!rsCanReport(rec, today)) {
+              h += `<div class="text-[10px] text-slate-500">Báo cáo mở từ ${date === today ? 'giờ chạy ' + rsTimeLabel(rec.time) : 'ngày chạy'}.</div>`;
+            }
+            if (!rep && rsReportFor === key) h += rsUploadFormHtml(rec);
+            if (isManagerUnlocked) {
+              h += `<div class="flex flex-wrap gap-1.5 pt-1">
+                ${rep ? `<button onclick="rsDelete('${date}','${ttEsc(rec.staffId)}','${ttEsc(rec.time || '')}', true)" class="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">🗑️ Xóa ảnh (cho nộp lại)</button>` : ''}
+                <button onclick="rsDelete('${date}','${ttEsc(rec.staffId)}','${ttEsc(rec.time || '')}', false)" class="px-2 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold">🗑️ Xóa lượt chạy</button></div>`;
+            }
+            h += `</div>`;
+          });
         });
       } else if (date < today) {
         h += `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-500">Ngày đã qua và không có ai đăng ký Roadshow.</div>`;
       }
       if (date >= today) {
-        const free = state.nhanSu.filter(ns => !rsRec(date, ns.id));
+        const cnt = {}; recs.forEach(r => { cnt[r.time] = (cnt[r.time] || 0) + 1; });
+        const opt = t => `<option value="${t}" ${(date === today && t < nowHM) ? 'disabled' : ''}>${t}${cnt[t] ? ` — đã có ${cnt[t]} bạn` : ''}${(date === today && t < nowHM) ? ' (đã qua)' : ''}</option>`;
         h += `<div class="border-t pt-2 space-y-1.5">
-          <label class="block font-bold text-slate-700">➕ Đăng ký thêm 1 bạn chạy Roadshow ngày này:</label>
-          <select id="rsRegStaff" class="w-full border rounded-lg p-2 font-bold outline-none focus:ring-2 focus:ring-orange-500 bg-white"><option value="">-- Chọn tên --</option>${free.map(ns => `<option value="${ttEsc(ns.id)}">${ttEsc(ns.name)} (${ttEsc(ns.id)})</option>`).join('')}</select>
-          <div class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 leading-snug">⚠️ Đăng ký xong bạn <b>không tự xóa được</b>, chỉ Quản lý mới được xóa.</div>
+          <label class="block font-bold text-slate-700">➕ Đăng ký chạy Roadshow:</label>
+          <select id="rsRegStaff" class="w-full border rounded-lg p-2 font-bold outline-none focus:ring-2 focus:ring-orange-500 bg-white"><option value="">-- Chọn tên --</option>${state.nhanSu.map(ns => `<option value="${ttEsc(ns.id)}">${ttEsc(ns.name)} (${ttEsc(ns.id)})</option>`).join('')}</select>
+          <select id="rsRegTime" class="w-full border rounded-lg p-2 font-bold outline-none focus:ring-2 focus:ring-orange-500 bg-white"><option value="">-- Chọn giờ chạy --</option>
+            <optgroup label="Sáng (6h – 10h30)">${RS_TIMES.filter(t => t < '12:00').map(opt).join('')}</optgroup>
+            <optgroup label="Chiều (15h – 18h)">${RS_TIMES.filter(t => t >= '12:00').map(opt).join('')}</optgroup></select>
+          <div class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 leading-snug">⚠️ Mỗi bạn chọn <b>1 khung giờ</b> (có thể đăng ký thêm khung khác). Đăng ký xong bạn <b>không tự xóa được</b>, chỉ Quản lý mới được xóa.</div>
           <button id="btnRsRegister" onclick="rsRegister()" class="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-black shadow">✍️ Đăng ký Roadshow</button>
         </div>`;
       }
@@ -2742,7 +2772,7 @@
 
     function rsUploadFormHtml(rec) {
       return `<div class="space-y-2 bg-white border border-emerald-200 rounded-xl p-2">
-        <div class="font-bold text-slate-700">📷 Báo cáo của ${ttEsc(rec.staffName)} <span class="text-[10px] font-normal text-slate-500">(≥3 ảnh, ảnh 1–3 bắt buộc)</span></div>
+        <div class="font-bold text-slate-700">📷 Báo cáo của ${ttEsc(rec.staffName)} · ${rsTimeLabel(rec.time)} <span class="text-[10px] font-normal text-slate-500">(≥3 ảnh, ảnh 1–3 bắt buộc)</span></div>
         <div class="grid grid-cols-3 gap-1.5">` +
         RS_SLOTS.map((s, i) => `<div class="space-y-0.5">
           <label class="block text-center border-2 border-dashed ${s.req ? 'border-emerald-300' : 'border-slate-300'} hover:border-orange-400 rounded-lg p-1 cursor-pointer text-[10px] font-bold text-slate-600 min-h-[84px] flex flex-col items-center justify-center">
@@ -2753,8 +2783,8 @@
           <div class="text-[9px] leading-tight text-slate-400 text-center">${ttEsc(s.d)}</div></div>`).join('') +
         `</div>
         <div class="grid grid-cols-2 gap-2">
-          <div><label class="block font-bold text-slate-700 mb-0.5">Quãng đường (km) ≥ ${RS_MIN_KM}</label><input id="rsKm" type="number" step="0.01" min="0" inputmode="decimal" oninput="rsUpdateUploadBtn()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-orange-400" placeholder="vd 5.2"></div>
-          <div><label class="block font-bold text-slate-700 mb-0.5">Thời gian (phút) ≥ ${RS_MIN_MIN}</label><input id="rsMin" type="number" step="1" min="0" inputmode="numeric" oninput="rsUpdateUploadBtn()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-orange-400" placeholder="vd 35"></div>
+          <div><label class="block font-bold text-slate-700 mb-0.5">Quãng đường (km) ≥ ${RS_MIN_KM}</label><input id="rsKm" type="number" step="0.01" min="0" inputmode="decimal" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-orange-400" placeholder="vd 5.2"></div>
+          <div><label class="block font-bold text-slate-700 mb-0.5">Thời gian (phút) ≥ ${RS_MIN_MIN}</label><input id="rsMin" type="number" step="1" min="0" inputmode="numeric" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-orange-400" placeholder="vd 35"></div>
         </div>
         <div class="text-[10px] text-slate-500">Nhập đúng số trên ảnh App Strava. Gửi xong nhân viên không sửa được, cần sửa thì nhờ Quản lý.</div>
         <div class="flex gap-2">
@@ -2763,12 +2793,8 @@
         </div>
       </div>`;
     }
-    function rsStartReport(staffId) { rsReportFor = staffId; rsPhotos = [null, null, null, null, null, null]; rsRenderModal(); }
+    function rsStartReport(staffId, time) { rsReportFor = staffId + '|' + (time || ''); rsPhotos = [null, null, null, null, null, null]; rsRenderModal(); }
     function rsCancelReport() { rsReportFor = ""; rsPhotos = [null, null, null, null, null, null]; rsRenderModal(); }
-    function rsValidNums() {
-      const km = Number((document.getElementById('rsKm') || {}).value), mn = Number((document.getElementById('rsMin') || {}).value);
-      return km >= RS_MIN_KM && mn >= RS_MIN_MIN;
-    }
     function rsUpdateUploadBtn() {
       const btn = document.getElementById('btnRsUpload');
       if (btn) btn.disabled = !(rsPhotos[0] && rsPhotos[1] && rsPhotos[2]);
@@ -2793,18 +2819,20 @@
     }
 
     async function rsRegister() {
-      const sel = document.getElementById('rsRegStaff');
-      const staffId = sel ? sel.value : '';
+      const staffId = (document.getElementById('rsRegStaff') || {}).value || '';
+      const time = (document.getElementById('rsRegTime') || {}).value || '';
       if (!staffId) { alert("Vui lòng chọn tên nhân viên!"); return; }
+      if (!time) { alert("Vui lòng chọn giờ chạy!"); return; }
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       const date = rsSelDate;
       if (date < localDateStr(new Date())) { alert("Không thể đăng ký ngày đã qua!"); return; }
-      if (rsRec(date, staffId)) { alert(staff.name + " đã đăng ký ngày này rồi!"); rsRenderModal(); return; }
-      if (!confirm(`Đăng ký ${staff.name} chạy Roadshow ${clDateLabel(date)}?\n\nĐăng ký xong bạn KHÔNG tự xóa được, chỉ Quản lý xóa.`)) return;
+      if (date === localDateStr(new Date()) && time < rsNowHM()) { alert("Khung giờ này hôm nay đã qua, chọn giờ sau!"); return; }
+      if (rsRec(date, staffId, time)) { alert(`${staff.name} đã đăng ký khung ${time} ngày này rồi!`); rsRenderModal(); return; }
+      if (!confirm(`Đăng ký ${staff.name} chạy Roadshow lúc ${time} ${clDateLabel(date)}?\n\nĐăng ký xong bạn KHÔNG tự xóa được, chỉ Quản lý xóa.`)) return;
       const btn = document.getElementById('btnRsRegister');
       if (btn) { btn.disabled = true; btn.innerText = "⏳ ĐANG ĐĂNG KÝ..."; }
       try {
-        const res = await ttPost({ action: "REGISTER_RS", date, staffId, staffName: staff.name });
+        const res = await ttPost({ action: "REGISTER_RS", date, time, staffId, staffName: staff.name });
         if (res.status === "success") { rsPut(res.record); showToastMessage("✅ " + res.message); }
         else { if (res.existing) rsPut(res.existing); alert(res.message || "Không đăng ký được!"); }
       } catch (e) { alert("Lỗi đăng ký: " + e.message); }
@@ -2812,38 +2840,92 @@
     }
 
     async function rsUpload() {
-      const date = rsSelDate, staffId = rsReportFor;
-      const rec = rsRec(date, staffId);
-      if (!rec) { alert("Chưa có đăng ký Roadshow của bạn ngày này!"); return; }
+      const date = rsSelDate, parts = rsReportFor.split('|'), staffId = parts[0], time = parts[1] || '';
+      const rec = rsRec(date, staffId, time);
+      if (!rec) { alert("Chưa có đăng ký Roadshow của bạn khung giờ này!"); return; }
       if (!(rsPhotos[0] && rsPhotos[1] && rsPhotos[2])) { alert("Cần đủ 3 ảnh bắt buộc: Trước khi chạy · App Strava · Loa & USB!"); return; }
       const km = Number(document.getElementById('rsKm').value), minutes = Number(document.getElementById('rsMin').value);
       if (!(km >= RS_MIN_KM)) { alert(`Quãng đường tối thiểu ${RS_MIN_KM} km!`); return; }
       if (!(minutes >= RS_MIN_MIN)) { alert(`Thời gian chạy tối thiểu ${RS_MIN_MIN} phút!`); return; }
-      if (!confirm(`Xác nhận bạn là ${rec.staffName}?\nChạy ${km} km trong ${minutes} phút, ${rsPhotos.filter(Boolean).length} ảnh.\n\nGửi xong KHÔNG sửa được.`)) return;
+      if (!confirm(`Xác nhận bạn là ${rec.staffName}?\nLượt chạy ${rsTimeLabel(time)}: ${km} km trong ${minutes} phút, ${rsPhotos.filter(Boolean).length} ảnh.\n\nGửi xong KHÔNG sửa được.`)) return;
       const btn = document.getElementById('btnRsUpload');
       btn.disabled = true; btn.innerText = "⏳ ĐANG TẢI ẢNH LÊN DRIVE...";
       try {
-        const res = await ttPost({ action: "UPLOAD_RS_PHOTOS", date, staffId, km, minutes, photos: rsPhotos.filter(Boolean).map(p => ({ name: p.name, mime: p.mime, base64: p.base64 })) });
+        const res = await ttPost({ action: "UPLOAD_RS_PHOTOS", date, time, staffId, km, minutes, photos: rsPhotos.filter(Boolean).map(p => ({ name: p.name, mime: p.mime, base64: p.base64 })) });
         if (res.status === "success") { rsPut(res.record); rsReportFor = ""; rsPhotos = [null, null, null, null, null, null]; showToastMessage("✅ " + res.message); }
         else { alert(res.message || "Không nộp được báo cáo!"); btn.disabled = false; btn.innerText = "📤 Gửi báo cáo Roadshow"; return; }
       } catch (e) { alert("Lỗi tải ảnh: " + e.message); btn.disabled = false; btn.innerText = "📤 Gửi báo cáo Roadshow"; return; }
       renderRoadshowTab(); rsRenderModal();
     }
 
-    async function rsDelete(date, staffId, onlyPhotos) {
+    async function rsDelete(date, staffId, time, onlyPhotos) {
       if (!verifyManagerAccess()) return;
-      const rec = rsRec(date, staffId);
-      const msg = onlyPhotos ? `Xóa ảnh báo cáo Roadshow ${clDateLabel(date)} của ${rec ? rec.staffName : ''} để nộp lại?` : `Xóa đăng ký Roadshow ${clDateLabel(date)} của ${rec ? rec.staffName : ''}? (ảnh nếu có cũng bị xóa)`;
+      const rec = rsRec(date, staffId, time);
+      const who = `${rec ? rec.staffName : ''} ${time ? rsTimeLabel(time) : ''}`;
+      const msg = onlyPhotos ? `Xóa ảnh báo cáo Roadshow ${clDateLabel(date)} của ${who} để nộp lại?` : `Xóa lượt Roadshow ${clDateLabel(date)} của ${who}? (ảnh nếu có cũng bị xóa)`;
       if (!confirm(msg)) return;
       try {
-        const res = await ttPost({ action: "DELETE_RS", date, staffId, onlyPhotos: !!onlyPhotos });
+        const res = await ttPost({ action: "DELETE_RS", date, time, staffId, onlyPhotos: !!onlyPhotos });
         if (res.status === "success") {
           if (onlyPhotos && rec) { rec.photos = []; rec.km = 0; rec.minutes = 0; rec.reportDate = ""; rec.reportTime = ""; }
-          else state.roadshow = (state.roadshow || []).filter(r => !(r.date === date && r.staffId === staffId));
+          else state.roadshow = (state.roadshow || []).filter(r => !(r.date === date && r.staffId === staffId && (r.time || '') === (time || '')));
           rsPersist(); showToastMessage("✅ " + res.message);
         } else alert(res.message || "Lỗi");
       } catch (e) { alert("Lỗi: " + e.message); }
-      renderRoadshowTab(); rsRenderModal();
+      renderRoadshowTab(); if (rsSelDate) rsRenderModal();
+    }
+
+    // ---- QL xếp lịch RS: chọn ngày + giờ + nhân viên -> ghi thẳng vào Sheet, nhân viên thấy khi đồng bộ ----
+    function rsToggleQl() {
+      const p = document.getElementById('rsQlPanel'); if (!p) return;
+      if (p.classList.contains('hidden')) {
+        if (!verifyManagerAccess()) return;
+        if (!rsQl.date) rsQl.date = localDateStr(new Date());
+        p.classList.remove('hidden'); rsRenderQl();
+      } else p.classList.add('hidden');
+    }
+    function rsQlRead() {
+      const d = document.getElementById('rsQlDate'), t = document.getElementById('rsQlTime');
+      if (d) rsQl.date = d.value; if (t) rsQl.time = t.value;
+      rsQl.ids = Array.from(document.querySelectorAll('.rsQlChk:checked')).map(c => c.value);
+    }
+    function rsQlAll(on) { document.querySelectorAll('.rsQlChk').forEach(c => { c.checked = on; }); rsQlRead(); rsQlCount(); }
+    function rsQlCount() { const el = document.getElementById('rsQlCount'); if (el) el.innerText = rsQl.ids.length ? `(đã chọn ${rsQl.ids.length})` : ''; }
+    function rsRenderQl() {
+      const p = document.getElementById('rsQlPanel'); if (!p) return;
+      const today = localDateStr(new Date());
+      const upcoming = (state.roadshow || []).filter(r => r.source === 'QL' && r.date >= today).sort((a, b) => a.date.localeCompare(b.date) || rsSortFn(a, b)).slice(0, 40);
+      const opt = t => `<option value="${t}" ${t === rsQl.time ? 'selected' : ''}>${t}</option>`;
+      p.innerHTML = `<div class="grid grid-cols-2 gap-2 text-xs">
+          <div><label class="block font-bold mb-0.5">Ngày:</label><input id="rsQlDate" type="date" value="${ttEsc(rsQl.date)}" onchange="rsQlRead()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-400"></div>
+          <div><label class="block font-bold mb-0.5">Giờ:</label><select id="rsQlTime" onchange="rsQlRead()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-400 bg-white"><optgroup label="Sáng (6h – 10h30)">${RS_TIMES.filter(t => t < '12:00').map(opt).join('')}</optgroup><optgroup label="Chiều (15h – 18h)">${RS_TIMES.filter(t => t >= '12:00').map(opt).join('')}</optgroup></select></div>
+        </div>
+        <div class="flex items-center justify-between text-xs"><b>Chọn nhân viên <span id="rsQlCount" class="text-indigo-600"></span></b>
+          <span class="flex gap-1"><button onclick="rsQlAll(true)" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 font-bold">Chọn hết</button><button onclick="rsQlAll(false)" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 font-bold">Bỏ chọn</button></span></div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-1 text-xs max-h-48 overflow-y-auto border rounded-lg p-2">${state.nhanSu.map(ns => `<label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="rsQlChk w-4 h-4 accent-indigo-600" value="${ttEsc(ns.id)}" ${rsQl.ids.includes(ns.id) ? 'checked' : ''} onchange="rsQlRead(); rsQlCount()"><span class="font-semibold">${ttEsc(ns.name)}</span></label>`).join('')}</div>
+        <button id="btnRsQl" onclick="rsQlAssign()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black shadow">✅ Xếp lịch &amp; đồng bộ cho nhân viên</button>
+        <div class="text-[10px] text-slate-500">Nhân viên thấy lịch ngay khi mở app hoặc bấm 🔄 Đồng bộ (app tự đồng bộ 5 phút/lần). Người đã có đúng ngày + giờ này sẽ được bỏ qua.</div>
+        <div class="border-t pt-2"><div class="text-xs font-bold text-slate-700 mb-1">📌 Lịch QL đã xếp (từ hôm nay): ${upcoming.length}</div>
+          <div class="max-h-40 overflow-y-auto space-y-0.5">${upcoming.length ? upcoming.map(r => `<div class="flex items-center justify-between gap-2 text-[11px] bg-slate-50 rounded px-2 py-0.5"><span><b>${r.date.slice(8, 10)}/${r.date.slice(5, 7)}</b> ${r.time || ''} · ${ttEsc(r.staffName)}${rsReported(r) ? ' ✅' : ''}</span><button onclick="rsDelete('${r.date}','${ttEsc(r.staffId)}','${ttEsc(r.time || '')}', false)" class="text-rose-600 font-black px-1">✕</button></div>`).join('') : '<div class="text-[11px] text-slate-400">Chưa có lịch nào do QL xếp.</div>'}</div></div>`;
+      rsQlCount();
+    }
+    async function rsQlAssign() {
+      rsQlRead();
+      if (!rsQl.date) { alert("Chọn ngày!"); return; }
+      if (!rsQl.ids.length) { alert("Chọn ít nhất 1 nhân viên!"); return; }
+      const staffs = rsQl.ids.map(id => state.nhanSu.find(n => n.id === id)).filter(Boolean).map(n => ({ id: n.id, name: n.name }));
+      if (!confirm(`Xếp lịch Roadshow ${rsQl.time} ${clDateLabel(rsQl.date)} cho ${staffs.length} nhân viên:\n${staffs.map(s => s.name).join(', ')}`)) return;
+      const btn = document.getElementById('btnRsQl'); btn.disabled = true; btn.innerText = "⏳ ĐANG GHI LÊN SHEET...";
+      try {
+        const res = await ttPost({ action: "ASSIGN_RS", date: rsQl.date, time: rsQl.time, staffs });
+        if (res.status === "success") {
+          (res.records || []).forEach(rsPut);
+          rsQl.ids = [];
+          const d = ttParse(rsQl.date); rsView = { y: d.getFullYear(), m: d.getMonth() };
+          showToastMessage("✅ " + res.message);
+        } else alert(res.message || "Không xếp được lịch!");
+      } catch (e) { alert("Lỗi: " + e.message); }
+      renderRoadshowTab(); rsRenderQl();
     }
 
     // ================= THỐNG KÊ THÁNG: bận việc · TikTok (kèm link) · vệ sinh · Roadshow =================
@@ -2866,7 +2948,7 @@
         const tt = (state.tiktok || []).filter(t => t.staffId === id && t.status !== 'MIỄN' && t.links && t.links.length && inM(t.submitDate)).sort((a, b) => String(a.submitDate).localeCompare(String(b.submitDate)));
         const vsAll = (state.veSinh || []).filter(v => v.staffId === id && inM(v.date)).sort((a, b) => a.date.localeCompare(b.date));
         const vsDone = vsAll.filter(clReported);
-        const rsAll = (state.roadshow || []).filter(r => r.staffId === id && inM(r.date)).sort((a, b) => a.date.localeCompare(b.date));
+        const rsAll = (state.roadshow || []).filter(r => r.staffId === id && inM(r.date)).sort((a, b) => a.date.localeCompare(b.date) || String(a.time || '').localeCompare(String(b.time || '')));
         const rsDone = rsAll.filter(rsReported);
         const links = tt.reduce((n, t) => n + t.links.length, 0);
         return { ns, ban, off, tt, links, vsAll, vsDone, rsAll, rsDone };
@@ -2902,7 +2984,7 @@
             <div><b>📅 Bận việc:</b> ${r.ban.length ? r.ban.map(x => stFmtD(x.date) + (bzShiftTxt(x) ? ` (${bzShiftTxt(x)})` : '')).join(', ') : '—'}${r.off.length ? `<br><b>🛌 OFF:</b> ${r.off.map(x => stFmtD(x.date)).join(', ')}` : ''}</div>
             <div><b>📱 TikTok:</b> ${r.tt.length ? '<ul class="list-disc pl-4 space-y-0.5">' + r.tt.map(t => `<li>Nộp ${stFmtD(t.submitDate)} (kỳ ${stFmtD(t.due)}, ${ttEsc(t.status)}): ${t.links.map(stLinkHtml).join('<br>')}</li>`).join('') + '</ul>' : '—'}</div>
             <div><b>🧹 Vệ sinh:</b> ${r.vsAll.length ? r.vsAll.map(v => stFmtD(v.date) + (clReported(v) ? ' ✅' : ' (chưa nộp ảnh)')).join(', ') : '—'}</div>
-            <div><b>🏃 Roadshow:</b> ${r.rsAll.length ? r.rsAll.map(v => stFmtD(v.date) + (rsReported(v) ? ` ✅ ${Number(v.km) || 0}km/${Number(v.minutes) || 0}p` : ' (chưa nộp)')).join(', ') : '—'}</div>
+            <div><b>🏃 Roadshow:</b> ${r.rsAll.length ? r.rsAll.map(v => stFmtD(v.date) + (v.time ? ' ' + v.time : '') + (rsReported(v) ? ` ✅ ${Number(v.km) || 0}km/${Number(v.minutes) || 0}p` : ' (chưa nộp)')).join(', ') : '—'}</div>
           </div></details>`;
       });
       box.innerHTML = h;
