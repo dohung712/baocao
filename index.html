@@ -130,14 +130,8 @@
       <button onclick="switchTab('history-logs')" id="tab-history-logs" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
         🕒 Lịch Sử
       </button>
-      <button onclick="switchTab('tiktok')" id="tab-tiktok" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
-        📱 TikTok
-      </button>
-      <button onclick="switchTab('cleaning')" id="tab-cleaning" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
-        🧹 Vệ Sinh
-      </button>
-      <button onclick="switchTab('busy')" id="tab-busy" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
-        📅 Lịch Bận
+      <button onclick="switchTab('cv')" id="tab-cv" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
+        🗂️ CV
       </button>
       <button onclick="switchTab('store-ranking')" id="tab-store-ranking" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
         🏢 BXH Siêu Thị
@@ -444,6 +438,17 @@
 
     <!-- ================= TAB 3: BXH SIÊU THỊ ================= -->
     <!-- ================= TAB: BÁO CÁO LINK TIKTOK ================= -->
+    <!-- ================= TAB CV: thanh chọn mục con ================= -->
+    <section id="sec-cv" class="hidden">
+      <div id="cvSubBar" class="flex flex-wrap gap-1.5">
+        <button onclick="switchTab('tiktok')" id="cvbtn-tiktok" class="px-3 py-1 rounded-lg text-xs font-black bg-slate-100 text-slate-600">📱 TikTok</button>
+        <button onclick="switchTab('cleaning')" id="cvbtn-cleaning" class="px-3 py-1 rounded-lg text-xs font-black bg-slate-100 text-slate-600">🧹 Vệ Sinh</button>
+        <button onclick="switchTab('busy')" id="cvbtn-busy" class="px-3 py-1 rounded-lg text-xs font-black bg-slate-100 text-slate-600">📅 Lịch Bận</button>
+        <button onclick="switchTab('roadshow')" id="cvbtn-roadshow" class="px-3 py-1 rounded-lg text-xs font-black bg-slate-100 text-slate-600">🏃 Roadshow</button>
+        <button onclick="switchTab('stats')" id="cvbtn-stats" class="px-3 py-1 rounded-lg text-xs font-black bg-slate-100 text-slate-600">📊 Thống Kê</button>
+      </div>
+    </section>
+
     <section id="sec-tiktok" class="hidden space-y-3">
       <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
         <h3 class="text-xs md:text-sm font-bold text-slate-800 border-b pb-1.5">📱 Nộp Link TikTok — hạn Thứ 3 &amp; Thứ 6 hàng tuần</h3>
@@ -535,6 +540,45 @@
           </div>
         </div>
         <div id="bzShiftResult" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- ================= TAB CV > ROADSHOW ================= -->
+    <section id="sec-roadshow" class="hidden space-y-3">
+      <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-1.5">
+          <h3 class="text-xs md:text-sm font-bold text-slate-800">🏃 Lịch Roadshow</h3>
+          <div class="flex items-center gap-1">
+            <button onclick="rsShiftMonth(-1)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs">‹</button>
+            <span id="rsMonthLabel" class="px-2 text-xs font-black text-slate-800 whitespace-nowrap min-w-[90px] text-center"></span>
+            <button onclick="rsShiftMonth(1)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs">›</button>
+            <button onclick="rsToday()" class="px-2 py-1 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-[11px]">Hôm nay</button>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-500 leading-snug">Chạm vào ngày để <b>đăng ký</b> (<b>nhiều bạn cùng ngày được</b>) hoặc <b>nộp báo cáo</b>. Mỗi người báo cáo riêng: <b>tối thiểu 3 ảnh</b> (trước khi chạy · App Strava · Loa &amp; USB ở khu vực sạc pin), mỗi lần chạy <b>≥ 30 phút và ≥ 5 km</b>. Đã đăng ký thì không tự xóa được, chỉ Quản lý xóa.</p>
+        <div id="rsGrid" class="grid grid-cols-7 gap-1"></div>
+        <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500 pt-1">
+          <span>🏃 Đã đăng ký</span><span>✅ Tất cả đã nộp</span><span>⚠️ Quá ngày chưa nộp</span><span class="text-slate-400">+ Còn trống</span>
+        </div>
+      </div>
+      <div id="rsMonthSummary" class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 text-xs space-y-1"></div>
+    </section>
+
+    <!-- ================= TAB CV > THỐNG KÊ ================= -->
+    <section id="sec-stats" class="hidden space-y-3">
+      <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-1.5">
+          <h3 class="text-xs md:text-sm font-bold text-slate-800">📊 Thống Kê Công Việc Theo Nhân Viên</h3>
+          <div class="flex items-center gap-1">
+            <button onclick="stShiftMonth(-1)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs">‹</button>
+            <span id="stMonthLabel" class="px-2 text-xs font-black text-slate-800 whitespace-nowrap min-w-[90px] text-center"></span>
+            <button onclick="stShiftMonth(1)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs">›</button>
+            <button onclick="stToday()" class="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px]">Tháng này</button>
+            <button onclick="stCopy()" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">📋 Copy</button>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-500 leading-snug">Bấm vào tên nhân viên để xem chi tiết: ngày bận/OFF, <b>link TikTok đã đăng</b>, ngày vệ sinh, ngày chạy Roadshow. Vệ sinh &amp; Roadshow tính số lần <b>đã nộp báo cáo</b> (số trong ngoặc là số lần đăng ký).</p>
+        <div id="stBody" class="space-y-1.5"></div>
       </div>
     </section>
 
@@ -1177,6 +1221,20 @@
     </div>
   </div>
 
+  <!-- MODAL ROADSHOW (1 ngày, nhiều người) -->
+  <div id="rsDayModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 z-50" onclick="if (event.target === this) rsCloseModal()">
+    <div class="bg-white w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl p-4 shadow-2xl space-y-3">
+      <div class="flex items-start justify-between gap-2 border-b pb-2">
+        <div>
+          <h3 class="text-sm font-black text-slate-900">🏃 Roadshow ngày</h3>
+          <p id="rsModalDate" class="text-xs font-bold text-orange-600"></p>
+        </div>
+        <button onclick="rsCloseModal()" class="text-slate-400 hover:text-slate-700 font-black text-lg leading-none px-1">✕</button>
+      </div>
+      <div id="rsModalBody" class="space-y-3 text-xs"></div>
+    </div>
+  </div>
+
   <!-- MODAL CHI TIẾT NGÀY BẬN VIỆC / OFF -->
   <div id="busyDayModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 z-50" onclick="if (event.target === this) bzCloseModal()">
     <div class="bg-white w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl p-4 shadow-2xl space-y-3">
@@ -1417,7 +1475,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-11 · v11";
+    const APP_VERSION = "2026-10-11 · v12";
     let lastFreshAt = 0; // lần gần nhất tải dữ liệu mới từ Sheet thành công
 
     function fmtSyncTime(ts) {
@@ -1984,6 +2042,8 @@
       try { renderPenaltyTierViews(); } catch (e) {}
       try { const secBz = document.getElementById('sec-busy'); if (secBz && !secBz.classList.contains('hidden')) renderBusyTab(); } catch (e) {}
       try { const secCl = document.getElementById('sec-cleaning'); if (secCl && !secCl.classList.contains('hidden')) renderCleaningTab(); } catch (e) {}
+      state.roadshow = Array.isArray(data.roadshow) ? data.roadshow : (state.roadshow || []);
+      try { cvRefreshVisible(); } catch (e) {}
       state.lockedDates = data.lockedDates || state.lockedDates || [];
       if (data.config) { state.config = data.config; applyTabVisibility(); }
       if (data.storeContestData && data.storeContestData.length > 0) currentStoreData = data.storeContestData;
@@ -2557,6 +2617,312 @@
     }
 
 
+    // ================= ROADSHOW (1 ngày nhiều người, mỗi người báo cáo riêng) =================
+    const RS_MIN_KM = 5, RS_MIN_MIN = 30;
+    const RS_SLOTS = [
+      { t: 'Trước khi chạy', d: 'POSM Roadshow + Loa + USB + người Vàng', req: true },
+      { t: 'App Strava', d: 'Thấy rõ tốc độ & khoảng cách (≥30 phút, ≥5 km)', req: true },
+      { t: 'Loa & USB', d: 'Để đúng khu vực cắm sạc pin', req: true },
+      { t: 'Ảnh thêm 1', d: 'không bắt buộc', req: false },
+      { t: 'Ảnh thêm 2', d: 'không bắt buộc', req: false },
+      { t: 'Ảnh thêm 3', d: 'không bắt buộc', req: false }
+    ];
+    let rsView = { y: new Date().getFullYear(), m: new Date().getMonth() };
+    let rsSelDate = "", rsReportFor = "";
+    let rsPhotos = [null, null, null, null, null, null];
+
+    function rsOn(date) { return (state.roadshow || []).filter(r => r.date === date); }
+    function rsRec(date, staffId) { return (state.roadshow || []).find(r => r.date === date && r.staffId === staffId); }
+    function rsReported(r) { return !!(r && r.photos && r.photos.length >= 3); }
+    function rsPersist() { try { safeCacheSave(state); } catch (e) {} }
+    function rsPut(rec) { state.roadshow = (state.roadshow || []).filter(r => !(r.date === rec.date && r.staffId === rec.staffId)); state.roadshow.push(rec); rsPersist(); }
+    function rsShiftMonth(n) {
+      let m = rsView.m + n, y = rsView.y;
+      while (m < 0) { m += 12; y--; }
+      while (m > 11) { m -= 12; y++; }
+      rsView = { y, m }; renderRoadshowTab();
+    }
+    function rsToday() { const d = new Date(); rsView = { y: d.getFullYear(), m: d.getMonth() }; renderRoadshowTab(); }
+
+    function renderRoadshowTab() {
+      const grid = document.getElementById('rsGrid');
+      if (!grid) return;
+      const today = localDateStr(new Date());
+      const { y, m } = rsView;
+      document.getElementById('rsMonthLabel').innerText = `Tháng ${m + 1}/${y}`;
+      const first = new Date(y, m, 1, 12);
+      const offset = (first.getDay() + 6) % 7;
+      const dim = new Date(y, m + 1, 0).getDate();
+      let html = CL_DOW.map((d, i) => `<div class="text-center text-[10px] md:text-xs font-black ${i === 6 ? 'text-rose-500' : 'text-slate-500'} py-0.5">${d}</div>`).join('');
+      for (let i = 0; i < offset; i++) html += '<div></div>';
+      let regTotal = 0, doneTotal = 0; const overdue = [];
+      for (let d = 1; d <= dim; d++) {
+        const date = `${y}-${clPad(m + 1)}-${clPad(d)}`;
+        const recs = rsOn(date);
+        const isToday = date === today, isPast = date < today;
+        let cls = 'bg-white border-slate-200 hover:border-orange-400';
+        let inner = '<span class="text-slate-300 text-sm leading-none">+</span>';
+        if (recs.length) {
+          const done = recs.filter(rsReported).length, pend = recs.length - done;
+          regTotal += recs.length; doneTotal += done;
+          if (isPast) recs.filter(r => !rsReported(r)).forEach(r => overdue.push(r));
+          const names = recs.slice(0, 2).map(r => ttEsc(clShort(r.staffName))).join(', ') + (recs.length > 2 ? ` +${recs.length - 2}` : '');
+          if (pend === 0) { cls = 'bg-emerald-50 border-emerald-300'; inner = `<span class="text-emerald-700">✅ ${recs.length}<br>${names}</span>`; }
+          else if (isPast) { cls = 'bg-rose-50 border-rose-300'; inner = `<span class="text-rose-700">⚠️ ${done}/${recs.length}<br>${names}</span>`; }
+          else if (isToday) { cls = 'bg-amber-50 border-amber-300'; inner = `<span class="text-amber-700">🏃 ${recs.length}<br>${names}</span>`; }
+          else { cls = 'bg-orange-50 border-orange-300'; inner = `<span class="text-orange-700">🏃 ${recs.length}<br>${names}</span>`; }
+        } else if (isPast) { cls = 'bg-slate-50 border-slate-100'; inner = ''; }
+        html += `<button onclick="rsOpenDay('${date}')" class="min-h-[52px] md:min-h-[72px] rounded-lg border p-1 text-left flex flex-col justify-between transition ${cls} ${isToday ? 'ring-2 ring-orange-500' : ''}">
+          <span class="text-[10px] md:text-xs font-black ${isToday ? 'text-orange-700' : 'text-slate-500'}">${d}</span>
+          <span class="text-[9px] md:text-[11px] font-bold leading-tight break-words">${inner}</span></button>`;
+      }
+      grid.innerHTML = html;
+      const sum = document.getElementById('rsMonthSummary');
+      if (sum) {
+        let h = `<div class="font-bold text-slate-700">🏃 Tháng ${m + 1}/${y}: <b class="text-orange-700">${regTotal}</b> lượt đăng ký · đã nộp báo cáo <b class="text-emerald-600">${doneTotal}</b>`;
+        h += overdue.length ? ` · <b class="text-rose-600">${overdue.length} lượt quá ngày chưa nộp</b></div>` : `</div>`;
+        if (overdue.length) h += `<div class="text-[11px] text-rose-700">⚠️ ` + overdue.map(r => `${ttEsc(r.staffName)} (${r.date.slice(8, 10)}/${r.date.slice(5, 7)})`).join(', ') + `</div>`;
+        sum.innerHTML = h;
+      }
+    }
+
+    function rsOpenDay(date) {
+      rsSelDate = date; rsReportFor = ""; rsPhotos = [null, null, null, null, null, null];
+      document.getElementById('rsDayModal').classList.remove('hidden');
+      rsRenderModal();
+    }
+    function rsCloseModal() { document.getElementById('rsDayModal').classList.add('hidden'); rsSelDate = ""; rsReportFor = ""; }
+
+    function rsRenderModal() {
+      const date = rsSelDate; if (!date) return;
+      const today = localDateStr(new Date());
+      const recs = rsOn(date);
+      document.getElementById('rsModalDate').innerText = clDateLabel(date) + (date === today ? ' (hôm nay)' : '');
+      let h = '';
+      if (recs.length) {
+        h += `<div class="font-bold text-slate-700">Đã đăng ký: ${recs.length} bạn</div>`;
+        recs.forEach(rec => {
+          const rep = rsReported(rec);
+          h += `<div class="border rounded-xl p-2.5 space-y-1.5 ${rep ? 'bg-emerald-50 border-emerald-200' : (date < today ? 'bg-rose-50 border-rose-200' : 'bg-orange-50 border-orange-200')}">
+            <div class="flex items-center justify-between gap-2">
+              <b class="text-slate-800 text-sm">${ttEsc(rec.staffName)}</b>
+              <span class="text-[10px] font-black ${rep ? 'text-emerald-700' : (date < today ? 'text-rose-600' : 'text-orange-700')}">${rep ? '✅ Đã nộp' : (date < today ? '⚠️ Chưa nộp (quá ngày)' : (date === today ? '⏳ Chờ nộp' : '🏃 Đã đăng ký'))}</span>
+            </div>`;
+          if (rep) {
+            h += `<div class="text-[10px] text-slate-500">Nộp lúc ${ttEsc(rec.reportTime || '')} ${rec.reportDate ? ttEsc(rec.reportDate.slice(8, 10) + '/' + rec.reportDate.slice(5, 7)) : ''} · <b>${Number(rec.km) || 0} km</b> · <b>${Number(rec.minutes) || 0} phút</b></div>
+              <div class="grid grid-cols-3 gap-1.5">` + rec.photos.map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${clThumb(id)}" alt="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh')}" title="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh thêm')}" loading="lazy" class="w-full h-20 object-cover rounded-lg border bg-slate-100"></a>`).join('') + `</div>`;
+          } else if (date <= today && rsReportFor !== rec.staffId) {
+            h += `<button onclick="rsStartReport('${ttEsc(rec.staffId)}')" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black">📷 Nộp báo cáo của ${ttEsc(clShort(rec.staffName))}</button>`;
+          } else if (date > today) {
+            h += `<div class="text-[10px] text-slate-500">Báo cáo mở từ ngày chạy.</div>`;
+          }
+          if (!rep && rsReportFor === rec.staffId) h += rsUploadFormHtml(rec);
+          if (isManagerUnlocked) {
+            h += `<div class="flex flex-wrap gap-1.5 pt-1">
+              ${rep ? `<button onclick="rsDelete('${date}','${ttEsc(rec.staffId)}', true)" class="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">🗑️ Xóa ảnh (cho nộp lại)</button>` : ''}
+              <button onclick="rsDelete('${date}','${ttEsc(rec.staffId)}', false)" class="px-2 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold">🗑️ Xóa đăng ký</button></div>`;
+          }
+          h += `</div>`;
+        });
+      } else if (date < today) {
+        h += `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-500">Ngày đã qua và không có ai đăng ký Roadshow.</div>`;
+      }
+      if (date >= today) {
+        const free = state.nhanSu.filter(ns => !rsRec(date, ns.id));
+        h += `<div class="border-t pt-2 space-y-1.5">
+          <label class="block font-bold text-slate-700">➕ Đăng ký thêm 1 bạn chạy Roadshow ngày này:</label>
+          <select id="rsRegStaff" class="w-full border rounded-lg p-2 font-bold outline-none focus:ring-2 focus:ring-orange-500 bg-white"><option value="">-- Chọn tên --</option>${free.map(ns => `<option value="${ttEsc(ns.id)}">${ttEsc(ns.name)} (${ttEsc(ns.id)})</option>`).join('')}</select>
+          <div class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 leading-snug">⚠️ Đăng ký xong bạn <b>không tự xóa được</b>, chỉ Quản lý mới được xóa.</div>
+          <button id="btnRsRegister" onclick="rsRegister()" class="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-black shadow">✍️ Đăng ký Roadshow</button>
+        </div>`;
+      }
+      if (!isManagerUnlocked) h += `<div class="border-t pt-2"><button onclick="if (verifyManagerAccess()) rsRenderModal()" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600">🔐 Thao tác Quản lý (xóa)</button></div>`;
+      document.getElementById('rsModalBody').innerHTML = h;
+    }
+
+    function rsUploadFormHtml(rec) {
+      return `<div class="space-y-2 bg-white border border-emerald-200 rounded-xl p-2">
+        <div class="font-bold text-slate-700">📷 Báo cáo của ${ttEsc(rec.staffName)} <span class="text-[10px] font-normal text-slate-500">(≥3 ảnh, ảnh 1–3 bắt buộc)</span></div>
+        <div class="grid grid-cols-3 gap-1.5">` +
+        RS_SLOTS.map((s, i) => `<div class="space-y-0.5">
+          <label class="block text-center border-2 border-dashed ${s.req ? 'border-emerald-300' : 'border-slate-300'} hover:border-orange-400 rounded-lg p-1 cursor-pointer text-[10px] font-bold text-slate-600 min-h-[84px] flex flex-col items-center justify-center">
+            <img id="rsPrev${i}" class="hidden w-full h-14 object-cover rounded mb-0.5">
+            <span id="rsPrevLbl${i}">${s.req ? '➕' : '＋'} ${ttEsc(s.t)}</span>
+            <input type="file" accept="image/*" id="rsFile${i}" onchange="rsOnPick(${i}, this)" class="hidden">
+          </label>
+          <div class="text-[9px] leading-tight text-slate-400 text-center">${ttEsc(s.d)}</div></div>`).join('') +
+        `</div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block font-bold text-slate-700 mb-0.5">Quãng đường (km) ≥ ${RS_MIN_KM}</label><input id="rsKm" type="number" step="0.01" min="0" inputmode="decimal" oninput="rsUpdateUploadBtn()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-orange-400" placeholder="vd 5.2"></div>
+          <div><label class="block font-bold text-slate-700 mb-0.5">Thời gian (phút) ≥ ${RS_MIN_MIN}</label><input id="rsMin" type="number" step="1" min="0" inputmode="numeric" oninput="rsUpdateUploadBtn()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-orange-400" placeholder="vd 35"></div>
+        </div>
+        <div class="text-[10px] text-slate-500">Nhập đúng số trên ảnh App Strava. Gửi xong nhân viên không sửa được, cần sửa thì nhờ Quản lý.</div>
+        <div class="flex gap-2">
+          <button id="btnRsUpload" onclick="rsUpload()" disabled class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-black shadow">📤 Gửi báo cáo Roadshow</button>
+          <button onclick="rsCancelReport()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold">Hủy</button>
+        </div>
+      </div>`;
+    }
+    function rsStartReport(staffId) { rsReportFor = staffId; rsPhotos = [null, null, null, null, null, null]; rsRenderModal(); }
+    function rsCancelReport() { rsReportFor = ""; rsPhotos = [null, null, null, null, null, null]; rsRenderModal(); }
+    function rsValidNums() {
+      const km = Number((document.getElementById('rsKm') || {}).value), mn = Number((document.getElementById('rsMin') || {}).value);
+      return km >= RS_MIN_KM && mn >= RS_MIN_MIN;
+    }
+    function rsUpdateUploadBtn() {
+      const btn = document.getElementById('btnRsUpload');
+      if (btn) btn.disabled = !(rsPhotos[0] && rsPhotos[1] && rsPhotos[2]);
+    }
+
+    async function rsOnPick(i, input) {
+      const file = input.files && input.files[0];
+      const prev = document.getElementById('rsPrev' + i), lbl = document.getElementById('rsPrevLbl' + i);
+      const reset = () => { rsPhotos[i] = null; input.value = ''; if (prev) prev.classList.add('hidden'); if (lbl) lbl.innerText = (RS_SLOTS[i].req ? '➕ ' : '＋ ') + RS_SLOTS[i].t; };
+      if (!file) { reset(); rsUpdateUploadBtn(); return; }
+      if (lbl) lbl.innerText = '⏳ Đang xử lý...';
+      try {
+        const out = await clCompress(file);
+        if (rsPhotos.some((p, k) => p && k !== i && p.base64 === out.base64)) { reset(); alert("Ảnh này trùng với ảnh đã chọn. Mỗi ảnh phải khác nhau!"); }
+        else {
+          rsPhotos[i] = { name: `rs_${rsSelDate}_${i + 1}.jpg`, mime: out.mime, base64: out.base64 };
+          if (prev) { prev.src = out.preview; prev.classList.remove('hidden'); }
+          if (lbl) lbl.innerText = '✔ ' + RS_SLOTS[i].t;
+        }
+      } catch (e) { reset(); alert(e.message); }
+      rsUpdateUploadBtn();
+    }
+
+    async function rsRegister() {
+      const sel = document.getElementById('rsRegStaff');
+      const staffId = sel ? sel.value : '';
+      if (!staffId) { alert("Vui lòng chọn tên nhân viên!"); return; }
+      const staff = state.nhanSu.find(ns => ns.id === staffId);
+      const date = rsSelDate;
+      if (date < localDateStr(new Date())) { alert("Không thể đăng ký ngày đã qua!"); return; }
+      if (rsRec(date, staffId)) { alert(staff.name + " đã đăng ký ngày này rồi!"); rsRenderModal(); return; }
+      if (!confirm(`Đăng ký ${staff.name} chạy Roadshow ${clDateLabel(date)}?\n\nĐăng ký xong bạn KHÔNG tự xóa được, chỉ Quản lý xóa.`)) return;
+      const btn = document.getElementById('btnRsRegister');
+      if (btn) { btn.disabled = true; btn.innerText = "⏳ ĐANG ĐĂNG KÝ..."; }
+      try {
+        const res = await ttPost({ action: "REGISTER_RS", date, staffId, staffName: staff.name });
+        if (res.status === "success") { rsPut(res.record); showToastMessage("✅ " + res.message); }
+        else { if (res.existing) rsPut(res.existing); alert(res.message || "Không đăng ký được!"); }
+      } catch (e) { alert("Lỗi đăng ký: " + e.message); }
+      renderRoadshowTab(); rsRenderModal();
+    }
+
+    async function rsUpload() {
+      const date = rsSelDate, staffId = rsReportFor;
+      const rec = rsRec(date, staffId);
+      if (!rec) { alert("Chưa có đăng ký Roadshow của bạn ngày này!"); return; }
+      if (!(rsPhotos[0] && rsPhotos[1] && rsPhotos[2])) { alert("Cần đủ 3 ảnh bắt buộc: Trước khi chạy · App Strava · Loa & USB!"); return; }
+      const km = Number(document.getElementById('rsKm').value), minutes = Number(document.getElementById('rsMin').value);
+      if (!(km >= RS_MIN_KM)) { alert(`Quãng đường tối thiểu ${RS_MIN_KM} km!`); return; }
+      if (!(minutes >= RS_MIN_MIN)) { alert(`Thời gian chạy tối thiểu ${RS_MIN_MIN} phút!`); return; }
+      if (!confirm(`Xác nhận bạn là ${rec.staffName}?\nChạy ${km} km trong ${minutes} phút, ${rsPhotos.filter(Boolean).length} ảnh.\n\nGửi xong KHÔNG sửa được.`)) return;
+      const btn = document.getElementById('btnRsUpload');
+      btn.disabled = true; btn.innerText = "⏳ ĐANG TẢI ẢNH LÊN DRIVE...";
+      try {
+        const res = await ttPost({ action: "UPLOAD_RS_PHOTOS", date, staffId, km, minutes, photos: rsPhotos.filter(Boolean).map(p => ({ name: p.name, mime: p.mime, base64: p.base64 })) });
+        if (res.status === "success") { rsPut(res.record); rsReportFor = ""; rsPhotos = [null, null, null, null, null, null]; showToastMessage("✅ " + res.message); }
+        else { alert(res.message || "Không nộp được báo cáo!"); btn.disabled = false; btn.innerText = "📤 Gửi báo cáo Roadshow"; return; }
+      } catch (e) { alert("Lỗi tải ảnh: " + e.message); btn.disabled = false; btn.innerText = "📤 Gửi báo cáo Roadshow"; return; }
+      renderRoadshowTab(); rsRenderModal();
+    }
+
+    async function rsDelete(date, staffId, onlyPhotos) {
+      if (!verifyManagerAccess()) return;
+      const rec = rsRec(date, staffId);
+      const msg = onlyPhotos ? `Xóa ảnh báo cáo Roadshow ${clDateLabel(date)} của ${rec ? rec.staffName : ''} để nộp lại?` : `Xóa đăng ký Roadshow ${clDateLabel(date)} của ${rec ? rec.staffName : ''}? (ảnh nếu có cũng bị xóa)`;
+      if (!confirm(msg)) return;
+      try {
+        const res = await ttPost({ action: "DELETE_RS", date, staffId, onlyPhotos: !!onlyPhotos });
+        if (res.status === "success") {
+          if (onlyPhotos && rec) { rec.photos = []; rec.km = 0; rec.minutes = 0; rec.reportDate = ""; rec.reportTime = ""; }
+          else state.roadshow = (state.roadshow || []).filter(r => !(r.date === date && r.staffId === staffId));
+          rsPersist(); showToastMessage("✅ " + res.message);
+        } else alert(res.message || "Lỗi");
+      } catch (e) { alert("Lỗi: " + e.message); }
+      renderRoadshowTab(); rsRenderModal();
+    }
+
+    // ================= THỐNG KÊ THÁNG: bận việc · TikTok (kèm link) · vệ sinh · Roadshow =================
+    let stView = { y: new Date().getFullYear(), m: new Date().getMonth() };
+    function stShiftMonth(n) {
+      let m = stView.m + n, y = stView.y;
+      while (m < 0) { m += 12; y--; }
+      while (m > 11) { m -= 12; y++; }
+      stView = { y, m }; renderStatsTab();
+    }
+    function stToday() { const d = new Date(); stView = { y: d.getFullYear(), m: d.getMonth() }; renderStatsTab(); }
+    function stFmtD(date) { return String(date).slice(8, 10) + '/' + String(date).slice(5, 7); }
+    function stCompute() {
+      const ym = `${stView.y}-${clPad(stView.m + 1)}`;
+      const inM = d => String(d || '').slice(0, 7) === ym;
+      return state.nhanSu.map(ns => {
+        const id = ns.id;
+        const lb = (state.lichBan || []).filter(r => r.staffId === id && inM(r.date)).sort((a, b) => a.date.localeCompare(b.date));
+        const ban = lb.filter(r => r.type !== 'OFF'), off = lb.filter(r => r.type === 'OFF');
+        const tt = (state.tiktok || []).filter(t => t.staffId === id && t.status !== 'MIỄN' && t.links && t.links.length && inM(t.submitDate)).sort((a, b) => String(a.submitDate).localeCompare(String(b.submitDate)));
+        const vsAll = (state.veSinh || []).filter(v => v.staffId === id && inM(v.date)).sort((a, b) => a.date.localeCompare(b.date));
+        const vsDone = vsAll.filter(clReported);
+        const rsAll = (state.roadshow || []).filter(r => r.staffId === id && inM(r.date)).sort((a, b) => a.date.localeCompare(b.date));
+        const rsDone = rsAll.filter(rsReported);
+        const links = tt.reduce((n, t) => n + t.links.length, 0);
+        return { ns, ban, off, tt, links, vsAll, vsDone, rsAll, rsDone };
+      });
+    }
+    function stLinkHtml(u) {
+      const s = String(u || '');
+      return /^https?:\/\//i.test(s) ? `<a href="${ttEsc(s)}" target="_blank" rel="noopener noreferrer" class="text-fuchsia-700 underline break-all">${ttEsc(s)}</a>` : `<span class="break-all">${ttEsc(s)}</span>`;
+    }
+    function renderStatsTab() {
+      const box = document.getElementById('stBody'); if (!box) return;
+      document.getElementById('stMonthLabel').innerText = `Tháng ${stView.m + 1}/${stView.y}`;
+      const rows = stCompute();
+      const tot = rows.reduce((a, r) => ({ ban: a.ban + r.ban.length, off: a.off + r.off.length, tt: a.tt + r.tt.length, vs: a.vs + r.vsDone.length, rs: a.rs + r.rsDone.length }), { ban: 0, off: 0, tt: 0, vs: 0, rs: 0 });
+      let h = `<div class="grid grid-cols-2 md:grid-cols-5 gap-1.5 text-center">
+        <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-orange-700">📅 Bận việc</div><div class="text-base font-black text-orange-700">${tot.ban}</div></div>
+        <div class="bg-rose-50 border border-rose-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-rose-700">🛌 OFF</div><div class="text-base font-black text-rose-700">${tot.off}</div></div>
+        <div class="bg-fuchsia-50 border border-fuchsia-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-fuchsia-700">📱 Lần đăng TikTok</div><div class="text-base font-black text-fuchsia-700">${tot.tt}</div></div>
+        <div class="bg-teal-50 border border-teal-200 rounded-lg p-1.5"><div class="text-[10px] font-bold text-teal-700">🧹 Vệ sinh (đã nộp)</div><div class="text-base font-black text-teal-700">${tot.vs}</div></div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 col-span-2 md:col-span-1"><div class="text-[10px] font-bold text-emerald-700">🏃 Roadshow (đã nộp)</div><div class="text-base font-black text-emerald-700">${tot.rs}</div></div>
+      </div>`;
+      rows.forEach(r => {
+        const any = r.ban.length + r.off.length + r.tt.length + r.vsAll.length + r.rsAll.length;
+        h += `<details class="border rounded-xl bg-white ${any ? '' : 'opacity-60'}">
+          <summary class="cursor-pointer p-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+            <b class="text-slate-800 min-w-[110px]">${ttEsc(r.ns.name)}</b>
+            <span class="text-orange-700 font-bold">📅 Bận ${r.ban.length}${r.off.length ? ` · OFF ${r.off.length}` : ''}</span>
+            <span class="text-fuchsia-700 font-bold">📱 TikTok ${r.tt.length}${r.links ? ` (${r.links} link)` : ''}</span>
+            <span class="text-teal-700 font-bold">🧹 VS ${r.vsDone.length}${r.vsAll.length !== r.vsDone.length ? ` (đk ${r.vsAll.length})` : ''}</span>
+            <span class="text-emerald-700 font-bold">🏃 RS ${r.rsDone.length}${r.rsAll.length !== r.rsDone.length ? ` (đk ${r.rsAll.length})` : ''}</span>
+          </summary>
+          <div class="px-3 pb-2 pt-1 space-y-1.5 text-[11px] text-slate-700 border-t">
+            <div><b>📅 Bận việc:</b> ${r.ban.length ? r.ban.map(x => stFmtD(x.date) + (bzShiftTxt(x) ? ` (${bzShiftTxt(x)})` : '')).join(', ') : '—'}${r.off.length ? `<br><b>🛌 OFF:</b> ${r.off.map(x => stFmtD(x.date)).join(', ')}` : ''}</div>
+            <div><b>📱 TikTok:</b> ${r.tt.length ? '<ul class="list-disc pl-4 space-y-0.5">' + r.tt.map(t => `<li>Nộp ${stFmtD(t.submitDate)} (kỳ ${stFmtD(t.due)}, ${ttEsc(t.status)}): ${t.links.map(stLinkHtml).join('<br>')}</li>`).join('') + '</ul>' : '—'}</div>
+            <div><b>🧹 Vệ sinh:</b> ${r.vsAll.length ? r.vsAll.map(v => stFmtD(v.date) + (clReported(v) ? ' ✅' : ' (chưa nộp ảnh)')).join(', ') : '—'}</div>
+            <div><b>🏃 Roadshow:</b> ${r.rsAll.length ? r.rsAll.map(v => stFmtD(v.date) + (rsReported(v) ? ` ✅ ${Number(v.km) || 0}km/${Number(v.minutes) || 0}p` : ' (chưa nộp)')).join(', ') : '—'}</div>
+          </div></details>`;
+      });
+      box.innerHTML = h;
+    }
+    function stCopy() {
+      const rows = stCompute();
+      const lines = [`THỐNG KÊ CÔNG VIỆC THÁNG ${stView.m + 1}/${stView.y}`, 'Tên | Bận | OFF | TikTok (link) | Vệ sinh | RS'];
+      rows.forEach(r => lines.push(`${r.ns.name} | ${r.ban.length} | ${r.off.length} | ${r.tt.length} (${r.links}) | ${r.vsDone.length} | ${r.rsDone.length}`));
+      const txt = lines.join('\n');
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => showToastMessage('✅ Đã copy thống kê'), () => prompt('Copy nội dung:', txt));
+      else prompt('Copy nội dung:', txt);
+    }
+
+    function cvRefreshVisible() {
+      [['roadshow', renderRoadshowTab], ['stats', renderStatsTab]].forEach(([t, fn]) => {
+        const sec = document.getElementById('sec-' + t);
+        if (sec && !sec.classList.contains('hidden')) fn();
+      });
+    }
+
     // ================= LỊCH BẬN VIỆC / OFF =================
     // Chọn ngày -> chọn tên -> chọn Bận việc / OFF. Ngày T2-T6 tối đa 3 người; người thứ 4 bị báo "đăng ký muộn".
     // T7 & CN: không giới hạn, không hiện popup đăng ký muộn.
@@ -3027,9 +3393,7 @@
     // ---- ẨN / HIỆN TAB MENU (lưu trong config HIDDEN_TABS, dạng "history-logs,chatbot") ----
     const HIDEABLE_TABS = [
       ['history-logs', '🕒 Lịch Sử'],
-      ['tiktok', '📱 TikTok'],
-      ['cleaning', '🧹 Vệ Sinh'],
-      ['busy', '📅 Lịch Bận'],
+      ['cv', '🗂️ CV'],
       ['store-ranking', '🏢 BXH Siêu Thị'],
       ['dashboard', '🏆 BXH Cá Nhân'],
       ['items-management', '📋 Môn'],
@@ -3047,6 +3411,11 @@
       HIDEABLE_TABS.forEach(([id]) => {
         const btn = document.getElementById('tab-' + id);
         if (btn) btn.style.display = hidden.includes(id) ? 'none' : '';
+      });
+      // Cấu hình cũ có ẩn riêng TikTok / Vệ sinh / Lịch bận -> vẫn ẩn mục con tương ứng trong tab CV
+      ['tiktok', 'cleaning', 'busy'].forEach(id => {
+        const b = document.getElementById('cvbtn-' + id);
+        if (b) b.style.display = hidden.includes(id) ? 'none' : '';
       });
     }
 
@@ -3074,8 +3443,12 @@
       triggerAutoSave();
     }
 
+    // Tab CV gồm các mục con: TikTok · Vệ sinh · Lịch bận · Roadshow · Thống kê (switchTab('tiktok') cũ vẫn dùng được)
+    const CV_SUBS = ['tiktok', 'cleaning', 'busy', 'roadshow', 'stats'];
+    let cvCur = 'tiktok';
     function switchTab(tab) {
-      ['report', 'history-logs', 'tiktok', 'cleaning', 'busy', 'store-ranking', 'dashboard', 'items-management', 'chatbot', 'rules-structure', 'manager'].forEach(t => {
+      if (CV_SUBS.includes(tab)) { cvCur = tab; tab = 'cv'; }
+      ['report', 'history-logs', 'cv', 'store-ranking', 'dashboard', 'items-management', 'chatbot', 'rules-structure', 'manager'].forEach(t => {
         const sec = document.getElementById('sec-' + t);
         if (sec) sec.classList.toggle('hidden', t !== tab);
         const btn = document.getElementById('tab-' + t);
@@ -3085,11 +3458,23 @@
             : "px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1";
         }
       });
+      CV_SUBS.forEach(t => {
+        const sec = document.getElementById('sec-' + t);
+        if (sec) sec.classList.toggle('hidden', !(tab === 'cv' && t === cvCur));
+        const b = document.getElementById('cvbtn-' + t);
+        if (b) b.className = t === cvCur
+          ? "px-3 py-1 rounded-lg text-xs font-black bg-indigo-600 text-white shadow"
+          : "px-3 py-1 rounded-lg text-xs font-black bg-slate-100 text-slate-600 hover:bg-slate-200";
+      });
       if (tab === 'dashboard') renderDashboard();
       if (tab === 'history-logs') renderHistoryLogsTable();
-      if (tab === 'tiktok') renderTiktokTab();
-      if (tab === 'cleaning') renderCleaningTab();
-      if (tab === 'busy') { renderBusyTab(); bzInitShiftTab(); }
+      if (tab === 'cv') {
+        if (cvCur === 'tiktok') renderTiktokTab();
+        if (cvCur === 'cleaning') renderCleaningTab();
+        if (cvCur === 'busy') { renderBusyTab(); bzInitShiftTab(); }
+        if (cvCur === 'roadshow') renderRoadshowTab();
+        if (cvCur === 'stats') renderStatsTab();
+      }
       if (tab === 'chatbot') renderChatbotStaffButtons();
       if (tab === 'store-ranking') renderStoreTable();
       if (tab === 'items-management') renderManagerSettings();
