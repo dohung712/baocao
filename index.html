@@ -1417,7 +1417,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-11 · v10";
+    const APP_VERSION = "2026-10-11 · v11";
     let lastFreshAt = 0; // lần gần nhất tải dữ liệu mới từ Sheet thành công
 
     function fmtSyncTime(ts) {
@@ -1603,6 +1603,26 @@
     document.getElementById('reportDate').value = localDateStr();
     document.getElementById('delLogDateInput').value = localDateStr();
     document.getElementById('lockDateInput').value = localDateStr();
+
+
+    // Ghi cache vào localStorage KHÔNG BAO GIỜ được làm hỏng luồng đồng bộ (trình duyệt giới hạn ~5MB).
+    // Quá hạn mức -> thu gọn bản cache (chỉ giữ ~120 ngày kết quả gần nhất, bỏ lịch bận cũ) -> vẫn lỗi thì xóa cache. Dữ liệu thật luôn nằm trên Sheet.
+    function safeCacheSave(obj) {
+      const KEY = 'APP_STORE_DATA_CACHE';
+      try { localStorage.setItem(KEY, JSON.stringify(obj)); return true; } catch (e) {}
+      try {
+        localStorage.removeItem(KEY);
+        const cut = new Date(Date.now() - 120 * 86400000), p2 = x => String(x).padStart(2, '0');
+        const cutStr = `${cut.getFullYear()}-${p2(cut.getMonth() + 1)}-${p2(cut.getDate())}`;
+        const slim = Object.assign({}, obj);
+        if (Array.isArray(slim.ketQua)) slim.ketQua = slim.ketQua.filter(k => String(k.date) >= cutStr);
+        if (Array.isArray(slim.lichBan)) slim.lichBan = slim.lichBan.filter(k => String(k.date) >= cutStr);
+        if (Array.isArray(slim.tiktok) && slim.tiktok.length > 300) slim.tiktok = slim.tiktok.slice(-300);
+        localStorage.setItem(KEY, JSON.stringify(slim)); return true;
+      } catch (e2) {}
+      try { localStorage.removeItem(KEY); localStorage.removeItem('BZ_SHIFT_SCHEDULE'); } catch (e3) {}
+      return false;
+    }
 
     async function safeFetchJSON(url, options = {}) {
       // Timeout 25s cho GET: tránh treo vô hạn khi Apps Script khởi động chậm / mạng yếu
@@ -1903,7 +1923,7 @@
         const data = await fetchDataWithRetry(fetchUrl);
         
         if (data && Array.isArray(data.nhanSu)) {
-          localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(data));
+          safeCacheSave(data);
           applyStateData(data);
           syncCountdownSeconds = SYNC_EVERY_SEC;
           markSyncOk();
@@ -2087,7 +2107,7 @@
       if (txt.trim().startsWith("<")) throw new Error("Máy chủ trả về trang lỗi (kiểm tra đã Deploy bản Apps Script mới chưa)");
       return JSON.parse(txt);
     }
-    function ttPersist() { try { localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state)); } catch (e) {} }
+    function ttPersist() { try { safeCacheSave(state); } catch (e) {} }
 
     function renderTiktokTab() {
       const sel = document.getElementById('ttStaffSelect');
@@ -2261,7 +2281,7 @@
     function clThumb(id) { return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1000`; }
     function clViewUrl(id) { return `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`; }
     function clReported(rec) { return !!(rec && rec.photos && rec.photos.length >= 3); }
-    function clPersist() { try { localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state)); } catch (e) {} }
+    function clPersist() { try { safeCacheSave(state); } catch (e) {} }
 
     function clShiftMonth(n) {
       let m = clView.m + n, y = clView.y;
@@ -2553,7 +2573,7 @@
     }
     function bzIsWeekday(date) { const w = ttParse(date).getDay(); return w >= 1 && w <= 5; }
     function bzOn(date) { return (state.lichBan || []).filter(r => r.date === date); }
-    function bzPersist() { try { localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state)); } catch (e) {} }
+    function bzPersist() { try { safeCacheSave(state); } catch (e) {} }
     function bzShiftMonth(n) {
       let m = bzView.m + n, y = bzView.y;
       while (m < 0) { m += 12; y--; }
@@ -3699,7 +3719,7 @@
       const todayNetDelta = reports.reduce((s, x) => s + (Number(x.starChange) || 0), 0);
       staff.totalStar = openingStars + todayNetDelta;
       staff.baseStar = staff.totalStar;
-      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      safeCacheSave(state);
 
       // Giữ báo cáo trong hàng chờ cho tới khi Sheet xác nhận ĐÃ GHI + đọc lại thấy đủ dữ liệu
       pendingAdd(payload);
@@ -3795,7 +3815,7 @@
       if (cfgSig(data.thiDua, data.config) === cfgSig(state.thiDua, state.config)) { lastFreshAt = Date.now(); return true; }
       const snap = {};
       document.querySelectorAll('#itemsTableBody tr[data-item]').forEach(r => { snap[r.dataset.item] = r.querySelector('.row-actual').value; });
-      try { localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(data)); } catch (e) {}
+      try { safeCacheSave(data); } catch (e) {}
       applyStateData(data); lastFreshAt = Date.now();
       renderItemsTable();
       document.querySelectorAll('#itemsTableBody tr[data-item]').forEach(r => { if (snap[r.dataset.item] !== undefined) r.querySelector('.row-actual').value = snap[r.dataset.item]; });
@@ -3956,7 +3976,7 @@
         staff.baseStar = staff.totalStar;
       }
 
-      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      safeCacheSave(state);
       renderHistoryLogsTable();
       renderDashboard();
       renderManagerSettings();
@@ -4020,7 +4040,7 @@
       // Xóa nhật ký trễ nếu có
       state.lateLogs = (state.lateLogs || []).filter(l => !(l.staffId === staffId && l.date === date));
 
-      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      safeCacheSave(state);
       renderItemsTable();
       renderHistoryLogsTable();
       renderDashboard();
@@ -4061,7 +4081,7 @@
         return true;
       });
 
-      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      safeCacheSave(state);
       renderHistoryLogsTable();
       renderDashboard();
       showToastMessage(`✅ Đã dọn dẹp các bản ghi lịch sử được chọn!`);
@@ -4099,7 +4119,7 @@
         state.lockedDates = state.lockedDates.filter(d => d !== date);
         showToastMessage(`🔓 Đã mở khóa ngày ${date}!`);
       }
-      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      safeCacheSave(state);
       renderLockedDatesBadges();
       renderItemsTable();
       triggerAutoSave();
@@ -4108,7 +4128,7 @@
     function unlockSingleDate(d) {
       if (!verifyManagerAccess()) return;
       state.lockedDates = (state.lockedDates || []).filter(date => date !== d);
-      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      safeCacheSave(state);
       renderLockedDatesBadges();
       renderItemsTable();
       showToastMessage(`🔓 Đã mở khóa ngày ${d}!`);
@@ -4139,7 +4159,7 @@
       };
 
       state.nhanSu.push(newMember);
-      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      safeCacheSave(state);
       populateStaffList();
       renderDashboard();
       renderManagerSettings();
@@ -4156,7 +4176,7 @@
       if (!confirm(`CẢNH BÁO QUẢN LÝ:\nXác nhận XÓA nhân viên ${staff.name} (${staff.id}) ra khỏi siêu thị?`)) return;
 
       state.nhanSu = state.nhanSu.filter(ns => ns.id !== staffId);
-      localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+      safeCacheSave(state);
       populateStaffList();
       renderDashboard();
       renderManagerSettings();
@@ -4175,7 +4195,7 @@
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       if (staff) {
         staff.group = newGroup;
-        localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+        safeCacheSave(state);
         populateStaffList();
         renderDashboard();
         showToastMessage(`✅ Đã chuyển ${staff.name} sang ${newGroup}!`);
@@ -5254,7 +5274,7 @@
         const valNum = Number(newVal) || 0;
         staff.totalStar = valNum;
         staff.baseStar = valNum;
-        localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+        safeCacheSave(state);
         renderDashboard();
         if (document.getElementById('staffSelect').value === staffId) {
           renderItemsTable();
@@ -5269,7 +5289,7 @@
         const valNum = (Number(staff.totalStar) || 0) + delta;
         staff.totalStar = valNum;
         staff.baseStar = valNum;
-        localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+        safeCacheSave(state);
         renderManagerSettings();
         renderDashboard();
         if (document.getElementById('staffSelect').value === staffId) {
@@ -5403,7 +5423,7 @@
         
         state.thiDua = itemsList;
         state.config = config;
-        localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+        safeCacheSave(state);
 
         const toast = document.getElementById('autoSaveToast');
         if (toast) {
@@ -5415,7 +5435,7 @@
       } catch (e) { 
         state.thiDua = itemsList;
         state.config = config;
-        localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+        safeCacheSave(state);
         if (isManual) showToastMessage("⚠️ Đã lưu cấu hình vào bộ nhớ máy!");
       }
     }
@@ -5463,7 +5483,7 @@
       const staff = state.nhanSu.find(ns => ns.id === staffId);
       if (staff) {
         staff.assignedItems = selectedItems;
-        localStorage.setItem('APP_STORE_DATA_CACHE', JSON.stringify(state));
+        safeCacheSave(state);
         populateStaffList();
         renderCustomAssignmentStaffDropdown();
 
