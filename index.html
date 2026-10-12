@@ -9,7 +9,7 @@
   <title>Báo Cáo Thi Đua Cuối Ngày & BXH Siêu Thị VIP</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Thư viện chụp ảnh canvas chuẩn nét HD -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     .table-header { background-color: #facc15; color: #0f172a; }
     input[type=number]::-webkit-inner-spin-button, 
@@ -1407,6 +1407,7 @@
         <img id="previewImageTag" src="" alt="Ảnh báo cáo" class="max-w-full h-auto mx-auto rounded shadow">
       </div>
 
+      <button id="btnShareImage" onclick="shareReportImage()" class="hidden w-full py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow">📤 Chia sẻ / Lưu vào Ảnh</button>
       <div class="grid grid-cols-2 gap-2 pt-1">
         <button onclick="closeImagePreviewModal()" class="py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl">
           Đóng
@@ -1552,7 +1553,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-11 · v15";
+    const APP_VERSION = "2026-10-12 · v16";
     let lastFreshAt = 0; // lần gần nhất tải dữ liệu mới từ Sheet thành công
 
     function fmtSyncTime(ts) {
@@ -1936,43 +1937,112 @@
       document.body.appendChild(clone);
 
       try {
-        const canvas = await Promise.race([html2canvas(clone, { 
-          scale: 1.5, 
-          useCORS: true, 
+        btn.innerHTML = "<span>⏳ Đang tải thư viện ảnh...</span>";
+        const h2c = await ensureHtml2canvas();
+        btn.innerHTML = "<span>⏳ Đang tạo ảnh...</span>";
+        await new Promise(r => requestAnimationFrame(() => setTimeout(r, 60)));   // cho giao diện kịp hiện chữ "đang xử lý" trước khi máy bận vẽ
+
+        // Điện thoại: giảm độ phân giải & giới hạn tổng số điểm ảnh (iOS/Android yếu dễ treo hoặc ra ảnh trắng nếu canvas quá lớn)
+        const isMobile = isMobileDevice();
+        let scale = isMobile ? 1.25 : 1.5;
+        const maxPixels = isMobile ? 9e6 : 16e6;
+        const hgt = Math.max(1, clone.scrollHeight);
+        scale = Math.max(0.8, Math.min(scale, Math.sqrt(maxPixels / (850 * hgt))));
+
+        const canvas = await Promise.race([h2c(clone, {
+          scale: scale,
+          useCORS: true,
           backgroundColor: "#ffffff",
           width: 850,
           windowWidth: 850,
+          imageTimeout: 5000,
           logging: false
         }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('xử lý ảnh quá lâu, hãy bấm xuất ảnh lại hoặc chụp màn hình')), 25000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('xử lý ảnh quá lâu, hãy bấm xuất ảnh lại hoặc chụp màn hình')), 60000))
         ]);
 
-        const image = canvas.toDataURL("image/jpeg", 0.92);
-        const filename = `BaoCao_${staffName.replace(/\s+/g, '_')}_${dateStr}.jpg`;
+        // toBlob nhẹ và nhanh hơn toDataURL (chuỗi base64 khổng lồ làm điện thoại giật/đứng)
+        const blob = await new Promise(res => {
+          try { canvas.toBlob(b => res(b), "image/jpeg", 0.88); } catch (e) { res(null); }
+        });
+        if (!blob) throw new Error('máy không tạo được ảnh (hết bộ nhớ), hãy đóng bớt tab rồi thử lại hoặc chụp màn hình');
+        canvas.width = canvas.height = 0;
 
-        // Tự kích hoạt tải file về máy
-        const link = document.createElement('a');
-        link.download = filename;
-        link.href = image;
-        link.click();
+        const filename = `BaoCao_${staffName.replace(/\s+/g, '_')}_${dateStr}.jpg`;
+        if (window._lastReportBlobUrl) { try { URL.revokeObjectURL(window._lastReportBlobUrl); } catch (e) {} }
+        const url = URL.createObjectURL(blob);
+        window._lastReportBlobUrl = url;
+        window._lastReportFile = (typeof File === 'function') ? new File([blob], filename, { type: 'image/jpeg' }) : null;
+
+        // Máy tính: tự tải file. Điện thoại/trình duyệt trong app (Zalo, Messenger...) thường chặn tải tự động -> chỉ mở khung xem, bấm nút để lưu/chia sẻ.
+        if (!isMobile) {
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
 
         // Mở Popup xem và nhấn giữ lưu ảnh
         const previewModal = document.getElementById('imagePreviewModal');
         const previewImg = document.getElementById('previewImageTag');
         const btnDirect = document.getElementById('btnDownloadImageDirect');
+        const btnShare = document.getElementById('btnShareImage');
         if (previewModal && previewImg && btnDirect) {
-          previewImg.src = image;
-          btnDirect.href = image;
+          previewImg.src = url;
+          btnDirect.href = url;
           btnDirect.download = filename;
+          if (btnShare) {
+            const canShare = !!(window._lastReportFile && navigator.canShare && navigator.share && navigator.canShare({ files: [window._lastReportFile] }));
+            btnShare.classList.toggle('hidden', !canShare);
+          }
           previewModal.classList.remove('hidden');
         }
       } catch (err) {
         showToastMessage("⚠️ Lỗi khi tạo ảnh báo cáo: " + err.message);
       } finally {
-        document.body.removeChild(clone);
+        if (clone.parentNode) clone.parentNode.removeChild(clone);
         btn.innerHTML = oldText;
         btn.disabled = false;
       }
+    }
+
+    function isMobileDevice() {
+      return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 900);
+    }
+
+    // Nạp html2canvas khi cần; CDN chính chậm/bị chặn thì thử CDN dự phòng
+    function ensureHtml2canvas() {
+      if (window.html2canvas) return Promise.resolve(window.html2canvas);
+      if (window._h2cLoading) return window._h2cLoading;
+      const load = (src, ms) => new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        const t = setTimeout(() => { el.remove(); reject(new Error('timeout')); }, ms);
+        el.onload = () => { clearTimeout(t); window.html2canvas ? resolve(window.html2canvas) : reject(new Error('no lib')); };
+        el.onerror = () => { clearTimeout(t); reject(new Error('load fail')); };
+        el.src = src;
+        document.head.appendChild(el);
+      });
+      window._h2cLoading = (async () => {
+        // đợi thẻ <script defer> chính một lúc ngắn trước khi nạp dự phòng
+        for (let i = 0; i < 30 && !window.html2canvas; i++) await new Promise(r => setTimeout(r, 100));
+        if (window.html2canvas) return window.html2canvas;
+        const urls = [
+          'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+          'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
+        ];
+        for (const u of urls) { try { return await load(u, 15000); } catch (e) {} }
+        throw new Error('không tải được thư viện tạo ảnh (kiểm tra mạng rồi bấm lại)');
+      })().finally(() => { if (!window.html2canvas) window._h2cLoading = null; });
+      return window._h2cLoading;
+    }
+
+    async function shareReportImage() {
+      const f = window._lastReportFile;
+      if (!f || !navigator.share) return;
+      try { await navigator.share({ files: [f], title: 'Báo cáo thi đua' }); }
+      catch (e) { if (e && e.name !== 'AbortError') showToastMessage('⚠️ Không chia sẻ được: ' + e.message); }
     }
 
     function closeImagePreviewModal() {
@@ -2244,11 +2314,29 @@
       const shortB = /^https?:\/\/(?:www\.)?tiktok\.com\/t\/[A-Za-z0-9_-]{5,}\/?(?:\?.*)?$/i;
       return (full.test(l) || shortA.test(l) || shortB.test(l)) ? l : '';
     }
-    async function ttPost(payload) {
-      const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
-      const txt = await res.text();
-      if (txt.trim().startsWith("<")) throw new Error("Máy chủ trả về trang lỗi (kiểm tra đã Deploy bản Apps Script mới chưa)");
-      return JSON.parse(txt);
+    // Gắn mật khẩu Quản lý (nếu đang mở khóa Quản lý) vào mọi yêu cầu ghi để server kiểm lại
+    function withPin(obj) {
+      return (isManagerUnlocked && managerPass) ? Object.assign({}, obj, { mpin: managerPass }) : obj;
+    }
+    async function ttPost(payload, timeoutMs) {
+      // Mạng di động yếu: có thời gian chờ rõ ràng (tránh treo mãi ở "ĐANG TẢI ẢNH...") và tự thử lại 1 lần khi mất kết nối.
+      const body = JSON.stringify(withPin(payload));
+      const limit = timeoutMs || (/UPLOAD_|POST_NOTE/.test(String(payload.action)) ? 120000 : 45000);
+      let lastErr;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), limit);
+        try {
+          const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body, signal: ctl.signal });
+          const txt = await res.text();
+          if (txt.trim().startsWith("<")) throw new Error("Máy chủ trả về trang lỗi (kiểm tra đã Deploy bản Apps Script mới chưa)");
+          return JSON.parse(txt);
+        } catch (e) {
+          lastErr = (e && e.name === 'AbortError') ? new Error("Mạng quá chậm, quá thời gian chờ. Hãy thử lại khi có sóng tốt hơn.") : e;
+          // Chỉ thử lại với thao tác tải ảnh khi lỗi mạng (không thử lại khi máy chủ đã trả lời lỗi)
+          if (!(e instanceof TypeError) || !/UPLOAD_/.test(String(payload.action))) break;
+        } finally { clearTimeout(timer); }
+      }
+      throw lastErr;
     }
     function ttPersist() { try { safeCacheSave(state); } catch (e) {} }
 
@@ -2421,7 +2509,17 @@
     function clGet(date) { return (state.veSinh || []).find(v => v.date === date); }
     function clShort(name) { const p = String(name || '').trim().split(/\s+/); return p[p.length - 1] || ''; }
     function clDateLabel(date) { const d = ttParse(date); return `${CL_DOW_FULL[d.getDay()]}, ${clPad(d.getDate())}/${clPad(d.getMonth() + 1)}/${d.getFullYear()}`; }
-    function clThumb(id) { return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1000`; }
+    // Ảnh Drive: dùng lh3.googleusercontent.com (nhanh, ổn định trên điện thoại, được trình duyệt cache) thay cho drive.google.com/thumbnail (chậm, hay bị chặn/giới hạn trên mobile).
+    // Lỗi thì tự thử lần lượt: thumbnail -> uc?export=view -> hiện khung "không tải được, chạm để mở".
+    function clThumb(id, w) { return `https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}=w${w || 400}`; }
+    function clImgAttr(id, w) { return `src="${clThumb(id, w)}" data-id="${encodeURIComponent(id)}" data-w="${w || 400}" data-fb="0" onerror="clImgErr(this)" decoding="async" referrerpolicy="no-referrer"`; }
+    function clImgErr(img) {
+      const id = img.dataset.id, w = img.dataset.w || 400, step = Number(img.dataset.fb || 0);
+      img.dataset.fb = step + 1;
+      if (step === 0) img.src = `https://drive.google.com/thumbnail?id=${id}&sz=w${w}`;
+      else if (step === 1) img.src = `https://drive.google.com/uc?export=view&id=${id}`;
+      else { img.onerror = null; img.removeAttribute('src'); img.alt = '⚠️ Không tải được ảnh - chạm để mở'; img.classList.add('p-1', 'text-[9px]', 'text-rose-600', 'text-center'); }
+    }
     function clViewUrl(id) { return `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`; }
     function clReported(rec) { return !!(rec && rec.photos && rec.photos.length >= 3); }
     function clPersist() { try { safeCacheSave(state); } catch (e) {} }
@@ -2531,7 +2629,7 @@
           h += `<div class="space-y-1.5">
             <div class="font-bold text-emerald-700">✅ Đã nộp báo cáo lúc ${ttEsc(rec.reportTime || '')} ${rec.reportDate ? ttEsc(rec.reportDate.slice(8, 10) + '/' + rec.reportDate.slice(5, 7)) : ''}</div>
             <div class="grid grid-cols-3 gap-1.5">` +
-            rec.photos.slice(0, 3).map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${clThumb(id)}" alt="Ảnh ${i + 1}" loading="lazy" class="w-full h-24 object-cover rounded-lg border bg-slate-100"></a>`).join('') +
+            rec.photos.slice(0, 3).map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img ${clImgAttr(id, 400)} alt="Ảnh ${i + 1}" loading="lazy" class="w-full h-24 object-cover rounded-lg border bg-slate-100"></a>`).join('') +
             `</div><div class="text-[10px] text-slate-400">Chạm vào ảnh để mở bản lớn trên Google Drive.</div></div>`;
         } else if (date > today) {
           h += `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-500">📷 Báo cáo ảnh sẽ mở từ <b>ngày vệ sinh</b>. Tới ngày bạn quay lại đây để nộp 3 ảnh.</div>`;
@@ -2597,24 +2695,31 @@
 
     // Nén ảnh ở máy (cạnh dài tối đa 1280px, JPEG 72%) để gửi nhanh và nhẹ Drive
     function clCompress(file, maxSide = 1280, quality = 0.72) {
-      return new Promise((resolve, reject) => {
-        if (!file) return reject(new Error('Chưa chọn ảnh'));
+      // Điện thoại: ảnh gốc 12-48MP rất nặng -> thu nhỏ trước khi nén. Ưu tiên createImageBitmap (resize ngay lúc giải mã, đỡ tràn RAM), dự phòng <img>.
+      const draw = (src, w, h) => {
+        const scale = Math.min(1, maxSide / Math.max(w, h));
+        const tw = Math.max(1, Math.round(w * scale)), th = Math.max(1, Math.round(h * scale));
+        const c = document.createElement('canvas');
+        c.width = tw; c.height = th;
+        c.getContext('2d').drawImage(src, 0, 0, tw, th);
+        const dataUrl = c.toDataURL('image/jpeg', quality);
+        c.width = c.height = 0;
+        return { mime: 'image/jpeg', base64: dataUrl.split(',')[1], preview: dataUrl };
+      };
+      const viaImg = () => new Promise((resolve, reject) => {
         const url = URL.createObjectURL(file);
         const img = new Image();
-        img.onload = () => {
-          let w = img.naturalWidth, h = img.naturalHeight;
-          const scale = Math.min(1, maxSide / Math.max(w, h));
-          w = Math.max(1, Math.round(w * scale)); h = Math.max(1, Math.round(h * scale));
-          const c = document.createElement('canvas');
-          c.width = w; c.height = h;
-          c.getContext('2d').drawImage(img, 0, 0, w, h);
-          const dataUrl = c.toDataURL('image/jpeg', quality);
-          URL.revokeObjectURL(url);
-          resolve({ mime: 'image/jpeg', base64: dataUrl.split(',')[1], preview: dataUrl });
-        };
+        img.onload = () => { try { resolve(draw(img, img.naturalWidth, img.naturalHeight)); } catch (e) { reject(e); } finally { URL.revokeObjectURL(url); } };
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Không đọc được ảnh này (thử chụp lại hoặc chọn ảnh JPG/PNG)')); };
         img.src = url;
       });
+      if (!file) return Promise.reject(new Error('Chưa chọn ảnh'));
+      if (window.createImageBitmap) {
+        return createImageBitmap(file, { imageOrientation: 'from-image' })
+          .then(bmp => { try { return draw(bmp, bmp.width, bmp.height); } finally { if (bmp.close) bmp.close(); } })
+          .catch(() => viaImg());
+      }
+      return viaImg();
     }
 
     function clUpdateUploadBtn() {
@@ -2811,7 +2916,7 @@
               </div>`;
             if (rep) {
               h += `<div class="text-[10px] text-slate-500">Nộp lúc ${ttEsc(rec.reportTime || '')} ${rec.reportDate ? ttEsc(rec.reportDate.slice(8, 10) + '/' + rec.reportDate.slice(5, 7)) : ''} · <b>${Number(rec.km) || 0} km</b> · <b>${Number(rec.minutes) || 0} phút</b></div>
-                <div class="grid grid-cols-3 gap-1.5">` + rec.photos.map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${clThumb(id)}" alt="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh')}" title="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh thêm')}" loading="lazy" class="w-full h-20 object-cover rounded-lg border bg-slate-100"></a>`).join('') + `</div>`;
+                <div class="grid grid-cols-3 gap-1.5">` + rec.photos.map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img ${clImgAttr(id, 400)} alt="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh')}" title="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh thêm')}" loading="lazy" class="w-full h-20 object-cover rounded-lg border bg-slate-100"></a>`).join('') + `</div>`;
             } else if (rsCanReport(rec, today) && rsReportFor !== key) {
               h += `<button onclick="rsStartReport('${ttEsc(rec.staffId)}','${ttEsc(rec.time || '')}')" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black">📷 Nộp báo cáo của ${ttEsc(clShort(rec.staffName))}</button>`;
             } else if (!rsCanReport(rec, today)) {
@@ -3311,7 +3416,7 @@
       const n = x.n, c = notesCat(n.category), col = NOTE_COLOR[c[2]];
       const snippet = String(n.summary || n.text || '').replace(/\s+/g, ' ').slice(0, 170);
       const imgs = (n.files || []).filter(f => /^image\//.test(f.mime)), docs = (n.files || []).length - imgs.length;
-      const thumb = imgs[0] ? `<img src="https://drive.google.com/thumbnail?id=${encodeURIComponent(imgs[0].id)}&sz=w200" loading="lazy" alt="" class="w-14 h-14 object-cover rounded-lg border bg-slate-100 shrink-0">` : '';
+      const thumb = imgs[0] ? `<img ${clImgAttr(imgs[0].id, 200)} loading="lazy" alt="" class="w-14 h-14 object-cover rounded-lg border bg-slate-100 shrink-0">` : '';
       return `<div onclick="notesOpen('${ttEsc(n.id)}')" class="cursor-pointer border border-l-4 ${col.bd} rounded-xl bg-white hover:shadow-md transition p-2.5 flex gap-2 ${x.st.k === 'expired' ? 'opacity-60' : ''}">
         <div class="flex-1 min-w-0 space-y-1">
           <div class="flex flex-wrap items-center gap-1.5"><span class="text-[10px] font-black px-1.5 py-0.5 rounded ${col.chip}">${c[1]}</span>${n.pin ? '<span class="text-xs">📌</span>' : ''}${notesStatusChip(x.st)}<span class="text-[10px] text-slate-400 ml-auto">${n.date ? stFmtD(n.date) : ''}</span></div>
@@ -3372,7 +3477,7 @@
           <div class="text-[10px] text-slate-400">Đăng ${n.date ? stFmtD(n.date) : ''} ${ttEsc(n.time || '')}${n.author ? ' · ' + ttEsc(n.author) : ''} · ${src}${n.category === 'ctkm_tg' && (n.validFrom || n.validTo) ? ` · Áp dụng ${n.validFrom ? stFmtD(n.validFrom) : '...'} → ${n.validTo ? stFmtD(n.validTo) : '...'}` : ''}</div>
         </div>
         ${n.text ? `<div class="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap break-words bg-slate-50 border border-slate-200 rounded-xl p-2.5">${notesLinkify(n.text)}</div>` : ''}
-        ${imgs.length ? `<div class="grid grid-cols-2 gap-1.5">${imgs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer"><img src="${clThumb(f.id)}" alt="${ttEsc(f.name)}" loading="lazy" class="w-full max-h-64 object-contain rounded-lg border bg-slate-100"></a>`).join('')}</div>` : ''}
+        ${imgs.length ? `<div class="grid grid-cols-2 gap-1.5">${imgs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer"><img ${clImgAttr(f.id, 800)} alt="${ttEsc(f.name)}" loading="lazy" class="w-full max-h-64 object-contain rounded-lg border bg-slate-100"></a>`).join('')}</div>` : ''}
         ${docs.length ? `<div class="space-y-1">${docs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 border rounded-lg p-2 bg-white hover:bg-slate-50 font-bold text-slate-700"><span class="text-lg">${notesFileIcon(f)}</span><span class="break-all">${ttEsc(f.name)}</span></a>`).join('')}</div>` : ''}
         ${(n.links || []).length ? `<div class="space-y-1">${n.links.map(u => `<a href="${ttEsc(u)}" target="_blank" rel="noopener noreferrer" class="block border rounded-lg p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold break-all">🔗 ${ttEsc(u.length > 90 ? u.slice(0, 90) + '…' : u)}</a>`).join('')}</div>` : ''}
         <div class="flex flex-wrap gap-1.5 pt-1 border-t">
@@ -4095,19 +4200,40 @@
       if (tab === 'items-management') renderManagerSettings();
     }
 
+    // Mật khẩu mặc định chỉ dùng khi server CHƯA cài MANAGER_PIN (Script properties). Đã cài thì server quyết định.
+    const MANAGER_PIN_LEGACY = "2026";
     function verifyManagerAccess() {
       if (isManagerUnlocked) return true;
       const pass = prompt("🔐 Nhập mật khẩu Quản Lý để thực hiện quyền này:");
-      if (pass === "2026") {
-        isManagerUnlocked = true; managerPass = pass;
-        const b = document.getElementById('badgeManagerActive');
-        if (b) b.classList.remove('hidden');
-        renderHistoryLogsTable();
-        return true;
-      } else if (pass !== null) {
-        showToastMessage("⚠️ Mật khẩu không chính xác!");
+      if (pass === null) return false;
+      if (pass === "") { showToastMessage("⚠️ Chưa nhập mật khẩu!"); return false; }
+      isManagerUnlocked = true; managerPass = pass;   // mở tạm, server xác nhận ngay sau đó (sai thì tự khóa lại)
+      const b = document.getElementById('badgeManagerActive');
+      if (b) b.classList.remove('hidden');
+      renderHistoryLogsTable();
+      verifyManagerOnServer();
+      return true;
+    }
+    function lockManagerAccess(msg) {
+      isManagerUnlocked = false; managerPass = '';
+      const b = document.getElementById('badgeManagerActive');
+      if (b) b.classList.add('hidden');
+      try { renderHistoryLogsTable(); } catch (e) {}
+      if (msg) showToastMessage(msg);
+    }
+    async function verifyManagerOnServer() {
+      const tried = managerPass;
+      try {
+        const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "VERIFY_MANAGER", mpin: tried }) });
+        const txt = await res.text();
+        if (txt.trim().startsWith("<")) throw new Error("html");
+        const j = JSON.parse(txt);
+        if (j.status === "success") return;
+        if (j.status === "nopin") { if (tried !== MANAGER_PIN_LEGACY) lockManagerAccess("⚠️ Mật khẩu không chính xác!"); return; }
+        lockManagerAccess("⚠️ " + (j.message || "Mật khẩu không chính xác!"));
+      } catch (e) {
+        if (tried !== MANAGER_PIN_LEGACY) lockManagerAccess("⚠️ Không xác nhận được mật khẩu với máy chủ, vui lòng thử lại!");
       }
-      return false;
     }
 
     function openItemsTab() {
@@ -4991,7 +5117,7 @@
         const rj = await safeFetchJSON(API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "DELETE_SINGLE_LOG_RECORD", date, staffId, itemName })
+          body: JSON.stringify(withPin({ action: "DELETE_SINGLE_LOG_RECORD", date, staffId, itemName }))
         });
         if (rj && rj.status === "error") srvErr = rj.message || "Lỗi server";
       } catch (e) { srvErr = "chưa kết nối được Sheet"; }
@@ -5056,7 +5182,7 @@
         const rj = await safeFetchJSON(API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "DELETE_STAFF_DAILY_REPORTS", date, staffId })
+          body: JSON.stringify(withPin({ action: "DELETE_STAFF_DAILY_REPORTS", date, staffId }))
         });
         if (rj && rj.status === "error") srvErr = rj.message || "Lỗi server";
       } catch (e) { srvErr = "chưa kết nối được Sheet"; }
@@ -5190,7 +5316,7 @@
       safeFetchJSON(API_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "DELETE_STAFF", staffId })
+        body: JSON.stringify(withPin({ action: "DELETE_STAFF", staffId }))
       }).then(rj => {
         if (rj && rj.status === "error") showToastMessage(`⚠️ Sheet báo: ${rj.message}`);
       }).catch(() => showToastMessage("⚠️ Đã xóa trên máy, chưa xác nhận được với Sheet — bấm 🔄 Đồng bộ để kiểm tra"));
@@ -6317,7 +6443,7 @@
         const resData = await safeFetchJSON(API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "UPDATE_STAFF_STARS", staffStars: starsPayload })
+          body: JSON.stringify(withPin({ action: "UPDATE_STAFF_STARS", staffStars: starsPayload }))
         });
         showToastMessage(resData.message || "✅ Đã lưu toàn bộ quỹ sao nhân viên lên Google Sheets!");
       } catch (err) {
@@ -6426,7 +6552,7 @@
         await safeFetchJSON(API_URL, { 
           method: "POST", 
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "AUTO_SAVE_SETTINGS", config, itemsList, lockedDates: state.lockedDates }) 
+          body: JSON.stringify(withPin({ action: "AUTO_SAVE_SETTINGS", config, itemsList, lockedDates: state.lockedDates })) 
         });
         
         state.thiDua = itemsList;
@@ -6499,7 +6625,7 @@
           await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ action: "ASSIGN_SPECIFIC_ITEMS", staffId: staffId, assignedItems: selectedItems })
+            body: JSON.stringify(withPin({ action: "ASSIGN_SPECIFIC_ITEMS", staffId: staffId, assignedItems: selectedItems }))
           });
         } catch (e) {}
 
@@ -6909,7 +7035,7 @@
         const resData = await safeFetchJSON(API_URL, { 
           method: "POST", 
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "APPROVE_EXTRA_PROPOSAL", rowIdx, decision }) 
+          body: JSON.stringify(withPin({ action: "APPROVE_EXTRA_PROPOSAL", rowIdx, decision })) 
         });
         showToastMessage(resData.message || "✅ Đã xử lý đề xuất");
         await loadData();
@@ -6924,7 +7050,7 @@
         const resData = await safeFetchJSON(API_URL, { 
           method: "POST", 
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "RESET_STREAK", staffId: staffId }) 
+          body: JSON.stringify(withPin({ action: "RESET_STREAK", staffId: staffId })) 
         });
         showToastMessage(resData.message || "✅ Đã reset thành công!");
         await loadData();
