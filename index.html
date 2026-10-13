@@ -9,7 +9,7 @@
   <title>Báo Cáo Thi Đua Cuối Ngày & BXH Siêu Thị VIP</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Thư viện chụp ảnh canvas chuẩn nét HD -->
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     .table-header { background-color: #facc15; color: #0f172a; }
     input[type=number]::-webkit-inner-spin-button, 
@@ -96,7 +96,7 @@
           Tự động đồng bộ 5 phút/lần + mỗi khi mở lại app | Quỹ sao RT đồng bộ BXH | Chế tài nộp trễ sau 22h20 (-100⭐ lũy tiến)
         </p>
         <p class="text-[10px] text-indigo-300 mt-0.5 font-mono">
-          Phiên bản: <b id="lblAppVersion" class="text-white">-</b> · Đồng bộ dữ liệu lúc: <b id="lblLastSync" class="text-white">chưa có</b>
+          Phiên bản: <b id="lblAppVersion" class="text-white">-</b> · Đồng bộ dữ liệu lúc: <b id="lblLastSync" class="text-white">chưa có</b> · <button onclick="hardRefreshTool()" class="underline font-black text-amber-200">🧹 Làm mới tool</button>
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -110,6 +110,13 @@
       </div>
     </header>
 
+    <!-- Máy đang chạy bản tool cũ mà tự tải lại vẫn không được -->
+    <div id="toolStaleBanner" class="hidden bg-amber-50 border-2 border-amber-400 text-amber-900 rounded-xl p-2.5 text-xs flex items-start gap-2">
+      <span class="text-base leading-none">🆕</span>
+      <div class="flex-1 leading-snug"><b>Máy này đang chạy bản tool CŨ.</b> Bản mới nhất: <b id="toolStaleVer">-</b>. App đã tự tải lại nhưng trình duyệt vẫn giữ bản cũ, hãy bấm <b>Làm mới tool</b>. Nếu vẫn bị, mở link bằng Chrome/Safari (đừng mở trong Zalo/Messenger).</div>
+      <button onclick="hardRefreshTool()" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-black shadow whitespace-nowrap">🧹 Làm mới tool</button>
+    </div>
+
     <!-- Cảnh báo khi KHÔNG đồng bộ được dữ liệu mới -->
     <div id="syncFailBanner" class="hidden bg-rose-50 border border-rose-300 text-rose-800 rounded-xl p-2.5 text-xs flex items-start gap-2">
       <span class="text-base leading-none">⚠️</span>
@@ -119,8 +126,12 @@
         Sao/chuỗi có thể chưa đúng, nên bấm <b>Thử lại</b> trước khi gửi báo cáo. Nếu vẫn lỗi, báo Quản lý kiểm tra Apps Script.
         <span id="syncFailDetail" class="block text-[10px] text-rose-500 mt-0.5 font-mono"></span>
       </div>
-      <button onclick="loadData()" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-black shadow whitespace-nowrap">🔄 Thử lại</button>
+      <div class="flex flex-col gap-1"><button onclick="loadData()" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-black shadow whitespace-nowrap">🔄 Thử lại</button>
+      <button onclick="hardRefreshTool()" class="px-2.5 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-[11px] font-black shadow whitespace-nowrap">🧹 Làm mới tool</button></div>
     </div>
+
+    <!-- Thanh nhắc việc: số nội dung / công việc chưa hoàn tất, ai cũng xem được (không cần mật khẩu) -->
+    <div id="notesBanner" onclick="notesGoStat()" class="hidden cursor-pointer rounded-xl border-2 border-rose-300 bg-rose-50 hover:bg-rose-100 px-3 py-2 text-[11px] leading-snug shadow-sm"></div>
 
     <!-- Navigation Bar 8 Tab Hoàn Chỉnh -->
     <div id="mainTabBar" class="flex flex-wrap gap-1 border-b border-slate-200 pb-1.5">
@@ -134,7 +145,7 @@
         🗂️ CV
       </button>
       <button onclick="switchTab('notes')" id="tab-notes" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
-        📚 Nội dung
+        📚 Nội dung<span id="notesTabBadge" class="hidden min-w-[16px] text-center px-1 rounded-full bg-rose-600 text-white text-[10px] font-black leading-4"></span>
       </button>
       <button onclick="switchTab('store-ranking')" id="tab-store-ranking" class="px-2 md:px-2.5 py-1 font-bold text-[11px] md:text-xs rounded-lg bg-slate-200 text-slate-700 whitespace-nowrap flex items-center gap-1">
         🏢 BXH Siêu Thị
@@ -600,10 +611,13 @@
         <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-1.5">
           <h3 class="text-xs md:text-sm font-bold text-slate-800">📚 Nội Dung Quan Trọng <span id="notesCount" class="text-[10px] font-normal text-slate-400"></span></h3>
           <div class="flex items-center gap-1">
+            <button onclick="notesToggleStat()" class="px-2 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-black text-[11px]">📈 Thống kê</button>
             <button onclick="notesLoad(true)" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">🔄 Làm mới</button>
             <button onclick="ncOpen()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] whitespace-nowrap">➕ Triển khai nội dung (QL)</button>
           </div>
         </div>
+        <div id="notesStatBox"></div>
+        <div class="flex flex-wrap items-center gap-1.5 text-[11px]"><span class="font-bold text-slate-600">👤 Bạn là:</span><select id="notesMeSel" onchange="notesSetMe(this.value)" class="flex-1 min-w-[160px] border rounded-lg p-1.5 font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-400"></select><span id="notesPending"></span></div>
         <input id="notesSearch" type="search" oninput="notesSearchInput(this.value)" placeholder="🔍 Tìm nhanh: iPhone, bảo hành, quy trình đổi trả, CTKM..." class="w-full border rounded-lg p-2 text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
         <div id="notesChips" class="flex flex-wrap gap-1"></div>
         <label class="flex items-center gap-1.5 text-[11px] text-slate-500 cursor-pointer"><input type="checkbox" id="notesShowExpired" onchange="renderNotesTab()" class="w-3.5 h-3.5 accent-indigo-600"> Hiện cả CTKM đã hết hạn <span id="notesExpiredCount"></span></label>
@@ -1015,12 +1029,15 @@
                 <th class="p-1.5 w-28">Bộ Phận</th>
                 <th class="p-1.5 text-center w-28">Tổng Sao Hiện Tại</th>
                 <th class="p-1.5 text-center w-36">Điều Chỉnh Nhanh</th>
+                <th class="p-1.5 text-center w-14 text-slate-600">Ẩn NV</th>
                 <th class="p-1.5 text-center w-14 text-rose-600">Xóa NV</th>
               </tr>
             </thead>
             <tbody id="managerStaffStarsTableBody"></tbody>
           </table>
         </div>
+
+        <div id="hiddenStaffBox"></div>
 
         <div class="pt-1 flex justify-end">
           <button onclick="saveAllStaffStarsToSheet()" id="btnSaveStars" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1">
@@ -1265,7 +1282,7 @@
   <div id="noteComposerModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 z-50">
     <div class="bg-white w-full max-w-lg max-h-[94vh] overflow-y-auto rounded-2xl p-4 shadow-2xl space-y-2.5 text-xs">
       <div class="flex items-start justify-between gap-2 border-b pb-2">
-        <div><h3 class="text-sm font-black text-slate-900">➕ Triển khai nội dung mới</h3><p class="text-[10px] text-slate-500">Dán text, thêm link, úp ảnh/file. AI tự xếp vào đúng mục, file lưu Google Drive, nhân viên thấy sau khi đồng bộ.</p></div>
+        <div><h3 class="text-sm font-black text-slate-900">➕ Triển khai nội dung mới</h3><p class="text-[10px] text-slate-500">Dán text, thêm link, úp ảnh/file. AI tự xếp vào đúng mục và lập bảng tóm tắt (ý chính, thời gian, sản phẩm, lưu ý). Đọc được text, ảnh, PDF. File lưu Google Drive.</p></div>
         <button onclick="ncClose()" class="text-slate-400 hover:text-slate-700 font-black text-lg leading-none px-1">✕</button>
       </div>
       <textarea id="ncText" rows="6" onpaste="ncOnPaste(event)" placeholder="Dán nội dung triển khai ở đây (CTKM, chính sách, quy trình...). Có thể dán ảnh chụp màn hình trực tiếp (Ctrl+V)." class="w-full border rounded-lg p-2 font-medium outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
@@ -1281,10 +1298,11 @@
         <div><label class="block font-bold text-slate-700 mb-0.5">Áp dụng từ <span class="font-normal text-slate-400">(CTKM có thời hạn)</span></label><input id="ncFrom" type="date" class="w-full border rounded-lg p-1.5 font-semibold outline-none focus:ring-2 focus:ring-indigo-400"></div>
         <div><label class="block font-bold text-slate-700 mb-0.5">Đến hết ngày</label><input id="ncTo" type="date" class="w-full border rounded-lg p-1.5 font-semibold outline-none focus:ring-2 focus:ring-indigo-400"></div>
       </div>
+      <div id="ncTaskBox"></div>
       <label class="flex items-center gap-1.5 font-bold text-slate-700 cursor-pointer"><input id="ncPin" type="checkbox" class="w-4 h-4 accent-indigo-600"> 📌 Ghim lên đầu danh sách</label>
       <div id="ncAiBox" class="hidden rounded-lg border p-2 text-[11px] leading-snug"></div>
       <div class="flex flex-wrap gap-2 pt-1">
-        <button id="btnNcAi" onclick="ncPreviewAi()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-black">🤖 Xem AI phân loại trước</button>
+        <button id="btnNcAi" onclick="ncPreviewAi()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-black">🤖 Xem AI phân tích trước</button>
         <button id="btnNcSubmit" onclick="ncSubmit()" class="flex-1 min-w-[160px] py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-black shadow">📤 Đăng &amp; đồng bộ Drive</button>
       </div>
     </div>
@@ -1407,7 +1425,6 @@
         <img id="previewImageTag" src="" alt="Ảnh báo cáo" class="max-w-full h-auto mx-auto rounded shadow">
       </div>
 
-      <button id="btnShareImage" onclick="shareReportImage()" class="hidden w-full py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow">📤 Chia sẻ / Lưu vào Ảnh</button>
       <div class="grid grid-cols-2 gap-2 pt-1">
         <button onclick="closeImagePreviewModal()" class="py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl">
           Đóng
@@ -1553,7 +1570,8 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-12 · v16";
+    const APP_VERSION = "2026-10-13 · v17";
+    const EXPECT_SERVER_VERSION = "2026-10-13 · v17";   // bản Code.gs tương ứng với bản tool này
     let lastFreshAt = 0; // lần gần nhất tải dữ liệu mới từ Sheet thành công
 
     function fmtSyncTime(ts) {
@@ -1570,9 +1588,9 @@
 
     function updateSyncInfoLabel() {
       const v = document.getElementById('lblAppVersion');
-      if (v) v.innerText = APP_VERSION;
+      if (v) v.innerText = APP_VERSION + ({ ok: ' ✅', stale: ' ⚠️ BẢN CŨ', unknown: ' ❔' }[window.__verState] || '') + (window.__srvVer === undefined ? '' : (window.__srvVer === EXPECT_SERVER_VERSION ? ' · Máy chủ ✅' : ' · ⚠️ Máy chủ ' + (window.__srvVer || 'cũ') + ' (chưa Deploy bản mới?)'));
       const l = document.getElementById('lblLastSync');
-      if (l) l.innerText = fmtSyncTime(getLastSyncOk());
+      if (l) { l.innerText = fmtSyncTime(getLastSyncOk()); const t = Number(getLastSyncOk()); l.className = (!t || Date.now() - t > 20 * 60000) ? 'text-amber-300' : 'text-white'; }
     }
 
     function markSyncOk() {
@@ -1936,113 +1954,57 @@
       clone.style.left = "-9999px";
       document.body.appendChild(clone);
 
+      // html2canvas mặc định sao chép CẢ TRANG (bảng xếp hạng, lịch sử, nội dung... hàng nghìn phần tử) nên rất chậm/treo trên điện thoại.
+      // ignoreElements cắt mọi thứ ngoài vùng báo cáo ngay lúc sao chép (giữ <head> để còn CSS).
+      const keepEl = el => el === clone || clone.contains(el) || el.contains(clone) || !!(el.closest && el.closest('head'));
+      const isMobile = window.innerWidth < 768 || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+      const shoot = async (scale, ms) => {
+        await new Promise(r => setTimeout(r, 30));   // nhường 1 nhịp để nút "Đang xử lý" kịp hiện trước khi trình duyệt bận
+        let timer;
+        try {
+          return await Promise.race([
+            html2canvas(clone, { scale, useCORS: true, backgroundColor: "#ffffff", width: 850, windowWidth: 850, logging: false, imageTimeout: 4000, ignoreElements: el => !keepEl(el) }),
+            new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('quá ' + Math.round(ms / 1000) + ' giây')), ms); })
+          ]);
+        } finally { clearTimeout(timer); }
+      };
+
       try {
-        btn.innerHTML = "<span>⏳ Đang tải thư viện ảnh...</span>";
-        const h2c = await ensureHtml2canvas();
-        btn.innerHTML = "<span>⏳ Đang tạo ảnh...</span>";
-        await new Promise(r => requestAnimationFrame(() => setTimeout(r, 60)));   // cho giao diện kịp hiện chữ "đang xử lý" trước khi máy bận vẽ
+        let canvas;
+        try { canvas = await shoot(isMobile ? 1.25 : 1.5, 20000); }
+        catch (e1) { btn.innerHTML = "<span>⏳ Máy chậm, thử lại chế độ nhẹ...</span>"; canvas = await shoot(1, 30000); }
 
-        // Điện thoại: giảm độ phân giải & giới hạn tổng số điểm ảnh (iOS/Android yếu dễ treo hoặc ra ảnh trắng nếu canvas quá lớn)
-        const isMobile = isMobileDevice();
-        let scale = isMobile ? 1.25 : 1.5;
-        const maxPixels = isMobile ? 9e6 : 16e6;
-        const hgt = Math.max(1, clone.scrollHeight);
-        scale = Math.max(0.8, Math.min(scale, Math.sqrt(maxPixels / (850 * hgt))));
-
-        const canvas = await Promise.race([h2c(clone, {
-          scale: scale,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          width: 850,
-          windowWidth: 850,
-          imageTimeout: 5000,
-          logging: false
-        }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('xử lý ảnh quá lâu, hãy bấm xuất ảnh lại hoặc chụp màn hình')), 60000))
-        ]);
-
-        // toBlob nhẹ và nhanh hơn toDataURL (chuỗi base64 khổng lồ làm điện thoại giật/đứng)
-        const blob = await new Promise(res => {
-          try { canvas.toBlob(b => res(b), "image/jpeg", 0.88); } catch (e) { res(null); }
-        });
-        if (!blob) throw new Error('máy không tạo được ảnh (hết bộ nhớ), hãy đóng bớt tab rồi thử lại hoặc chụp màn hình');
-        canvas.width = canvas.height = 0;
-
+        // toBlob + URL.createObjectURL: nhẹ hơn nhiều so với chuỗi base64 khổng lồ của toDataURL (đỡ treo/hết RAM trên điện thoại)
+        const blob = await new Promise(res => { try { canvas.toBlob(res, "image/jpeg", 0.9); } catch (e) { res(null); } });
+        if (window._reportImgUrl && String(window._reportImgUrl).startsWith('blob:')) { try { URL.revokeObjectURL(window._reportImgUrl); } catch (e) {} }
+        const image = blob ? URL.createObjectURL(blob) : canvas.toDataURL("image/jpeg", 0.9);
+        window._reportImgUrl = image;
+        canvas.width = canvas.height = 0;   // trả RAM ngay
         const filename = `BaoCao_${staffName.replace(/\s+/g, '_')}_${dateStr}.jpg`;
-        if (window._lastReportBlobUrl) { try { URL.revokeObjectURL(window._lastReportBlobUrl); } catch (e) {} }
-        const url = URL.createObjectURL(blob);
-        window._lastReportBlobUrl = url;
-        window._lastReportFile = (typeof File === 'function') ? new File([blob], filename, { type: 'image/jpeg' }) : null;
 
-        // Máy tính: tự tải file. Điện thoại/trình duyệt trong app (Zalo, Messenger...) thường chặn tải tự động -> chỉ mở khung xem, bấm nút để lưu/chia sẻ.
-        if (!isMobile) {
-          const link = document.createElement('a');
-          link.download = filename;
-          link.href = url;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
+        // Tự kích hoạt tải file về máy
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = image;
+        link.click();
 
         // Mở Popup xem và nhấn giữ lưu ảnh
         const previewModal = document.getElementById('imagePreviewModal');
         const previewImg = document.getElementById('previewImageTag');
         const btnDirect = document.getElementById('btnDownloadImageDirect');
-        const btnShare = document.getElementById('btnShareImage');
         if (previewModal && previewImg && btnDirect) {
-          previewImg.src = url;
-          btnDirect.href = url;
+          previewImg.src = image;
+          btnDirect.href = image;
           btnDirect.download = filename;
-          if (btnShare) {
-            const canShare = !!(window._lastReportFile && navigator.canShare && navigator.share && navigator.canShare({ files: [window._lastReportFile] }));
-            btnShare.classList.toggle('hidden', !canShare);
-          }
           previewModal.classList.remove('hidden');
         }
       } catch (err) {
-        showToastMessage("⚠️ Lỗi khi tạo ảnh báo cáo: " + err.message);
+        showToastMessage("⚠️ Chưa tạo được ảnh (" + err.message + "). Báo cáo ĐÃ LƯU rồi — bấm 📸 TẢI LẠI ẢNH hoặc chụp màn hình gửi nhóm.");
       } finally {
-        if (clone.parentNode) clone.parentNode.removeChild(clone);
+        if (clone.parentNode) document.body.removeChild(clone);
         btn.innerHTML = oldText;
         btn.disabled = false;
       }
-    }
-
-    function isMobileDevice() {
-      return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 900);
-    }
-
-    // Nạp html2canvas khi cần; CDN chính chậm/bị chặn thì thử CDN dự phòng
-    function ensureHtml2canvas() {
-      if (window.html2canvas) return Promise.resolve(window.html2canvas);
-      if (window._h2cLoading) return window._h2cLoading;
-      const load = (src, ms) => new Promise((resolve, reject) => {
-        const el = document.createElement('script');
-        const t = setTimeout(() => { el.remove(); reject(new Error('timeout')); }, ms);
-        el.onload = () => { clearTimeout(t); window.html2canvas ? resolve(window.html2canvas) : reject(new Error('no lib')); };
-        el.onerror = () => { clearTimeout(t); reject(new Error('load fail')); };
-        el.src = src;
-        document.head.appendChild(el);
-      });
-      window._h2cLoading = (async () => {
-        // đợi thẻ <script defer> chính một lúc ngắn trước khi nạp dự phòng
-        for (let i = 0; i < 30 && !window.html2canvas; i++) await new Promise(r => setTimeout(r, 100));
-        if (window.html2canvas) return window.html2canvas;
-        const urls = [
-          'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-          'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
-        ];
-        for (const u of urls) { try { return await load(u, 15000); } catch (e) {} }
-        throw new Error('không tải được thư viện tạo ảnh (kiểm tra mạng rồi bấm lại)');
-      })().finally(() => { if (!window.html2canvas) window._h2cLoading = null; });
-      return window._h2cLoading;
-    }
-
-    async function shareReportImage() {
-      const f = window._lastReportFile;
-      if (!f || !navigator.share) return;
-      try { await navigator.share({ files: [f], title: 'Báo cáo thi đua' }); }
-      catch (e) { if (e && e.name !== 'AbortError') showToastMessage('⚠️ Không chia sẻ được: ' + e.message); }
     }
 
     function closeImagePreviewModal() {
@@ -2134,6 +2096,7 @@
         
         if (data && Array.isArray(data.nhanSu)) {
           safeCacheSave(data);
+          window.__srvVer = String(data.serverVersion || '');
           applyStateData(data);
           syncCountdownSeconds = SYNC_EVERY_SEC;
           markSyncOk();
@@ -2162,7 +2125,19 @@
       return okLoad;
     }
 
+    // Nhân viên bị QL ẩn: bỏ khỏi toàn bộ danh sách + mọi dữ liệu liên quan -> app coi như không có người này (giữ riêng danh sách ẩn cho màn hình QL)
+    function filterHiddenStaff(d) {
+      if (!d || !Array.isArray(d.nhanSu)) return d;
+      const hid = new Set(d.nhanSu.filter(n => n.hidden).map(n => String(n.id)));
+      state.hiddenStaff = d.nhanSu.filter(n => n.hidden);
+      if (!hid.size) return d;
+      const keep = r => !r || !hid.has(String(r.staffId)), o = Object.assign({}, d);
+      o.nhanSu = d.nhanSu.filter(n => !n.hidden); o._allHidden = o.nhanSu.length === 0;
+      ['ketQua', 'deXuat', 'lateLogs', 'tiktok', 'veSinh', 'lichBan', 'roadshow'].forEach(k => { if (Array.isArray(d[k])) o[k] = d[k].filter(keep); });
+      return o;
+    }
     function applyStateData(data) {
+      data = filterHiddenStaff(data);
       if (data.nhanSu && data.nhanSu.length > 0) {
         state.nhanSu = data.nhanSu.map(ns => {
           const starVal = Number(ns.totalStar !== undefined ? ns.totalStar : ns.baseStar) || 0;
@@ -2172,6 +2147,8 @@
             baseStar: starVal
           };
         });
+      } else if (data._allHidden) {
+        state.nhanSu = [];
       } else if (!state.nhanSu || state.nhanSu.length === 0) {
         state.nhanSu = [...DEFAULT_NHAN_SU];
       }
@@ -2318,25 +2295,11 @@
     function withPin(obj) {
       return (isManagerUnlocked && managerPass) ? Object.assign({}, obj, { mpin: managerPass }) : obj;
     }
-    async function ttPost(payload, timeoutMs) {
-      // Mạng di động yếu: có thời gian chờ rõ ràng (tránh treo mãi ở "ĐANG TẢI ẢNH...") và tự thử lại 1 lần khi mất kết nối.
-      const body = JSON.stringify(withPin(payload));
-      const limit = timeoutMs || (/UPLOAD_|POST_NOTE/.test(String(payload.action)) ? 120000 : 45000);
-      let lastErr;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), limit);
-        try {
-          const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body, signal: ctl.signal });
-          const txt = await res.text();
-          if (txt.trim().startsWith("<")) throw new Error("Máy chủ trả về trang lỗi (kiểm tra đã Deploy bản Apps Script mới chưa)");
-          return JSON.parse(txt);
-        } catch (e) {
-          lastErr = (e && e.name === 'AbortError') ? new Error("Mạng quá chậm, quá thời gian chờ. Hãy thử lại khi có sóng tốt hơn.") : e;
-          // Chỉ thử lại với thao tác tải ảnh khi lỗi mạng (không thử lại khi máy chủ đã trả lời lỗi)
-          if (!(e instanceof TypeError) || !/UPLOAD_/.test(String(payload.action))) break;
-        } finally { clearTimeout(timer); }
-      }
-      throw lastErr;
+    async function ttPost(payload) {
+      const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(withPin(payload)) });
+      const txt = await res.text();
+      if (txt.trim().startsWith("<")) throw new Error("Máy chủ trả về trang lỗi (kiểm tra đã Deploy bản Apps Script mới chưa)");
+      return JSON.parse(txt);
     }
     function ttPersist() { try { safeCacheSave(state); } catch (e) {} }
 
@@ -2509,17 +2472,7 @@
     function clGet(date) { return (state.veSinh || []).find(v => v.date === date); }
     function clShort(name) { const p = String(name || '').trim().split(/\s+/); return p[p.length - 1] || ''; }
     function clDateLabel(date) { const d = ttParse(date); return `${CL_DOW_FULL[d.getDay()]}, ${clPad(d.getDate())}/${clPad(d.getMonth() + 1)}/${d.getFullYear()}`; }
-    // Ảnh Drive: dùng lh3.googleusercontent.com (nhanh, ổn định trên điện thoại, được trình duyệt cache) thay cho drive.google.com/thumbnail (chậm, hay bị chặn/giới hạn trên mobile).
-    // Lỗi thì tự thử lần lượt: thumbnail -> uc?export=view -> hiện khung "không tải được, chạm để mở".
-    function clThumb(id, w) { return `https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}=w${w || 400}`; }
-    function clImgAttr(id, w) { return `src="${clThumb(id, w)}" data-id="${encodeURIComponent(id)}" data-w="${w || 400}" data-fb="0" onerror="clImgErr(this)" decoding="async" referrerpolicy="no-referrer"`; }
-    function clImgErr(img) {
-      const id = img.dataset.id, w = img.dataset.w || 400, step = Number(img.dataset.fb || 0);
-      img.dataset.fb = step + 1;
-      if (step === 0) img.src = `https://drive.google.com/thumbnail?id=${id}&sz=w${w}`;
-      else if (step === 1) img.src = `https://drive.google.com/uc?export=view&id=${id}`;
-      else { img.onerror = null; img.removeAttribute('src'); img.alt = '⚠️ Không tải được ảnh - chạm để mở'; img.classList.add('p-1', 'text-[9px]', 'text-rose-600', 'text-center'); }
-    }
+    function clThumb(id) { return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1000`; }
     function clViewUrl(id) { return `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`; }
     function clReported(rec) { return !!(rec && rec.photos && rec.photos.length >= 3); }
     function clPersist() { try { safeCacheSave(state); } catch (e) {} }
@@ -2629,7 +2582,7 @@
           h += `<div class="space-y-1.5">
             <div class="font-bold text-emerald-700">✅ Đã nộp báo cáo lúc ${ttEsc(rec.reportTime || '')} ${rec.reportDate ? ttEsc(rec.reportDate.slice(8, 10) + '/' + rec.reportDate.slice(5, 7)) : ''}</div>
             <div class="grid grid-cols-3 gap-1.5">` +
-            rec.photos.slice(0, 3).map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img ${clImgAttr(id, 400)} alt="Ảnh ${i + 1}" loading="lazy" class="w-full h-24 object-cover rounded-lg border bg-slate-100"></a>`).join('') +
+            rec.photos.slice(0, 3).map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${clThumb(id)}" alt="Ảnh ${i + 1}" loading="lazy" class="w-full h-24 object-cover rounded-lg border bg-slate-100"></a>`).join('') +
             `</div><div class="text-[10px] text-slate-400">Chạm vào ảnh để mở bản lớn trên Google Drive.</div></div>`;
         } else if (date > today) {
           h += `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-500">📷 Báo cáo ảnh sẽ mở từ <b>ngày vệ sinh</b>. Tới ngày bạn quay lại đây để nộp 3 ảnh.</div>`;
@@ -2695,31 +2648,24 @@
 
     // Nén ảnh ở máy (cạnh dài tối đa 1280px, JPEG 72%) để gửi nhanh và nhẹ Drive
     function clCompress(file, maxSide = 1280, quality = 0.72) {
-      // Điện thoại: ảnh gốc 12-48MP rất nặng -> thu nhỏ trước khi nén. Ưu tiên createImageBitmap (resize ngay lúc giải mã, đỡ tràn RAM), dự phòng <img>.
-      const draw = (src, w, h) => {
-        const scale = Math.min(1, maxSide / Math.max(w, h));
-        const tw = Math.max(1, Math.round(w * scale)), th = Math.max(1, Math.round(h * scale));
-        const c = document.createElement('canvas');
-        c.width = tw; c.height = th;
-        c.getContext('2d').drawImage(src, 0, 0, tw, th);
-        const dataUrl = c.toDataURL('image/jpeg', quality);
-        c.width = c.height = 0;
-        return { mime: 'image/jpeg', base64: dataUrl.split(',')[1], preview: dataUrl };
-      };
-      const viaImg = () => new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
+        if (!file) return reject(new Error('Chưa chọn ảnh'));
         const url = URL.createObjectURL(file);
         const img = new Image();
-        img.onload = () => { try { resolve(draw(img, img.naturalWidth, img.naturalHeight)); } catch (e) { reject(e); } finally { URL.revokeObjectURL(url); } };
+        img.onload = () => {
+          let w = img.naturalWidth, h = img.naturalHeight;
+          const scale = Math.min(1, maxSide / Math.max(w, h));
+          w = Math.max(1, Math.round(w * scale)); h = Math.max(1, Math.round(h * scale));
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          const dataUrl = c.toDataURL('image/jpeg', quality);
+          URL.revokeObjectURL(url);
+          resolve({ mime: 'image/jpeg', base64: dataUrl.split(',')[1], preview: dataUrl });
+        };
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Không đọc được ảnh này (thử chụp lại hoặc chọn ảnh JPG/PNG)')); };
         img.src = url;
       });
-      if (!file) return Promise.reject(new Error('Chưa chọn ảnh'));
-      if (window.createImageBitmap) {
-        return createImageBitmap(file, { imageOrientation: 'from-image' })
-          .then(bmp => { try { return draw(bmp, bmp.width, bmp.height); } finally { if (bmp.close) bmp.close(); } })
-          .catch(() => viaImg());
-      }
-      return viaImg();
     }
 
     function clUpdateUploadBtn() {
@@ -2916,7 +2862,7 @@
               </div>`;
             if (rep) {
               h += `<div class="text-[10px] text-slate-500">Nộp lúc ${ttEsc(rec.reportTime || '')} ${rec.reportDate ? ttEsc(rec.reportDate.slice(8, 10) + '/' + rec.reportDate.slice(5, 7)) : ''} · <b>${Number(rec.km) || 0} km</b> · <b>${Number(rec.minutes) || 0} phút</b></div>
-                <div class="grid grid-cols-3 gap-1.5">` + rec.photos.map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img ${clImgAttr(id, 400)} alt="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh')}" title="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh thêm')}" loading="lazy" class="w-full h-20 object-cover rounded-lg border bg-slate-100"></a>`).join('') + `</div>`;
+                <div class="grid grid-cols-3 gap-1.5">` + rec.photos.map((id, i) => `<a href="${clViewUrl(id)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${clThumb(id)}" alt="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh')}" title="${ttEsc(RS_SLOTS[i] ? RS_SLOTS[i].t : 'Ảnh thêm')}" loading="lazy" class="w-full h-20 object-cover rounded-lg border bg-slate-100"></a>`).join('') + `</div>`;
             } else if (rsCanReport(rec, today) && rsReportFor !== key) {
               h += `<button onclick="rsStartReport('${ttEsc(rec.staffId)}','${ttEsc(rec.time || '')}')" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black">📷 Nộp báo cáo của ${ttEsc(clShort(rec.staffName))}</button>`;
             } else if (!rsCanReport(rec, today)) {
@@ -3293,10 +3239,10 @@
     const NOTES_CACHE_KEY = 'APP_NOTES_CACHE';
     const NOTE_STOP = new Set(['la', 'cua', 'nao', 'co', 'khong', 'the', 'cho', 'toi', 'em', 'minh', 've', 'tim', 'xem', 'tra', 'cuu', 'cac', 'nhung', 'mot', 'duoc', 'khi', 'gi', 'hoi', 'va', 'voi', 'tai', 'o', 'nay', 'hom', 'the', 'ai', 'bao', 'nhieu', 'sao', 'lam', 'phai', 'can']);
     const NOTE_CATWORDS = new Set(['ctkm', 'khuyen', 'mai', 'chinh', 'sach', 'quy', 'trinh', 'phuc', 'vu', 'noi', 'dung', 'quan', 'trong', 'lau', 'dai', 'thoi', 'han', 'dang', 'chay', 'hien', 'tai', 'lieu', 'huong', 'dan', 'het', 'da']);
-    let notesState = { list: [], loaded: false, loading: false, lastLoad: 0, cat: '', q: '', limit: 30, soon: false, err: '' };
-    let notesViewId = '', notesEditing = false;
+    let notesState = { list: [], loaded: false, loading: false, lastLoad: 0, cat: '', q: '', limit: 30, soon: false, err: '', reads: [], results: [] };
+    let notesViewId = '', notesEditing = false, notesShowTrack = false, notesShowRes = false, notesShowStat = false, trDraft = { text: '', links: '' }, trFiles = [];
     let managerPass = '';
-    let ncFiles = [], ncMeta = { summary: '', tags: [], by: 'QL', aiCat: '' }, ncBusy = false;
+    let ncFiles = [], ncMeta = { summary: '', tags: [], by: 'QL', aiCat: '', brief: null }, ncBusy = false, ncLastSig = '';
 
     function notesCat(k) { return NOTE_CATS.find(c => c[0] === k) || NOTE_CATS[5]; }
     function notesSaveCache() {
@@ -3314,7 +3260,7 @@
       notesState.loading = true; notesState.err = '';
       try {
         const out = await safeFetchJSON(API_URL + '?action=notes&_t=' + Date.now(), { cache: 'no-store' });
-        if (out && out.status === 'success' && Array.isArray(out.notes)) { notesState.list = out.notes; notesState.loaded = true; notesState.lastLoad = Date.now(); notesSaveCache(); }
+        if (out && out.status === 'success' && Array.isArray(out.notes)) { notesState.list = out.notes; notesState.reads = Array.isArray(out.reads) ? out.reads : []; notesState.results = Array.isArray(out.results) ? out.results : []; notesSaveReads(); notesState.loaded = true; notesState.fresh = true; notesState.lastLoad = Date.now(); notesSaveCache(); }
         else if (out && out.status === 'success') notesState.err = 'Apps Script chưa là bản mới có mục Nội dung (cần Deploy → New version).';
         else if (out && out.message) notesState.err = out.message;
       } catch (e) { notesState.err = 'Không tải được nội dung: ' + e.message; }
@@ -3357,7 +3303,7 @@
     }
     const notesWords = s => ' ' + cbNorm(s).replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
     function notesHay(n) {
-      if (!n._h) n._h = { t: notesWords(n.title), g: notesWords((n.tags || []).join(' ')), s: notesWords(n.summary), c: notesWords(n.text), f: notesWords((n.files || []).map(f => f.name).join(' ') + ' ' + (n.links || []).join(' ')) };
+      if (!n._h) n._h = { t: notesWords(n.title), g: notesWords((n.tags || []).join(' ')), s: notesWords(n.summary), c: notesWords(n.text + ' ' + notesBriefText(n.brief)), f: notesWords((n.files || []).map(f => f.name).join(' ') + ' ' + (n.links || []).join(' ')) };
       return n._h;
     }
     // Khớp theo đầu TỪ (gõ "iphon" vẫn ra iPhone) nhưng không khớp chuỗi con giữa từ ("hanh" không khớp "thanh")
@@ -3412,27 +3358,294 @@
       renderNotesTab();
     }
 
+    // ---- Xác nhận đã đọc: nhân viên bấm "Tôi đã đọc và nắm rõ", QL xem được ai đọc/xác nhận lúc nào & đọc bao lâu ----
+    const NOTES_ME_KEY = 'APP_NOTES_ME', NOTES_READS_KEY = 'APP_NOTES_READS', NOTES_ACT_KEY = 'APP_NOTES_ACT';
+    let notesMe = '', notesActive = 0, notesTick = null;
+    try { notesMe = localStorage.getItem(NOTES_ME_KEY) || ''; notesState.reads = JSON.parse(localStorage.getItem(NOTES_READS_KEY) || '[]') || []; } catch (e) {}
+    function notesSaveReads() { try { localStorage.setItem(NOTES_READS_KEY, JSON.stringify((notesState.reads || []).filter(r => r.staffId === notesMe))); } catch (e) {} }
+    function notesRead(id, sid) { return (notesState.reads || []).find(r => r.noteId === id && r.staffId === sid) || null; }
+    function notesUpsertRead(rec) { const i = notesState.reads.findIndex(r => r.noteId === rec.noteId && r.staffId === rec.staffId); if (i >= 0) notesState.reads[i] = rec; else notesState.reads.push(rec); notesSaveReads(); }
+    function notesFmtDur(s) { s = Math.round(Number(s) || 0); if (s < 60) return s + ' giây'; const m = Math.floor(s / 60), r = s % 60; if (m < 60) return m + ' phút' + (r ? ' ' + r + ' giây' : ''); return Math.floor(m / 60) + ' giờ ' + (m % 60) + ' phút'; }
+    function notesFmtAt(t) { return t ? String(t).slice(8, 10) + '/' + String(t).slice(5, 7) + ' ' + String(t).slice(11, 16) : '—'; }
+    function notesReadSec(r) { return r.activeSec > 0 ? r.activeSec : r.sec; }
+    function notesActMap() { try { return JSON.parse(localStorage.getItem(NOTES_ACT_KEY) || '{}') || {}; } catch (e) { return {}; } }
+    function notesActGet(id) { return Number(notesActMap()[id + '|' + notesMe]) || 0; }
+    function notesActAdd(id, s) { try { const m = notesActMap(), k = id + '|' + notesMe; m[k] = (Number(m[k]) || 0) + s; localStorage.setItem(NOTES_ACT_KEY, JSON.stringify(m)); } catch (e) {} }
+    function notesStartTimer() { notesActive = 0; clearInterval(notesTick); notesTick = setInterval(() => { if (notesViewId && !document.hidden && !notesEditing) notesActive++; }, 1000); }
+    function notesStopTimer() { clearInterval(notesTick); notesTick = null; if (notesViewId && notesMe && notesActive) notesActAdd(notesViewId, notesActive); notesActive = 0; }
+    function notesSetMe(v) {
+      notesStopTimer(); notesMe = v || ''; try { localStorage.setItem(NOTES_ME_KEY, notesMe); } catch (e) {}
+      notesState.reads = notesState.reads.length ? notesState.reads : []; renderNotesTab();
+      if (notesViewId) { notesStartTimer(); notesTrackOpen(); if (!notesEditing) notesRenderView(); }
+    }
+    async function notesTrackOpen() {
+      const id = notesViewId; if (!notesMe || !id || notesRead(id, notesMe)) return;
+      const ns = state.nhanSu.find(x => x.id === notesMe); if (!ns) return;
+      try {
+        const r = await ttPost({ action: 'NOTE_OPEN', noteId: id, staffId: ns.id, staffName: ns.name });
+        if (r.status === 'success' && r.record) { notesUpsertRead(r.record); renderNotesTab(); if (notesViewId === id && !notesEditing) notesRenderView(); }
+      } catch (e) {}
+    }
+    async function notesConfirm() {
+      const n = notesState.list.find(x => x.id === notesViewId); if (!n) return;
+      const ns = state.nhanSu.find(x => x.id === notesMe); if (!ns) { alert('Hãy chọn đúng tên của bạn trước khi xác nhận!'); return; }
+      if (!confirm(`${ns.name} xác nhận ĐÃ ĐỌC và NẮM RÕ nội dung:\n"${n.title}"?`)) return;
+      const btn = document.getElementById('btnNoteConfirm'); if (btn) { btn.disabled = true; btn.innerText = '⏳ Đang ghi nhận...'; }
+      try {
+        const r = await ttPost({ action: 'NOTE_CONFIRM', noteId: n.id, staffId: ns.id, staffName: ns.name, activeSec: notesActGet(n.id) + notesActive });
+        if (r.status !== 'success') { alert(r.message || 'Không xác nhận được!'); }
+        else { notesUpsertRead(r.record); renderNotesTab(); showToastMessage('✅ ' + r.message); }
+      } catch (e) { alert('Lỗi: ' + e.message); }
+      if (!notesEditing) notesRenderView();
+    }
+    function notesToggleTrack() { if (!notesShowTrack && !verifyManagerAccess()) return; notesShowTrack = !notesShowTrack; notesRenderView(); }
+    function notesConfirmBoxHtml(n) {
+      const opts = '<option value="">-- Chọn tên của bạn --</option>' + state.nhanSu.map(ns => `<option value="${ttEsc(ns.id)}" ${ns.id === notesMe ? 'selected' : ''}>${ttEsc(ns.name)} (${ttEsc(ns.id)})</option>`).join('');
+      const rd = notesMe ? notesRead(n.id, notesMe) : null;
+      let body;
+      if (rd && rd.confirmedAt) body = `<div class="font-black text-emerald-700">✅ Bạn đã xác nhận nắm rõ lúc ${notesFmtAt(rd.confirmedAt)}</div><div class="text-[11px] text-slate-600">Mở đọc lúc ${notesFmtAt(rd.openedAt)} · thời gian đọc ${notesFmtDur(notesReadSec(rd))}</div>`;
+      else body = `<div class="font-black text-slate-800">📖 Đọc xong thì xác nhận để Quản lý biết bạn đã nắm rõ</div>${rd ? `<div class="text-[11px] text-slate-500">Bạn mở nội dung này lúc ${notesFmtAt(rd.openedAt)}</div>` : ''}
+        <div class="flex flex-wrap gap-1.5 items-center"><select onchange="notesSetMe(this.value)" class="flex-1 min-w-[150px] border rounded-lg p-1.5 font-bold bg-white">${opts}</select>
+        <button id="btnNoteConfirm" onclick="notesConfirm()" ${notesMe ? '' : 'disabled'} class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-black">✅ Tôi đã đọc và nắm rõ</button></div>`;
+      return `<div class="border rounded-xl p-2.5 space-y-1.5 ${rd && rd.confirmedAt ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}">${body}
+        <button onclick="notesToggleTrack()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[11px]">👥 ${notesShowTrack ? 'Ẩn' : 'Xem'} theo dõi đọc (QL)</button></div>${notesShowTrack ? notesTrackHtml(n) : ''}`;
+    }
+    function notesTrackHtml(n) {
+      const by = {}; (notesState.reads || []).filter(r => r.noteId === n.id).forEach(r => { by[r.staffId] = r; });
+      const rows = state.nhanSu.map(ns => ({ ns, r: by[ns.id] || null }));
+      const rank = x => !x.r ? 0 : !x.r.confirmedAt ? 1 : 2;
+      rows.sort((a, b) => rank(a) - rank(b) || String(a.r ? a.r.confirmedAt : '').localeCompare(String(b.r ? b.r.confirmedAt : '')) || a.ns.name.localeCompare(b.ns.name, 'vi'));
+      const done = rows.filter(x => rank(x) === 2).length, seen = rows.filter(x => rank(x) === 1).length, none = rows.filter(x => rank(x) === 0), total = rows.length || 1;
+      const tr = rows.map(x => {
+        const r = x.r;
+        const st = !r ? '<span class="font-black text-rose-600">⏳ Chưa đọc</span>' : !r.confirmedAt ? '<span class="font-black text-amber-600">👀 Mới mở</span>' : '<span class="font-black text-emerald-600">✅ Đã nắm rõ</span>';
+        const sec = r && r.confirmedAt ? notesReadSec(r) : 0;
+        const dur = !r || !r.confirmedAt ? '—' : `${notesFmtDur(sec)}${sec < 10 ? ' <span class="text-amber-600 font-bold">⚡ rất nhanh</span>' : ''}${r.sec > sec + 60 ? `<div class="text-[10px] text-slate-400">mở→xác nhận ${notesFmtDur(r.sec)}</div>` : ''}`;
+        return `<tr class="border-t align-top"><td class="px-1.5 py-1 font-bold">${ttEsc(x.ns.name)}</td><td class="px-1.5 py-1">${st}</td><td class="px-1.5 py-1 whitespace-nowrap">${r ? notesFmtAt(r.openedAt) : '—'}</td><td class="px-1.5 py-1 whitespace-nowrap">${r && r.confirmedAt ? notesFmtAt(r.confirmedAt) : '—'}</td><td class="px-1.5 py-1">${dur}</td></tr>`;
+      }).join('');
+      return `<div class="border border-slate-300 rounded-xl overflow-hidden"><div class="bg-slate-800 text-white px-2.5 py-1.5 text-[11px] font-black">👥 Theo dõi đọc: ${done}/${rows.length} đã xác nhận · ${seen} mới mở · ${none.length} chưa đọc</div>
+        <div class="h-1.5 bg-slate-200"><div class="h-1.5 bg-emerald-500" style="width:${Math.round(done * 100 / total)}%"></div></div>
+        <div class="overflow-x-auto"><table class="w-full text-[11px] leading-snug"><thead class="bg-slate-100 text-slate-600"><tr><th class="px-1.5 py-1 text-left">Nhân viên</th><th class="px-1.5 py-1 text-left">Trạng thái</th><th class="px-1.5 py-1 text-left">Mở lúc</th><th class="px-1.5 py-1 text-left">Xác nhận</th><th class="px-1.5 py-1 text-left">Thời gian đọc</th></tr></thead><tbody>${tr}</tbody></table></div>
+        ${rows.length - done ? `<div class="p-1.5 border-t bg-slate-50"><button onclick="notesCopyPending()" class="px-2.5 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-black text-[11px]">📋 Copy danh sách chưa xác nhận (${rows.length - done})</button></div>` : ''}</div>`;
+    }
+    function notesCopyPending() {
+      const n = notesState.list.find(x => x.id === notesViewId); if (!n) return;
+      const ok = new Set((notesState.reads || []).filter(r => r.noteId === n.id && r.confirmedAt).map(r => r.staffId));
+      const txt = `Nhắc đọc & xác nhận nội dung "${n.title}":\n` + state.nhanSu.filter(ns => !ok.has(ns.id)).map(ns => '- ' + ns.name).join('\n');
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => showToastMessage('✅ Đã copy danh sách chưa xác nhận'), () => prompt('Copy:', txt)); else prompt('Copy:', txt);
+    }
+    // ---- Thanh nhắc việc ngoài màn hình chính (công khai, không cần mật khẩu) ----
+    function notesPublicCounts() {
+      const td = localDateStr(new Date()), staff = state.nhanSu, ok = {};
+      notesState.reads.forEach(r => { if (r.confirmedAt) (ok[r.noteId] = ok[r.noteId] || {})[r.staffId] = 1; });
+      const miss = {}; staff.forEach(s => { miss[s.id] = 0; });
+      const attn = new Set(); let incomplete = 0, tasksOpen = 0, overdue = 0;
+      notesState.list.filter(n => notesStatus(n, td).k !== 'expired').forEach(n => {
+        const m = ok[n.id] || {}, un = staff.filter(s => !m[s.id]);
+        if (un.length) { incomplete++; attn.add(n.id); un.forEach(s => { miss[s.id]++; }); }
+      });
+      notesState.list.forEach(n => {
+        if (!n.task) return;
+        const un = n.task.ids.filter(id => !['sent', 'ok'].includes(notesTaskState(n, id)));
+        if (un.length) { tasksOpen++; attn.add(n.id); if (n.task.due && n.task.due < td) overdue++; un.forEach(id => { if (miss[id] !== undefined) miss[id]++; }); }
+      });
+      const lag = staff.map(s => ({ name: s.name, c: miss[s.id] })).filter(x => x.c > 0).sort((a, b) => b.c - a.c).slice(0, 3);
+      let mineRead = 0, mineTask = 0;
+      if (notesMe) {
+        notesState.list.filter(n => notesStatus(n, td).k !== 'expired').forEach(n => { if (!(ok[n.id] || {})[notesMe]) mineRead++; });
+        notesState.list.forEach(n => { if (n.task && n.task.ids.includes(notesMe) && ['todo', 'redo'].includes(notesTaskState(n, notesMe))) mineTask++; });
+      }
+      return { incomplete, tasksOpen, overdue, lag, attention: attn.size, mineRead, mineTask };
+    }
+    function notesUpdateBanner() {
+      const b = document.getElementById('notesBanner'), tb = document.getElementById('notesTabBadge');
+      if (!notesState.fresh || !state.nhanSu || !state.nhanSu.length) { if (b) b.classList.add('hidden'); if (tb) tb.classList.add('hidden'); return; }
+      const c = notesPublicCounts();
+      if (tb) { tb.innerText = c.attention; tb.classList.toggle('hidden', !c.attention); }
+      if (!b) return;
+      if (!c.attention) { b.classList.add('hidden'); return; }
+      b.classList.remove('hidden');
+      b.innerHTML = `<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5"><span class="font-black text-rose-700">🔔 Cần hoàn tất:</span>${c.incomplete ? `<span class="font-black text-slate-800">${c.incomplete} nội dung chưa đủ người xác nhận</span>` : ''}${c.tasksOpen ? `<span class="font-black text-violet-700">🧩 ${c.tasksOpen} việc chưa xong${c.overdue ? ` <span class="text-rose-600">(⚠️ ${c.overdue} quá hạn)</span>` : ''}</span>` : ''}<span class="ml-auto font-black text-indigo-600 underline">Xem chi tiết ›</span></div>`
+        + (notesMe && (c.mineRead || c.mineTask) ? `<div class="font-bold text-amber-700">👤 Bạn còn: ${c.mineRead ? c.mineRead + ' nội dung cần xác nhận' : ''}${c.mineRead && c.mineTask ? ' · ' : ''}${c.mineTask ? c.mineTask + ' việc cần làm' : ''}</div>` : '')
+        + (c.lag.length ? `<div class="text-slate-600">⏳ Cần nhắc: ${c.lag.map(x => `<b>${ttEsc(x.name)}</b> (${x.c})`).join(', ')}</div>` : '');
+    }
+    function notesGoStat() { switchTab('notes'); notesShowStat = true; renderNotesTab(); try { document.getElementById('notesStatBox').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }
+    // Nhân viên ẩn = không có: bỏ khỏi danh sách người được giao việc (giữ bản gốc trong task0 để "Hiện lại" là có lại) và bỏ lựa chọn "Bạn là" nếu bị ẩn
+    function notesNormTasks() {
+      if (!state.nhanSu || !state.nhanSu.length) return;
+      const vis = new Set(state.nhanSu.map(x => x.id));
+      if (notesMe && !vis.has(notesMe)) { notesMe = ''; try { localStorage.setItem(NOTES_ME_KEY, ''); } catch (e) {} }
+      notesState.list.forEach(n => {
+        if (n.task0 === undefined) n.task0 = n.task || null;
+        if (!n.task0) return;
+        const ids = n.task0.ids.filter(id => vis.has(id));
+        n.task = ids.length ? { ids, due: n.task0.due } : null;
+      });
+    }
+    // ---- Giao việc + nộp kết quả + thống kê hoàn tất ----
+    const TASK_ST = { todo: ['⏳ Chưa làm', 'bg-rose-100 text-rose-700'], sent: ['📤 Đã nộp, chờ duyệt', 'bg-sky-100 text-sky-700'], redo: ['↩ Làm lại', 'bg-amber-100 text-amber-800'], ok: ['✔ Đã duyệt', 'bg-emerald-100 text-emerald-700'] };
+    function notesResult(id, sid) { return (notesState.results || []).find(r => r.noteId === id && r.staffId === sid) || null; }
+    function notesUpsertResult(rec) { const i = notesState.results.findIndex(r => r.noteId === rec.noteId && r.staffId === rec.staffId); if (i >= 0) notesState.results[i] = rec; else notesState.results.push(rec); }
+    function notesTaskState(n, sid) { const r = notesResult(n.id, sid); return !r ? 'todo' : r.status === 'Đã duyệt' ? 'ok' : r.status === 'Làm lại' ? 'redo' : 'sent'; }
+    function notesTaskDoneCount(n) { return n.task ? n.task.ids.filter(id => ['sent', 'ok'].includes(notesTaskState(n, id))).length : 0; }
+    function notesStaffName(id) { const ns = state.nhanSu.find(x => x.id === id); return ns ? ns.name : id; }
+    function notesTaskChip(n) {
+      if (notesMe && n.task.ids.includes(notesMe)) { const s = TASK_ST[notesTaskState(n, notesMe)]; return `<span class="text-[10px] font-black px-1.5 py-0.5 rounded ${s[1]}">🧩 ${s[0]}</span>`; }
+      return `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">🧩 Giao việc ${notesTaskDoneCount(n)}/${n.task.ids.length}</span>`;
+    }
+    function taskPickerHtml(p, ids, due) {
+      return `<div class="border border-violet-200 rounded-xl p-2 space-y-1.5 bg-violet-50/40"><div class="font-black text-violet-700">🧩 Giao việc <span class="font-normal text-slate-500">(tick người cần làm; không tick = chỉ thông báo)</span></div>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1 max-h-40 overflow-y-auto border rounded-lg p-1.5 bg-white">${state.nhanSu.map(ns => `<label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="${p}TaskChk w-4 h-4 accent-violet-600" value="${ttEsc(ns.id)}" ${ids.includes(ns.id) ? 'checked' : ''}><span class="font-semibold">${ttEsc(ns.name)}</span></label>`).join('')}</div>
+        <div class="flex items-center gap-2"><label class="font-bold text-slate-700">Hạn hoàn thành</label><input id="${p}TaskDue" type="date" value="${ttEsc(due || '')}" class="border rounded-lg p-1.5 font-semibold"></div></div>`;
+    }
+    function taskPickerRead(p) { const d = document.getElementById(p + 'TaskDue'); return { ids: Array.from(document.querySelectorAll('.' + p + 'TaskChk:checked')).map(e => e.value), due: d ? d.value : '' }; }
+    function notesSubmissionHtml(r) {
+      const imgs = (r.files || []).filter(f => /^image\//.test(f.mime)), docs = (r.files || []).filter(f => !/^image\//.test(f.mime));
+      return `<div class="space-y-1"><div class="text-[10px] text-slate-500">Nộp ${notesFmtAt(r.at)} · lần ${r.count || 1}</div>
+        ${r.text ? `<div class="text-xs whitespace-pre-wrap break-words bg-white border rounded-lg p-2">${notesLinkify(r.text)}</div>` : ''}
+        ${(r.links || []).map(u => `<a href="${ttEsc(u)}" target="_blank" rel="noopener noreferrer" class="block border rounded-lg p-1.5 bg-indigo-50 text-indigo-700 font-bold break-all">🔗 ${ttEsc(u.length > 80 ? u.slice(0, 80) + '…' : u)}</a>`).join('')}
+        ${imgs.length ? `<div class="grid grid-cols-3 gap-1">${imgs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer"><img src="${clThumb(f.id)}" loading="lazy" class="w-full h-20 object-cover rounded-lg border bg-slate-100"></a>`).join('')}</div>` : ''}
+        ${docs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 border rounded-lg p-1.5 bg-white font-bold text-slate-700"><span>${notesFileIcon(f)}</span><span class="break-all">${ttEsc(f.name)}</span></a>`).join('')}</div>`;
+    }
+    function trFilesHtml() {
+      return trFiles.map((f, i) => `<div class="relative border rounded-lg p-1.5 bg-white flex items-center gap-1.5">${f.preview ? `<img src="${f.preview}" class="w-10 h-10 object-cover rounded border">` : `<span class="text-xl">${notesFileIcon(f)}</span>`}<span class="text-[10px] font-bold break-all flex-1">${ttEsc(f.name)}</span><button onclick="trRemoveFile(${i})" class="text-rose-500 font-black px-1">✕</button></div>`).join('');
+    }
+    function trRemoveFile(i) { trFiles.splice(i, 1); const b = document.getElementById('trFiles'); if (b) b.innerHTML = trFilesHtml(); }
+    async function trAddFiles(files) {
+      for (const f of Array.from(files || [])) {
+        if (trFiles.length >= 6) { alert('Tối đa 6 file mỗi lần nộp!'); break; }
+        try {
+          if (/^image\//.test(f.type) && !/svg/.test(f.type)) { const out = await clCompress(f, 1600, 0.8); trFiles.push({ name: (f.name ? f.name.replace(/\.[^.]+$/, '') : 'anh_' + Date.now()) + '.jpg', mime: 'image/jpeg', base64: out.base64, preview: out.preview }); }
+          else {
+            const ext = (f.name.split('.').pop() || '').toLowerCase(), mime = NC_EXT_MIME[ext];
+            if (!mime) { alert(`File "${f.name}" không hỗ trợ. Chọn ảnh, PDF, Word, Excel, PowerPoint, TXT hoặc CSV.`); continue; }
+            if (f.size > 5 * 1048576) { alert(`File "${f.name}" lớn hơn 5MB.`); continue; }
+            trFiles.push({ name: f.name, mime, base64: await ncReadB64(f) });
+          }
+        } catch (e) { alert(e.message); }
+      }
+      const b = document.getElementById('trFiles'); if (b) b.innerHTML = trFilesHtml();
+    }
+    function notesTaskMineHtml(n) {
+      const r = notesResult(n.id, notesMe), locked = r && r.status === 'Đã duyệt';
+      const st = TASK_ST[notesTaskState(n, notesMe)];
+      let h = `<div class="bg-white border border-violet-200 rounded-lg p-2 space-y-1.5"><div class="font-black text-violet-800">👉 Việc của bạn: <span class="text-[10px] px-1.5 py-0.5 rounded ${st[1]}">${st[0]}</span></div>`;
+      if (r) h += notesSubmissionHtml(r) + (r.comment ? `<div class="text-[11px] font-bold ${r.status === 'Làm lại' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200'} border rounded-lg p-1.5">💬 Quản lý: ${ttEsc(r.comment)}</div>` : '');
+      if (!locked) h += `<div class="space-y-1.5 border-t pt-1.5"><div class="font-bold text-slate-700">${r ? '🔁 Nộp lại (thay kết quả cũ)' : '📤 Làm xong thì gửi kết quả'}</div>
+        <textarea rows="3" oninput="trDraft.text=this.value" placeholder="Mô tả kết quả đã làm..." class="w-full border rounded-lg p-1.5 font-medium outline-none focus:ring-2 focus:ring-violet-400">${ttEsc(trDraft.text)}</textarea>
+        <textarea rows="2" oninput="trDraft.links=this.value" placeholder="Link (mỗi dòng 1 link: Drive, Zalo, web...)" class="w-full border rounded-lg p-1.5 font-medium outline-none focus:ring-2 focus:ring-violet-400">${ttEsc(trDraft.links)}</textarea>
+        <label class="block text-center border-2 border-dashed border-violet-300 hover:border-violet-500 rounded-lg p-2 cursor-pointer font-bold text-violet-700">📎 Chọn ảnh / file<input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="trAddFiles(this.files); this.value=''" class="hidden"></label>
+        <div id="trFiles" class="grid grid-cols-2 gap-1.5">${trFilesHtml()}</div>
+        <button id="btnTrSubmit" onclick="trSubmit()" class="w-full py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-lg font-black">✅ Tôi đã làm xong – gửi kết quả</button></div>`;
+      return h + '</div>';
+    }
+    async function trSubmit() {
+      const n = notesState.list.find(x => x.id === notesViewId); if (!n) return;
+      const ns = state.nhanSu.find(x => x.id === notesMe); if (!ns) { alert('Hãy chọn đúng tên của bạn trước!'); return; }
+      const links = trDraft.links.split(/\r?\n/).map(s => s.trim()).filter(s => /^https?:\/\//i.test(s));
+      if (!trDraft.text.trim() && !links.length && !trFiles.length) { alert('Hãy nhập kết quả, dán link hoặc đính kèm ảnh/file!'); return; }
+      if (!confirm(`${ns.name} xác nhận ĐÃ LÀM XONG và gửi kết quả?`)) return;
+      const btn = document.getElementById('btnTrSubmit'); if (btn) { btn.disabled = true; btn.innerText = '⏳ Đang gửi & lưu Drive...'; }
+      try {
+        const res = await ttPost({ action: 'NOTE_SUBMIT', noteId: n.id, staffId: ns.id, text: trDraft.text, links, files: trFiles.map(f => ({ name: f.name, mime: f.mime, base64: f.base64 })) });
+        if (res.status !== 'success') { alert(res.message || 'Không gửi được!'); }
+        else { notesUpsertResult(res.record); trDraft = { text: '', links: '' }; trFiles = []; renderNotesTab(); showToastMessage('✅ ' + res.message); }
+      } catch (e) { alert('Lỗi: ' + e.message); }
+      if (!notesEditing) notesRenderView();
+    }
+    function notesToggleRes() { if (!notesShowRes && !verifyManagerAccess()) return; notesShowRes = !notesShowRes; notesRenderView(); }
+    function notesTaskBoxHtml(n) {
+      if (!n.task) return '';
+      const t = n.task, today = localDateStr(new Date()), doneN = notesTaskDoneCount(n), over = t.due && t.due < today && doneN < t.ids.length;
+      const chips = t.ids.map(id => { const s = TASK_ST[notesTaskState(n, id)]; return `<span class="text-[10px] font-black px-1.5 py-0.5 rounded ${s[1]}">${ttEsc(notesStaffName(id))}: ${s[0]}</span>`; }).join(' ');
+      const mine = !notesMe ? '<div class="text-[11px] text-slate-500">👇 Chọn tên của bạn ở khung bên dưới để nhận/nộp việc.</div>' : t.ids.includes(notesMe) ? notesTaskMineHtml(n) : '<div class="text-[11px] text-slate-500">Việc này không giao cho bạn.</div>';
+      return `<div class="border-2 border-violet-300 rounded-xl p-2.5 space-y-1.5 bg-violet-50"><div class="flex flex-wrap items-center gap-1.5"><span class="font-black text-violet-800">🧩 Công việc được giao · ${doneN}/${t.ids.length} đã nộp</span>${t.due ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded ${over ? 'bg-rose-600 text-white' : 'bg-white text-violet-700 border border-violet-300'}">${over ? '⚠️ Quá hạn ' : 'Hạn '}${stFmtD(t.due)}</span>` : ''}</div>
+        <div class="flex flex-wrap gap-1">${chips}</div>${mine}
+        <button onclick="notesToggleRes()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[11px]">📥 ${notesShowRes ? 'Ẩn' : 'Xem'} kết quả nhân viên nộp (QL)</button></div>${notesShowRes ? notesResultsHtml(n) : ''}`;
+    }
+    function notesResultsHtml(n) {
+      return `<div class="border border-slate-300 rounded-xl overflow-hidden"><div class="bg-slate-800 text-white px-2.5 py-1.5 text-[11px] font-black">📥 Kết quả nhân viên nộp</div>${n.task.ids.map(id => {
+        const r = notesResult(n.id, id), s = TASK_ST[notesTaskState(n, id)];
+        return `<div class="p-2 border-t space-y-1"><div class="flex flex-wrap items-center gap-1.5"><span class="font-black">${ttEsc(notesStaffName(id))}</span><span class="text-[10px] font-black px-1.5 py-0.5 rounded ${s[1]}">${s[0]}</span></div>
+          ${r ? notesSubmissionHtml(r) + (r.comment ? `<div class="text-[11px] text-slate-600">💬 ${ttEsc(r.comment)}${r.reviewedAt ? ' · ' + notesFmtAt(r.reviewedAt) : ''}</div>` : '') + (r.status !== 'Đã duyệt' ? `<div class="flex gap-1.5"><button onclick="notesReview('${ttEsc(id)}','APPROVE')" class="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-black text-[11px]">✔ Duyệt</button><button onclick="notesReview('${ttEsc(id)}','REDO')" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-black text-[11px]">↩ Yêu cầu làm lại</button></div>` : '') : '<div class="text-[11px] text-slate-400">Chưa nộp kết quả.</div>'}</div>`;
+      }).join('')}</div>`;
+    }
+    async function notesReview(sid, dec) {
+      if (!verifyManagerAccess()) return;
+      const cm = prompt(dec === 'REDO' ? 'Lý do yêu cầu làm lại (nhân viên sẽ thấy):' : 'Nhận xét (có thể để trống):', ''); if (cm === null) return;
+      try {
+        const res = await ttPost({ action: 'NOTE_REVIEW', mpin: managerPass, noteId: notesViewId, staffId: sid, decision: dec, comment: cm });
+        if (res.status !== 'success') { alert(res.message || 'Không cập nhật được!'); return; }
+        notesUpsertResult(res.record); renderNotesTab(); if (!notesEditing) notesRenderView(); showToastMessage('✅ ' + res.message);
+      } catch (e) { alert('Lỗi: ' + e.message); }
+    }
+    // ---- Thống kê: nội dung hoàn tất (TẤT CẢ nhân viên đã xác nhận) / chưa hoàn tất / ai chưa đọc / việc giao ----
+    function notesToggleStat() { notesShowStat = !notesShowStat; renderNotesTab(); }
+    function notesStatHtml() {
+      const td = localDateStr(new Date()), staff = state.nhanSu, by = {};
+      notesState.reads.forEach(r => { (by[r.noteId] = by[r.noteId] || {})[r.staffId] = r; });
+      const rows = notesState.list.filter(n => notesStatus(n, td).k !== 'expired').map(n => {
+        const m = by[n.id] || {}, conf = staff.filter(s => m[s.id] && m[s.id].confirmedAt), seen = staff.filter(s => m[s.id] && !m[s.id].confirmedAt), none = staff.filter(s => !m[s.id]);
+        const last = conf.map(s => m[s.id].confirmedAt).sort().pop() || '';
+        return { n, conf, seen, none, last, done: staff.length > 0 && conf.length === staff.length };
+      });
+      const done = rows.filter(x => x.done), todo = rows.filter(x => !x.done).sort((a, b) => String(a.n.date + a.n.time).localeCompare(String(b.n.date + b.n.time)));
+      const nm = a => a.map(s => ttEsc(s.name)).join(', ');
+      const perStaff = staff.map(s => ({ s, miss: rows.filter(x => !x.conf.includes(s)).length, none: rows.filter(x => x.none.includes(s)).length, seen: rows.filter(x => x.seen.includes(s)).length })).sort((a, b) => b.miss - a.miss || a.s.name.localeCompare(b.s.name, 'vi'));
+      const tasks = notesState.list.filter(n => n.task);
+      const tDone = tasks.filter(n => notesTaskDoneCount(n) === n.task.ids.length).length;
+      const card = (v, l, c) => `<div class="flex-1 min-w-[90px] rounded-xl border p-2 text-center ${c}"><div class="text-lg font-black">${v}</div><div class="text-[10px] font-bold">${l}</div></div>`;
+      const open = id => `onclick="notesOpen('${ttEsc(id)}')"`;
+      return `<div class="border-2 border-emerald-300 rounded-xl p-2.5 space-y-2 bg-emerald-50/40 text-[11px]"><div class="font-black text-emerald-800 text-xs">📈 Thống kê xác nhận đọc & công việc <span class="font-normal text-slate-500">(${staff.length} nhân viên, nội dung còn hiệu lực)</span></div>
+        <div class="flex flex-wrap gap-1.5">${card(done.length + '/' + rows.length, '✅ Hoàn tất (ai cũng đã đọc)', 'bg-emerald-100 border-emerald-300 text-emerald-800')}${card(todo.length, '🔔 Chưa hoàn tất', 'bg-rose-100 border-rose-300 text-rose-800')}${card(tDone + '/' + tasks.length, '🧩 Việc giao đã nộp đủ', 'bg-violet-100 border-violet-300 text-violet-800')}</div>
+        <details open><summary class="cursor-pointer font-black text-rose-700">🔔 Chưa hoàn tất (${todo.length}) — ai chưa đọc?</summary><div class="space-y-1 mt-1">${todo.map(x => `<div ${open(x.n.id)} class="cursor-pointer bg-white border rounded-lg p-1.5 hover:shadow"><div class="font-black">${ttEsc(x.n.title)} <span class="font-normal text-slate-400">· đăng ${stFmtD(x.n.date)}</span> <span class="text-emerald-700">${x.conf.length}/${staff.length}</span></div>${x.none.length ? `<div class="text-rose-700">⏳ Chưa mở (${x.none.length}): ${nm(x.none)}</div>` : ''}${x.seen.length ? `<div class="text-amber-700">👀 Mở chưa xác nhận (${x.seen.length}): ${nm(x.seen)}</div>` : ''}</div>`).join('') || '<div class="text-slate-400">Không có 🎉</div>'}</div></details>
+        <details><summary class="cursor-pointer font-black text-emerald-700">✅ Đã hoàn tất (${done.length})</summary><div class="space-y-1 mt-1">${done.map(x => `<div ${open(x.n.id)} class="cursor-pointer bg-white border rounded-lg p-1.5"><span class="font-black">${ttEsc(x.n.title)}</span> <span class="text-slate-500">· đủ ${staff.length}/${staff.length} · xong lúc ${notesFmtAt(x.last)}</span></div>`).join('') || '<div class="text-slate-400">Chưa có nội dung nào hoàn tất.</div>'}</div></details>
+        <details open><summary class="cursor-pointer font-black text-slate-700">👤 Ai chưa đọc bao nhiêu nội dung</summary><div class="overflow-x-auto mt-1 bg-white border rounded-lg"><table class="w-full leading-snug"><thead class="bg-slate-100 text-slate-600"><tr><th class="px-1.5 py-1 text-left">Nhân viên</th><th class="px-1.5 py-1 text-center">Chưa xác nhận</th><th class="px-1.5 py-1 text-center">Chưa mở</th><th class="px-1.5 py-1 text-center">Mở chưa xác nhận</th></tr></thead><tbody>${perStaff.map(p => `<tr class="border-t"><td class="px-1.5 py-1 font-bold">${ttEsc(p.s.name)}</td><td class="px-1.5 py-1 text-center font-black ${p.miss ? 'text-rose-600' : 'text-emerald-600'}">${p.miss}/${rows.length}</td><td class="px-1.5 py-1 text-center">${p.none}</td><td class="px-1.5 py-1 text-center">${p.seen}</td></tr>`).join('')}</tbody></table></div></details>
+        <details><summary class="cursor-pointer font-black text-violet-700">🧩 Công việc đã giao (${tasks.length})</summary><div class="space-y-1 mt-1">${tasks.map(n => { const un = n.task.ids.filter(id => !['sent', 'ok'].includes(notesTaskState(n, id))), over = n.task.due && n.task.due < td && un.length; return `<div ${open(n.id)} class="cursor-pointer bg-white border rounded-lg p-1.5"><div class="font-black">${ttEsc(n.title)} <span class="text-violet-700">${n.task.ids.length - un.length}/${n.task.ids.length}</span>${n.task.due ? ` <span class="${over ? 'text-rose-600' : 'text-slate-500'} font-bold">· ${over ? '⚠️ quá hạn ' : 'hạn '}${stFmtD(n.task.due)}</span>` : ''}</div>${un.length ? `<div class="text-rose-700">⏳ Chưa nộp: ${un.map(id => ttEsc(notesStaffName(id))).join(', ')}</div>` : '<div class="text-emerald-700">✅ Đã nộp đủ</div>'}</div>`; }).join('') || '<div class="text-slate-400">Chưa giao việc nào.</div>'}</div></details></div>`;
+    }
+    // ---- Bảng tóm tắt công văn (AI lập khi đăng) ----
+    const NOTE_BRIEF_ROWS = [['points', '🎯', 'Ý chính'], ['time', '⏰', 'Thời gian'], ['products', '📦', 'Sản phẩm'], ['offer', '💰', 'Ưu đãi / Điều kiện'], ['notes', '⚠️', 'Lưu ý'], ['todo', '✅', 'Việc cần làm']];
+    function notesBriefText(b) { return b ? NOTE_BRIEF_ROWS.map(r => (b[r[0]] || []).join(' ')).join(' ') : ''; }
+    function notesBriefTableHtml(b) {
+      const rows = NOTE_BRIEF_ROWS.filter(r => b && (b[r[0]] || []).length);
+      if (!rows.length) return '';
+      return `<div class="border border-indigo-200 rounded-xl overflow-hidden"><div class="bg-indigo-600 text-white font-black px-2.5 py-1.5 text-[11px]">📊 Bảng tóm tắt</div><table class="w-full text-[11px] leading-snug"><tbody>${rows.map((r, i) => `<tr class="${i % 2 ? 'bg-slate-50' : 'bg-white'} align-top"><td class="w-24 md:w-28 px-2 py-1.5 font-black text-slate-700 border-r border-slate-200">${r[1]} ${r[2]}</td><td class="px-2 py-1.5 text-slate-800">${b[r[0]].length > 1 ? `<ul class="list-disc pl-3.5 space-y-0.5">${b[r[0]].map(x => `<li>${ttEsc(x)}</li>`).join('')}</ul>` : ttEsc(b[r[0]][0])}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    function notesBriefChips(b) {
+      if (!b) return '';
+      const t = (b.time || [])[0], p = (b.products || []).slice(0, 3), cut = (x, n) => ttEsc(x.length > n ? x.slice(0, n) + '…' : x);
+      return (t ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">⏰ ${cut(t, 48)}</span>` : '')
+        + p.map(x => `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">📦 ${cut(x, 28)}</span>`).join('')
+        + ((b.notes || []).length ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">⚠️ ${b.notes.length} lưu ý</span>` : '');
+    }
     function notesCardHtml(x) {
       const n = x.n, c = notesCat(n.category), col = NOTE_COLOR[c[2]];
       const snippet = String(n.summary || n.text || '').replace(/\s+/g, ' ').slice(0, 170);
       const imgs = (n.files || []).filter(f => /^image\//.test(f.mime)), docs = (n.files || []).length - imgs.length;
-      const thumb = imgs[0] ? `<img ${clImgAttr(imgs[0].id, 200)} loading="lazy" alt="" class="w-14 h-14 object-cover rounded-lg border bg-slate-100 shrink-0">` : '';
+      const thumb = imgs[0] ? `<img src="https://drive.google.com/thumbnail?id=${encodeURIComponent(imgs[0].id)}&sz=w200" loading="lazy" alt="" class="w-14 h-14 object-cover rounded-lg border bg-slate-100 shrink-0">` : '';
       return `<div onclick="notesOpen('${ttEsc(n.id)}')" class="cursor-pointer border border-l-4 ${col.bd} rounded-xl bg-white hover:shadow-md transition p-2.5 flex gap-2 ${x.st.k === 'expired' ? 'opacity-60' : ''}">
         <div class="flex-1 min-w-0 space-y-1">
-          <div class="flex flex-wrap items-center gap-1.5"><span class="text-[10px] font-black px-1.5 py-0.5 rounded ${col.chip}">${c[1]}</span>${n.pin ? '<span class="text-xs">📌</span>' : ''}${notesStatusChip(x.st)}<span class="text-[10px] text-slate-400 ml-auto">${n.date ? stFmtD(n.date) : ''}</span></div>
+          <div class="flex flex-wrap items-center gap-1.5"><span class="text-[10px] font-black px-1.5 py-0.5 rounded ${col.chip}">${c[1]}</span>${n.pin ? '<span class="text-xs">📌</span>' : ''}${notesStatusChip(x.st)}${notesMe ? (((notesRead(n.id, notesMe) || {}).confirmedAt) ? '<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">✅ Đã nắm rõ</span>' : '<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">🔔 Chưa xác nhận</span>') : ''}${n.task ? notesTaskChip(n) : ''}<span class="text-[10px] text-slate-400 ml-auto">${n.date ? stFmtD(n.date) : ''}</span></div>
           <div class="font-black text-sm text-slate-800 leading-snug">${ttEsc(n.title)}</div>
           ${snippet ? `<div class="text-[11px] text-slate-600 leading-snug">${ttEsc(snippet)}</div>` : ''}
+          ${n.brief ? `<div class="flex flex-wrap gap-1">${notesBriefChips(n.brief)}</div>` : ''}
           <div class="flex items-center gap-2 text-[10px] text-slate-500">${(n.links || []).length ? `<span>🔗 ${n.links.length} link</span>` : ''}${imgs.length ? `<span>🖼️ ${imgs.length} ảnh</span>` : ''}${docs ? `<span>📎 ${docs} file</span>` : ''}</div>
         </div>${thumb}</div>`;
     }
 
     function renderNotesTab() {
       const list = document.getElementById('notesList'); if (!list) return;
+      notesNormTasks();
       const f = notesFiltered();
       const chips = document.getElementById('notesChips');
       if (chips) chips.innerHTML = `<button onclick="notesSetCat('')" class="px-2.5 py-1 rounded-full text-[11px] font-black ${notesState.cat ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-white'}">Tất cả (${f.counts.all})</button>` +
         NOTE_CATS.map(c => `<button onclick="notesSetCat('${c[0]}')" class="px-2.5 py-1 rounded-full text-[11px] font-black ${notesState.cat === c[0] ? NOTE_COLOR[c[2]].on : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${c[1]} (${f.counts[c[0]]})</button>`).join('');
       const ec = document.getElementById('notesExpiredCount'); if (ec) ec.innerText = f.expiredCount ? `(${f.expiredCount})` : '';
+      const ms = document.getElementById('notesMeSel');
+      if (ms) { const sig = state.nhanSu.length + '|' + notesMe; if (ms.dataset.sig !== sig) { ms.innerHTML = '<option value="">-- Chọn tên để xác nhận đã đọc --</option>' + state.nhanSu.map(ns => `<option value="${ttEsc(ns.id)}" ${ns.id === notesMe ? 'selected' : ''}>${ttEsc(ns.name)} (${ttEsc(ns.id)})</option>`).join(''); ms.dataset.sig = sig; } }
+      const pend = document.getElementById('notesPending');
+      if (pend) { const td = localDateStr(new Date()), cnt = notesMe ? notesState.list.filter(n => notesStatus(n, td).k !== 'expired' && !((notesRead(n.id, notesMe) || {}).confirmedAt)).length : 0; pend.innerHTML = !notesMe ? '' : cnt ? `<span class="font-black text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">🔔 ${cnt} chưa xác nhận</span>` : '<span class="font-black text-emerald-700">✅ Đã nắm rõ hết</span>'; const tk = notesMe ? notesState.list.filter(n => n.task && n.task.ids.includes(notesMe) && ['todo', 'redo'].includes(notesTaskState(n, notesMe))).length : 0; if (tk) pend.innerHTML += ` <span class="font-black text-violet-700 bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5">🧩 ${tk} việc cần làm</span>`; }
+      const sbx = document.getElementById('notesStatBox'); if (sbx) sbx.innerHTML = notesShowStat ? notesStatHtml() : ''; notesUpdateBanner();
       const total = document.getElementById('notesCount'); if (total) total.innerText = notesState.loading ? '· đang tải...' : `· ${notesState.list.length} nội dung`;
       const shown = f.arr.slice(0, notesState.limit);
       let h = shown.map(notesCardHtml).join('');
@@ -3450,10 +3663,10 @@
     function notesFileIcon(f) { const m = String(f.mime || ''); return /pdf/.test(m) ? '📕' : /word/.test(m) ? '📘' : /(excel|spreadsheet|csv)/.test(m) ? '📗' : /(powerpoint|presentation)/.test(m) ? '📙' : '📎'; }
     function notesOpen(id) {
       if (!notesState.list.some(n => n.id === id)) return;
-      notesViewId = id; notesEditing = false;
-      document.getElementById('noteViewModal').classList.remove('hidden'); notesRenderView();
+      notesViewId = id; notesEditing = false; notesShowTrack = false; notesShowRes = false; trDraft = { text: '', links: '' }; trFiles = [];
+      document.getElementById('noteViewModal').classList.remove('hidden'); notesStartTimer(); notesRenderView(); notesTrackOpen();
     }
-    function notesCloseView() { document.getElementById('noteViewModal').classList.add('hidden'); notesViewId = ''; notesEditing = false; }
+    function notesCloseView() { notesStopTimer(); document.getElementById('noteViewModal').classList.add('hidden'); notesViewId = ''; notesEditing = false; notesShowTrack = false; notesShowRes = false; }
     function notesRenderView() {
       const n = notesState.list.find(x => x.id === notesViewId), box = document.getElementById('noteViewBody'); if (!n || !box) return;
       const c = notesCat(n.category), col = NOTE_COLOR[c[2]], st = notesStatus(n, localDateStr(new Date()));
@@ -3465,6 +3678,8 @@
             <div><label class="block font-bold text-slate-700 mb-0.5">Từ ngày</label><input id="neFrom" type="date" value="${ttEsc(n.validFrom || '')}" class="w-full border rounded-lg p-1.5"></div>
             <div><label class="block font-bold text-slate-700 mb-0.5">Đến hết</label><input id="neTo" type="date" value="${ttEsc(n.validTo || '')}" class="w-full border rounded-lg p-1.5"></div>
           </div>
+          ${taskPickerHtml('ne', (n.task || {}).ids || [], (n.task || {}).due || '')}
+          <div class="border border-indigo-200 rounded-xl p-2 space-y-1.5 bg-indigo-50/40"><div class="font-black text-indigo-700">📊 Bảng tóm tắt <span class="font-normal text-slate-500">(mỗi ý 1 dòng)</span></div>${NOTE_BRIEF_ROWS.map(r => `<div><label class="block font-bold text-slate-700 mb-0.5">${r[1]} ${r[2]}</label><textarea id="neB_${r[0]}" rows="2" class="w-full border rounded-lg p-1.5 font-medium outline-none focus:ring-2 focus:ring-indigo-400">${ttEsc(((n.brief || {})[r[0]] || []).join('\n'))}</textarea></div>`).join('')}</div>
           <div><label class="block font-bold text-slate-700 mb-0.5">Nội dung</label><textarea id="neText" rows="7" class="w-full border rounded-lg p-2 font-medium outline-none focus:ring-2 focus:ring-indigo-400">${ttEsc(n.text)}</textarea></div>
           <div class="flex gap-2"><button onclick="notesSaveEdit()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-black">💾 Lưu</button><button onclick="notesEditing=false; notesRenderView()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-bold text-slate-600">Hủy</button></div>`;
         return;
@@ -3476,20 +3691,24 @@
           <h3 class="text-base font-black text-slate-900 leading-snug">${ttEsc(n.title)}</h3>
           <div class="text-[10px] text-slate-400">Đăng ${n.date ? stFmtD(n.date) : ''} ${ttEsc(n.time || '')}${n.author ? ' · ' + ttEsc(n.author) : ''} · ${src}${n.category === 'ctkm_tg' && (n.validFrom || n.validTo) ? ` · Áp dụng ${n.validFrom ? stFmtD(n.validFrom) : '...'} → ${n.validTo ? stFmtD(n.validTo) : '...'}` : ''}</div>
         </div>
-        ${n.text ? `<div class="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap break-words bg-slate-50 border border-slate-200 rounded-xl p-2.5">${notesLinkify(n.text)}</div>` : ''}
-        ${imgs.length ? `<div class="grid grid-cols-2 gap-1.5">${imgs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer"><img ${clImgAttr(f.id, 800)} alt="${ttEsc(f.name)}" loading="lazy" class="w-full max-h-64 object-contain rounded-lg border bg-slate-100"></a>`).join('')}</div>` : ''}
+        ${n.brief ? notesBriefTableHtml(n.brief) : (n.text ? `<div class="bg-amber-50 border border-amber-200 rounded-lg p-2 text-[11px] text-amber-800 font-bold">Nội dung này chưa có bảng tóm tắt. Quản lý bấm "🤖 Phân tích lại" bên dưới để tạo.</div>` : '')}
+        ${n.text ? (n.brief ? `<details><summary class="cursor-pointer font-black text-slate-600 text-[11px]">📄 Nội dung gốc</summary><div class="mt-1 text-xs text-slate-800 leading-relaxed whitespace-pre-wrap break-words bg-slate-50 border border-slate-200 rounded-xl p-2.5">${notesLinkify(n.text)}</div></details>` : `<div class="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap break-words bg-slate-50 border border-slate-200 rounded-xl p-2.5">${notesLinkify(n.text)}</div>`) : ''}
+        ${imgs.length ? `<div class="grid grid-cols-2 gap-1.5">${imgs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer"><img src="${clThumb(f.id)}" alt="${ttEsc(f.name)}" loading="lazy" class="w-full max-h-64 object-contain rounded-lg border bg-slate-100"></a>`).join('')}</div>` : ''}
         ${docs.length ? `<div class="space-y-1">${docs.map(f => `<a href="${clViewUrl(f.id)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 border rounded-lg p-2 bg-white hover:bg-slate-50 font-bold text-slate-700"><span class="text-lg">${notesFileIcon(f)}</span><span class="break-all">${ttEsc(f.name)}</span></a>`).join('')}</div>` : ''}
         ${(n.links || []).length ? `<div class="space-y-1">${n.links.map(u => `<a href="${ttEsc(u)}" target="_blank" rel="noopener noreferrer" class="block border rounded-lg p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold break-all">🔗 ${ttEsc(u.length > 90 ? u.slice(0, 90) + '…' : u)}</a>`).join('')}</div>` : ''}
+        ${notesTaskBoxHtml(n)}
+        ${notesConfirmBoxHtml(n)}
         <div class="flex flex-wrap gap-1.5 pt-1 border-t">
           <button onclick="notesCopy()" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black">📋 Copy nội dung</button>
           <button onclick="notesMgr('edit')" class="px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-black">✏️ Sửa (QL)</button>
+          <button onclick="notesMgr('ai')" class="px-2.5 py-1.5 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-800 font-black">🤖 Phân tích lại (QL)</button>
           <button onclick="notesMgr('pin')" class="px-2.5 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-black">${n.pin ? '📌 Bỏ ghim' : '📌 Ghim'} (QL)</button>
           <button onclick="notesMgr('del')" class="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-black">🗑️ Xóa (QL)</button>
         </div>`;
     }
     function notesCopy() {
       const n = notesState.list.find(x => x.id === notesViewId); if (!n) return;
-      const txt = [n.title, '', n.text, ...(n.links || []).map(u => '🔗 ' + u), ...(n.files || []).map(f => '📎 ' + f.name + ': ' + clViewUrl(f.id))].join('\n').trim();
+      const txt = [n.title, '', ...(n.brief ? NOTE_BRIEF_ROWS.filter(r => (n.brief[r[0]] || []).length).map(r => r[1] + ' ' + r[2] + ': ' + n.brief[r[0]].join('; ')) : []), '', n.text, ...(n.links || []).map(u => '🔗 ' + u), ...(n.files || []).map(f => '📎 ' + f.name + ': ' + clViewUrl(f.id))].join('\n').trim();
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => showToastMessage('✅ Đã copy nội dung'), () => prompt('Copy nội dung:', txt));
       else prompt('Copy nội dung:', txt);
     }
@@ -3499,6 +3718,13 @@
       if (act === 'edit') { notesEditing = true; notesRenderView(); return; }
       try {
         if (act === 'pin') { await notesUpdate(n.id, { pin: !n.pin }); showToastMessage(n.pin ? '📌 Đã ghim' : 'Đã bỏ ghim'); }
+        if (act === 'ai') {
+          showToastMessage('🤖 AI đang phân tích...');
+          const r = await ttPost({ action: 'CLASSIFY_NOTE', text: n.text, links: n.links, fileNames: (n.files || []).map(f => f.name), images: [] });
+          if (r.status !== 'success' || !r.result || !r.result.brief) { alert(r.message || 'Chưa tạo được bảng tóm tắt (nội dung quá ít?).'); return; }
+          await notesUpdate(n.id, { brief: r.result.brief, summary: r.result.summary || n.summary });
+          showToastMessage(r.result.by === 'AI' ? '✅ Đã tạo bảng tóm tắt bằng AI' : '✅ Đã tạo bảng tóm tắt theo từ khóa (chưa có AI_API_KEY)');
+        }
         if (act === 'del') {
           if (!confirm(`Xóa nội dung "${n.title}"? File đính kèm trên Drive cũng bị xóa.`)) return;
           const res = await ttPost({ action: 'DELETE_NOTE', mpin: managerPass, id: n.id });
@@ -3516,17 +3742,17 @@
     }
     async function notesSaveEdit() {
       const g = id => (document.getElementById(id) || {}).value || '';
-      try { await notesUpdate(notesViewId, { title: g('neTitle'), category: g('neCat'), validFrom: g('neFrom'), validTo: g('neTo'), text: g('neText') }); notesEditing = false; notesRenderView(); showToastMessage('✅ Đã lưu'); } catch (e) {}
+      try { const brief = {}; NOTE_BRIEF_ROWS.forEach(r => { brief[r[0]] = g('neB_' + r[0]).split(/\r?\n/).map(x => x.trim()).filter(Boolean); }); await notesUpdate(notesViewId, { title: g('neTitle'), category: g('neCat'), validFrom: g('neFrom'), validTo: g('neTo'), text: g('neText'), brief, task: taskPickerRead('ne') }); notesEditing = false; notesRenderView(); showToastMessage('✅ Đã lưu'); } catch (e) {}
     }
 
     // ---- Quản lý đăng nội dung ----
     function ncOpen() {
       if (!verifyManagerAccess()) return;
-      ncFiles = []; ncMeta = { summary: '', tags: [], by: 'QL', aiCat: '' };
+      ncFiles = []; ncLastSig = ''; ncMeta = { summary: '', tags: [], by: 'QL', aiCat: '', brief: null };
       ['ncText', 'ncLinks', 'ncTitle', 'ncFrom', 'ncTo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
       document.getElementById('ncCat').value = ''; document.getElementById('ncPin').checked = false;
       document.getElementById('ncAiBox').classList.add('hidden');
-      ncRenderFiles(); document.getElementById('noteComposerModal').classList.remove('hidden');
+      const tb = document.getElementById('ncTaskBox'); if (tb) tb.innerHTML = taskPickerHtml('nc', [], ''); ncRenderFiles(); document.getElementById('noteComposerModal').classList.remove('hidden');
     }
     function ncClose() { if (ncBusy) return; document.getElementById('noteComposerModal').classList.add('hidden'); }
     function ncCatChanged() { ncMeta.by = 'QL'; }
@@ -3568,28 +3794,30 @@
     function ncGather() {
       const v = id => (document.getElementById(id) || {}).value || '';
       const links = v('ncLinks').split(/\r?\n/).map(s => s.trim()).filter(s => /^https?:\/\//i.test(s));
-      return { text: v('ncText'), links, title: v('ncTitle').trim(), cat: v('ncCat'), from: v('ncFrom'), to: v('ncTo'), pin: !!(document.getElementById('ncPin') || {}).checked };
+      return { text: v('ncText'), links, title: v('ncTitle').trim(), cat: v('ncCat'), from: v('ncFrom'), to: v('ncTo'), pin: !!(document.getElementById('ncPin') || {}).checked, task: taskPickerRead('nc') };
     }
+    function ncSig(g) { return JSON.stringify([g.text, g.links, ncFiles.map(f => f.name)]); }
     async function ncClassifyCall(g) {
-      const res = await ttPost({ action: 'CLASSIFY_NOTE', text: g.text, links: g.links, fileNames: ncFiles.map(f => f.name), images: ncFiles.filter(f => /^image\//.test(f.mime)).slice(0, 3).map(f => ({ mime: f.mime, base64: f.base64 })) });
+      const res = await ttPost({ action: 'CLASSIFY_NOTE', text: g.text, links: g.links, fileNames: ncFiles.map(f => f.name), images: ncFiles.filter(f => /^image\/|^application\/pdf$/.test(f.mime)).slice(0, 4).map(f => ({ mime: f.mime, base64: f.base64 })) });
       if (res.status !== 'success') throw new Error(res.message || 'Không phân loại được');
+      ncLastSig = ncSig(g);
       return res.result;
     }
     function ncApplyResult(r) {
       const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
       if (!document.getElementById('ncTitle').value.trim()) set('ncTitle', r.title || '');
       set('ncCat', r.category); set('ncFrom', r.validFrom || ''); set('ncTo', r.validTo || '');
-      ncMeta = { summary: r.summary || '', tags: r.tags || [], by: r.by || 'RULE', aiCat: r.category };
+      ncMeta = { summary: r.summary || '', tags: r.tags || [], by: r.by || 'RULE', aiCat: r.category, brief: r.brief || null };
       const box = document.getElementById('ncAiBox'); box.classList.remove('hidden');
       box.className = 'rounded-lg border p-2 text-[11px] leading-snug ' + (r.by === 'AI' ? 'bg-indigo-50 border-indigo-200 text-indigo-800' : 'bg-amber-50 border-amber-200 text-amber-800');
-      box.innerHTML = `${r.by === 'AI' ? '🤖 <b>AI nhận diện:</b>' : '🔤 <b>Phân loại theo từ khóa:</b>'} ${ttEsc(r.categoryLabel || '')}${r.validFrom || r.validTo ? ` · áp dụng ${r.validFrom ? stFmtD(r.validFrom) : '...'} → ${r.validTo ? stFmtD(r.validTo) : '...'}` : ''}<br>${r.summary ? '📝 ' + ttEsc(r.summary) + '<br>' : ''}${(r.tags || []).length ? '🏷️ ' + r.tags.map(ttEsc).join(', ') + '<br>' : ''}${r.note ? '⚠️ ' + ttEsc(r.note) + '<br>' : ''}<span class="text-slate-500">Không đúng mục? Đổi ở ô Danh mục rồi bấm Đăng.</span>`;
+      box.innerHTML = `${r.by === 'AI' ? '🤖 <b>AI nhận diện:</b>' : '🔤 <b>Phân loại theo từ khóa:</b>'} ${ttEsc(r.categoryLabel || '')}${r.validFrom || r.validTo ? ` · áp dụng ${r.validFrom ? stFmtD(r.validFrom) : '...'} → ${r.validTo ? stFmtD(r.validTo) : '...'}` : ''}<br>${r.summary ? '📝 ' + ttEsc(r.summary) + '<br>' : ''}${(r.tags || []).length ? '🏷️ ' + r.tags.map(ttEsc).join(', ') + '<br>' : ''}${r.note ? '⚠️ ' + ttEsc(r.note) + '<br>' : ''}<div class="my-1.5 text-slate-800">${notesBriefTableHtml(r.brief)}</div><span class="text-slate-500">Không đúng mục? Đổi ở ô Danh mục rồi bấm Đăng. Bảng tóm tắt sửa được sau khi đăng (✏️ Sửa).</span>`;
     }
     async function ncPreviewAi() {
       if (ncBusy) return; const g = ncGather();
       if (!g.text.trim() && !g.links.length && !ncFiles.length) { alert('Hãy dán nội dung hoặc thêm ảnh/file trước!'); return; }
       const btn = document.getElementById('btnNcAi'); btn.disabled = true; btn.innerText = '⏳ AI đang đọc...';
       try { ncApplyResult(await ncClassifyCall(g)); } catch (e) { alert('Lỗi: ' + e.message); }
-      btn.disabled = false; btn.innerText = '🤖 Xem AI phân loại trước';
+      btn.disabled = false; btn.innerText = '🤖 Xem AI phân tích trước';
     }
     async function ncSubmit() {
       if (ncBusy) return;
@@ -3599,10 +3827,22 @@
       ncBusy = true;
       const btn = document.getElementById('btnNcSubmit'); btn.disabled = true;
       try {
-        if (!g.cat) { btn.innerText = '🤖 AI đang phân loại...'; ncApplyResult(await ncClassifyCall(g)); g = ncGather(); }
+        if (!g.cat || !ncMeta.brief || ncLastSig !== ncSig(g)) {
+          btn.innerText = '🤖 AI đang đọc & tóm tắt công văn...';
+          let r = null;
+          try { r = await ncClassifyCall(g); } catch (e) { if (!g.cat) throw e; }   // QL đã chọn mục thì AI lỗi vẫn đăng được (server tự tóm tắt theo từ khóa)
+          if (r) {
+            if (!g.cat) ncApplyResult(r);
+            else {
+              ncMeta.brief = r.brief || null; if (!ncMeta.summary) ncMeta.summary = r.summary || ''; if (!(ncMeta.tags || []).length) ncMeta.tags = r.tags || [];
+              if (!g.title) { const t = document.getElementById('ncTitle'); if (t) t.value = r.title || ''; }
+            }
+            g = ncGather();
+          }
+        }
         const by = (g.cat === ncMeta.aiCat) ? ncMeta.by : 'QL';
         btn.innerText = '⏳ Đang đăng & lưu Drive...';
-        const res = await ttPost({ action: 'POST_NOTE', mpin: managerPass, author: 'Quản lý', title: g.title, text: g.text, links: g.links, category: g.cat, by, summary: ncMeta.summary, tags: ncMeta.tags, validFrom: g.from, validTo: g.to, pin: g.pin, files: ncFiles.map(f => ({ name: f.name, mime: f.mime, base64: f.base64 })) });
+        const res = await ttPost({ action: 'POST_NOTE', mpin: managerPass, author: 'Quản lý', title: g.title, text: g.text, links: g.links, category: g.cat, by, summary: ncMeta.summary, tags: ncMeta.tags, brief: ncMeta.brief, task: g.task, validFrom: g.from, validTo: g.to, pin: g.pin, files: ncFiles.map(f => ({ name: f.name, mime: f.mime, base64: f.base64 })) });
         if (res.status !== 'success') { alert(res.message || 'Không đăng được!'); }
         else {
           notesState.list.unshift(res.note); notesSaveCache(); notesState.cat = ''; notesState.q = '';
@@ -4860,8 +5100,7 @@
 
       if (out.ok) {
         pendingRemove(staffId, selectedDate);
-        showToastMessage("✅ Đã lưu lên Google Sheets và kiểm tra khớp dữ liệu! Đang tải ảnh...");
-        await exportReportImage(true);
+        showToastMessage("✅ Đã lưu lên Google Sheets và kiểm tra khớp dữ liệu! Đang tạo ảnh...");
       } else {
         alert(`⚠️ BÁO CÁO CHƯA ĐƯỢC LƯU LÊN SHEET!\n\nLý do: ${out.msg}\n\n• Báo cáo đã được giữ lại trên máy này, app sẽ tự gửi lại mỗi phút.\n• KHÔNG gửi ảnh vào nhóm cho tới khi thấy thông báo ✅.\n• Có thể bấm "Gửi lại ngay" ở khung đỏ phía trên màn hình.`);
       }
@@ -4869,6 +5108,7 @@
       renderDashboard();
       renderHistoryLogsTable();
       renderManagerSettings();
+      if (out.ok) await exportReportImage(true);   // xuất ảnh SAU CÙNG để các bảng cập nhật xong trước, báo cáo đã lưu rồi dù ảnh có lỗi
     }
 
     // ================= BẮT BUỘC TẢI DỮ LIỆU / TOOL MỚI NHẤT TRƯỚC KHI NHÂN VIÊN BÁO CÁO =================
@@ -4887,20 +5127,40 @@
     let freshTargetStaff = '';
 
     // So sánh bản tool đang chạy với bản mới nhất trên máy chủ (APP_VERSION); khác -> tự tải lại 1 lần
+    // Băm đoạn script chính của app: nhận ra bản mới KỂ CẢ khi quên đổi APP_VERSION
+    function hashStr(t) { let x = 5381; for (let i = 0; i < t.length; i++) x = ((x << 5) + x + t.charCodeAt(i)) | 0; return (x >>> 0).toString(36) + t.length.toString(36); }
+    function mainScriptOf(scripts) { const s = Array.from(scripts).find(el => !el.src && el.textContent.indexOf('const APP_VERSION') >= 0); return s ? hashStr(s.textContent) : ''; }
+    function setVerState(st, remoteVer) {
+      window.__verState = st; updateSyncInfoLabel();
+      const b = document.getElementById('toolStaleBanner');
+      if (b) { b.classList.toggle('hidden', st !== 'stale'); const t = document.getElementById('toolStaleVer'); if (t && remoteVer) t.innerText = remoteVer; }
+    }
+    // Xóa bộ nhớ đệm của riêng tool trên máy này rồi tải lại bằng link mới (báo cáo đang chờ gửi vẫn được giữ)
+    async function hardRefreshTool() {
+      if (!confirm('Làm mới tool: xóa bộ nhớ đệm bản tool/dữ liệu cũ trên máy này và tải lại bản mới nhất.\nBáo cáo đang chờ gửi (nếu có) vẫn được GIỮ LẠI. Tiếp tục?')) return;
+      try { if (window.caches && caches.keys) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } } catch (e) {}
+      try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())); } } catch (e) {}
+      try { ['APP_STORE_DATA_CACHE', 'APP_NOTES_CACHE', 'APP_NOTES_READS', 'APP_LAST_SYNC_OK'].forEach(k => localStorage.removeItem(k)); sessionStorage.removeItem('TOOL_RELOAD_FOR'); } catch (e) {}
+      location.replace(location.href.split('#')[0].split('?')[0] + '?v=' + Date.now());
+    }
     async function checkToolVersion() {
       try {
-        if (!/^https?:$/.test(location.protocol)) return 'SKIP';
+        if (!/^https?:$/.test(location.protocol)) { setVerState('unknown'); return 'SKIP'; }
         const base = location.href.split('#')[0].split('?')[0];
         const res = await fetch(base + '?_v=' + Date.now(), { cache: 'no-store' });
-        if (!res.ok) return 'SKIP';
-        const m = /const APP_VERSION = "([^"]+)"/.exec(await res.text());
-        if (!m || m[1] === APP_VERSION) return 'OK';
-        const key = 'TOOL_RELOAD_FOR';
-        if (sessionStorage.getItem(key) === m[1]) return 'SKIP'; // đã tải lại 1 lần mà vẫn cũ -> không lặp
-        sessionStorage.setItem(key, m[1]);
+        if (!res.ok) { setVerState('unknown'); return 'SKIP'; }
+        const html = await res.text();
+        const m = /const APP_VERSION = "([^"]+)"/.exec(html);
+        if (!m) { setVerState('unknown'); return 'SKIP'; }   // link đang mở không phải file tool gốc (trang trung gian, link rút gọn...)
+        let remoteSig = ''; try { remoteSig = mainScriptOf(new DOMParser().parseFromString(html, 'text/html').scripts); } catch (e) {}
+        const mine = mainScriptOf(document.scripts);
+        if (m[1] === APP_VERSION && (!remoteSig || !mine || remoteSig === mine)) { setVerState('ok'); return 'OK'; }
+        const tag = m[1] + '|' + remoteSig, key = 'TOOL_RELOAD_FOR';
+        if (sessionStorage.getItem(key) === tag) { setVerState('stale', m[1]); return 'STALE'; }   // đã tải lại 1 lần mà vẫn cũ -> báo rõ cho nhân viên thay vì im lặng
+        sessionStorage.setItem(key, tag);
         setTimeout(() => { location.replace(base + '?v=' + Date.now()); }, 1200);
         return 'NEW';
-      } catch (e) { return 'SKIP'; }
+      } catch (e) { setVerState('unknown'); return 'SKIP'; }
     }
     async function ensureFreshBeforeReport(maxAgeMs) {
       if (Date.now() - lastFreshAt < (maxAgeMs || 0)) return true;
@@ -5021,8 +5281,13 @@
       return items.every(r => rows.some(k => k.itemName === r.itemName && Number(k.actual) === Number(r.actual)));
     }
     async function pendingVerify(pl) {
+      let q = null;
+      try {   // bản Apps Script mới: chỉ đọc báo cáo của đúng người + ngày (nhanh hơn nhiều so với đọc cả 10 sheet)
+        q = await safeFetchJSON(`${API_URL}?action=verify&staffId=${encodeURIComponent(pl.staffId)}&date=${encodeURIComponent(pl.date)}&_t=${Date.now()}`);
+        if (q && q.status === 'success' && Array.isArray(q.rows)) return pendRowsMatch(pl, q.rows);
+      } catch (e) {}
       try {
-        const data = await safeFetchJSON(`${API_URL}?_t=${Date.now()}`);
+        const data = (q && Array.isArray(q.ketQua)) ? q : await safeFetchJSON(`${API_URL}?_t=${Date.now()}`);
         if (!data || !Array.isArray(data.ketQua)) return false;
         return pendRowsMatch(pl, data.ketQua.filter(k => k.staffId === pl.staffId && String(k.date).slice(0, 10) === pl.date));
       } catch (e) { return false; }
@@ -5297,6 +5562,23 @@
       renderChatbotStaffButtons();
       showToastMessage(`✅ Đã thêm nhân viên ${name} (${id}) thành công!`);
       saveAllStaffStarsToSheet();
+    }
+
+    function renderHiddenStaffBox() {
+      const b = document.getElementById('hiddenStaffBox'); if (!b) return;
+      const hs = state.hiddenStaff || [];
+      b.innerHTML = hs.length ? `<div class="border border-slate-300 rounded-lg p-2 bg-slate-50 text-xs space-y-1"><div class="font-black text-slate-700">🙈 Nhân viên đang ẩn (${hs.length}) <span class="font-normal text-slate-500">— app coi như không có người này</span></div>${hs.map(ns => `<div class="flex items-center gap-2"><span class="font-mono text-slate-500">${ttEsc(ns.id)}</span><span class="font-bold flex-1">${ttEsc(ns.name)}</span><button type="button" onclick="setStaffHidden('${ttEsc(ns.id)}', false)" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-black text-[11px]">👁 Hiện lại</button></div>`).join('')}</div>` : '';
+    }
+    async function setStaffHidden(id, hide) {
+      if (!verifyManagerAccess()) return;
+      const ns = state.nhanSu.concat(state.hiddenStaff || []).find(x => x.id === id); if (!ns) return;
+      if (hide && !confirm(`ẨN nhân viên ${ns.name} (${ns.id})?\n\nNhân viên bị ẩn sẽ biến mất khỏi mọi danh sách, bảng xếp hạng, thống kê và nhắc việc (như không có).\nDữ liệu cũ vẫn giữ trên Sheet, bấm "Hiện lại" là có lại.`)) return;
+      try {
+        const res = await ttPost({ action: 'HIDE_STAFF', mpin: managerPass, staffId: id, hidden: !!hide });
+        if (res.status !== 'success') { alert(res.message || 'Không cập nhật được!'); return; }
+        showToastMessage(`${hide ? '🙈 Đã ẩn' : '👁 Đã hiện lại'} ${ns.name}`);
+        await loadData(true);
+      } catch (e) { alert('Lỗi: ' + e.message); }
     }
 
     function promptDeleteStaffMember(staffId) {
@@ -6304,6 +6586,9 @@
                 </div>
               </td>
               <td class="p-2 text-center">
+                <button type="button" onclick="setStaffHidden('${ns.id}', true)" class="px-2 py-1 bg-slate-100 hover:bg-slate-600 text-slate-600 hover:text-white rounded border border-slate-300 font-bold transition text-[10px]" title="Ẩn nhân viên này (coi như không có)">🙈 Ẩn</button>
+              </td>
+              <td class="p-2 text-center">
                 <button type="button" onclick="promptDeleteStaffMember('${ns.id}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded border border-rose-200 font-bold transition text-[10px]" title="Xóa nhân viên này">
                   🗑️ Xóa
                 </button>
@@ -6312,6 +6597,8 @@
           `;
         }).join('');
       }
+
+      renderHiddenStaffBox();
 
       // Phê duyệt bán thêm
       const tbodyExtra = document.getElementById('extraApprovalTableBody');
