@@ -467,14 +467,31 @@
       <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 space-y-2">
         <h3 class="text-xs md:text-sm font-bold text-slate-800 border-b pb-1.5">📱 Nộp Link TikTok — hạn Thứ 3 &amp; Thứ 6 hàng tuần</h3>
         <div id="ttRuleBox" class="text-[11px] text-slate-600 leading-snug"></div>
+        <div id="ttGuideBox" class="border-2 border-fuchsia-300 bg-fuchsia-50 rounded-xl p-2.5 text-[11px] leading-snug space-y-1.5">
+          <div class="font-black text-fuchsia-800 text-xs">📌 Cách nộp: làm đủ 2 bước rồi mới bấm Gửi</div>
+          <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-fuchsia-600 text-white font-black flex items-center justify-center">1</span><div><b>Úp video lên TikTok</b> → bấm <b>Chia sẻ</b> → <b>Sao chép liên kết</b> → dán vào ô <b>① Link TikTok</b>.</div></div>
+          <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white font-black flex items-center justify-center">2</span><div><b>Úp lên Facebook cá nhân</b> (chế độ <b>Công khai</b>) → bấm <b>⋯ / Chia sẻ</b> → <b>Sao chép liên kết</b> → dán vào ô <b>② Link Facebook cá nhân</b>.</div></div>
+          <div class="text-slate-700 space-y-0.5">
+            <div>✔ Mỗi ô dán <b>mỗi link 1 dòng</b>. Chỉ cần là <b>đường link</b>, không cần đúng mẫu.</div>
+            <div>✔ Phải có <b>cả link TikTok và link Facebook</b> thì mới ghi nhận nộp.</div>
+            <div>✔ Úp ở <b>Facebook cá nhân</b> (không phải fanpage/nhóm) để Quản lý kiểm tra được.</div>
+            <div>✔ Không dùng lại link của kỳ trước. Dán nhầm ô (link Facebook vào ô TikTok) sẽ bị báo lỗi.</div>
+          </div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-start text-xs">
           <div>
             <label class="block font-bold mb-0.5">Nhân viên:</label>
             <select id="ttStaffSelect" onchange="renderTiktokTab()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"><option value="">-- Chọn nhân viên --</option></select>
           </div>
-          <div class="md:col-span-2">
-            <label class="block font-bold mb-0.5">Link TikTok (mỗi link 1 dòng):</label>
-            <textarea id="ttLinksInput" rows="2" placeholder="https://www.tiktok.com/@ten/video/1234567890123456789  hoặc  https://vt.tiktok.com/ZSxxxxxx/" class="w-full border rounded-lg p-1.5 font-mono text-[11px] outline-none focus:ring-2 focus:ring-fuchsia-500"></textarea>
+          <div class="md:col-span-2 space-y-2">
+            <div>
+              <label class="block font-bold mb-0.5"><span class="inline-flex w-4 h-4 rounded-full bg-fuchsia-600 text-white text-[10px] items-center justify-center mr-1">1</span>Link TikTok đã đăng (mỗi link 1 dòng):</label>
+              <textarea id="ttLinksInput" rows="2" placeholder="Dán link video TikTok, ví dụ https://vt.tiktok.com/ZSxxxxxx/" class="w-full border rounded-lg p-1.5 font-mono text-[11px] outline-none focus:ring-2 focus:ring-fuchsia-500"></textarea>
+            </div>
+            <div>
+              <label class="block font-bold mb-0.5"><span class="inline-flex w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] items-center justify-center mr-1">2</span><span id="ttFbLabel">Link Facebook cá nhân đã đăng (mỗi link 1 dòng):</span></label>
+              <textarea id="ttFbInput" rows="2" placeholder="Dán link bài đăng trên Facebook cá nhân, ví dụ https://www.facebook.com/... hoặc https://fb.watch/..." class="w-full border rounded-lg p-1.5 font-mono text-[11px] outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
           </div>
         </div>
         <div id="ttStaffStatus" class="text-xs"></div>
@@ -611,6 +628,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-1.5">
           <h3 class="text-xs md:text-sm font-bold text-slate-800">📚 Nội Dung Quan Trọng <span id="notesCount" class="text-[10px] font-normal text-slate-400"></span></h3>
           <div class="flex items-center gap-1">
+            <button onclick="notesGuideOpen()" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[11px]">❓ Hướng dẫn</button>
             <button onclick="notesToggleStat()" class="px-2 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-black text-[11px]">📈 Thống kê</button>
             <button onclick="notesLoad(true)" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">🔄 Làm mới</button>
             <button onclick="ncOpen()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] whitespace-nowrap">➕ Triển khai nội dung (QL)</button>
@@ -1228,6 +1246,10 @@
             <label class="block font-bold mb-0.5">Số link tối thiểu / kỳ:</label>
             <input type="number" min="1" id="ttCfgMin" onchange="triggerAutoSave(); renderTiktokTab()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-500">
           </div>
+          <div>
+            <label class="block font-bold mb-0.5">Link Facebook cá nhân tối thiểu / kỳ (0 = không bắt buộc):</label>
+            <input type="number" min="0" max="5" id="ttCfgFb" onchange="triggerAutoSave(); renderTiktokTab()" class="w-full border rounded-lg p-1.5 font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
         </div>
         <p class="text-[10px] text-slate-500 leading-snug">Chỉ các kỳ hạn từ <b>ngày bắt đầu</b> trở đi mới bị tính thưởng/phạt (không phạt ngược các kỳ đã qua). Phạt trừ vào <b>báo cáo cuối ngày</b> của những ngày kế tiếp cho tới khi nhân viên nộp link đúng và đủ.</p>
       </div>
@@ -1304,6 +1326,28 @@
       <div class="flex flex-wrap gap-2 pt-1">
         <button id="btnNcAi" onclick="ncPreviewAi()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-black">🤖 Xem AI phân tích trước</button>
         <button id="btnNcSubmit" onclick="ncSubmit()" class="flex-1 min-w-[160px] py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-black shadow">📤 Đăng &amp; đồng bộ Drive</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP HƯỚNG DẪN NHÂN VIÊN: ĐỌC - NẮM - XÁC NHẬN -->
+  <div id="notesGuideModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 z-[80]">
+    <div class="bg-white w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl text-xs">
+      <div class="bg-indigo-600 text-white p-3 rounded-t-2xl"><div class="font-black text-sm">📖 Hướng dẫn: đọc – nắm – xác nhận nội dung</div><div class="text-indigo-100 text-[11px]">Làm đủ 4 bước để Quản lý biết bạn đã nắm rõ</div></div>
+      <div class="p-3 space-y-2.5 leading-snug">
+        <div class="flex gap-2"><span class="shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-black flex items-center justify-center">1</span><div><b>👤 Chọn tên của bạn</b><br>Ở ô <b>"Bạn là"</b> đầu tab Nội dung, chọn đúng tên mình (máy sẽ nhớ cho lần sau).</div></div>
+        <div class="flex gap-2"><span class="shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-black flex items-center justify-center">2</span><div><b>📖 Bấm vào nội dung để đọc</b><br>Đọc <b>📊 Bảng tóm tắt</b> (ý chính, thời gian, sản phẩm, lưu ý), sau đó mở <b>📄 Nội dung gốc</b> và xem ảnh / file / link đính kèm. Hệ thống ghi lại giờ bạn mở và thời gian bạn đọc.</div></div>
+        <div class="flex gap-2"><span class="shrink-0 w-6 h-6 rounded-full bg-violet-100 text-violet-700 font-black flex items-center justify-center">3</span><div><b>🧩 Nếu có khung "Công việc được giao"</b><br>Làm xong bấm <b>"Tôi đã làm xong – gửi kết quả"</b>, kèm <b>ảnh, mô tả hoặc link</b>. Quản lý sẽ duyệt hoặc yêu cầu làm lại (bạn sẽ thấy lý do ngay trong khung đó).</div></div>
+        <div class="flex gap-2"><span class="shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-black flex items-center justify-center">4</span><div><b>✅ Bấm "Tôi đã đọc và nắm rõ"</b><br>Chỉ bấm khi bạn <b>đã đọc hết và hiểu</b>. Chưa rõ chỗ nào thì hỏi Quản lý trước khi xác nhận.</div></div>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-2 space-y-0.5 text-[11px]">
+          <div>🔔 <b>Thanh đỏ / chấm đỏ trên tab 📚 Nội dung</b> = còn nội dung bạn chưa xác nhận hoặc việc chưa làm.</div>
+          <div>🏷️ Trên thẻ: <b>🔔 Chưa xác nhận</b> → cần đọc; <b>✅ Đã nắm rõ</b> → xong.</div>
+          <div>⏱️ Quản lý xem được giờ mở, giờ xác nhận và thời gian đọc. Bấm xác nhận quá nhanh (dưới 10 giây) sẽ bị đánh dấu <b>"rất nhanh"</b>.</div>
+        </div>
+      </div>
+      <div class="p-3 border-t space-y-2">
+        <label class="flex items-center gap-1.5 font-bold text-slate-600 cursor-pointer"><input id="notesGuideNever" type="checkbox" checked class="w-4 h-4 accent-indigo-600"> Không tự hiện lại (vẫn mở lại được bằng nút ❓ Hướng dẫn)</label>
+        <button onclick="notesGuideClose()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black">Đã hiểu, bắt đầu</button>
       </div>
     </div>
   </div>
@@ -1570,8 +1614,8 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-13 · v17";
-    const EXPECT_SERVER_VERSION = "2026-10-13 · v17";   // bản Code.gs tương ứng với bản tool này
+    const APP_VERSION = "2026-10-13 · v19";
+    const EXPECT_SERVER_VERSION = "2026-10-13 · v19";   // bản Code.gs tương ứng với bản tool này
     let lastFreshAt = 0; // lần gần nhất tải dữ liệu mới từ Sheet thành công
 
     function fmtSyncTime(ts) {
@@ -2230,7 +2274,8 @@
         start: c.TIKTOK_START_DATE ? String(c.TIKTOK_START_DATE).slice(0, 10) : "",
         reward: getCfgNum('TIKTOK_REWARD', 300),
         penalty: getCfgNum('TIKTOK_PENALTY', 300),
-        minLinks: Math.max(1, getCfgNum('TIKTOK_MIN_LINKS', 1))
+        minLinks: Math.max(1, getCfgNum('TIKTOK_MIN_LINKS', 1)),
+        fbMin: Math.min(5, Math.floor(getCfgNum('TIKTOK_FB_MIN', 1)))
       };
     }
     function penCfgField(id, key) {
@@ -2282,15 +2327,16 @@
       return rows;
     }
     // Link TikTok hợp lệ & đầy đủ (giống server)
+    // Link hợp lệ = đúng DẠNG ĐƯỜNG LINK (có tên miền); không bắt buộc đúng mẫu video. Tự thêm https:// và bỏ ký tự thừa khi dán.
     function ttNormalizeLink(raw) {
-      let l = String(raw || '').trim();
+      let l = String(raw || '').trim().replace(/^[\s"'(<\[]+|[\s"')>\]\.,;]+$/g, '');
       if (!l) return '';
-      if (!/^https?:\/\//i.test(l)) l = 'https://' + l;
-      const full = /^https?:\/\/(?:www\.|m\.)?tiktok\.com\/@[A-Za-z0-9._-]+\/(?:video|photo)\/\d{10,25}\/?(?:\?.*)?$/i;
-      const shortA = /^https?:\/\/(?:vt|vm)\.tiktok\.com\/[A-Za-z0-9_-]{5,}\/?(?:\?.*)?$/i;
-      const shortB = /^https?:\/\/(?:www\.)?tiktok\.com\/t\/[A-Za-z0-9_-]{5,}\/?(?:\?.*)?$/i;
-      return (full.test(l) || shortA.test(l) || shortB.test(l)) ? l : '';
+      if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(l)) l = 'https://' + l;
+      return /^https?:\/\/[^\s\/?#]+\.[^\s\/?#]{2,}(?:[\/?#]\S*)?$/i.test(l) ? l : '';
     }
+    function ttHost(l) { const m = /^https?:\/\/([^\/?#]+)/i.exec(String(l)); return m ? m[1].toLowerCase() : ''; }
+    function ttIsFb(l) { return /(^|\.)(facebook\.com|fb\.com|fb\.watch|fb\.me)$/.test(ttHost(l)); }
+    function ttIsTikTok(l) { return /(^|\.)tiktok\.com$/.test(ttHost(l)); }
     // Gắn mật khẩu Quản lý (nếu đang mở khóa Quản lý) vào mọi yêu cầu ghi để server kiểm lại
     function withPin(obj) {
       return (isManagerUnlocked && managerPass) ? Object.assign({}, obj, { mpin: managerPass }) : obj;
@@ -2321,6 +2367,8 @@
         rule.innerHTML = `Mọi nhân viên nộp link TikTok vào <b>Thứ 3 và Thứ 6</b> hàng tuần. Nộp <b>đúng ngày</b> (hoặc sớm hơn) được <b class="text-emerald-600">+${cfg.reward} ⭐</b>. Nộp trễ: <b class="text-rose-600">-${cfg.penalty} ⭐ mỗi ngày</b>, trừ vào <b>báo cáo cuối ngày</b> của các ngày kế tiếp cho tới khi có link đúng và đủ (cần tối thiểu <b>${cfg.minLinks}</b> link hợp lệ).` +
           (cfg.start ? ` <span class="text-slate-400">Áp dụng từ ${ttLabel(cfg.start) || cfg.start} (${cfg.start}).</span>` : ` <span class="text-amber-600 font-bold">Chưa có ngày bắt đầu — tải lại dữ liệu hoặc Quản lý cài ngày bắt đầu.</span>`);
       }
+
+      const fbl = document.getElementById('ttFbLabel'); if (fbl) fbl.innerText = 'Link Facebook cá nhân đã đăng ' + (cfg.fbMin > 0 ? '(BẮT BUỘC, mỗi link 1 dòng):' : '(không bắt buộc, mỗi link 1 dòng):');
 
       // ---- Tình trạng của nhân viên đang chọn ----
       const st = document.getElementById('ttStaffStatus');
@@ -2387,9 +2435,10 @@
             : t.status === 'MIỄN' ? `<span class="text-slate-600 bg-slate-100 border border-slate-300 px-1.5 rounded font-bold">Miễn</span>`
             : `<span class="text-amber-700 bg-amber-50 border border-amber-200 px-1.5 rounded font-bold">Nộp trễ</span>`;
           const links = (t.links || []).map(l => `<a href="${ttEsc(l)}" target="_blank" rel="noopener noreferrer" class="block text-indigo-600 underline break-all">${ttEsc(l)}</a>`).join('');
+          const fb = (t.fbLinks || []).map(l => `<a href="${ttEsc(l)}" target="_blank" rel="noopener noreferrer" class="block text-blue-700 underline break-all">📘 ${ttEsc(l)}</a>`).join('');
           const del = isManagerUnlocked ? `<button onclick="ttDelete('${ttEsc(t.staffId)}','${ttEsc(t.due)}')" class="text-rose-500 font-bold hover:bg-rose-50 px-1.5 rounded">✕ Xóa</button>` : '';
           return `<div class="border rounded-lg p-2 text-[11px] space-y-0.5">
-            <div class="flex flex-wrap items-center gap-1.5"><b class="text-slate-800">${ttEsc(t.staffName)}</b><span class="text-slate-400">Kỳ ${ttLabel(t.due)}</span>${badge}<span class="text-slate-400 ml-auto">${ttEsc(t.submitDate)} ${ttEsc(t.submitTime || '')}</span>${del}</div>${links}</div>`;
+            <div class="flex flex-wrap items-center gap-1.5"><b class="text-slate-800">${ttEsc(t.staffName)}</b><span class="text-slate-400">Kỳ ${ttLabel(t.due)}</span>${badge}<span class="text-slate-400 ml-auto">${ttEsc(t.submitDate)} ${ttEsc(t.submitTime || '')}</span>${del}</div>${links}${fb}</div>`;
         }).join('');
       }
     }
@@ -2404,21 +2453,33 @@
       const good = [];
       for (const r of raw) {
         const n = ttNormalizeLink(r);
-        if (!n) { showToastMessage("⚠️ Link chưa đúng/đủ định dạng TikTok: " + r); return; }
+        if (!n) { showToastMessage("⚠️ Ô ① chưa đúng dạng đường link: " + r); return; }
         if (!good.includes(n)) good.push(n);
       }
-      if (good.length < cfg.minLinks) { showToastMessage(`⚠️ Cần tối thiểu ${cfg.minLinks} link TikTok hợp lệ (đang có ${good.length})!`); return; }
+      if (good.length < cfg.minLinks) { showToastMessage(`⚠️ Cần tối thiểu ${cfg.minLinks} link TikTok (đang có ${good.length})!`); return; }
+      const rawFb = (document.getElementById('ttFbInput').value || '').split(/[\r\n,;\s]+/).map(x => x.trim()).filter(Boolean);
+      const goodFb = [];
+      for (const r of rawFb) {
+        const n = ttNormalizeLink(r);
+        if (!n) { showToastMessage("⚠️ Ô ② chưa đúng dạng đường link: " + r); return; }
+        if (!goodFb.includes(n)) goodFb.push(n);
+      }
+      if (goodFb.length < cfg.fbMin) { showToastMessage("⚠️ Chưa có link Facebook cá nhân! Hãy úp bài lên Facebook cá nhân rồi dán link vào ô ②."); return; }
+      const wrongTt = good.find(ttIsFb), wrongFb = goodFb.find(ttIsTikTok);
+      if (wrongTt) { showToastMessage("⚠️ Ô ① (TikTok) đang có link Facebook, hãy dán đúng ô: " + wrongTt); return; }
+      if (wrongFb) { showToastMessage("⚠️ Ô ② (Facebook) đang có link TikTok, hãy dán đúng ô: " + wrongFb); return; }
+      if (good.some(x => goodFb.includes(x))) { showToastMessage("⚠️ Link ở ô ① và ô ② đang trùng nhau!"); return; }
 
       const btn = document.getElementById('btnSubmitTiktok');
       btn.disabled = true; btn.innerText = "⏳ ĐANG GỬI...";
       try {
-        const res = await ttPost({ action: "SUBMIT_TIKTOK_LINK", staffId, staffName: staff ? staff.name : "", links: good });
+        const res = await ttPost({ action: "SUBMIT_TIKTOK_LINK", staffId, staffName: staff ? staff.name : "", links: good, fbLinks: goodFb });
         if (res.status === "success") {
           state.tiktok = (state.tiktok || []).filter(t => !(t.staffId === staffId && t.due === res.record.due));
           state.tiktok.push(res.record);
           if (staff && res.totalStar !== null && res.totalStar !== undefined) { staff.totalStar = Number(res.totalStar) || 0; staff.baseStar = staff.totalStar; }
           ttPersist();
-          document.getElementById('ttLinksInput').value = "";
+          document.getElementById('ttLinksInput').value = ""; document.getElementById('ttFbInput').value = "";
           showToastMessage("✅ " + res.message);
           renderTiktokTab();
           if (typeof calculateAllRowsRealtime === 'function') { try { calculateAllRowsRealtime(); } catch (e) {} }
@@ -3404,7 +3465,7 @@
       const rd = notesMe ? notesRead(n.id, notesMe) : null;
       let body;
       if (rd && rd.confirmedAt) body = `<div class="font-black text-emerald-700">✅ Bạn đã xác nhận nắm rõ lúc ${notesFmtAt(rd.confirmedAt)}</div><div class="text-[11px] text-slate-600">Mở đọc lúc ${notesFmtAt(rd.openedAt)} · thời gian đọc ${notesFmtDur(notesReadSec(rd))}</div>`;
-      else body = `<div class="font-black text-slate-800">📖 Đọc xong thì xác nhận để Quản lý biết bạn đã nắm rõ</div>${rd ? `<div class="text-[11px] text-slate-500">Bạn mở nội dung này lúc ${notesFmtAt(rd.openedAt)}</div>` : ''}
+      else body = `<div class="font-black text-slate-800">📖 Đọc xong thì xác nhận để Quản lý biết bạn đã nắm rõ <button onclick="notesGuideOpen()" class="underline text-indigo-600 font-bold text-[11px]">❓ Cách xác nhận</button></div>${rd ? `<div class="text-[11px] text-slate-500">Bạn mở nội dung này lúc ${notesFmtAt(rd.openedAt)}</div>` : ''}
         <div class="flex flex-wrap gap-1.5 items-center"><select onchange="notesSetMe(this.value)" class="flex-1 min-w-[150px] border rounded-lg p-1.5 font-bold bg-white">${opts}</select>
         <button id="btnNoteConfirm" onclick="notesConfirm()" ${notesMe ? '' : 'disabled'} class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-black">✅ Tôi đã đọc và nắm rõ</button></div>`;
       return `<div class="border rounded-xl p-2.5 space-y-1.5 ${rd && rd.confirmedAt ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}">${body}
@@ -3469,7 +3530,16 @@
         + (notesMe && (c.mineRead || c.mineTask) ? `<div class="font-bold text-amber-700">👤 Bạn còn: ${c.mineRead ? c.mineRead + ' nội dung cần xác nhận' : ''}${c.mineRead && c.mineTask ? ' · ' : ''}${c.mineTask ? c.mineTask + ' việc cần làm' : ''}</div>` : '')
         + (c.lag.length ? `<div class="text-slate-600">⏳ Cần nhắc: ${c.lag.map(x => `<b>${ttEsc(x.name)}</b> (${x.c})`).join(', ')}</div>` : '');
     }
-    function notesGoStat() { switchTab('notes'); notesShowStat = true; renderNotesTab(); try { document.getElementById('notesStatBox').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }
+    const NOTES_GUIDE_KEY = 'APP_NOTES_GUIDE_SEEN_v1';
+    function notesGuideOpen() { const m = document.getElementById('notesGuideModal'); if (m) m.classList.remove('hidden'); }
+    function notesGuideClose() {
+      const c = document.getElementById('notesGuideNever');
+      try { if (!c || c.checked) localStorage.setItem(NOTES_GUIDE_KEY, '1'); } catch (e) {}
+      const m = document.getElementById('notesGuideModal'); if (m) m.classList.add('hidden');
+      if (!notesMe) { const s = document.getElementById('notesMeSel'); if (s) { try { s.focus(); } catch (e) {} } }   // chưa chọn tên -> đưa con trỏ tới ô "Bạn là"
+    }
+    function notesGuideMaybe() { try { if (!localStorage.getItem(NOTES_GUIDE_KEY)) setTimeout(notesGuideOpen, 400); } catch (e) {} }   // lần đầu vào tab Nội dung tự hiện
+    function notesGoStat() { switchTab('notes'); notesShowStat = true; notesStatArm(); renderNotesTab(); try { document.getElementById('notesStatBox').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }
     // Nhân viên ẩn = không có: bỏ khỏi danh sách người được giao việc (giữ bản gốc trong task0 để "Hiện lại" là có lại) và bỏ lựa chọn "Bạn là" nếu bị ẩn
     function notesNormTasks() {
       if (!state.nhanSu || !state.nhanSu.length) return;
@@ -3580,7 +3650,9 @@
       } catch (e) { alert('Lỗi: ' + e.message); }
     }
     // ---- Thống kê: nội dung hoàn tất (TẤT CẢ nhân viên đã xác nhận) / chưa hoàn tất / ai chưa đọc / việc giao ----
-    function notesToggleStat() { notesShowStat = !notesShowStat; renderNotesTab(); }
+    function notesToggleStat() { notesShowStat = !notesShowStat; notesStatArm(); renderNotesTab(); }
+    let notesStatTimer = null;
+    function notesStatArm() { clearTimeout(notesStatTimer); if (notesShowStat) notesStatTimer = setTimeout(() => { if (notesShowStat) { notesShowStat = false; renderNotesTab(); } }, 90000); }   // tự ẩn sau 90 giây
     function notesStatHtml() {
       const td = localDateStr(new Date()), staff = state.nhanSu, by = {};
       notesState.reads.forEach(r => { (by[r.noteId] = by[r.noteId] || {})[r.staffId] = r; });
@@ -3596,7 +3668,7 @@
       const tDone = tasks.filter(n => notesTaskDoneCount(n) === n.task.ids.length).length;
       const card = (v, l, c) => `<div class="flex-1 min-w-[90px] rounded-xl border p-2 text-center ${c}"><div class="text-lg font-black">${v}</div><div class="text-[10px] font-bold">${l}</div></div>`;
       const open = id => `onclick="notesOpen('${ttEsc(id)}')"`;
-      return `<div class="border-2 border-emerald-300 rounded-xl p-2.5 space-y-2 bg-emerald-50/40 text-[11px]"><div class="font-black text-emerald-800 text-xs">📈 Thống kê xác nhận đọc & công việc <span class="font-normal text-slate-500">(${staff.length} nhân viên, nội dung còn hiệu lực)</span></div>
+      return `<div class="border-2 border-emerald-300 rounded-xl p-2.5 space-y-2 bg-emerald-50/40 text-[11px] max-h-[50vh] overflow-y-auto"><div class="flex items-start justify-between gap-2"><div class="font-black text-emerald-800 text-xs">📈 Thống kê xác nhận đọc & công việc <span class="font-normal text-slate-500">(${staff.length} nhân viên, nội dung còn hiệu lực · tự thu lại sau 90 giây)</span></div><button onclick="notesToggleStat()" class="shrink-0 px-2 py-0.5 rounded-lg bg-white hover:bg-slate-100 border text-slate-600 font-black">✕ Đóng</button></div>
         <div class="flex flex-wrap gap-1.5">${card(done.length + '/' + rows.length, '✅ Hoàn tất (ai cũng đã đọc)', 'bg-emerald-100 border-emerald-300 text-emerald-800')}${card(todo.length, '🔔 Chưa hoàn tất', 'bg-rose-100 border-rose-300 text-rose-800')}${card(tDone + '/' + tasks.length, '🧩 Việc giao đã nộp đủ', 'bg-violet-100 border-violet-300 text-violet-800')}</div>
         <details open><summary class="cursor-pointer font-black text-rose-700">🔔 Chưa hoàn tất (${todo.length}) — ai chưa đọc?</summary><div class="space-y-1 mt-1">${todo.map(x => `<div ${open(x.n.id)} class="cursor-pointer bg-white border rounded-lg p-1.5 hover:shadow"><div class="font-black">${ttEsc(x.n.title)} <span class="font-normal text-slate-400">· đăng ${stFmtD(x.n.date)}</span> <span class="text-emerald-700">${x.conf.length}/${staff.length}</span></div>${x.none.length ? `<div class="text-rose-700">⏳ Chưa mở (${x.none.length}): ${nm(x.none)}</div>` : ''}${x.seen.length ? `<div class="text-amber-700">👀 Mở chưa xác nhận (${x.seen.length}): ${nm(x.seen)}</div>` : ''}</div>`).join('') || '<div class="text-slate-400">Không có 🎉</div>'}</div></details>
         <details><summary class="cursor-pointer font-black text-emerald-700">✅ Đã hoàn tất (${done.length})</summary><div class="space-y-1 mt-1">${done.map(x => `<div ${open(x.n.id)} class="cursor-pointer bg-white border rounded-lg p-1.5"><span class="font-black">${ttEsc(x.n.title)}</span> <span class="text-slate-500">· đủ ${staff.length}/${staff.length} · xong lúc ${notesFmtAt(x.last)}</span></div>`).join('') || '<div class="text-slate-400">Chưa có nội dung nào hoàn tất.</div>'}</div></details>
@@ -3663,6 +3735,7 @@
     function notesFileIcon(f) { const m = String(f.mime || ''); return /pdf/.test(m) ? '📕' : /word/.test(m) ? '📘' : /(excel|spreadsheet|csv)/.test(m) ? '📗' : /(powerpoint|presentation)/.test(m) ? '📙' : '📎'; }
     function notesOpen(id) {
       if (!notesState.list.some(n => n.id === id)) return;
+      if (notesShowStat) { notesShowStat = false; const sb = document.getElementById('notesStatBox'); if (sb) sb.innerHTML = ''; }   // mở nội dung -> thống kê tự thu lại
       notesViewId = id; notesEditing = false; notesShowTrack = false; notesShowRes = false; trDraft = { text: '', links: '' }; trFiles = [];
       document.getElementById('noteViewModal').classList.remove('hidden'); notesStartTimer(); notesRenderView(); notesTrackOpen();
     }
@@ -4406,6 +4479,7 @@
     const CV_SUBS = ['tiktok', 'cleaning', 'busy', 'roadshow', 'stats'];
     let cvCur = 'tiktok';
     function switchTab(tab) {
+      notesShowStat = false;   // thống kê tự ẩn mỗi khi đổi tab (vào lại tab Nội dung thấy ngay danh sách)
       if (CV_SUBS.includes(tab)) { cvCur = tab; tab = 'cv'; }
       ['report', 'history-logs', 'cv', 'notes', 'store-ranking', 'dashboard', 'items-management', 'chatbot', 'rules-structure', 'manager'].forEach(t => {
         const sec = document.getElementById('sec-' + t);
@@ -4434,7 +4508,7 @@
         if (cvCur === 'roadshow') renderRoadshowTab();
         if (cvCur === 'stats') renderStatsTab();
       }
-      if (tab === 'notes') { renderNotesTab(); notesLoad(false); }
+      if (tab === 'notes') { renderNotesTab(); notesLoad(false); notesGuideMaybe(); }
       if (tab === 'chatbot') renderChatbotStaffButtons();
       if (tab === 'store-ranking') renderStoreTable();
       if (tab === 'items-management') renderManagerSettings();
@@ -6558,6 +6632,7 @@
       const ttS = document.getElementById('ttCfgStart'); if (ttS) ttS.value = cfg.TIKTOK_START_DATE ? String(cfg.TIKTOK_START_DATE).slice(0, 10) : "";
       const ttR = document.getElementById('ttCfgReward'); if (ttR) ttR.value = (cfg.TIKTOK_REWARD !== undefined && cfg.TIKTOK_REWARD !== "") ? cfg.TIKTOK_REWARD : 300;
       const ttP = document.getElementById('ttCfgPenalty'); if (ttP) ttP.value = (cfg.TIKTOK_PENALTY !== undefined && cfg.TIKTOK_PENALTY !== "") ? cfg.TIKTOK_PENALTY : 300;
+      const ttF = document.getElementById('ttCfgFb'); if (ttF) ttF.value = (cfg.TIKTOK_FB_MIN !== undefined && cfg.TIKTOK_FB_MIN !== "") ? cfg.TIKTOK_FB_MIN : 1;
       const ttM = document.getElementById('ttCfgMin'); if (ttM) ttM.value = (cfg.TIKTOK_MIN_LINKS !== undefined && cfg.TIKTOK_MIN_LINKS !== "") ? cfg.TIKTOK_MIN_LINKS : 1;
 
       // Render Bảng Quản trị Nhân Sự & Quỹ Sao với nút xóa nhân viên
@@ -6816,7 +6891,8 @@
         TIKTOK_START_DATE: ttCfgField('ttCfgStart', 'TIKTOK_START_DATE'),
         TIKTOK_REWARD: ttCfgField('ttCfgReward', 'TIKTOK_REWARD'),
         TIKTOK_PENALTY: ttCfgField('ttCfgPenalty', 'TIKTOK_PENALTY'),
-        TIKTOK_MIN_LINKS: ttCfgField('ttCfgMin', 'TIKTOK_MIN_LINKS')
+        TIKTOK_MIN_LINKS: ttCfgField('ttCfgMin', 'TIKTOK_MIN_LINKS'),
+        TIKTOK_FB_MIN: ttCfgField('ttCfgFb', 'TIKTOK_FB_MIN')
       };
 
       const rows = document.querySelectorAll('#managerItemsList tr');
