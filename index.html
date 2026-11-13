@@ -7,6 +7,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Báo Cáo Thi Đua Cuối Ngày & BXH Siêu Thị VIP</title>
+  <script src="portal.js?v=20261113-pro20"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Thư viện chụp ảnh canvas chuẩn nét HD -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -86,14 +87,14 @@
         <div class="flex items-center gap-2">
           <h1 class="text-base md:text-2xl font-black tracking-tight">⚡ BÁO CÁO THI ĐUA & SIÊU THỊ VIP</h1>
           <span class="bg-emerald-400/20 text-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-400/30 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Realtime
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Đồng bộ 20s
           </span>
           <span id="badgeManagerActive" class="hidden bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 shadow-sm flex items-center gap-1">
             🛡️ Quản Lý Đang Mở
           </span>
         </div>
         <p class="text-[10px] md:text-xs text-indigo-200 mt-0.5">
-          Tự động đồng bộ 5 phút/lần + mỗi khi mở lại app | Quỹ sao RT đồng bộ BXH | Chế tài nộp trễ sau 22h20 (-100⭐ lũy tiến)
+          Đồng bộ 20 giây/lần + mỗi khi mở lại app | Quỹ sao RT đồng bộ BXH | Chế tài nộp trễ sau 22h20 (-100⭐ lũy tiến)
         </p>
         <p class="text-[10px] text-indigo-300 mt-0.5 font-mono">
           Phiên bản: <b id="lblAppVersion" class="text-white">-</b> · Đồng bộ dữ liệu lúc: <b id="lblLastSync" class="text-white">chưa có</b> · <button onclick="hardRefreshTool()" class="underline font-black text-amber-200">🧹 Làm mới tool</button>
@@ -121,7 +122,7 @@
     <div id="syncFailBanner" class="hidden bg-rose-50 border border-rose-300 text-rose-800 rounded-xl p-2.5 text-xs flex items-start gap-2">
       <span class="text-base leading-none">⚠️</span>
       <div class="flex-1 leading-snug">
-        <b>Chưa đồng bộ được dữ liệu mới từ Google Sheet.</b>
+        <b>Chưa đồng bộ được dữ liệu mới từ hệ thống.</b>
         Đang hiển thị dữ liệu cũ lưu trên máy (lần đồng bộ thành công gần nhất: <b id="syncFailLast">chưa có</b>).
         Sao/chuỗi có thể chưa đúng, nên bấm <b>Thử lại</b> trước khi gửi báo cáo. Nếu vẫn lỗi, báo Quản lý kiểm tra Apps Script.
         <span id="syncFailDetail" class="block text-[10px] text-rose-500 mt-0.5 font-mono"></span>
@@ -670,7 +671,7 @@
                 <span>⚡ Bóc Tách & Cập Nhật BXH</span>
               </button>
               <button onclick="saveStoreDataToSheet()" id="btnSaveStoreData" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5">
-                <span>💾 Lưu Lên Google Sheets (Realtime)</span>
+                <span>💾 Lưu Lên hệ thống (Realtime)</span>
               </button>
             </div>
             <button onclick="loadSampleStoreData()" class="text-[11px] font-bold text-slate-500 hover:text-indigo-600 underline">
@@ -928,7 +929,7 @@
       <div class="bg-white p-3.5 md:p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
         <div class="border-b pb-2">
           <h2 class="text-sm md:text-base font-black text-slate-900">📖 CẤU TRÚC DỮ LIỆU & QUY TẮC VẬN HÀNH (RULE)</h2>
-          <p class="text-[11px] text-slate-500">Tài liệu chuẩn hóa cấu trúc Google Sheets, quy tắc tính chuỗi, chế tài nộp trễ và 4 Rule gợi ý sao AI</p>
+          <p class="text-[11px] text-slate-500">Tài liệu chuẩn hóa cấu trúc hệ thống, quy tắc tính chuỗi, chế tài nộp trễ và 4 Rule gợi ý sao AI</p>
         </div>
 
         <div class="space-y-1.5">
@@ -987,7 +988,7 @@
     <!-- ================= TAB 8: CẤU HÌNH QUẢN LÝ (BỘ ĐẶC QUYỀN QL MỚI) ================= -->
     <section id="sec-manager" class="hidden space-y-3">
       <div id="autoSaveToast" class="hidden fixed bottom-6 right-6 bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg shadow-lg text-xs font-bold flex items-center gap-1.5 z-50">
-        <span>✅ Đã lưu cấu hình lên Google Sheets!</span>
+        <span>✅ Đã lưu cấu hình lên hệ thống!</span>
       </div>
 
       <!-- ĐẶC QUYỀN 1: QUẢN LÝ XÓA LỊCH SỬ BÁO CÁO TOÀN DIỆN & DỌN DẸP CA -->
@@ -1268,7 +1269,7 @@
           <a href="https://docs.google.com/spreadsheets/d/1ECzgSqXPzfrpqYs3ffTaMwsN73jVpGbE5z18L-gGGzY/edit?gid=1383818872#gid=1383818872" target="_blank" rel="noopener noreferrer"
              class="flex items-center gap-2 p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition">
             <span class="text-lg">📊</span>
-            <span><b class="block text-emerald-800">Google Sheet dữ liệu</b><span class="text-[10px] text-emerald-700">Mở file CSDL (nhân sự, kết quả ngày, cấu hình)</span></span>
+            <span><b class="block text-emerald-800">hệ thống dữ liệu</b><span class="text-[10px] text-emerald-700">Mở file CSDL (nhân sự, kết quả ngày, cấu hình)</span></span>
           </a>
           <a href="https://script.google.com/u/0/home/projects/1IyQEasYKvageUVvvG0nlEDIDotLiw85bZ0fvGVOnghMqGL93w9L0S8bC/edit" target="_blank" rel="noopener noreferrer"
              class="flex items-center gap-2 p-2.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 transition">
@@ -1611,11 +1612,11 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbx3BJ1IYDuRJ_8gJK0XJ2C7gdsIse6_VpZsB_o2QR4ckdPjl3RPe2XNvRvH-HqYQkks/exec";
+    const API_URL = "https://iauxgnnybhzqeirnqaen.supabase.co/functions/v1/thi-dua";
 
     // Đổi số này mỗi lần đẩy bản mới lên GitHub để nhân viên nhìn là biết đã tải đúng bản chưa
-    const APP_VERSION = "2026-10-13 · v19";
-    const EXPECT_SERVER_VERSION = "2026-10-13 · v19";   // bản Code.gs tương ứng với bản tool này
+    const APP_VERSION = "2026-11-13 · PRO 20";
+    const EXPECT_SERVER_VERSION = "2026-11-13 · PRO 20";   // bản Code.gs tương ứng với bản tool này
     let lastFreshAt = 0; // lần gần nhất tải dữ liệu mới từ Sheet thành công
 
     function fmtSyncTime(ts) {
@@ -1657,7 +1658,7 @@
     // Phân biệt: mất mạng thật  <->  có mạng nhưng Apps Script đang lỗi (lỗi script không kèm CORS nên trình duyệt chỉ báo "Failed to fetch")
     async function diagnoseSyncFailure(err) {
       const msg = String((err && err.message) || err || '');
-      if (err && err.fromServer) return 'Google Sheet/Apps Script báo lỗi: ' + msg + ' — mở Apps Script > Executions để xem chi tiết.';
+      if (err && err.fromServer) return 'hệ thống/Apps Script báo lỗi: ' + msg + ' — mở Apps Script > Executions để xem chi tiết.';
       if (/HTML/i.test(msg)) return 'Google trả về trang lỗi: Apps Script đang lỗi, chưa Deploy đúng bản, hoặc hết quota trong ngày.';
       if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'Thiết bị đang MẤT MẠNG (wifi/4G).';
       try {
@@ -1677,47 +1678,9 @@
     }
 
     // Danh sách nhân sự mặc định dự phòng chuẩn đồng bộ với BXH
-    const DEFAULT_NHAN_SU = [
-      { id: "29649", name: "Nguyễn Thị Thy", group: "TGDĐ", baseStar: 15300, totalStar: 15300, assignedItems: [] },
-      { id: "35101", name: "Trần Văn Hải", group: "TGDĐ", baseStar: 1200, totalStar: 1200, assignedItems: [] },
-      { id: "35102", name: "Lê Hoàng Long", group: "Topzone", baseStar: 1800, totalStar: 1800, assignedItems: [] },
-      { id: "35103", name: "Phạm Minh Tuấn", group: "Topzone", baseStar: 1000, totalStar: 1000, assignedItems: [] },
-      { id: "35104", name: "Võ Thị Mai", group: "TGDĐ", baseStar: 1350, totalStar: 1350, assignedItems: [] },
-      { id: "35105", name: "Đặng Quốc Huy", group: "Topzone", baseStar: 1100, totalStar: 1100, assignedItems: [] }
-    ];
+    const DEFAULT_NHAN_SU = [];
 
-    const DEFAULT_THI_DUA = [
-      { store: "Topzone", name: "Điện thoại & Tablet Android", target: 15, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Laptop", target: 5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Điện thoại Vivo", target: 3, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Phụ kiện - Đồng hồ", target: 10, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Phụ Kiện Công Nghệ", target: 5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Ví trả sau", target: 5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Vay tiền mặt", target: 1, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Mở thẻ tín dụng TPBank EVO và VPBank", target: 0.2, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Sim Tổng", target: 1, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Sim Vinaphone & Sim ĐMX", target: 0.5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "OTT Mango+, iCallMe", target: 0.5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Trả chậm FECredit, Shinhan, Samsung Finance+", target: 10, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Dịch vụ VAS", target: 0.75, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Chung", name: "Bảo hiểm thợ Điện Máy Xanh", target: 3, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "Topzone", name: "Apple", target: 5, bonusStar: 200, penaltyStar: 100, isX2: false },
-
-      { store: "TGDĐ", name: "Apple", target: 5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Laptop", target: 5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Điện thoại Vivo", target: 3, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Phụ kiện - Đồng hồ", target: 10, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Phụ Kiện Công Nghệ", target: 5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Ví trả sau", target: 5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Vay tiền mặt", target: 1, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Mở thẻ tín dụng TPBank EVO và VPBank", target: 0.2, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Sim Tổng", target: 1, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Sim Vinaphone & Sim ĐMX", target: 0.5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "OTT Mango+, iCallMe", target: 0.5, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Trả chậm FECredit, Shinhan, Samsung Finance+", target: 10, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Dịch vụ VAS", target: 0.75, bonusStar: 200, penaltyStar: 100, isX2: false },
-      { store: "TGDĐ", name: "Bảo hiểm thợ Điện Máy Xanh", target: 3, bonusStar: 200, penaltyStar: 100, isX2: false }
-    ];
+    const DEFAULT_THI_DUA = [];
 
     const RAW_STORE_DATA = [
       { name: "Bảo hiểm tổng", type: "DOANH THU", actual: 90.21, target: 332.25, rateMonth: 27.2, forecast: 31.1, rank: "-", branch: "TỔNG" },
@@ -1795,7 +1758,7 @@
     let isShortNamesActive = true;
     let activeModalItemName = "";
     let tableSortState = {};
-    const SYNC_EVERY_SEC = 300;
+    const SYNC_EVERY_SEC = 20;
     let syncCountdownSeconds = SYNC_EVERY_SEC;
 
     document.getElementById('reportDate').value = localDateStr();
@@ -1835,7 +1798,7 @@
       if (text.trim().startsWith("<") || text.includes("<!DOCTYPE") || text.includes("<html")) {
         throw new Error("Phản hồi là HTML");
       }
-      return JSON.parse(text);
+      const result = JSON.parse(text); if (!res.ok || result.status === "error" || result.status === "conflict") throw new Error(result.message || "Không thực hiện được"); return result;
     }
 
     // Đếm lùi tự động sync ngầm 5 phút/lần
@@ -2147,7 +2110,7 @@
           lastFreshAt = Date.now(); okLoad = true; lastSyncHint = '';
           if (!isBackground) showToastMessage("✅ Đồng bộ dữ liệu thành công!");
         } else {
-          const se = new Error((data && data.message) ? data.message : "Phản hồi từ Google Sheet không hợp lệ");
+          const se = new Error((data && data.message) ? data.message : "Phản hồi từ hệ thống không hợp lệ");
           se.fromServer = !!(data && data.message);
           throw se;
         }
@@ -3694,7 +3657,7 @@
       const n = x.n, c = notesCat(n.category), col = NOTE_COLOR[c[2]];
       const snippet = String(n.summary || n.text || '').replace(/\s+/g, ' ').slice(0, 170);
       const imgs = (n.files || []).filter(f => /^image\//.test(f.mime)), docs = (n.files || []).length - imgs.length;
-      const thumb = imgs[0] ? `<img src="https://drive.google.com/thumbnail?id=${encodeURIComponent(imgs[0].id)}&sz=w200" loading="lazy" alt="" class="w-14 h-14 object-cover rounded-lg border bg-slate-100 shrink-0">` : '';
+      const thumb = imgs[0] ? `<img src="${clThumb(imgs[0].id)}" loading="lazy" alt="" class="w-14 h-14 object-cover rounded-lg border bg-slate-100 shrink-0">` : '';
       return `<div onclick="notesOpen('${ttEsc(n.id)}')" class="cursor-pointer border border-l-4 ${col.bd} rounded-xl bg-white hover:shadow-md transition p-2.5 flex gap-2 ${x.st.k === 'expired' ? 'opacity-60' : ''}">
         <div class="flex-1 min-w-0 space-y-1">
           <div class="flex flex-wrap items-center gap-1.5"><span class="text-[10px] font-black px-1.5 py-0.5 rounded ${col.chip}">${c[1]}</span>${n.pin ? '<span class="text-xs">📌</span>' : ''}${notesStatusChip(x.st)}${notesMe ? (((notesRead(n.id, notesMe) || {}).confirmedAt) ? '<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">✅ Đã nắm rõ</span>' : '<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">🔔 Chưa xác nhận</span>') : ''}${n.task ? notesTaskChip(n) : ''}<span class="text-[10px] text-slate-400 ml-auto">${n.date ? stFmtD(n.date) : ''}</span></div>
@@ -4515,7 +4478,7 @@
     }
 
     // Mật khẩu mặc định chỉ dùng khi server CHƯA cài MANAGER_PIN (Script properties). Đã cài thì server quyết định.
-    const MANAGER_PIN_LEGACY = "2026";
+    const MANAGER_PIN_LEGACY = "ACCOUNT_REQUIRED";
     function verifyManagerAccess() {
       if (isManagerUnlocked) return true;
       const pass = prompt("🔐 Nhập mật khẩu Quản Lý để thực hiện quyền này:");
@@ -4584,6 +4547,7 @@
       if (delSel) delSel.innerHTML = opts;
 
       if (currentSelected) sel.value = currentSelected;
+      else if (window.CF?.member?.role === "employee") sel.value = CF.member.staff_id;
       renderItemsTable();
     }
 
@@ -5172,9 +5136,10 @@
       btn.disabled = false;
       btn.innerText = "🚀 GỬI BÁO CÁO CHO QL";
 
+      if (out.queued) { pendingRemove(staffId, selectedDate); CF.dirty = false; await loadData(true); showToastMessage(out.msg); return; }
       if (out.ok) {
         pendingRemove(staffId, selectedDate);
-        showToastMessage("✅ Đã lưu lên Google Sheets và kiểm tra khớp dữ liệu! Đang tạo ảnh...");
+        showToastMessage("✅ Đã lưu lên hệ thống và kiểm tra khớp dữ liệu! Đang tạo ảnh...");
       } else {
         alert(`⚠️ BÁO CÁO CHƯA ĐƯỢC LƯU LÊN SHEET!\n\nLý do: ${out.msg}\n\n• Báo cáo đã được giữ lại trên máy này, app sẽ tự gửi lại mỗi phút.\n• KHÔNG gửi ảnh vào nhóm cho tới khi thấy thông báo ✅.\n• Có thể bấm "Gửi lại ngay" ở khung đỏ phía trên màn hình.`);
       }
@@ -5193,7 +5158,7 @@
       document.getElementById('freshBtns').classList.add('hidden');
       if (mode === 'loading') { set('freshIcon', '⏳'); set('freshTitle', 'Đang tải dữ liệu & cập nhật mới nhất từ Quản lý...'); set('freshMsg', 'Vui lòng chờ vài giây, sau đó bạn sẽ được nhập báo cáo.'); }
       else if (mode === 'newtool') { set('freshIcon', '🆕'); set('freshTitle', 'Có bản tool mới!'); set('freshMsg', 'Đang tự tải lại để dùng bản mới nhất...'); }
-      else { set('freshIcon', '⚠️'); set('freshTitle', 'Chưa tải được dữ liệu mới'); set('freshMsg', (msg || 'Không kết nối được Google Sheet.') + ' Không thể báo cáo bằng dữ liệu cũ — hãy kiểm tra mạng rồi bấm Thử lại.'); document.getElementById('freshBtns').classList.remove('hidden'); }
+      else { set('freshIcon', '⚠️'); set('freshTitle', 'Chưa tải được dữ liệu mới'); set('freshMsg', (msg || 'Không kết nối được hệ thống.') + ' Không thể báo cáo bằng dữ liệu cũ — hãy kiểm tra mạng rồi bấm Thử lại.'); document.getElementById('freshBtns').classList.remove('hidden'); }
     }
     function freshHide() { const o = document.getElementById('freshOverlay'); if (o) o.classList.add('hidden'); }
     function freshClose() { freshHide(); }
@@ -5276,7 +5241,7 @@
       if (Date.now() - lastFreshAt < 600000) return true;
       let data;
       try { data = await safeFetchJSON(`${API_URL}?_t=${Date.now()}`); } catch (e) { data = null; }
-      if (!data || !Array.isArray(data.nhanSu)) { alert('⚠️ Không kết nối được Google Sheet để kiểm tra bản cập nhật mới nhất của Quản lý.\n\nKiểm tra mạng rồi bấm gửi lại.'); return false; }
+      if (!data || !Array.isArray(data.nhanSu)) { alert('⚠️ Không kết nối được hệ thống để kiểm tra bản cập nhật mới nhất của Quản lý.\n\nKiểm tra mạng rồi bấm gửi lại.'); return false; }
       if (cfgSig(data.thiDua, data.config) === cfgSig(state.thiDua, state.config)) { lastFreshAt = Date.now(); return true; }
       const snap = {};
       getLiveItemRows().forEach(r => { snap[r.dataset.item] = r.querySelector('.row-actual').value; });
@@ -5375,7 +5340,7 @@
         try {
           const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
           const txt = await res.text();
-          if (txt.trim().startsWith("<")) lastMsg = 'Google Sheet trả về trang lỗi (có thể đang quá tải)';
+          if (txt.trim().startsWith("<")) lastMsg = 'hệ thống trả về trang lỗi (có thể đang quá tải)';
           else {
             let j = null; try { j = JSON.parse(txt); } catch (e) {}
             if (j && j.status === "success") {
@@ -5396,7 +5361,7 @@
       let okCount = 0;
       for (const p of a) {
         const out = await postReportWithVerify(p.payload, null, silent ? 1 : 3);
-        if (out.ok) { pendingRemove(p.payload.staffId, p.payload.date); okCount++; }
+        if (out.ok || out.queued) { pendingRemove(p.payload.staffId, p.payload.date); if (out.ok) okCount++; }
       }
       pendingBusy = false;
       if (btn) { btn.disabled = false; btn.innerText = '🔁 Gửi lại ngay'; }
@@ -6807,7 +6772,7 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(withPin({ action: "UPDATE_STAFF_STARS", staffStars: starsPayload }))
         });
-        showToastMessage(resData.message || "✅ Đã lưu toàn bộ quỹ sao nhân viên lên Google Sheets!");
+        showToastMessage(resData.message || "✅ Đã lưu toàn bộ quỹ sao nhân viên lên hệ thống!");
       } catch (err) {
         showToastMessage("⚠️ Đã lưu quỹ sao vào bộ nhớ cục bộ!");
       } finally {
@@ -7103,12 +7068,12 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "SAVE_STORE_RAW_DATA", storeData: currentStoreData })
         });
-        showToastMessage(resData.message || "✅ Đã lưu dữ liệu thi đua lên Google Sheets!");
+        showToastMessage(resData.message || "✅ Đã lưu dữ liệu thi đua lên hệ thống!");
       } catch (err) {
         showToastMessage("⚠️ Đã lưu dữ liệu thi đua vào bộ nhớ tạm của máy!");
       } finally {
         btn.disabled = false;
-        btn.innerText = "💾 Lưu Lên Google Sheets";
+        btn.innerText = "💾 Lưu Lên hệ thống";
       }
     }
 

@@ -1,0 +1,5 @@
+.env
+.env.*
+backend/test-snapshot.json
+node_modules/
+*.private.json
