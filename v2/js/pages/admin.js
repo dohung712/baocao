@@ -1,10 +1,11 @@
 // Trang Quản lý: duyệt, khoá sổ, nhân sự, môn thi đua, cài đặt, Telegram, phân quyền
 import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml } from "../ui.js";
-import { sb, S, rpc, notify, onChange, isOwner, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel } from "../store.js";
+import { sb, S, rpc, notify, callFn, onChange, isOwner, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel, visibleStaff } from "../store.js";
 
 const TABS = [
   { id: "approve", label: "Duyệt" }, { id: "lock", label: "Khoá sổ" }, { id: "staff", label: "Nhân sự" },
-  { id: "items", label: "Môn thi đua", owner: true }, { id: "settings", label: "Cài đặt", owner: true },
+  { id: "items", label: "Môn & sao thưởng/phạt", owner: true }, { id: "targets", label: "Target NV", owner: true },
+  { id: "accounts", label: "Tài khoản NV", owner: true }, { id: "settings", label: "Cài đặt", owner: true },
   { id: "telegram", label: "Telegram" }, { id: "members", label: "Phân quyền", owner: true }, { id: "audit", label: "Nhật ký", owner: true },
 ];
 let tab = "approve", root, offs = [];
@@ -30,7 +31,7 @@ async function draw() {
   if (!TABS.some((t) => t.id === tab && (!t.owner || isOwner()))) tab = "approve";
   drawTabs();
   const body = $("#aBody"); body.onclick = null; body.innerHTML = `<div class="empty">Đang tải…</div>`;
-  try { await ({ approve, lock, staff, items, settings, telegram, members, audit })[tab](body); }
+  try { await ({ approve, lock, staff, items, targets, accounts, settings, telegram, members, audit })[tab](body); }
   catch (e) { body.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const err = (e) => toast(errMsg(e), 4500);
@@ -133,7 +134,11 @@ async function staff(body) {
 async function items(body) {
   const stores = ["Chung", ...depts()];
   body.innerHTML = `<div class="card"><div class="card-h"><h2>📋 Danh mục môn thi đua</h2><button class="btn small" id="itAdd" type="button">+ Thêm môn</button><button class="btn small primary" id="itSave" type="button">💾 Lưu tất cả</button></div>
-    <p class="muted small">Môn “Chung” áp dụng cho mọi bộ phận; môn của bộ phận được ưu tiên nếu trùng tên. Sao thưởng nhân đôi (X2) khi đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% target.</p>
+    <div class="banner info"><div><b>Khai báo môn, target, sao thưởng, sao phạt</b>
+      • <b>Áp dụng</b>: “Chung” = mọi bộ phận; chọn bộ phận để môn chỉ áp dụng cho bộ phận đó (trùng tên thì ưu tiên môn của bộ phận).<br>
+      • <b>Target/ngày</b>: số cần đạt mỗi ngày để <i>Về số</i>. • <b>Sao thưởng</b>: cộng khi về số (môn tick <b>X2</b> đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% target được nhân đôi).<br>
+      • <b>Sao phạt</b>: số sao trừ khi chuỗi chưa về đủ ngưỡng (nhân hệ số lũy tiến ở tab Cài đặt).<br>
+      • Target/sao <b>riêng từng nhân viên</b>: tab <b>Target NV</b>. Giao môn riêng cho nhân viên: tab <b>Nhân sự</b> → Sửa → Môn riêng.</div></div>
     <div class="tbl-wrap"><table><thead><tr><th>Thứ tự</th><th>Áp dụng</th><th>Tên môn</th><th class="num">Target/ngày</th><th class="num">Sao thưởng</th><th class="num">Sao phạt</th><th>X2</th><th>Bật</th><th></th></tr></thead><tbody id="itRows">
     ${S.items.map((i) => row(i)).join("")}</tbody></table></div></div>`;
   function row(i) {
@@ -174,6 +179,78 @@ async function items(body) {
   };
 }
 
+
+// ---------- Target riêng từng nhân viên ----------
+let tgField = "target";
+async function targets(body) {
+  const { data: rows, error } = await sb.from("staff_targets").select("*");
+  if (error) throw error;
+  const ov = new Map(rows.map((r) => [r.staff_id + "|" + r.item_name, r]));
+  const staffList = visibleStaff();
+  const itemsFor = (s) => { const list = S.items.filter((i) => i.active && (s.assigned_items?.length ? s.assigned_items.includes(i.name) : i.store === "Chung" || i.store.toLowerCase() === (s.dept || "").toLowerCase()));
+    const m = new Map(); for (const i of list) if (!m.has(i.name) || i.store === s.dept) m.set(i.name, i); return m; };
+  const names = [...new Set(S.items.filter((i) => i.active).sort((a, b) => a.sort - b.sort).map((i) => i.name))];
+  const label = { target: "Target/ngày", bonus_star: "Sao thưởng", penalty_star: "Sao phạt" };
+  body.innerHTML = `<div class="card"><div class="card-h"><h2>🎯 Target & sao riêng từng nhân viên</h2>
+      <div class="seg" id="tgField">${Object.entries(label).map(([k, l]) => `<button type="button" data-f="${k}" class="${k === tgField ? "on" : ""}">${l}</button>`).join("")}</div>
+      <button class="btn small primary" id="tgSave" type="button">💾 Lưu</button></div>
+    <p class="small muted">Ô trống = dùng mức chung của môn (số mờ). Nhập số để đặt riêng cho nhân viên đó; xoá số để quay về mức chung. Ô gạch = môn không áp dụng cho nhân viên.</p>
+    <div class="tbl-wrap"><table class="matrix"><thead><tr><th>Nhân viên</th>${names.map((n) => `<th class="num">${esc(n)}</th>`).join("")}</tr></thead><tbody>
+    ${staffList.map((s) => { const m = itemsFor(s); return `<tr><td><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.dept)}</div></td>${names.map((n) => { const it = m.get(n); if (!it) return `<td class="num muted">—</td>`;
+      const o = ov.get(s.id + "|" + n), v = o?.[tgField]; return `<td class="num ${v != null ? "has" : ""}"><input type="number" step="any" min="0" data-k="${esc(s.id)}|${esc(n)}" value="${v ?? ""}" placeholder="${fmt(it[tgField], 2)}"></td>`; }).join("")}</tr>`; }).join("")}
+    </tbody></table></div></div>`;
+  $("#tgField").onclick = (e) => { const b = e.target.closest("[data-f]"); if (b) { tgField = b.dataset.f; targets(body); } };
+  $("#tgSave").onclick = async () => {
+    const ups = [], dels = [];
+    $$("input[data-k]", body).forEach((inp) => {
+      const [sid, item] = inp.dataset.k.split("|"), cur = ov.get(sid + "|" + item) || { staff_id: sid, item_name: item, target: null, bonus_star: null, penalty_star: null };
+      const val = inp.value === "" ? null : Number(inp.value);
+      if ((cur[tgField] ?? null) === val) return;
+      const next = { staff_id: sid, item_name: item, target: cur.target ?? null, bonus_star: cur.bonus_star ?? null, penalty_star: cur.penalty_star ?? null, [tgField]: tgField === "target" ? val : val == null ? null : Math.round(val), updated_at: new Date().toISOString() };
+      if (next.target == null && next.bonus_star == null && next.penalty_star == null) dels.push([sid, item]); else ups.push(next);
+    });
+    try {
+      if (ups.length) { const { error: e1 } = await sb.from("staff_targets").upsert(ups); if (e1) throw e1; }
+      for (const [sid, item] of dels) { const { error: e2 } = await sb.from("staff_targets").delete().eq("staff_id", sid).eq("item_name", item); if (e2) throw e2; }
+      toast(ups.length + dels.length ? `Đã lưu ${ups.length + dels.length} thay đổi` : "Không có thay đổi"); targets(body);
+    } catch (x) { err(x); }
+  };
+}
+
+// ---------- Tài khoản đăng nhập của nhân viên ----------
+async function accounts(body) {
+  body.innerHTML = `<div class="empty">Đang tải danh sách tài khoản…</div>`;
+  const r = await callFn("accounts", { mode: "list" });
+  const list = r.accounts.filter((a) => !a.hidden);
+  const missing = list.filter((a) => !a.has_login).length;
+  body.innerHTML = `<div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🔑 Nhân viên đăng nhập thế nào?</h2></div>
+      <ol class="small" style="margin:0;padding-left:18px;line-height:1.8"><li>Chủ quản tạo tài khoản ở đây (từng người hoặc tất cả) với <b>mật khẩu ban đầu</b>.</li>
+      <li>Nhân viên mở link tool → ô <b>Email hoặc Mã nhân viên</b> nhập <b>mã NV</b> (VD 18450) + mật khẩu ban đầu.</li>
+      <li>Lần đầu đăng nhập, tool bắt đổi mật khẩu riêng. Quên mật khẩu → chủ quản đặt lại ở đây.</li></ol>
+      <p class="small muted" style="margin:8px 0 0">Nhân viên chỉ thấy và báo cáo cho chính mình. Quản lý / chủ quản vẫn đăng nhập bằng email.</p></div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Tạo tài khoản cho tất cả nhân viên chưa có (${missing})</h3></div>
+      <div class="row"><input id="acPw" type="text" placeholder="Mật khẩu ban đầu (ít nhất 6 ký tự)" style="width:auto" class="grow" autocomplete="off"><button class="btn primary" id="acBulk" type="button" ${missing ? "" : "disabled"}>Tạo tài khoản</button></div></div>
+    <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Mã NV</th><th>Họ tên</th><th>Đăng nhập bằng</th><th>Vai trò</th><th>Lần đăng nhập gần nhất</th><th></th></tr></thead><tbody>
+    ${list.map((a) => `<tr><td>${esc(a.staff_id)}</td><td><b>${esc(a.name)}</b></td><td>${a.has_login ? (a.by_code ? `<span class="pill ok">Mã NV ${esc(a.staff_id)}</span>` : `<span class="pill info">${esc(a.email)}</span>`) : '<span class="pill mute">Chưa có tài khoản</span>'}</td>
+      <td class="small">${a.role ? roleLabel(a.role) : ""}${a.active === false ? " (khoá)" : ""}</td><td class="small muted">${a.last_sign_in ? new Date(a.last_sign_in).toLocaleString("vi-VN") : "—"}</td>
+      <td class="num"><button class="btn small" data-ac="${esc(a.staff_id)}" type="button">${a.has_login ? "Đặt lại mật khẩu" : "Tạo tài khoản"}</button></td></tr>`).join("")}
+    </tbody></table></div></div>`;
+  $("#acBulk").onclick = async (e) => {
+    const pw = $("#acPw").value.trim(); if (pw.length < 6) return toast("Mật khẩu ít nhất 6 ký tự");
+    e.target.disabled = true;
+    try { const x = await callFn("accounts", { mode: "bulk", password: pw }); toast(x.message, 4000); accounts(body); } catch (x) { err(x); e.target.disabled = false; }
+  };
+  body.onclick = async (e) => {
+    const b = e.target.closest("[data-ac]"); if (!b) return;
+    const a = list.find((x) => x.staff_id === b.dataset.ac);
+    const v = await modal(`<h3>${esc(a.name)} · mã ${esc(a.staff_id)}</h3><form class="stack"><label>Mật khẩu ${a.has_login ? "mới" : "ban đầu"} (ít nhất 6 ký tự)<input name="pw" minlength="6" required autocomplete="off"></label>
+      <p class="small muted">Nhân viên đăng nhập bằng ${a.has_login && !a.by_code ? "email " + esc(a.email) : "mã NV " + esc(a.staff_id)} và sẽ được yêu cầu đổi mật khẩu khi đăng nhập.</p></form>
+      <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn primary" data-v="submit">Lưu</button></div>`);
+    if (!v) return;
+    try { const x = await callFn("accounts", { mode: "set_password", staff_id: a.staff_id, password: v.pw }); toast(x.message, 4500); accounts(body); } catch (x) { err(x); }
+  };
+}
+
 // ---------- Cài đặt ----------
 const NUM_SETTINGS = [
   ["STREAK_OVERTIME", "Chuỗi ngày được TĂNG CA", "Chuỗi ≥ số này mới được chọn tăng ca"],
@@ -182,8 +259,12 @@ const NUM_SETTINGS = [
   ["LATE_STEP", "Sao phạt nộp trễ mỗi lần", "Lần N trong tháng bị trừ N × số này"],
   ["PEN_T2_MIN", "Bậc 2 từ chuỗi", ""], ["PEN_M2", "Hệ số bậc 2", ""], ["PEN_T3_MIN", "Bậc 3 từ chuỗi", ""], ["PEN_M3", "Hệ số bậc 3", ""],
   ["PEN_T4_MIN", "Bậc 4 từ chuỗi", ""], ["PEN_M4", "Hệ số bậc 4", ""], ["PEN_M1", "Hệ số bậc 1", "Chuỗi nhỏ hơn bậc 2"],
+  ["TIKTOK_REWARD", "TikTok: sao thưởng đúng hạn", ""], ["TIKTOK_PENALTY", "TikTok: sao phạt mỗi ngày trễ", ""], ["TIKTOK_MIN_LINKS", "TikTok: số link tối thiểu", ""], ["TIKTOK_FB_MIN", "TikTok: số link Facebook tối thiểu", ""],
+  ["BUSY_MAX_WEEKDAY", "Lịch bận: tối đa người/ngày (T2–T6)", ""], ["RS_MIN_KM", "Roadshow: km tối thiểu", ""], ["RS_MIN_MIN", "Roadshow: phút tối thiểu", ""],
 ];
+const PAGE_LABELS = [["cv", "🗂️ CV"], ["history", "🕒 Lịch sử"], ["ranking", "🏆 BXH"], ["store", "🏢 Siêu thị"], ["assistant", "🤖 Trợ lý"], ["rules", "📖 Rule"]];
 async function settings(body) {
+  const aiStatus = await rpc("private_setting_status").catch(() => ({}));
   const rules = Array.isArray(setting("ITEM_RULES", [])) ? setting("ITEM_RULES", []) : [];
   const itemNames = [...new Set(S.items.map((i) => i.name))];
   body.innerHTML = `
@@ -194,8 +275,14 @@ async function settings(body) {
         ${NUM_SETTINGS.map(([k, l, h]) => `<label title="${esc(h)}">${esc(l)}<input id="st_${k}" type="number" step="any" min="0" value="${esc(setting(k, ""))}"></label>`).join("")}
         <label>Tự động tính chuỗi<select id="st_AUTO_STREAK_ENABLED"><option value="ON">Bật</option><option value="OFF" ${setting("AUTO_STREAK_ENABLED", "ON") === "OFF" ? "selected" : ""}>Tắt</option></select></label>
         <label>Nhân viên xem BXH toàn siêu thị<select id="st_EMPLOYEE_SEE_LEADERBOARD"><option value="false">Không (chỉ xem của mình)</option><option value="true" ${setting("EMPLOYEE_SEE_LEADERBOARD", false) === true ? "selected" : ""}>Có</option></select></label>
+        <label>TikTok: bắt đầu tính từ ngày<input id="st_TIKTOK_START_DATE" type="date" value="${esc(String(setting("TIKTOK_START_DATE", "")).slice(0, 10))}"></label>
       </div>
+      <p class="small" style="margin:12px 0 4px"><b>Ẩn trang với nhân viên</b> (quản lý vẫn thấy):</p>
+      <div class="chips">${PAGE_LABELS.map(([k, l]) => `<label class="chip inline"><input type="checkbox" class="hidePg" value="${k}" ${(setting("HIDDEN_PAGES", []) || []).includes(k) ? "checked" : ""}> ${l}</label>`).join("")}</div>
       <p class="small muted" style="margin-top:10px">Số sao trừ = sao phạt của môn × hệ số theo chuỗi (chuỗi tính các ngày trước ngày báo cáo). Chuỗi nhỏ hơn cả hai ngưỡng: chỉ ghi nhận chuỗi.</p></div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🤖 Trợ lý AI (tuỳ chọn)</h2><span class="pill ${aiStatus.GEMINI_API_KEY ? "ok" : "mute"}">${aiStatus.GEMINI_API_KEY ? "Đã bật" : "Chưa bật"}</span></div>
+      <p class="small muted">Trợ lý luôn trả lời được các câu thống kê thường gặp. Muốn hỏi tự do (AI), lấy khoá miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> rồi dán vào đây. Khoá chỉ lưu ở máy chủ.</p>
+      <div class="row"><input id="aiKey" type="password" class="grow" style="width:auto" placeholder="${aiStatus.GEMINI_API_KEY ? "•••••• (đã lưu — dán khoá mới để thay)" : "AIza…"}" autocomplete="off"><button class="btn" id="aiSave" type="button">Lưu khoá</button>${aiStatus.GEMINI_API_KEY ? `<button class="btn ghost danger" id="aiDel" type="button">Gỡ</button>` : ""}</div></div>
     <div class="card"><div class="card-h"><h2>🎯 Quy tắc tăng ca / trừ sao riêng</h2><button class="btn small" id="ruAdd" type="button">+ Thêm quy tắc</button><button class="btn small primary" id="ruSave" type="button">💾 Lưu quy tắc</button></div>
       <p class="small muted">Quy tắc cụ thể hơn được ưu tiên: theo nhân viên &gt; theo bộ phận &gt; theo môn. Để trống ngưỡng = dùng ngưỡng chung.</p>
       <div class="tbl-wrap"><table><thead><tr><th>Môn</th><th>Bộ phận</th><th>Nhân viên (mã, cách nhau dấu phẩy)</th><th class="num">Ngưỡng tăng ca</th><th class="num">Ngưỡng trừ sao</th><th>Không trừ sao</th><th></th></tr></thead><tbody id="ruRows">
@@ -208,6 +295,8 @@ async function settings(body) {
       <td><input type="checkbox" name="noPen" ${r.noPen ? "checked" : ""}></td><td><button class="btn small ghost danger" data-delrule type="button">🗑️</button></td></tr>`;
   }
   $("#ruAdd").onclick = () => $("#ruRows").insertAdjacentHTML("beforeend", ruleRow({ item: "*" }));
+  $("#aiSave").onclick = async () => { const k = $("#aiKey").value.trim(); if (k.length < 20) return toast("Khoá chưa đúng"); try { await rpc("set_private_setting", { p_key: "GEMINI_API_KEY", p_value: k }); toast("Đã lưu khoá AI"); settings(body); } catch (x) { err(x); } };
+  $("#aiDel")?.addEventListener("click", async () => { try { await rpc("set_private_setting", { p_key: "GEMINI_API_KEY", p_value: "" }); toast("Đã gỡ khoá AI"); settings(body); } catch (x) { err(x); } });
   body.onclick = (e) => { const b = e.target.closest("[data-delrule]"); if (b) b.closest("tr").remove(); };
   const save = async (pairs) => {
     const rows = pairs.map(([key, value]) => ({ key, value, updated_by: S.me.email, updated_at: new Date().toISOString() }));
@@ -215,7 +304,8 @@ async function settings(body) {
   };
   $("#stSave").onclick = async () => {
     const pairs = [["STORE_NAME", $("#st_STORE_NAME").value.trim()], ["CUTOFF_TIME", $("#st_CUTOFF_TIME").value || "22:20"], ["AUTO_STREAK_ENABLED", $("#st_AUTO_STREAK_ENABLED").value],
-      ["EMPLOYEE_SEE_LEADERBOARD", $("#st_EMPLOYEE_SEE_LEADERBOARD").value === "true"]];
+      ["EMPLOYEE_SEE_LEADERBOARD", $("#st_EMPLOYEE_SEE_LEADERBOARD").value === "true"], ["HIDDEN_PAGES", $$(".hidePg:checked").map((c) => c.value)]];
+    if ($("#st_TIKTOK_START_DATE").value) pairs.push(["TIKTOK_START_DATE", $("#st_TIKTOK_START_DATE").value]);
     for (const [k] of NUM_SETTINGS) { const v = $("#st_" + k).value; if (v !== "") pairs.push([k, Number(v)]); }
     try { await save(pairs); toast("Đã lưu cài đặt"); } catch (x) { err(x); }
   };

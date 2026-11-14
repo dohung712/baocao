@@ -73,6 +73,8 @@ export async function loadAll() {
 export const setting = (k, d) => (S.settings[k] === undefined || S.settings[k] === null ? d : S.settings[k]);
 export const visibleStaff = () => S.staff.filter((s) => !s.hidden);
 export const staffById = (id) => S.staff.find((s) => s.id === id);
+export const staffEmail = (id) => `nv${String(id).trim().toLowerCase()}@thidua351.vn`;
+export const hiddenPages = () => (Array.isArray(S.settings.HIDDEN_PAGES) ? S.settings.HIDDEN_PAGES : []);
 export const depts = () => [...new Set(S.staff.map((s) => s.dept).filter(Boolean))].sort();
 
 // ---------- Realtime ----------
@@ -86,6 +88,8 @@ export function startRealtime() {
     extra_proposals: () => { loadPending(); loadStaff(); emit("proposals"); },
     change_requests: () => { loadPending(); emit("changes"); },
     store_contest: () => emit("contest"),
+    tiktok_submissions: () => { loadStaff(); emit("cv"); }, cleaning: () => emit("cv"), busy: () => emit("cv"), roadshow: () => emit("cv"),
+    staff_targets: () => emit("targets"),
   };
   const timers = {};
   channel = sb.channel("thidua-v2");
@@ -98,10 +102,11 @@ export function startRealtime() {
 }
 export function stopRealtime() { if (channel) sb.removeChannel(channel); channel = null; }
 
-// ---------- Gọi Edge Function notify ----------
-export async function notify(body) {
+// ---------- Gọi Edge Function ----------
+export const notify = (body) => callFn("notify", body);
+export async function callFn(name, body) {
   const { data: { session } } = await sb.auth.getSession();
-  const r = await fetch(SUPABASE_URL + "/functions/v1/notify", {
+  const r = await fetch(SUPABASE_URL + "/functions/v1/" + name, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + (session?.access_token || "") },
     body: JSON.stringify(body),

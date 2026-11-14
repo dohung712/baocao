@@ -20,7 +20,27 @@ const items = [
 const rules = [{ item: "*", stores: ["Topzone"], staffIds: [], ot: 2, pen: 4 }, { item: "Laptop", staffIds: ["1002"], stores: [], noPen: true }];
 const cfg = [["Key", "Value"], ["Chuỗi ngày được tăng ca", 3], ["Chuỗi ngày bị trừ sao", 5], ["Tỷ lệ thưởng nhân đôi X2 (%)", 150],
   ["Phạt lũy tiến - chuỗi bắt đầu bậc 2", 4], ["Phạt lũy tiến - hệ số bậc 2", 1.5], ["Quy tắc riêng từng môn", JSON.stringify(rules)],
-  ["Ngày đã khóa chốt sổ", "2026-10-01,2026-10-02"]];
+  ["Ngày đã khóa chốt sổ", "2026-10-01,2026-10-02"], ["Ngày bắt đầu tính TikTok", "2026-10-07"], ["Sao phạt link TikTok trễ mỗi ngày", 250]];
+// TikTok: một số kỳ đã nộp (đúng hạn / trễ / miễn)
+const tiktok = [["Mã NV", "Tên", "Hạn", "Link", "Ngày nộp", "Giờ", "TT", "Thưởng"],
+  ["1000", "NV 0", "2026-10-07", "https://vt.tiktok.com/a1", "2026-10-07", "10:00", "ĐÚNG HẠN", 300],
+  ["1000", "NV 0", "2026-10-10", "https://vt.tiktok.com/a2", "2026-10-20", "10:00", "TRỄ", 0],
+  ["1001", "NV 1", "2026-10-07", "", "2026-10-08", "", "MIỄN", 0],
+  ["1002", "NV 2", "2026-10-07", "https://vt.tiktok.com/c1", "2026-10-06", "09:00", "ĐÚNG HẠN", 300],
+  ["1002", "NV 2", "2026-10-10", "https://vt.tiktok.com/c2", "2026-10-10", "09:00", "ĐÚNG HẠN", 300],
+  ["1002", "NV 2", "2026-10-14", "https://vt.tiktok.com/c3", "2026-10-17", "09:00", "TRỄ", 0]];
+const ttSubs = tiktok.slice(1).map((r) => ({ staffId: r[0], due: r[2], submitDate: r[4], status: r[6] }));
+const dueDates = (from, to) => { const out = []; for (let d = new Date(from + "T12:00:00Z"); d <= new Date(to + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + 1)) if ([2, 5].includes(d.getUTCDay())) out.push(d.toISOString().slice(0, 10)); return out; };
+// Bản cũ: buildTiktokPenaltyRows (engine.js)
+function legacyTiktokRows(staffId, date) {
+  const prev = new Date(date + "T12:00:00Z"); prev.setUTCDate(prev.getUTCDate() - 1);
+  return dueDates("2026-10-07", prev.toISOString().slice(0, 10)).flatMap((T) => {
+    const sub = ttSubs.find((t) => t.staffId === staffId && t.due === T);
+    if (sub && sub.status === "MIỄN") return [];
+    if (!sub || sub.submitDate >= date) return [{ itemName: "[Kỷ Luật] TikTok trễ hạn " + ({ 2: "Thứ 3", 5: "Thứ 6" }[new Date(T + "T12:00:00Z").getUTCDay()]) + " " + T.slice(8, 10) + "/" + T.slice(5, 7), starChange: -250, status: "Phạt TikTok", compensation: "TIKTOK_PHAT" }];
+    return [];
+  });
+}
 
 // Lịch sử ban đầu: 15 ngày, mỗi ngày mỗi môn đạt/không ngẫu nhiên
 const itemsFor = (s) => {
@@ -43,7 +63,7 @@ const ns = [["Mã NV", "Tên", "Bộ phận", "Sao gốc", "Tổng sao", "Reset"
   ...staff.map((s) => [Number(s.id), s.name, s.group, s.baseStar, s.baseStar + (deltas[s.id] || 0) + 77, s.id === "1003" ? "2026-10-08" : "", s.assigned.join(", "), ""])];
 const payload = { sheets: { DM_NhanSu: ns, DM_ThiDua: [["Siêu thị", "Tên", "Target", "Thưởng", "Phạt", "X2"], ...items], Data_KetQua_Ngay: kq, CauHinh_QL: cfg,
   Data_DeXuat: [["Ngày", "Mã", "Tên", "ND", "Sao", "TT"], ["2026-10-05", "1001", "NV 1", "Bán thêm tủ lạnh", 300, "Đã duyệt"], ["2026-10-06", "1999", "NV cũ", "abc", 100, "Đã duyệt"]],
-  Data_ThiDua_SieuThi: [["Tên", "Loại", "TĐ", "TG", "%", "DB", "Hạng", "CN"], ["VAS", "SỐ LƯỢNG", 59, 76, 77.6, 89.6, "-", "TỔNG"]] } };
+  Data_TikTok: tiktok, Data_ThiDua_SieuThi: [["Tên", "Loại", "TĐ", "TG", "%", "DB", "Hạng", "CN"], ["VAS", "SỐ LƯỢNG", 59, 76, 77.6, 89.6, "-", "TỔNG"]] } };
 
 psql("truncate public.app_state; insert into public.app_state(id, payload) values (1, " + q(JSON.stringify(payload)) + "::jsonb)");
 console.log("migrate:", psql("select public.migrate_legacy()"));
@@ -59,6 +79,7 @@ const all = {
 };
 // tổng sao bản cũ có +77 (vd thưởng TikTok) và +300 đề xuất đã duyệt của NV 1 nằm trong tổng => giữ nguyên
 const legacyTotal = (id) => all.nhanSu.find((n) => n.id === id).totalStar;
+const ttRewardSum = (id) => ttSubs.reduce((a, t, i) => a + (t.staffId === id ? tiktok[i + 1][7] : 0), 0);
 
 // ---------- So sánh qua nhiều lần nộp liên tiếp ----------
 let diffs = 0, n = 0;
@@ -69,7 +90,7 @@ for (let d = 16; d <= 31; d++) {
     const late = rnd() < 0.15;
     const now = new Date(date + (late ? "T15:40:00Z" : "T14:00:00Z")); // 22:40 hoặc 21:00 giờ VN
     const reports = itemsFor(s).map((t) => ({ itemName: t[1], actual: pick([0, 0, Math.floor(t[2] / 2), t[2], t[2] * 2]), compensation: pick(["DUNG_SAO", "TANG_CA"]) }));
-    const legacy = trustedReport({ staffId: s.id, date, reports }, all, now).reports;
+    const legacy = [...trustedReport({ staffId: s.id, date, reports }, all, now).reports, ...legacyTiktokRows(s.id, date)];
     const out = JSON.parse(psql(`select public._compute_report(${q(s.id)}, ${q(date)}::date, ${q(JSON.stringify(reports))}::jsonb, '', 0, 'test', ${q(now.toISOString())}::timestamptz, false)`));
     n++;
     const a = legacy.map((r) => [r.itemName, r.starChange, r.status, r.compensation].join("|")).join(" ; ");

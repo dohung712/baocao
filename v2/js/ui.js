@@ -79,3 +79,21 @@ export function applySort(list, state) {
 }
 export const sortTh = (state, key, label, cls = "") => `<th class="sort ${cls}" data-sort="${key}">${label}${state.key === key ? (state.dir > 0 ? " ▲" : " ▼") : ""}</th>`;
 export function debounce(fn, ms = 300) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+// Lịch tháng: renderCell(dateStr) trả về HTML bên trong ô
+export function monthGrid(ym, renderCell, { today = vnToday(), cls = () => "" } = {}) {
+  const [y, m] = ym.split("-").map(Number);
+  const first = new Date(Date.UTC(y, m - 1, 1)), days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const lead = (first.getUTCDay() + 6) % 7;
+  let h = `<div class="cal"><div class="cal-h">${["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => `<b>${d}</b>`).join("")}</div><div class="cal-g">`;
+  for (let i = 0; i < lead; i++) h += `<div class="cal-c empty"></div>`;
+  for (let d = 1; d <= days; d++) {
+    const ds = `${ym}-${String(d).padStart(2, "0")}`, w = new Date(ds + "T00:00:00Z").getUTCDay();
+    h += `<button type="button" class="cal-c ${ds === today ? "today" : ""} ${ds < today ? "past" : ""} ${w === 0 || w === 6 ? "wkend" : ""} ${cls(ds)}" data-day="${ds}"><i>${d}</i>${renderCell(ds)}</button>`;
+  }
+  return h + `</div></div>`;
+}
+export const ymOf = (d) => d.slice(0, 7);
+export function shiftMonth(ym, n) { const [y, m] = ym.split("-").map(Number); const d = new Date(Date.UTC(y, m - 1 + n, 1)); return d.toISOString().slice(0, 7); }
+export const monthLabel = (ym) => `Tháng ${Number(ym.slice(5, 7))}/${ym.slice(0, 4)}`;
+export const norm = (x) => String(x || "").replace(/Đ/g, "D").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").toLowerCase().trim();

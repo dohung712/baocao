@@ -1,39 +1,50 @@
 // Khởi động ứng dụng: đăng nhập, điều hướng, đồng bộ
 import { $, esc, toast, modal } from "./ui.js";
-import { sb, S, loadMe, loadAll, startRealtime, stopRealtime, onLive, onChange, isManager, roleLabel, errMsg, setting, SUPABASE_URL } from "./store.js";
+import { sb, S, loadMe, loadAll, startRealtime, stopRealtime, onLive, onChange, isManager, roleLabel, errMsg, setting, SUPABASE_URL, staffEmail, hiddenPages } from "./store.js";
 import * as report from "./pages/report.js";
 import * as historyPage from "./pages/history.js";
 import * as ranking from "./pages/ranking.js";
 import * as store from "./pages/store.js";
 import * as admin from "./pages/admin.js";
+import * as cv from "./pages/cv.js";
+import * as rules from "./pages/rules.js";
+import * as assistant from "./pages/assistant.js";
 
 const PAGES = [
-  { id: "report", icon: "📝", label: "Báo cáo", mod: report },
+  { id: "report", icon: "📝", label: "Báo cáo", mod: report, tab: true },
+  { id: "cv", icon: "🗂️", label: "CV", mod: cv, tab: true },
   { id: "history", icon: "🕒", label: "Lịch sử", mod: historyPage },
-  { id: "ranking", icon: "🏆", label: "BXH", mod: ranking },
+  { id: "ranking", icon: "🏆", label: "BXH", mod: ranking, tab: true },
   { id: "store", icon: "🏢", label: "Siêu thị", mod: store },
+  { id: "assistant", icon: "🤖", label: "Trợ lý", mod: assistant, tab: true },
+  { id: "rules", icon: "📖", label: "Rule", mod: rules },
   { id: "admin", icon: "⚙️", label: "Quản lý", mod: admin, manager: true },
 ];
+const allowed = () => PAGES.filter((p) => (!p.manager || isManager()) && (isManager() || !hiddenPages().includes(p.id)));
 let current = null, cleanup = null;
 
 function show(id) { for (const x of ["boot", "login", "app"]) $("#" + x).hidden = x !== id; }
 
 function pendingCount() { return (S.pending.proposals || 0) + (S.pending.changes || 0); }
 function renderNav() {
-  const pages = PAGES.filter((p) => !p.manager || isManager());
+  const pages = allowed();
   const html = (p) => {
     const b = p.id === "admin" && pendingCount() ? `<b class="badge">${pendingCount()}</b>` : "";
     return `<button type="button" data-page="${p.id}" class="${current === p.id ? "on" : ""}"><span>${p.icon}</span> ${p.label}${b}</button>`;
   };
   $("#nav").innerHTML = pages.map(html).join("");
-  $("#tabbar").innerHTML = pages.map((p) => {
-    const b = p.id === "admin" && pendingCount() ? `<b class="badge">${pendingCount()}</b>` : "";
-    return `<button type="button" data-page="${p.id}" class="${current === p.id ? "on" : ""}"><span>${p.icon}</span>${p.label}${b}</button>`;
-  }).join("");
+  const tabs = pages.filter((p) => p.tab), more = pages.filter((p) => !p.tab);
+  const moreOn = more.some((p) => p.id === current), badge = pendingCount() && more.some((p) => p.id === "admin") ? `<b class="badge">${pendingCount()}</b>` : "";
+  $("#tabbar").innerHTML = tabs.map((p) => `<button type="button" data-page="${p.id}" class="${current === p.id ? "on" : ""}"><span>${p.icon}</span>${p.label}</button>`).join("")
+    + (more.length ? `<button type="button" id="btnMore" class="${moreOn ? "on" : ""}"><span>☰</span>Thêm${badge}</button>` : "");
+  $("#btnMore")?.addEventListener("click", async () => {
+    const v = await modal(`<h3>Chức năng khác</h3><div class="sheet">${more.map((p) => `<button type="button" data-v="${p.id}"><span>${p.icon}</span>${p.label}${p.id === "admin" && pendingCount() ? ` <b class="badge">${pendingCount()}</b>` : ""}</button>`).join("")}</div>`);
+    if (v) go(v);
+  });
 }
 
 async function go(id, params = {}) {
-  const page = PAGES.find((p) => p.id === id && (!p.manager || isManager())) || PAGES[0];
+  const page = allowed().find((p) => p.id === id) || PAGES[0];
   if (cleanup) { try { cleanup(); } catch { /* bỏ qua */ } cleanup = null; }
   current = page.id;
   if (location.hash.slice(1).split("?")[0] !== page.id) history_replace(page.id);
@@ -63,6 +74,7 @@ async function enterApp() {
   $("#btnMe").textContent = `👤 ${S.me.email.split("@")[0]} · ${roleLabel(S.me.role)}`;
   show("app");
   startRealtime();
+  if (S.user?.user_metadata?.must_change) setTimeout(() => setPassword(false, true), 300);
   const id = location.hash.slice(1).split("?")[0] || (isManager() ? "report" : "report");
   go(id);
 }
@@ -72,9 +84,10 @@ function loginMsg(text, ok = false) { const m = $("#loginMsg"); m.className = "m
 $("#fPass").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = e.submitter; btn.disabled = true; loginMsg("");
-  const { error } = await sb.auth.signInWithPassword({ email: $("#lEmail").value.trim().toLowerCase(), password: $("#lPass").value });
+  const id = $("#lEmail").value.trim().toLowerCase(), isCode = !id.includes("@");
+  const { error } = await sb.auth.signInWithPassword({ email: isCode ? staffEmail(id) : id, password: $("#lPass").value });
   btn.disabled = false;
-  if (error) return loginMsg(/Invalid login/i.test(error.message) ? "Sai email hoặc mật khẩu. Nếu quên mật khẩu, dùng mục bên dưới." : errMsg(error));
+  if (error) return loginMsg(/Invalid login/i.test(error.message) ? (isCode ? "Sai mã nhân viên hoặc mật khẩu. Quên mật khẩu: nhờ chủ quản đặt lại (Quản lý → Tài khoản NV)." : "Sai email hoặc mật khẩu. Nếu quên mật khẩu, dùng mục bên dưới.") : errMsg(error));
   enterApp();
 });
 $("#btnOtp").onclick = async () => {
@@ -109,14 +122,14 @@ $("#btnVerify").onclick = async () => {
   setTimeout(() => setPassword(true), 400);
 };
 
-async function setPassword(afterLink = false) {
-  const v = await modal(`<h3>${afterLink ? "Đặt mật khẩu để lần sau đăng nhập nhanh" : "Đổi mật khẩu"}</h3>
+async function setPassword(afterLink = false, forced = false) {
+  const v = await modal(`<h3>${forced ? "Đổi mật khẩu lần đầu" : afterLink ? "Đặt mật khẩu để lần sau đăng nhập nhanh" : "Đổi mật khẩu"}</h3>${forced ? `<p class="muted small">Bạn đang dùng mật khẩu ban đầu do quản lý cấp. Hãy đặt mật khẩu riêng.</p>` : ""}
     <form class="stack"><label>Mật khẩu mới (ít nhất 8 ký tự)<input name="p1" type="password" minlength="8" required autocomplete="new-password"></label>
     <label>Nhập lại<input name="p2" type="password" minlength="8" required autocomplete="new-password"></label></form>
     <div class="modal-actions"><button class="btn" data-v="cancel">${afterLink ? "Để sau" : "Huỷ"}</button><button class="btn primary" data-v="submit">Lưu mật khẩu</button></div>`);
-  if (!v) return;
-  if (v.p1 !== v.p2) { toast("Hai lần nhập không khớp"); return setPassword(afterLink); }
-  const { error } = await sb.auth.updateUser({ password: v.p1 });
+  if (!v) { if (forced) toast("Nhớ đổi mật khẩu sớm nhé (bấm tên ở góc trên → Đổi mật khẩu)", 4000); return; }
+  if (v.p1 !== v.p2) { toast("Hai lần nhập không khớp"); return setPassword(afterLink, forced); }
+  const { error } = await sb.auth.updateUser({ password: v.p1, data: { must_change: false } });
   toast(error ? errMsg(error) : "Đã lưu mật khẩu mới");
 }
 
@@ -132,7 +145,7 @@ $("#btnMe").onclick = async () => {
 document.addEventListener("click", (e) => { const b = e.target.closest("[data-page]"); if (b) go(b.dataset.page); });
 window.addEventListener("hashchange", () => { const id = location.hash.slice(1).split("?")[0]; if (id && id !== current) go(id); });
 onLive((ok) => { $("#live").classList.toggle("off", !ok); $("#live em").textContent = ok ? "Trực tuyến" : "Mất kết nối"; });
-onChange((what) => { if (what === "pending") renderNav(); if (what === "settings") $("#storeName").textContent = setting("STORE_NAME", ""); });
+onChange((what) => { if (what === "pending") renderNav(); if (what === "settings") { $("#storeName").textContent = setting("STORE_NAME", ""); renderNav(); } });
 sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_OUT") { stopRealtime(); show("login"); } });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && S.me) loadAll().catch(() => {}); });
 

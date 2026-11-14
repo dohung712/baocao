@@ -1,5 +1,9 @@
 // Giả lập supabase-js tối thiểu cho kiểm thử: dịch các lệnh truy vấn sang SQL và gửi tới /__db
-const PK = { settings: "key", locked_dates: "d", staff: "id", memberships: "email", items: "id" };
+const PK = { settings: "key", locked_dates: "d", staff: "id", memberships: "email", items: "id", staff_targets: "staff_id,item_name" };
+const argLit = (v) => {
+  if (Array.isArray(v) && !v.some((x) => x && typeof x === "object")) return v.length ? `array[${v.map(lit).join(",")}]` : "'{}'";
+  return v !== null && typeof v === "object" ? lit(JSON.stringify(v)) + "::jsonb" : lit(v);
+};
 const lit = (v) => v === null || v === undefined ? "null" : typeof v === "number" || typeof v === "boolean" ? String(v) : "'" + String(v).replace(/'/g, "''") + "'";
 let EMAIL = localStorage.getItem("fake-email");
 
@@ -14,6 +18,7 @@ class Q {
   eq(c, v) { this.w.push(`${c} = ${lit(v)}`); return this; }
   gte(c, v) { this.w.push(`${c} >= ${lit(v)}`); return this; }
   lte(c, v) { this.w.push(`${c} <= ${lit(v)}`); return this; }
+  in(c, arr) { this.w.push(`${c} in (${arr.map(lit).join(",")})`); return this; }
   order(c, o = {}) { this.o.push(`${c} ${o.ascending === false ? "desc" : "asc"}`); return this; }
   limit(n) { this.lim = n; return this; }
   range(a, b) { this.off = a; this.lim = b - a + 1; return this; }
@@ -32,7 +37,7 @@ class Q {
       const cols = Object.keys(this.val[0]);
       const json = lit(JSON.stringify(this.val));
       let s = `insert into ${t} (${cols.join(",")}) select ${cols.join(",")} from json_populate_recordset(null::${t}, ${json}::json)`;
-      if (this.op === "upsert") s += ` on conflict (${PK[this.t]}) do update set ${cols.filter((c) => c !== PK[this.t]).map((c) => `${c} = excluded.${c}`).join(",") || PK[this.t] + " = excluded." + PK[this.t]}`;
+      if (this.op === "upsert") s += ` on conflict (${PK[this.t]}) do update set ${cols.filter((c) => !PK[this.t].split(",").includes(c)).map((c) => `${c} = excluded.${c}`).join(",") || PK[this.t] + " = excluded." + PK[this.t]}`;
       return `with r as (${s} returning 1) select json_build_object('n', count(*)) from r`;
     }
     if (this.op === "update") {
@@ -56,8 +61,9 @@ export function createClient() {
   return {
     from: (t) => new Q(t),
     rpc: async (fn, args = {}) => {
-      const a = Object.entries(args).map(([k, v]) => `${k} => ${v !== null && typeof v === "object" ? lit(JSON.stringify(v)) + "::jsonb" : lit(v)}`).join(", ");
+      const a = Object.entries(args).map(([k, v]) => `${k} => ${argLit(v)}`).join(", ");
       const isTable = fn === "leaderboard";
+      if (a.includes("::jsonb") === false) {} 
       const r = await db(isTable ? `select coalesce(json_agg(x), '[]') from public.${fn}(${a}) x` : `select to_json(public.${fn}(${a}))`);
       return r.error ? { data: null, error: r.error } : { data: r.data, error: null };
     },
@@ -69,6 +75,7 @@ export function createClient() {
       onAuthStateChange: (f) => { listeners.push(f); return { data: { subscription: { unsubscribe() {} } } }; },
       updateUser: async () => ({ error: null }), signInWithOtp: async () => ({ error: null }), verifyOtp: async () => ({ error: null }), setSession: async () => ({ error: null }),
     },
+    storage: { from: () => ({ upload: async () => ({ error: null }), remove: async () => ({ error: null }), createSignedUrl: async () => ({ data: { signedUrl: "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=" } }) }) },
     channel: () => { const c = { on: () => c, subscribe: (cb) => { setTimeout(() => cb("SUBSCRIBED"), 10); return c; } }; return c; },
     removeChannel: () => {},
   };

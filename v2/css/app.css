@@ -199,3 +199,56 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
 .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;min-width:60px}
 .bar i{display:block;height:100%;background:var(--ok);border-radius:3px}
 .bar.mid i{background:var(--accent)}.bar.low i{background:var(--bad)}
+
+/* Lịch tháng */
+.cal{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);overflow:hidden}
+.cal-h,.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-h b{font-size:12px;color:var(--muted);text-align:center;padding:6px 0;background:var(--bg);border-bottom:1px solid var(--line)}
+.cal-c{font:inherit;color:inherit;text-align:left;min-height:86px;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--card);padding:4px 5px;cursor:pointer;display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.cal-c:nth-child(7n){border-right:0}
+.cal-c.empty{background:var(--bg);cursor:default}
+.cal-c i{font-style:normal;font-size:12px;font-weight:700;color:var(--muted)}
+.cal-c.today{box-shadow:inset 0 0 0 2px var(--brand2)}
+.cal-c.today i{color:var(--brand2)}
+.cal-c.wkend i{color:var(--bad)}
+.cal-c.past{background:color-mix(in srgb,var(--bg) 45%,var(--card))}
+.cal-c:hover:not(.empty){background:var(--brand-soft)}
+.cal-c .tag{display:block;font-size:11px;line-height:1.3;border-radius:5px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--bg)}
+.cal-c .tag.ok{background:var(--ok-soft);color:var(--ok)}.cal-c .tag.bad{background:var(--bad-soft);color:var(--bad)}
+.cal-c .tag.warn{background:var(--warn-soft);color:var(--warn)}.cal-c .tag.info{background:var(--info-soft);color:var(--info)}
+.cal-c .free{font-size:11px;color:var(--muted)}
+.cal-c.full{background:color-mix(in srgb,var(--bad-soft) 50%,var(--card))}
+@media (max-width:640px){.cal-c{min-height:64px;padding:3px}.cal-c .tag{font-size:10px;padding:0 3px}}
+.cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.cal-nav h3{min-width:120px;text-align:center}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+/* Ảnh */
+.photos{display:flex;gap:8px;flex-wrap:wrap}
+.photos .ph{width:96px;height:96px;border-radius:10px;border:1px solid var(--line);background:var(--bg);display:grid;place-items:center;overflow:hidden;font-size:11px;color:var(--muted);text-align:center}
+.photos .ph img{width:100%;height:100%;object-fit:cover}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.pick label{border:1.5px dashed var(--line2);border-radius:10px;min-height:110px;display:grid;place-items:center;text-align:center;font-size:12px;cursor:pointer;overflow:hidden;position:relative;padding:4px}
+.pick label img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pick input{display:none}
+.shiftbox{display:flex;gap:6px;flex-wrap:wrap}
+.shiftbox label{flex-direction:row;align-items:center;gap:4px;border:1px solid var(--line2);border-radius:8px;padding:4px 8px;color:var(--ink);font-weight:500}
+/* Trợ lý */
+.chat{display:flex;flex-direction:column;gap:10px;min-height:300px}
+.msgs{display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow:auto;padding:4px}
+.bubble{max-width:88%;border-radius:14px;padding:10px 12px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.bubble.me{align-self:flex-end;background:var(--brand);color:#fff;border-bottom-right-radius:4px}
+@media (prefers-color-scheme:dark){.bubble.me{color:#0e1412}}
+.bubble.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line);border-bottom-left-radius:4px}
+.bubble.bot table{font-size:13px;margin-top:6px}
+.qchips{display:flex;gap:6px;flex-wrap:wrap}
+.qchips button{font:inherit;font-size:13px;border:1px solid var(--line2);background:var(--card);border-radius:999px;padding:5px 10px;cursor:pointer;color:var(--ink)}
+.qchips button:hover{border-color:var(--brand2);color:var(--brand2)}
+/* Rule */
+.doc h2{margin:6px 0 8px}.doc h3{margin:14px 0 6px}.doc p,.doc li{font-size:14px;line-height:1.6}
+.doc table{font-size:14px}
+/* Menu thêm trên điện thoại */
+.sheet{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sheet button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.sheet button span{font-size:22px}
+.matrix input{width:78px;text-align:right}
+.matrix td.has input{background:var(--accent-soft);border-color:var(--accent)}

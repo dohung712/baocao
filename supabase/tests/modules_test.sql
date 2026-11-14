@@ -1,0 +1,23 @@
+\set ON_ERROR_STOP 0
+insert into memberships(email, role, staff_id, stores) values ('nv1001@x.vn','employee','1001','{Topzone}'), ('mgr@x.vn','manager',null,'{Topzone}') on conflict do nothing;
+create or replace function pg_temp.as_user(e text) returns void language sql as $$ select set_config('request.jwt.claims', json_build_object('email',e)::text, false) $$;
+set role authenticated;
+select pg_temp.as_user('nv1001@x.vn');
+select tiktok_submit('1001', array['https://vt.tiktok.com/xyz1'], array['https://facebook.com/p/1'])->>'message' as tt1;
+select tiktok_submit('1001', array['https://vt.tiktok.com/xyz1'], array['https://facebook.com/p/2'])->>'message' as tt_reuse;
+select tiktok_submit('1001', array['https://facebook.com/x'], array['https://facebook.com/p/3'])->>'message' as tt_wrongbox;
+select clean_register('1001', current_date + 1)->>'message' as c1;
+select clean_register('1001', current_date + 1)->>'message' as c_dup;
+select clean_register('1001', current_date)->>'message' as c_today;
+select clean_report(current_date, array['v2:clean/a.jpg','v2:clean/b.jpg','v2:clean/c.jpg'])->>'message' as c_rep;
+select busy_register('1001', current_date + 2, 'BAN', array[1,3,9])->>'message' as b1;
+select shifts from busy where staff_id='1001';
+select rs_register('1001', current_date + 1, '06:30')->>'message' as rs1;
+select rs_register('1001', current_date + 1, '12:00')->>'message' as rs_bad;
+select pg_temp.as_user('mgr@x.vn');
+select rs_assign(current_date + 1, '15:00', array['1001','1003','1000'])->>'message' as assign;
+select clean_delete(current_date, true)->>'status' as del_photos;
+select tiktok_manage('excuse', '1003', '2026-10-07')->>'status' as excuse;
+reset role;
+select staff_id, due, status, reward from tiktok_submissions where staff_id in ('1001','1003') order by 1,2;
+select public.staff_total('1001') as total_1001;
