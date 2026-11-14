@@ -30,6 +30,6 @@ jobs:
         with:
           version: latest
       - name: Triển khai Edge Function notify
-        run: supabase functions deploy notify --project-ref "$PROJECT_REF" --no-verify-jwt
+        run: supabase functions deploy notify --project-ref "$PROJECT_REF" --no-verify-jwt --yes
       - name: Kiểm tra (chỉ in số lượng)
         run: node supabase/scripts/verify.mjs
