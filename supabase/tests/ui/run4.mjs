@@ -2,9 +2,9 @@
 import { createRequire } from "node:module";
 const { chromium } = createRequire(import.meta.url)("playwright");
 import { readFileSync, mkdirSync } from "node:fs";
-const OUT = "/tmp/claude-0/-home-claude/dbb3aa50-615d-541c-900f-cfb86b36ac1a/scratchpad/ui4"; mkdirSync(OUT, { recursive: true });
+const OUT = "/tmp/ui-shots4"; mkdirSync(OUT, { recursive: true });
 const fake = readFileSync(new URL("./fake-supabase.js", import.meta.url), "utf8");
-const REPORT = readFileSync("/tmp/claude-0/-home-claude/dbb3aa50-615d-541c-900f-cfb86b36ac1a/scratchpad/report.txt", "utf8");
+const REPORT = readFileSync(new URL("./sample-target-report.txt", import.meta.url), "utf8");
 const errors = [];
 const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 1360, height: 900 } })).newPage();
 p.on("pageerror", (e) => errors.push("pageerror: " + e.message));
@@ -15,7 +15,7 @@ await p.route(/functions\/v1\/notify/, (r) => r.fulfill({ contentType: "applicat
 await p.goto("http://localhost:8790/v2/");
 await p.fill("#lEmail", "dohung712@gmail.com"); await p.fill("#lPass", "x"); await p.click("#fPass button[type=submit]");
 await p.waitForSelector("#app:not([hidden])", { timeout: 30000 });
-await p.click("#nav [data-page=admin]"); await p.waitForTimeout(1500); console.log("errs-so-far:", errors.join(" / "), (await p.textContent("#view")).slice(0,200)); await p.click("#aTabs [data-t=score]"); await p.waitForTimeout(1200);
+await p.click("#nav [data-page=admin]"); await p.waitForTimeout(1500); await p.click("#aTabs [data-t=score]"); await p.waitForTimeout(1200);
 await p.evaluate(() => { document.querySelector("#imp").open = true; });
 await p.fill("#impText", REPORT); await p.click("#impParse"); await p.waitForTimeout(600);
 await p.screenshot({ path: OUT + "/preview.png", fullPage: true });
