@@ -47,7 +47,7 @@ h2{font-size:18px}h3{font-size:15px}
 /* Header & nav */
 .top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:10px 20px}
 .nav{display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none}
-.nav button,.tabbar button{font:inherit;border:0;background:transparent;color:var(--muted);cursor:pointer;border-radius:10px;padding:8px 12px;white-space:nowrap;font-weight:500;position:relative}
+.nav button,.tabbar button{font:inherit;border:0;background:transparent;color:var(--muted);cursor:pointer;border-radius:10px;padding:7px 9px;white-space:nowrap;font-weight:500;position:relative}
 .nav button:hover{background:var(--bg);color:var(--ink)}
 .nav button.on{background:var(--brand-soft);color:var(--brand)}
 .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;margin-left:4px}
@@ -252,3 +252,8 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
 .sheet button span{font-size:22px}
 .matrix input{width:78px;text-align:right}
 .matrix td.has input{background:var(--accent-soft);border-color:var(--accent)}
+.nav button{font-size:14px}
+@media (max-width:1280px){.nav button span{display:none}}
+.stat .tiny{display:block;margin-top:2px}
+@media (min-width:861px) and (max-width:1500px){.top{flex-wrap:wrap;row-gap:4px}.top .nav{order:3;flex-basis:100%}}
+.banner strong{font-weight:700}

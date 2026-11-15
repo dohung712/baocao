@@ -1,9 +1,10 @@
 // Trang Quản lý: duyệt, khoá sổ, nhân sự, môn thi đua, cài đặt, Telegram, phân quyền
 import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml } from "../ui.js";
+import { scoreAdmin } from "./admin-score.js";
 import { sb, S, rpc, notify, callFn, onChange, isOwner, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel, visibleStaff } from "../store.js";
 
 const TABS = [
-  { id: "approve", label: "Duyệt" }, { id: "lock", label: "Khoá sổ" }, { id: "staff", label: "Nhân sự" },
+  { id: "approve", label: "Duyệt" }, { id: "score", label: "Điểm & DT" }, { id: "lock", label: "Khoá sổ" }, { id: "staff", label: "Nhân sự" },
   { id: "items", label: "Môn & sao thưởng/phạt", owner: true }, { id: "targets", label: "Target NV", owner: true },
   { id: "accounts", label: "Tài khoản NV", owner: true }, { id: "settings", label: "Cài đặt", owner: true },
   { id: "telegram", label: "Telegram" }, { id: "members", label: "Phân quyền", owner: true }, { id: "audit", label: "Nhật ký", owner: true },
@@ -31,7 +32,7 @@ async function draw() {
   if (!TABS.some((t) => t.id === tab && (!t.owner || isOwner()))) tab = "approve";
   drawTabs();
   const body = $("#aBody"); body.onclick = null; body.innerHTML = `<div class="empty">Đang tải…</div>`;
-  try { await ({ approve, lock, staff, items, targets, accounts, settings, telegram, members, audit })[tab](body); }
+  try { await ({ approve, score: scoreAdmin, lock, staff, items, targets, accounts, settings, telegram, members, audit })[tab](body); }
   catch (e) { body.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const err = (e) => toast(errMsg(e), 4500);
@@ -261,8 +262,13 @@ const NUM_SETTINGS = [
   ["PEN_T4_MIN", "Bậc 4 từ chuỗi", ""], ["PEN_M4", "Hệ số bậc 4", ""], ["PEN_M1", "Hệ số bậc 1", "Chuỗi nhỏ hơn bậc 2"],
   ["TIKTOK_REWARD", "TikTok: sao thưởng đúng hạn", ""], ["TIKTOK_PENALTY", "TikTok: sao phạt mỗi ngày trễ", ""], ["TIKTOK_MIN_LINKS", "TikTok: số link tối thiểu", ""], ["TIKTOK_FB_MIN", "TikTok: số link Facebook tối thiểu", ""],
   ["BUSY_MAX_WEEKDAY", "Lịch bận: tối đa người/ngày (T2–T6)", ""], ["RS_MIN_KM", "Roadshow: km tối thiểu", ""], ["RS_MIN_MIN", "Roadshow: phút tối thiểu", ""],
+  ["W_REVENUE", "Xếp hạng: trọng số Doanh thu", "Điểm tối đa phần doanh thu"], ["W_CONTEST", "Xếp hạng: trọng số Thi đua", ""], ["W_SERVICE", "Xếp hạng: trọng số Phục vụ", ""], ["VIOLATION_POINTS", "Xếp hạng: điểm trừ mỗi lỗi", ""],
 ];
-const PAGE_LABELS = [["cv", "🗂️ CV"], ["history", "🕒 Lịch sử"], ["ranking", "🏆 BXH"], ["store", "🏢 Siêu thị"], ["assistant", "🤖 Trợ lý"], ["rules", "📖 Rule"]];
+export const FEATURES = [
+  ["report", "📝 Báo cáo"], ["report.revenue", "· Ô doanh thu QĐ trong báo cáo"], ["report.extra", "· Bán thêm ngoài thi đua"],
+  ["cv", "🗂️ CV"], ["cv.tiktok", "· TikTok"], ["cv.clean", "· Vệ sinh"], ["cv.busy", "· Lịch bận"], ["cv.rs", "· Roadshow"], ["cv.stats", "· Thống kê"],
+  ["score", "🏅 Xếp hạng điểm"], ["me", "👤 Của tôi"], ["ranking", "🏆 BXH sao"], ["history", "🕒 Lịch sử"], ["store", "🏢 Siêu thị"], ["assistant", "🤖 Trợ lý"], ["rules", "📖 Rule"], ["admin", "⚙️ Quản lý (với quản lý)"],
+];
 async function settings(body) {
   const aiStatus = await rpc("private_setting_status").catch(() => ({}));
   const rules = Array.isArray(setting("ITEM_RULES", [])) ? setting("ITEM_RULES", []) : [];
@@ -277,9 +283,15 @@ async function settings(body) {
         <label>Nhân viên xem BXH toàn siêu thị<select id="st_EMPLOYEE_SEE_LEADERBOARD"><option value="false">Không (chỉ xem của mình)</option><option value="true" ${setting("EMPLOYEE_SEE_LEADERBOARD", false) === true ? "selected" : ""}>Có</option></select></label>
         <label>TikTok: bắt đầu tính từ ngày<input id="st_TIKTOK_START_DATE" type="date" value="${esc(String(setting("TIKTOK_START_DATE", "")).slice(0, 10))}"></label>
       </div>
-      <p class="small" style="margin:12px 0 4px"><b>Ẩn trang với nhân viên</b> (quản lý vẫn thấy):</p>
-      <div class="chips">${PAGE_LABELS.map(([k, l]) => `<label class="chip inline"><input type="checkbox" class="hidePg" value="${k}" ${(setting("HIDDEN_PAGES", []) || []).includes(k) ? "checked" : ""}> ${l}</label>`).join("")}</div>
+      <div class="fields" style="margin-top:10px"><label>Đơn vị doanh thu QĐ<input id="st_REVENUE_UNIT" value="${esc(setting("REVENUE_UNIT", "triệu đ"))}"></label>
+        ${["s4", "s3", "s2", "s1", "complaints"].map((k) => `<label>Phục vụ: trừ mỗi ${k === "complaints" ? "khiếu nại" : k.slice(1) + "★"}<input type="number" step="any" min="0" class="rd" data-k="${k}" value="${esc((setting("RATING_DEDUCT", {}) || {})[k] ?? "")}"></label>`).join("")}</div>
+      <label style="margin-top:10px">Các loại lỗi vi phạm (mỗi dòng 1 loại)<textarea id="st_VIOLATION_TYPES">${esc((setting("VIOLATION_TYPES", []) || []).join("\n"))}</textarea></label>
       <p class="small muted" style="margin-top:10px">Số sao trừ = sao phạt của môn × hệ số theo chuỗi (chuỗi tính các ngày trước ngày báo cáo). Chuỗi nhỏ hơn cả hai ngưỡng: chỉ ghi nhận chuỗi.</p></div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🙈 Ẩn trang / chức năng</h2><button class="btn small primary" id="hdSave" type="button">💾 Lưu</button></div>
+      <p class="small muted">Tick để ẩn với từng vai trò. Chủ quản luôn thấy tất cả.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Trang / chức năng</th><th class="num">Ẩn với nhân viên</th><th class="num">Ẩn với quản lý</th></tr></thead><tbody>
+      ${FEATURES.map(([k, l]) => { const h = setting("HIDE", {}) || {}; return `<tr><td>${esc(l)}</td><td class="num">${k === "admin" ? "—" : `<input type="checkbox" class="hd" data-r="employee" value="${k}" ${(h.employee || []).includes(k) ? "checked" : ""}>`}</td><td class="num"><input type="checkbox" class="hd" data-r="manager" value="${k}" ${(h.manager || []).includes(k) ? "checked" : ""}></td></tr>`; }).join("")}
+      </tbody></table></div></div>
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🤖 Trợ lý AI (tuỳ chọn)</h2><span class="pill ${aiStatus.GEMINI_API_KEY ? "ok" : "mute"}">${aiStatus.GEMINI_API_KEY ? "Đã bật" : "Chưa bật"}</span></div>
       <p class="small muted">Trợ lý luôn trả lời được các câu thống kê thường gặp. Muốn hỏi tự do (AI), lấy khoá miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> rồi dán vào đây. Khoá chỉ lưu ở máy chủ.</p>
       <div class="row"><input id="aiKey" type="password" class="grow" style="width:auto" placeholder="${aiStatus.GEMINI_API_KEY ? "•••••• (đã lưu — dán khoá mới để thay)" : "AIza…"}" autocomplete="off"><button class="btn" id="aiSave" type="button">Lưu khoá</button>${aiStatus.GEMINI_API_KEY ? `<button class="btn ghost danger" id="aiDel" type="button">Gỡ</button>` : ""}</div></div>
@@ -295,6 +307,10 @@ async function settings(body) {
       <td><input type="checkbox" name="noPen" ${r.noPen ? "checked" : ""}></td><td><button class="btn small ghost danger" data-delrule type="button">🗑️</button></td></tr>`;
   }
   $("#ruAdd").onclick = () => $("#ruRows").insertAdjacentHTML("beforeend", ruleRow({ item: "*" }));
+  $("#hdSave").onclick = async () => {
+    const v = { employee: $$(".hd[data-r=employee]:checked").map((c) => c.value), manager: $$(".hd[data-r=manager]:checked").map((c) => c.value) };
+    try { await save([["HIDE", v]]); toast("Đã lưu cài đặt ẩn"); } catch (x) { err(x); }
+  };
   $("#aiSave").onclick = async () => { const k = $("#aiKey").value.trim(); if (k.length < 20) return toast("Khoá chưa đúng"); try { await rpc("set_private_setting", { p_key: "GEMINI_API_KEY", p_value: k }); toast("Đã lưu khoá AI"); settings(body); } catch (x) { err(x); } };
   $("#aiDel")?.addEventListener("click", async () => { try { await rpc("set_private_setting", { p_key: "GEMINI_API_KEY", p_value: "" }); toast("Đã gỡ khoá AI"); settings(body); } catch (x) { err(x); } });
   body.onclick = (e) => { const b = e.target.closest("[data-delrule]"); if (b) b.closest("tr").remove(); };
@@ -304,7 +320,9 @@ async function settings(body) {
   };
   $("#stSave").onclick = async () => {
     const pairs = [["STORE_NAME", $("#st_STORE_NAME").value.trim()], ["CUTOFF_TIME", $("#st_CUTOFF_TIME").value || "22:20"], ["AUTO_STREAK_ENABLED", $("#st_AUTO_STREAK_ENABLED").value],
-      ["EMPLOYEE_SEE_LEADERBOARD", $("#st_EMPLOYEE_SEE_LEADERBOARD").value === "true"], ["HIDDEN_PAGES", $$(".hidePg:checked").map((c) => c.value)]];
+      ["EMPLOYEE_SEE_LEADERBOARD", $("#st_EMPLOYEE_SEE_LEADERBOARD").value === "true"], ["REVENUE_UNIT", $("#st_REVENUE_UNIT").value.trim()],
+      ["RATING_DEDUCT", Object.fromEntries($$(".rd").map((i) => [i.dataset.k, Number(i.value) || 0]))],
+      ["VIOLATION_TYPES", $("#st_VIOLATION_TYPES").value.split("\n").map((x) => x.trim()).filter(Boolean)]];
     if ($("#st_TIKTOK_START_DATE").value) pairs.push(["TIKTOK_START_DATE", $("#st_TIKTOK_START_DATE").value]);
     for (const [k] of NUM_SETTINGS) { const v = $("#st_" + k).value; if (v !== "") pairs.push([k, Number(v)]); }
     try { await save(pairs); toast("Đã lưu cài đặt"); } catch (x) { err(x); }
@@ -326,21 +344,23 @@ async function telegram(body) {
   const chats = Array.isArray(setting("NOTIFY_CHAT_IDS", [])) ? setting("NOTIFY_CHAT_IDS", []) : [];
   const { data: logs } = await sb.from("notify_log").select("*").order("sent_at", { ascending: false }).limit(10);
   const days = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  const items = (await notify({ mode: "items" }).catch(() => ({ items: [] }))).items;
   body.innerHTML = `
     ${own ? `<div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🤖 Kết nối bot Telegram</h2><span class="pill ${status.TELEGRAM_BOT_TOKEN ? "ok" : "warn"}">${status.TELEGRAM_BOT_TOKEN ? "Đã có token" : "Chưa có token"}</span></div>
       <ol class="small muted" style="margin:0 0 10px;padding-left:18px"><li>Telegram → <b>@BotFather</b> → <code>/newbot</code> → copy token.</li><li>Thêm bot vào nhóm quản lý, nhắn 1 câu bất kỳ trong nhóm.</li><li>Dán token → Lưu → bấm <b>Tìm nhóm</b> → tick nhóm nhận tin → Lưu cài đặt gửi.</li></ol>
       <div class="row"><input id="tgToken" type="password" placeholder="${status.TELEGRAM_BOT_TOKEN ? "•••••••• (đã lưu — dán token mới để thay)" : "123456789:ABC…"}" class="grow" style="width:auto" autocomplete="off"><button class="btn" id="tgSaveToken" type="button">Lưu token</button><button class="btn" id="tgDetect" type="button">🔎 Tìm nhóm</button></div>
       <div id="tgChats" style="margin-top:10px"></div></div>` : ""}
-    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🗓️ Lịch gửi tự động</h2>${own ? `<button class="btn small primary" id="tgSave" type="button">💾 Lưu cài đặt gửi</button>` : ""}</div>
-      <div class="fields">
-        <label>Trạng thái<select id="tgOn" ${own ? "" : "disabled"}><option value="false">Tắt</option><option value="true" ${setting("NOTIFY_ENABLED", false) === true ? "selected" : ""}>Bật</option></select></label>
-        <label>Giờ gửi tóm tắt ngày<input type="time" id="tgDaily" value="${esc(setting("NOTIFY_DAILY_TIME", "22:35"))}" ${own ? "" : "disabled"}></label>
-        <label>Ngày gửi tóm tắt tuần<select id="tgWdow" ${own ? "" : "disabled"}>${days.map((d, i) => `<option value="${i}" ${Number(setting("NOTIFY_WEEKLY_DOW", 0)) === i ? "selected" : ""}>${d}</option>`).join("")}</select></label>
-        <label>Giờ gửi tóm tắt tuần<input type="time" id="tgWtime" value="${esc(setting("NOTIFY_WEEKLY_TIME", "22:45"))}" ${own ? "" : "disabled"}></label>
-        <label style="grid-column:1/-1">Nơi nhận (chat ID, cách nhau dấu phẩy)<input id="tgIds" value="${esc(chats.join(", "))}" ${own ? "" : "disabled"} placeholder="Bấm Tìm nhóm để điền tự động"></label>
-      </div><p class="small muted" style="margin-top:8px">Máy chủ kiểm tra 5 phút/lần và gửi khi tới giờ — không cần mở web.</p></div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🗓️ Gửi tự động theo từng đầu mục</h2>${own ? `<button class="btn small primary" id="tgSave" type="button">💾 Lưu cài đặt gửi</button>` : ""}</div>
+      <div class="fields" style="margin-bottom:10px"><label>Trạng thái chung<select id="tgOn" ${own ? "" : "disabled"}><option value="false">Tắt tất cả</option><option value="true" ${setting("NOTIFY_ENABLED", false) === true ? "selected" : ""}>Bật</option></select></label>
+        <label style="grid-column:span 2">Nơi nhận (chat ID, cách nhau dấu phẩy)<input id="tgIds" value="${esc(chats.join(", "))}" ${own ? "" : "disabled"} placeholder="Bấm Tìm nhóm để điền tự động"></label></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Đầu mục</th><th>Gửi</th><th>Tần suất</th><th>Giờ</th><th></th></tr></thead><tbody>
+      ${items.map((it) => `<tr data-it="${it.id}"><td><b>${esc(it.label)}</b></td><td><input type="checkbox" class="itOn" ${it.on ? "checked" : ""} ${own ? "" : "disabled"}></td>
+        <td class="small">${it.freq === "weekly" ? `Hằng tuần <select class="itDow" style="width:auto" ${own ? "" : "disabled"}>${days.map((d, i) => `<option value="${i}" ${it.dow === i ? "selected" : ""}>${d}</option>`).join("")}</select>` : it.freq === "due" ? "Ngày hạn (T3, T6)" : "Hằng ngày"}</td>
+        <td><input type="time" class="itTime" value="${esc(it.time)}" style="width:auto" ${own ? "" : "disabled"}></td>
+        <td class="num"><button class="btn small" data-pv="${it.id}" type="button">Xem trước</button> <button class="btn small" data-sd="${it.id}" type="button">Gửi ngay</button></td></tr>`).join("")}
+      </tbody></table></div><p class="small muted" style="margin-top:8px">Mỗi đầu mục gửi 1 tin riêng vào nhóm. Máy chủ kiểm tra 5 phút/lần, không cần mở web; đầu mục không có nội dung trong ngày sẽ tự bỏ qua.</p></div>
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>👀 Xem trước & gửi ngay</h2></div>
-      <div class="row"><select id="tgKind" style="width:auto"><option value="daily">Tóm tắt ngày</option><option value="weekly">Tóm tắt tuần (đến ngày chọn)</option></select><input type="date" id="tgDate" value="${vnToday()}" max="${vnToday()}" style="width:auto">
+      <div class="row"><select id="tgKind" style="width:auto">${items.map((it) => `<option value="${it.id}">${esc(it.label)}</option>`).join("")}</select><input type="date" id="tgDate" value="${vnToday()}" max="${vnToday()}" style="width:auto">
         <button class="btn" id="tgPreview" type="button">Xem trước</button><button class="btn primary" id="tgSend" type="button">📤 Gửi ngay</button>${own ? `<button class="btn" id="tgTest" type="button">Gửi tin thử</button>` : ""}</div>
       <div id="tgOut" style="margin-top:10px"></div></div>
     <div class="card"><div class="card-h"><h3>Nhật ký gửi</h3></div>${logs?.length ? `<div class="tbl-wrap"><table><tbody>${logs.map((l) => `<tr><td class="small">${new Date(l.sent_at).toLocaleString("vi-VN")}</td><td>${esc(l.kind)}</td><td>${esc(l.period)}</td><td>${l.ok ? '<span class="pill ok">OK</span>' : '<span class="pill bad">Lỗi</span>'}</td><td class="small muted">${esc(l.detail || "")}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Chưa gửi lần nào.</p>`}</div>`;
@@ -358,13 +378,19 @@ async function telegram(body) {
   }));
   $("#tgSave")?.addEventListener("click", (e) => run(e.target, async () => {
     const ids = $("#tgIds").value.split(",").map((x) => x.trim()).filter(Boolean);
-    const rows = [["NOTIFY_ENABLED", $("#tgOn").value === "true"], ["NOTIFY_DAILY_TIME", $("#tgDaily").value || "22:35"], ["NOTIFY_WEEKLY_DOW", Number($("#tgWdow").value)], ["NOTIFY_WEEKLY_TIME", $("#tgWtime").value || "22:45"], ["NOTIFY_CHAT_IDS", ids]]
+    const its = $$("[data-it]", body).map((tr) => ({ id: tr.dataset.it, on: tr.querySelector(".itOn").checked, time: tr.querySelector(".itTime").value, dow: Number(tr.querySelector(".itDow")?.value ?? 0) }));
+    const rows = [["NOTIFY_ENABLED", $("#tgOn").value === "true"], ["NOTIFY_CHAT_IDS", ids], ["NOTIFY_ITEMS", its]]
       .map(([key, value]) => ({ key, value, updated_by: S.me.email, updated_at: new Date().toISOString() }));
     const { error } = await sb.from("settings").upsert(rows); if (error) throw error; await loadSettings(); toast("Đã lưu cài đặt gửi");
   }));
   const html2text = (h) => h.replace(/<\/?b>/g, "");
   $("#tgPreview").onclick = (e) => run(e.target, async () => { const r = await notify({ mode: "preview", kind: $("#tgKind").value, date: $("#tgDate").value }); $("#tgOut").innerHTML = `<pre class="preview">${esc(html2text(r.text))}</pre>`; });
   $("#tgSend").onclick = (e) => run(e.target, async () => { if (!(await confirmBox("Gửi ngay?", "Gửi tóm tắt tới các nơi nhận đã cài.", "Gửi"))) return; const r = await notify({ mode: "send", kind: $("#tgKind").value, date: $("#tgDate").value }); toast(r.message); telegram(body); });
+  body.addEventListener("click", (e) => {
+    const pv = e.target.closest("[data-pv]"), sd = e.target.closest("[data-sd]");
+    if (pv) run(pv, async () => { const r = await notify({ mode: "preview", kind: pv.dataset.pv, date: vnToday() }); $("#tgOut").innerHTML = `<pre class="preview">${esc(html2text(r.text))}</pre>`; $("#tgOut").scrollIntoView({ behavior: "smooth", block: "center" }); });
+    if (sd) run(sd, async () => { if (!(await confirmBox("Gửi ngay?", "Gửi đầu mục này tới các nơi nhận đã cài.", "Gửi"))) return; const r = await notify({ mode: "send", kind: sd.dataset.sd, date: vnToday() }); toast(r.message); });
+  });
   $("#tgTest")?.addEventListener("click", (e) => run(e.target, async () => { const r = await notify({ mode: "test" }); toast(r.message); }));
 }
 

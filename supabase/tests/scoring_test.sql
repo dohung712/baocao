@@ -1,0 +1,26 @@
+\set ON_ERROR_STOP 0
+insert into memberships(email, role, staff_id, stores) values ('nv1001@x.vn','employee','1001','{Topzone}'), ('mgr@x.vn','manager',null,'{Topzone,"Thế Giới Di Động"}') on conflict do nothing;
+create or replace function pg_temp.as_user(e text) returns void language sql as $$ select set_config('request.jwt.claims', json_build_object('email',e)::text, false) $$;
+set role authenticated;
+select pg_temp.as_user('mgr@x.vn');
+select save_monthly_target('1001', date_trunc('month', current_date)::date, 300, '[{"name":"Sim","target":60},{"name":"Bảo hiểm","target":40}]')->>'status' t1;
+select save_monthly_target('1000', date_trunc('month', current_date)::date, 200, '[{"name":"Sim","target":60}]')->>'status' t2;
+select save_rating('1000', date_trunc('month', current_date)::date, current_date, '{"s5":20,"s4":2,"complaints":1}')->>'status' r0;
+select add_violation('1001', current_date, 'Đi trễ / về sớm', 'trễ 15p')->>'message' v1;
+select adjust_stars(array['1000','1001'], 500, 'Thưởng tuần')->>'message' adj;
+select pg_temp.as_user('nv1001@x.vn');
+select save_revenue('1001', current_date, 120)->>'status' rev1;
+select save_revenue('1001', current_date - 1, 60)->>'status' rev2;
+select save_revenue('1000', current_date, 60)->>'status' rev_other;
+select save_rating('1001', date_trunc('month', current_date)::date, current_date, '{"s5":10,"s3":1}')->>'status' r1;
+select save_rating('1001', date_trunc('month', current_date)::date, current_date, '{"s5":10,"complaints":1}')->>'status' r_kn;
+select adjust_revenue('1001', current_date, 50, 'x') ;
+select count(*) emp_sees_log from score_log;
+select pg_temp.as_user('mgr@x.vn');
+select adjust_revenue('1001', current_date, 30, 'Bổ sung đơn trả góp')->>'status' adj_rev;
+select staff_id, name, revenue, revenue_target, rev_score, items_total, items_done, contest_score, service_raw, service_score, violations, total, rank from score_board(date_trunc('month', current_date)::date, current_date) where revenue > 0 or items_total > 0 or service_raw <> 0;
+select pg_temp.as_user('dohung712@gmail.com');
+select reset_stars(array['1000','1001'], 1500, 'Kỳ tháng 12')->>'message' rst;
+reset role;
+select staff_id, staff_total(staff_id) from (values ('1000'),('1001')) v(staff_id);
+select kind, action, count(*) from score_log group by 1,2 order by 1,2;

@@ -1,6 +1,6 @@
 // Khởi động ứng dụng: đăng nhập, điều hướng, đồng bộ
 import { $, esc, toast, modal } from "./ui.js";
-import { sb, S, loadMe, loadAll, startRealtime, stopRealtime, onLive, onChange, isManager, roleLabel, errMsg, setting, SUPABASE_URL, staffEmail, hiddenPages } from "./store.js";
+import { sb, S, loadMe, loadAll, startRealtime, stopRealtime, onLive, onChange, isManager, roleLabel, errMsg, setting, SUPABASE_URL, staffEmail, isHidden } from "./store.js";
 import * as report from "./pages/report.js";
 import * as historyPage from "./pages/history.js";
 import * as ranking from "./pages/ranking.js";
@@ -9,18 +9,22 @@ import * as admin from "./pages/admin.js";
 import * as cv from "./pages/cv.js";
 import * as rules from "./pages/rules.js";
 import * as assistant from "./pages/assistant.js";
+import * as score from "./pages/score.js";
+import * as mePage from "./pages/me.js";
 
 const PAGES = [
   { id: "report", icon: "📝", label: "Báo cáo", mod: report, tab: true },
   { id: "cv", icon: "🗂️", label: "CV", mod: cv, tab: true },
+  { id: "score", icon: "🏅", label: "Xếp hạng", mod: score, tab: true },
+  { id: "me", icon: "👤", label: "Của tôi", mod: mePage, tab: true },
+  { id: "ranking", icon: "🏆", label: "BXH sao", mod: ranking },
   { id: "history", icon: "🕒", label: "Lịch sử", mod: historyPage },
-  { id: "ranking", icon: "🏆", label: "BXH", mod: ranking, tab: true },
   { id: "store", icon: "🏢", label: "Siêu thị", mod: store },
-  { id: "assistant", icon: "🤖", label: "Trợ lý", mod: assistant, tab: true },
+  { id: "assistant", icon: "🤖", label: "Trợ lý", mod: assistant },
   { id: "rules", icon: "📖", label: "Rule", mod: rules },
   { id: "admin", icon: "⚙️", label: "Quản lý", mod: admin, manager: true },
 ];
-const allowed = () => PAGES.filter((p) => (!p.manager || isManager()) && (isManager() || !hiddenPages().includes(p.id)));
+const allowed = () => PAGES.filter((p) => (!p.manager || isManager()) && !isHidden(p.id));
 let current = null, cleanup = null;
 
 function show(id) { for (const x of ["boot", "login", "app"]) $("#" + x).hidden = x !== id; }
@@ -44,7 +48,7 @@ function renderNav() {
 }
 
 async function go(id, params = {}) {
-  const page = allowed().find((p) => p.id === id) || PAGES[0];
+  const page = allowed().find((p) => p.id === id) || allowed()[0] || PAGES[0];
   if (cleanup) { try { cleanup(); } catch { /* bỏ qua */ } cleanup = null; }
   current = page.id;
   if (location.hash.slice(1).split("?")[0] !== page.id) history_replace(page.id);

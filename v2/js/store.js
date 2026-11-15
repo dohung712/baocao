@@ -74,7 +74,13 @@ export const setting = (k, d) => (S.settings[k] === undefined || S.settings[k] =
 export const visibleStaff = () => S.staff.filter((s) => !s.hidden);
 export const staffById = (id) => S.staff.find((s) => s.id === id);
 export const staffEmail = (id) => `nv${String(id).trim().toLowerCase()}@thidua351.vn`;
-export const hiddenPages = () => (Array.isArray(S.settings.HIDDEN_PAGES) ? S.settings.HIDDEN_PAGES : []);
+// Ẩn trang / chức năng theo vai trò (chủ quản luôn thấy tất cả)
+export function isHidden(id) {
+  if (S.me?.role === "owner") return false;
+  const h = S.settings.HIDE || {}, list = S.me?.role === "manager" ? h.manager : h.employee;
+  return Array.isArray(list) && list.includes(id);
+}
+export const hiddenPages = () => [];
 export const depts = () => [...new Set(S.staff.map((s) => s.dept).filter(Boolean))].sort();
 
 // ---------- Realtime ----------
@@ -90,6 +96,8 @@ export function startRealtime() {
     store_contest: () => emit("contest"),
     tiktok_submissions: () => { loadStaff(); emit("cv"); }, cleaning: () => emit("cv"), busy: () => emit("cv"), roadshow: () => emit("cv"),
     staff_targets: () => emit("targets"),
+    star_adjustments: () => { loadStaff(); emit("score"); }, revenue_entries: () => emit("score"), monthly_targets: () => emit("score"),
+    ratings: () => emit("score"), violations: () => emit("score"),
   };
   const timers = {};
   channel = sb.channel("thidua-v2");

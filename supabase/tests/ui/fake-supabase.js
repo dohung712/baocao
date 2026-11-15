@@ -62,7 +62,7 @@ export function createClient() {
     from: (t) => new Q(t),
     rpc: async (fn, args = {}) => {
       const a = Object.entries(args).map(([k, v]) => `${k} => ${argLit(v)}`).join(", ");
-      const isTable = fn === "leaderboard";
+      const isTable = ["leaderboard", "score_board"].includes(fn);
       if (a.includes("::jsonb") === false) {} 
       const r = await db(isTable ? `select coalesce(json_agg(x), '[]') from public.${fn}(${a}) x` : `select to_json(public.${fn}(${a}))`);
       return r.error ? { data: null, error: r.error } : { data: r.data, error: null };

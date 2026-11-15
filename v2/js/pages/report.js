@@ -1,6 +1,6 @@
 // Trang Báo cáo ca ngày
 import { $, $$, esc, fmt, sign, starHtml, initials, toast, modal, vnToday, vnHM, dmy, dow, debounce, copyText, shortName } from "../ui.js";
-import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg } from "../store.js";
+import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg, isHidden } from "../store.js";
 
 const LS_STAFF = "thidua-v2-staff";
 let st = null;
@@ -9,7 +9,7 @@ export async function render(view) {
   const own = S.me.staff_id;
   let staffId = isManager() ? (localStorage.getItem(LS_STAFF) || own || visibleStaff()[0]?.id) : own;
   if (isManager() && staffId && !staffById(staffId)) staffId = visibleStaff()[0]?.id;
-  st = { date: vnToday(), staffId, form: null, inputs: {}, comps: {}, preview: null, busy: false, extra: "", extraStars: "" };
+  st = { date: vnToday(), staffId, form: null, inputs: {}, comps: {}, preview: null, busy: false, extra: "", extraStars: "", revenue: "", revenueOld: null };
 
   if (!staffId) {
     view.innerHTML = `<div class="banner warn"><div><b>Tài khoản chưa gắn mã nhân viên</b>Nhờ chủ quản gắn mã NV cho email ${esc(S.me.email)} trong Quản lý → Phân quyền.</div></div>`;
@@ -65,6 +65,8 @@ async function load() {
   for (const r of ex) { if (["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)) continue; st.inputs[r.item_name] = String(+r.actual); st.comps[r.item_name] = r.compensation === "TANG_CA" ? "TANG_CA" : "DUNG_SAO"; }
   const p = st.form.proposal;
   st.extra = p?.content || ""; st.extraStars = p ? String(p.stars) : "";
+  const { data: rv } = await sb.from("revenue_entries").select("amount").eq("staff_id", st.staffId).eq("entry_date", st.date).eq("kind", "daily");
+  st.revenueOld = rv?.[0]?.amount ?? null; st.revenue = st.revenueOld == null ? "" : String(+st.revenueOld);
   drawBody();
   if (ex.length) runPreview();
 }
@@ -101,7 +103,9 @@ function drawBody() {
       <thead><tr><th>#</th><th>Môn thi đua</th><th class="num">Thực đạt</th><th>Target · Chuỗi</th><th>Kết quả</th></tr></thead>
       <tbody id="rRows"></tbody>
     </table></div>
-    <div class="card" style="margin-top:12px">
+    ${isHidden("report.revenue") ? "" : `<div class="card" style="margin-top:12px"><div class="card-h"><h3>💰 Doanh thu quy đổi trong ca</h3><span class="small muted">Tính vào điểm xếp hạng (lũy kế tháng)</span></div>
+      <div class="fields"><label>DT QĐ ngày ${dmy(st.date)} (${esc(setting("REVENUE_UNIT", ""))})<input id="xRev" type="number" step="any" min="0" inputmode="decimal" value="${esc(st.revenue)}" placeholder="VD: 25.5"></label></div></div>`}
+    <div class="card" style="margin-top:12px" ${isHidden("report.extra") ? "hidden" : ""}>
       <div class="card-h"><h3>🎁 Bán thêm ngoài danh mục thi đua <span class="muted small">(chờ quản lý duyệt)</span></h3></div>
       <div class="fields"><label style="grid-column:span 2">Sản phẩm / nội dung<input id="xItem" value="${esc(st.extra)}" placeholder="VD: Bán thêm 1 tủ lạnh Inverter"></label>
       <label>Sao đề xuất<input id="xStars" type="number" min="0" step="50" value="${esc(st.extraStars)}" placeholder="0"></label></div>
@@ -124,6 +128,7 @@ function drawBody() {
     if (e.key === "Enter" && e.target.matches("input.actual")) { e.preventDefault(); const all = $$("input.actual", rows); const i = all.indexOf(e.target); (all[i + 1] || $("#btnSend"))?.focus(); }
   });
   $("#xItem").oninput = (e) => { st.extra = e.target.value; };
+  $("#xRev")?.addEventListener("input", (e) => { st.revenue = e.target.value; });
   $("#xStars").oninput = (e) => { st.extraStars = e.target.value; };
 }
 
@@ -212,11 +217,18 @@ async function submit(reason = null) {
       if (v?.reason) return submit(v.reason);
       btn.disabled = false; return;
     }
+    await saveRevenue();
     if (res.status === "pending") { toast("✅ " + res.message, 4000); st.busy = false; btn.disabled = false; return; }
     st.busy = false;
     await showDone(res);
     await load();
   } catch (e) { st.busy = false; btn.disabled = false; toast(errMsg(e), 4000); }
+}
+
+async function saveRevenue() {
+  if (isHidden("report.revenue") || st.revenue === "" || Number(st.revenue) === Number(st.revenueOld)) return;
+  try { await rpc("save_revenue", { p_staff: st.staffId, p_date: st.date, p_amount: Number(st.revenue), p_reason: null }); st.revenueOld = Number(st.revenue); }
+  catch (e) { toast("Chưa lưu được doanh thu: " + errMsg(e), 4500); }
 }
 
 async function showDone(res) {
@@ -228,6 +240,7 @@ async function showDone(res) {
     `✅ Về số ${ok.length}/${items.length} môn · Sao ca: ${sign(res.day_change)}⭐ · Tổng: ${fmt(res.total_star)}⭐`,
     ...items.map((r) => `${r.status === "Về số" ? "✅" : r.compensation === "TANG_CA" ? "⏰" : r.compensation === "GHI_NHAN" ? "▫️" : "❌"} ${r.itemName}: ${fmt(r.actual, 2)}/${fmt(r.target, 2)} (${r.rate}%)${r.starChange ? " " + sign(r.starChange) + "⭐" : ""}`),
     ...res.rows.filter((r) => r.compensation === "PHAT_TRE").map((r) => `⚠️ ${r.itemName}: ${sign(r.starChange)}⭐`),
+    st.revenue !== "" ? `💰 DT QĐ: ${fmt(Number(st.revenue), 2)} ${setting("REVENUE_UNIT", "")}` : "",
     st.extra.trim() ? `🎁 Bán thêm: ${st.extra.trim()} (đề xuất ${fmt(Number(st.extraStars) || 0)}⭐)` : "",
   ].filter(Boolean).join("\n");
   const v = await modal(`<h3>✅ Đã gửi báo cáo</h3>

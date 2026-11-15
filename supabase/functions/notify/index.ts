@@ -2,6 +2,7 @@
 //  - mode "tick": lịch pg_cron gọi 5 phút/lần (xác thực bằng x-cron-secret), tự gửi khi tới giờ
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
+import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, busyMsg, rsMsg, serviceMsg } from "./summary2.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -57,15 +58,67 @@ async function buildCtx(from: string, to: string, cfg: Record<string, any>): Pro
   };
 }
 
-async function compose(kind: string, date: string, cfg: Record<string, any>) {
+export const ITEMS: Record<string, { label: string; freq: string; time: string; dow?: number }> = {
+  daily: { label: "Thi đua ngày", freq: "daily", time: "22:35" },
+  weekly: { label: "Tổng kết thi đua tuần", freq: "weekly", time: "22:45", dow: 0 },
+  revenue: { label: "Doanh thu QĐ lũy kế", freq: "daily", time: "22:40" },
+  score: { label: "Bảng điểm xếp hạng", freq: "weekly", time: "22:50", dow: 0 },
+  tiktok: { label: "TikTok (ngày hạn T3, T6)", freq: "due", time: "20:00" },
+  clean: { label: "Vệ sinh", freq: "daily", time: "21:00" },
+  busy: { label: "Lịch bận / OFF ngày mai", freq: "daily", time: "21:30" },
+  rs: { label: "Roadshow", freq: "daily", time: "21:30" },
+  service: { label: "Phục vụ & vi phạm", freq: "weekly", time: "09:00", dow: 1 },
+};
+function items(cfg: Record<string, any>) {
+  const saved: any[] = Array.isArray(cfg.NOTIFY_ITEMS) ? cfg.NOTIFY_ITEMS : [];
+  return Object.entries(ITEMS).map(([id, d]) => {
+    const x = saved.find((i) => i.id === id) || {};
+    const legacy = id === "daily" ? { on: true, time: cfg.NOTIFY_DAILY_TIME } : id === "weekly" ? { on: true, time: cfg.NOTIFY_WEEKLY_TIME, dow: cfg.NOTIFY_WEEKLY_DOW } : {};
+    return { id, ...d, on: x.on ?? (legacy as any).on ?? false, time: x.time || (legacy as any).time || d.time, dow: Number(x.dow ?? (legacy as any).dow ?? d.dow ?? 0) };
+  });
+}
+
+async function compose(kind: string, date: string, cfg: Record<string, any>): Promise<{ text: string | null; period: string }> {
+  const store = String(cfg.STORE_NAME || "");
+  const monthStart = date.slice(0, 8) + "01";
+  const wstart = addDays(date, -((new Date(date + "T00:00:00Z").getUTCDay() + 6) % 7));
   if (kind === "weekly") {
-    const dow = (new Date(date + "T00:00:00Z").getUTCDay() + 6) % 7; // 0 = Thứ 2
-    const from = addDays(date, -dow);
-    const ctx = await buildCtx(from, date, cfg);
-    return { text: weeklySummary(ctx, from, date, dow + 1), period: isoWeek(date) };
+    const ctx = await buildCtx(wstart, date, cfg);
+    return { text: weeklySummary(ctx, wstart, date, ((new Date(date + "T00:00:00Z").getUTCDay() + 6) % 7) + 1), period: isoWeek(date) };
   }
-  const ctx = await buildCtx(date, date, cfg);
-  return { text: dailySummary(ctx, date), period: date };
+  if (kind === "daily") { const ctx = await buildCtx(date, date, cfg); return { text: dailySummary(ctx, date), period: date }; }
+  const staff: any[] = await rest("staff?select=id,name&hidden=eq.false&order=sort,id");
+  const names = new Map(staff.map((x) => [x.id, x.name]));
+  if (kind === "revenue") {
+    const [board, today] = await Promise.all([rpc("score_board", { p_from: monthStart, p_to: date, p_full: true }), rest(`revenue_entries?select=staff_id,amount&kind=eq.daily&entry_date=eq.${date}`)]);
+    return { text: revenueMsg(store, date, String(cfg.REVENUE_UNIT || ""), board, new Map(today.map((r: any) => [r.staff_id, Number(r.amount)]))), period: date };
+  }
+  if (kind === "score") {
+    const board = await rpc("score_board", { p_from: monthStart, p_to: date, p_full: false });
+    return { text: scoreMsg(store, monthStart, date, board, { r: Number(cfg.W_REVENUE ?? 40), c: Number(cfg.W_CONTEST ?? 40), s: Number(cfg.W_SERVICE ?? 20) }), period: isoWeek(date) };
+  }
+  if (kind === "tiktok") {
+    const start = String(cfg.TIKTOK_START_DATE || "").slice(0, 10);
+    if (!start) return { text: null, period: date };
+    const subs: any[] = await rest(`tiktok_submissions?select=staff_id,due,status&due=gte.${start}`);
+    const w = new Date(date + "T00:00:00Z").getUTCDay(), due = (w === 2 || w === 5) && date >= start ? date : null;
+    const overdue = new Map<string, string[]>();
+    for (const x of staff) {
+      const mine = new Set(subs.filter((t) => t.staff_id === x.id).map((t) => t.due)), list: string[] = [];
+      for (let d = start; d < date; d = addDays(d, 1)) { const k = new Date(d + "T00:00:00Z").getUTCDay(); if ((k === 2 || k === 5) && !mine.has(d)) list.push(d); }
+      overdue.set(x.name, list);
+    }
+    return { text: tiktokMsg(store, date, staff, subs, due, overdue), period: date };
+  }
+  if (kind === "clean") return { text: cleanMsg(store, date, await rest(`cleaning?select=clean_date,staff_id,photos&clean_date=gte.${addDays(date, -7)}&clean_date=lte.${addDays(date, 1)}`), names), period: date };
+  if (kind === "busy") return { text: busyMsg(store, date, await rest(`busy?select=busy_date,staff_id,type,shifts&busy_date=eq.${addDays(date, 1)}`), names), period: date };
+  if (kind === "rs") return { text: rsMsg(store, date, vnParts().hm, await rest(`roadshow?select=rs_date,rs_time,staff_id,photos,km,minutes&rs_date=gte.${addDays(date, -7)}&rs_date=lte.${addDays(date, 1)}`), names), period: date };
+  if (kind === "service") {
+    const to = addDays(wstart, -1), from = addDays(wstart, -7);
+    const [board, viol] = await Promise.all([rpc("score_board", { p_from: from, p_to: to, p_full: true }), rest(`violations?select=staff_id,v_date,type,note,points&v_date=gte.${from}&v_date=lte.${to}&order=v_date`)]);
+    return { text: serviceMsg(store, from, to, board, viol, names), period: isoWeek(date) };
+  }
+  throw new Error("Đầu mục không hợp lệ.");
 }
 
 async function telegram(token: string, method: string, body: unknown) {
@@ -103,22 +156,19 @@ async function tick() {
   const cfg = await settings();
   if (cfg.NOTIFY_ENABLED !== true) return { skipped: "off" };
   const now = vnParts(); const done: string[] = [];
-  const daily = String(cfg.NOTIFY_DAILY_TIME || "22:35");
-  if (now.hm >= daily) {
-    const sent = await rest(`notify_log?select=id&kind=eq.daily&ok=eq.true&period=eq.${now.date}`);
-    if (!sent.length) {
-      try { const m = await compose("daily", now.date, cfg); await sendAll(m.text, cfg); await log("daily", m.period, true, "auto"); done.push("daily"); }
-      catch (e) { await log("daily-error", now.date + " " + now.hm, false, String((e as Error).message)); }
-    }
-  }
-  const wdow = Number(cfg.NOTIFY_WEEKLY_DOW ?? 0), wtime = String(cfg.NOTIFY_WEEKLY_TIME || "22:45");
-  if (now.dow === wdow && now.hm >= wtime) {
-    const period = isoWeek(now.date);
-    const sent = await rest(`notify_log?select=id&kind=eq.weekly&ok=eq.true&period=eq.${period}`);
-    if (!sent.length) {
-      try { const m = await compose("weekly", now.date, cfg); await sendAll(m.text, cfg); await log("weekly", m.period, true, "auto"); done.push("weekly"); }
-      catch (e) { await log("weekly-error", period + " " + now.hm, false, String((e as Error).message)); }
-    }
+  for (const it of items(cfg)) {
+    if (!it.on || now.hm < it.time) continue;
+    if (it.freq === "weekly" && now.dow !== it.dow) continue;
+    if (it.freq === "due" && ![2, 5].includes(now.dow)) continue;
+    const period = it.freq === "weekly" ? isoWeek(now.date) : now.date;
+    const sent = await rest(`notify_log?select=id&kind=eq.${it.id}&ok=eq.true&period=eq.${period}`);
+    if (sent.length) continue;
+    try {
+      const m = await compose(it.id, now.date, cfg);
+      if (m.text) await sendAll(m.text, cfg);
+      await log(it.id, period, true, m.text ? "auto" : "không có nội dung");
+      done.push(it.id);
+    } catch (e) { await log(it.id + "-error", period + " " + now.hm, false, String((e as Error).message)); }
   }
   return { done };
 }
@@ -137,11 +187,12 @@ Deno.serve(async (req) => {
     const m = await member(req);
     if (!["owner", "manager"].includes(m.role)) throw new Error("Chỉ quản lý được dùng chức năng này.");
     const cfg = await settings();
-    const kind = body.kind === "weekly" ? "weekly" : "daily";
+    const kind = ITEMS[String(body.kind)] ? String(body.kind) : "daily";
     const date = /^\d{4}-\d{2}-\d{2}$/.test(String(body.date || "")) ? String(body.date) : vnParts().date;
-    if (mode === "preview") return json({ status: "success", ...(await compose(kind, date, cfg)) });
+    if (mode === "items") return json({ status: "success", items: items(cfg) });
+    if (mode === "preview") { const m = await compose(kind, date, cfg); return json({ status: "success", ...m, text: m.text || "(Không có nội dung cần gửi cho đầu mục này hôm nay)" }); }
     if (mode === "send") {
-      const msg = await compose(kind, date, cfg); const n = await sendAll(msg.text, cfg);
+      const msg = await compose(kind, date, cfg); if (!msg.text) throw new Error("Đầu mục này hôm nay không có nội dung để gửi."); const n = await sendAll(msg.text, cfg);
       await log("manual", kind + " " + msg.period, true, m.email);
       return json({ status: "success", message: `Đã gửi tới ${n} nơi nhận.` });
     }

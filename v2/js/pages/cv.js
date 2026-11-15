@@ -1,6 +1,6 @@
 // Trang CV: TikTok, Vệ sinh, Lịch bận, Roadshow, Thống kê
 import { $, $$, esc, fmt, toast, modal, confirmBox, vnToday, vnHM, addDays, dmy, dm, dow, monthGrid, ymOf, shiftMonth, monthLabel, shortName, norm, copyText, download, csv } from "../ui.js";
-import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg } from "../store.js";
+import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg, isHidden } from "../store.js";
 import { uploadAll, removeAll, fillPhotos } from "../photos.js";
 import { parseSchedule } from "../lib-hrm.js";
 
@@ -34,7 +34,10 @@ async function load(table, col, from, to) {
   if (error) throw error; return data;
 }
 async function draw(quiet = false) {
-  $("#cvTabs").innerHTML = TABS.map(([id, l]) => `<button type="button" data-t="${id}" class="${id === tab ? "on" : ""}">${l}</button>`).join("");
+  const tabs = TABS.filter(([id]) => !isHidden("cv." + id));
+  if (!tabs.length) { $("#cvBody").innerHTML = `<div class="empty">Không có chức năng nào đang mở.</div>`; return; }
+  if (!tabs.some(([id]) => id === tab)) tab = tabs[0][0];
+  $("#cvTabs").innerHTML = tabs.map(([id, l]) => `<button type="button" data-t="${id}" class="${id === tab ? "on" : ""}">${l}</button>`).join("");
   const body = $("#cvBody"); body.onclick = null;
   if (!quiet) body.innerHTML = `<div class="empty">Đang tải…</div>`;
   try { await ({ tiktok, clean, busy, rs, stats })[tab](body); }
