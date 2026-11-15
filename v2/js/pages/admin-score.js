@@ -1,6 +1,7 @@
 // Quản lý → Điểm & DT: target tháng, doanh thu, phục vụ, vi phạm, chỉnh sao / reset, lịch sử điều chỉnh
 import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, addDays, weekStart, monthStart, dmy, dm, dow, shiftMonth, monthLabel } from "../ui.js";
-import { sb, S, rpc, isOwner, visibleStaff, staffById, setting, errMsg, loadStaff } from "../store.js";
+import { sb, S, rpc, isOwner, visibleStaff, staffById, setting, errMsg, loadStaff, loadItems, depts } from "../store.js";
+import { parseTargetReport } from "../lib-targets.js";
 
 const SUBS = [["targets", "🎯 Target tháng"], ["revenue", "💰 Doanh thu"], ["service", "🤝 Phục vụ"], ["violations", "⚠️ Vi phạm"], ["stars", "⭐ Sao & reset"], ["log", "🧾 Lịch sử"]];
 let sub = "targets", ym = vnToday().slice(0, 7), host;
@@ -26,7 +27,10 @@ const staffItems = (s) => { const list = S.items.filter((i) => i.active && (s.as
 async function targets(el) {
   const rows = await q(sb.from("monthly_targets").select("*").eq("month", month()));
   const by = new Map(rows.map((r) => [r.staff_id, r]));
-  el.innerHTML = `<div class="card"><div class="card-h"><h2>🎯 Target tháng ${ym.slice(5)}/${ym.slice(0, 4)}</h2><button class="btn small" id="tgFill" type="button">⚡ Tạo nhanh môn cho NV chưa có</button><button class="btn small primary" id="tgSaveRev" type="button">💾 Lưu target DT</button></div>
+  el.innerHTML = `${isOwner() ? `<details class="card" id="imp" style="margin-bottom:14px" ${rows.length ? "" : "open"}><summary><b>📥 Dán báo cáo target tháng</b> <span class="muted small">— tự gán target DT + môn tháng cho từng nhân viên theo siêu thị</span></summary>
+      <textarea id="impText" style="margin-top:10px;min-height:140px;font:12px ui-monospace,Consolas,monospace" placeholder="=== SIÊU THỊ 933 (TGDĐ - 4 NS) ===&#10;• Doanh thu mỗi NV: 811.0 tr&#10;+ T11 - Laptop: Tổng 520.25 | %Đạt: 46.9% | Mỗi NV: 130.1&#10;…"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" id="impParse" type="button">⚡ Đọc báo cáo</button><span class="small muted" id="impMsg"></span></div><div id="impPrev"></div></details>` : ""}
+    <div class="card"><div class="card-h"><h2>🎯 Target tháng ${ym.slice(5)}/${ym.slice(0, 4)}</h2><button class="btn small" id="tgFill" type="button">⚡ Tạo nhanh môn cho NV chưa có</button><button class="btn small primary" id="tgSaveRev" type="button">💾 Lưu target DT</button></div>
     <p class="small muted">Nhập target doanh thu quy đổi tháng (${esc(unit())}) và giao môn thi đua + target tháng cho từng nhân viên. Lũy kế môn cộng từ thực đạt trong báo cáo ngày.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Nhân viên</th><th class="num">Target DT tháng</th><th>Môn thi đua tháng (target)</th><th></th></tr></thead><tbody>
     ${visibleStaff().map((s) => { const t = by.get(s.id); return `<tr><td><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.dept)}</div></td>
@@ -34,6 +38,8 @@ async function targets(el) {
       <td class="small">${t?.items?.length ? t.items.map((i) => `${esc(i.name)} <b>${fmt(i.target, 2)}</b>`).join(" · ") : '<span class="neg">Chưa giao môn</span>'}</td>
       <td class="num"><button class="btn small" data-items="${esc(s.id)}" type="button">Giao môn</button></td></tr>`; }).join("")}
     </tbody></table></div></div>`;
+  $("#impParse")?.addEventListener("click", () => importPreview(el));
+  $("#impText")?.addEventListener("paste", () => setTimeout(() => importPreview(el), 30));
   $("#tgSaveRev").onclick = async () => {
     try {
       let n = 0;
@@ -82,6 +88,55 @@ async function targets(el) {
   };
 }
 const state = {};
+
+// ---------- Nhập target từ báo cáo ----------
+function guessDept(label) {
+  const L = label.toLowerCase(), ds = depts();
+  if (/topzone|aar/.test(L)) return ds.find((d) => /topzone/i.test(d)) || "";
+  if (/tgd|thế giới|the gioi|tgdd/.test(L)) return ds.find((d) => /th[ếe] gi[ớo]i|tgd/i.test(d)) || "";
+  if (/đmx|dmx|điện máy/.test(L)) return ds.find((d) => /đi[ệe]n m[áa]y|dmx/i.test(d)) || "";
+  return ds.find((d) => d.toLowerCase().includes(L)) || "";
+}
+function importPreview(el) {
+  const r = parseTargetReport($("#impText").value);
+  if (!r.blocks.length) { $("#impMsg").textContent = "Không nhận ra báo cáo — cần các dòng “=== SIÊU THỊ … ===”, “Doanh thu mỗi NV”, “+ … Tổng … | %Đạt … | Mỗi NV …”."; $("#impPrev").innerHTML = ""; return; }
+  const repMonth = r.month ? `${ym.slice(0, 4)}-${String(r.month).padStart(2, "0")}` : ym;
+  const days = new Date(Date.UTC(+repMonth.slice(0, 4), +repMonth.slice(5, 7), 0)).getUTCDate();
+  $("#impMsg").textContent = `Đọc được ${r.blocks.length} siêu thị, ${r.blocks.reduce((a, b) => a + b.items.length, 0)} môn.`;
+  const per = (b, it) => Math.round((b.ns ? it.total / b.ns : it.perStaff) * 100) / 100;
+  $("#impPrev").innerHTML = `<div class="fields" style="margin:12px 0"><label>Áp dụng cho tháng<input type="month" id="impMonth" value="${repMonth}"></label><label>Số ngày làm việc (để chia target ngày)<input type="number" id="impDays" min="1" max="31" value="${Math.max(1, days - 4)}"></label></div>
+    ${r.blocks.map((b, bi) => { const dept = guessDept(b.label), staff = visibleStaff().filter((s) => s.dept === dept);
+      return `<div class="card" style="box-shadow:none;margin-bottom:12px" data-blk="${bi}"><div class="card-h"><h3>Siêu thị ${esc(b.code)} · ${esc(b.label)}${b.ns ? ` · ${b.ns} NS` : ""}</h3>
+        <label class="inline">Gán cho bộ phận <select class="impDept" style="width:auto">${["", ...depts()].map((d) => `<option value="${esc(d)}" ${d === dept ? "selected" : ""}>${d ? esc(d) : "— chọn —"}</option>`).join("")}</select></label></div>
+        <p class="small">Target DT QĐ mỗi NV: <b>${b.revenue != null ? fmt(b.revenue, 1) + " " + esc(unit()) : "—"}</b> · Nhân viên nhận target: <span class="impStaff">${staffChips(staff)}</span>${b.ns && staff.length && b.ns !== staff.length ? ` <span class="pill warn">Báo cáo ${b.ns} NS, tool có ${staff.length} NV</span>` : ""}</p>
+        <div class="tbl-wrap"><table><thead><tr><th>Môn</th><th class="num">Target siêu thị</th><th class="num">%Đạt hiện tại</th><th class="num">Target tháng / NV</th><th class="num">Target ngày / NV</th></tr></thead><tbody>
+        ${b.items.map((it) => `<tr><td>${esc(it.name)}</td><td class="num">${fmt(it.total, 2)}</td><td class="num">${fmt(it.pct, 1)}%</td><td class="num"><b>${fmt(per(b, it), 2)}</b></td><td class="num impDay" data-m="${per(b, it)}"></td></tr>`).join("")}
+        </tbody></table></div></div>`; }).join("")}
+    <div class="stack" style="gap:6px"><label class="inline"><input type="checkbox" id="oRev" checked> Cập nhật target doanh thu QĐ tháng</label>
+      <label class="inline"><input type="checkbox" id="oItems" checked> Giao các môn trên làm môn thi đua tháng (tính điểm xếp hạng)</label>
+      <label class="inline"><input type="checkbox" id="oDaily" checked> Đổi môn báo cáo ngày của bộ phận theo danh sách này (target ngày = target tháng ÷ số ngày làm việc)</label>
+      <label class="inline" style="margin-left:22px"><input type="checkbox" id="oOff" checked> Tắt các môn báo cáo ngày cũ không có trong danh sách (lịch sử vẫn giữ)</label>
+      <label class="inline" style="margin-left:22px"><input type="checkbox" id="oNoPen" checked> Môn có target ngày dưới 1 (đánh dấu ⚠️): không trừ sao khi chưa đạt nhiều ngày liền — vẫn tính % thi đua tháng</label>
+      <label class="inline" style="margin-left:22px"><input type="checkbox" id="oClear" checked> Bỏ “môn riêng” đang giao cho các nhân viên này</label></div>
+    <p class="small muted">Môn mới dùng sao thưởng/phạt mặc định +200 / −100 (môn trùng tên giữ mức cũ) — chỉnh lại ở <b>Quản lý → Môn & sao thưởng/phạt</b>.</p>
+    <div class="row"><button class="btn primary" id="impApply" type="button">✅ Áp dụng target</button></div>`;
+  const upd = () => { const d = Math.max(1, Number($("#impDays").value) || 1); $$(".impDay", el).forEach((c) => { const v = Number(c.dataset.m) / d; c.innerHTML = fmt(v, 3) + (v > 0 && v < 1 ? ' <span title="Target ngày dưới 1">⚠️</span>' : ""); }); };
+  $("#impDays").oninput = upd; upd();
+  $$(".impDept", el).forEach((sel) => sel.onchange = () => { const box = sel.closest("[data-blk]"); box.querySelector(".impStaff").innerHTML = staffChips(visibleStaff().filter((s) => s.dept === sel.value)); });
+  $("#impApply").onclick = async (e) => {
+    const month = $("#impMonth").value + "-01", d = Math.max(1, Number($("#impDays").value) || 1);
+    const blocks = r.blocks.map((b, bi) => { const box = el.querySelector(`[data-blk="${bi}"]`);
+      return { dept: box.querySelector(".impDept").value, staff_ids: [...box.querySelectorAll(".impSid:checked")].map((c) => c.value), revenue: b.revenue,
+        items: b.items.map((it) => ({ name: it.name, month: per(b, it), day: Math.round((per(b, it) / d) * 1000) / 1000 })) }; });
+    if (blocks.some((b) => !b.dept)) return toast("Chọn bộ phận cho từng siêu thị");
+    const opts = { set_revenue: $("#oRev").checked, set_items: $("#oItems").checked, set_daily: $("#oDaily").checked, deactivate_old: $("#oOff").checked, clear_assigned: $("#oClear").checked, nopen_below: $("#oNoPen").checked ? 1 : 0 };
+    if (!(await confirmBox("Áp dụng target tháng?", `Tháng <b>${month.slice(5, 7)}/${month.slice(0, 4)}</b> cho <b>${blocks.reduce((a, b) => a + b.staff_ids.length, 0)}</b> nhân viên${opts.set_daily ? ", đổi môn báo cáo ngày theo báo cáo" : ""}.`, "Áp dụng"))) return;
+    e.target.disabled = true;
+    try { const res = await rpc("import_month_targets", { p_month: month, p_blocks: blocks, p_opts: opts }); toast("✅ " + res.message + (res.warning ? " · " + res.warning : ""), 6000); await loadItems(); await loadStaff(); ym = month.slice(0, 7); scoreAdmin(host); }
+    catch (x) { err(x); e.target.disabled = false; }
+  };
+}
+const staffChips = (list) => list.length ? list.map((s) => `<label class="chip inline" style="padding:2px 8px"><input type="checkbox" class="impSid" value="${esc(s.id)}" checked> ${esc(s.name)}</label>`).join(" ") : '<span class="neg">Chưa có nhân viên — chọn bộ phận</span>';
 
 // ---------- Doanh thu ----------
 async function revenue(el) {
