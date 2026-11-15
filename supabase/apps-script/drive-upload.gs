@@ -1,12 +1,14 @@
 // Google Apps Script (chạy dưới tài khoản Google của chủ quản) — nhận file từ Edge Function "tasks" và lưu vào thư mục Drive.
 // Cài đặt: Script properties → SECRET (mã bí mật, trùng DRIVE_UPLOAD_SECRET trong tool), FOLDER_ID (thư mục lưu).
 // Triển khai: Deploy → New deployment → Web app → Execute as: Me · Who has access: Anyone.
+const SECRET = 'ĐẶT_MÃ_BÍ_MẬT';
+const FOLDER_ID = '176C0AxvgopmScYWcD1s_byyCzEgu2ArV';
 function doPost(e) {
   try {
     const p = PropertiesService.getScriptProperties();
     const d = JSON.parse(e.postData.contents);
-    if (!d.secret || d.secret !== p.getProperty('SECRET')) return out({ ok: false, error: 'sai mã bí mật' });
-    const root = DriveApp.getFolderById(p.getProperty('FOLDER_ID'));
+    if (!d.secret || d.secret !== (p.getProperty('SECRET') || SECRET)) return out({ ok: false, error: 'sai mã bí mật' });
+    const root = DriveApp.getFolderById((p.getProperty('FOLDER_ID') || FOLDER_ID));
     if (d.action === 'delete') {
       (d.ids || []).forEach(function (id) { try { DriveApp.getFileById(id).setTrashed(true); } catch (x) {} });
       return out({ ok: true });
