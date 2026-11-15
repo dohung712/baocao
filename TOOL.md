@@ -22,6 +22,13 @@ Siêu thị 351 Nguyễn Hữu Thọ · bộ phận **Thế Giới Di Động** 
 
 Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tra file ở **mục 8**.
 
+### 0. Bắt đầu ở đâu
+| Mã | Chức năng | Trên web | File |
+|---|---|---|---|
+| H1 | **🏠 Tổng quan** (tab đầu của Quản lý): Việc cần làm ngay (chờ duyệt, chưa báo cáo, thiếu target, lần dán kết quả siêu thị, phục vụ tuần trước, Telegram) · Lịch quản lý ngày/tuần/tháng có tick · Tìm chức năng (gõ chữ → nút mở đúng chỗ) · Tuỳ chỉnh nhanh | Quản lý → 🏠 Tổng quan | `pages/admin-home.js` (FEATURES = danh mục chức năng, PLAN = lịch) |
+
+> Thêm chức năng mới thì thêm 1 dòng vào `FEATURES` trong `admin-home.js` (mã, tên, chỗ, từ khoá, đích mở) để ô tìm kiếm thấy được.
+
 ### A. Đăng nhập và tài khoản
 | Mã | Chức năng | Trên web | File giao diện | Hàm / bảng SQL |
 |---|---|---|---|---|

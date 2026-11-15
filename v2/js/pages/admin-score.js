@@ -6,6 +6,7 @@ import { dailyTarget, dailyPct, dailyMin } from "../star-rules.js";
 
 const SUBS = [["targets", "🎯 Target tháng"], ["revenue", "💰 Doanh thu"], ["service", "🤝 Phục vụ"], ["violations", "⚠️ Vi phạm"], ["stars", "⭐ Sao & reset"], ["log", "🧾 Lịch sử"]];
 let sub = "targets", ym = vnToday().slice(0, 7), host;
+export const setScoreSub = (s) => { sub = s; };
 const err = (e) => toast(errMsg(e), 4500);
 async function q(p) { const { data, error } = await p; if (error) throw error; return data; }
 const unit = () => setting("REVENUE_UNIT", "");

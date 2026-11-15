@@ -1,25 +1,26 @@
 // Trang Quản lý: duyệt, khoá sổ, nhân sự, môn thi đua, cài đặt, Telegram, phân quyền
 import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml } from "../ui.js";
-import { scoreAdmin } from "./admin-score.js";
+import { scoreAdmin, setScoreSub } from "./admin-score.js";
+import { home } from "./admin-home.js";
 import { starCardHtml, bindStarCard } from "../star-rules.js";
 import { suggestHtml, bindSuggest } from "./admin-suggest.js";
 import { sb, S, rpc, notify, callFn, onChange, isOwner, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel, visibleStaff } from "../store.js";
 
 const TABS = [
-  { id: "approve", label: "Duyệt" }, { id: "score", label: "Điểm & DT" }, { id: "lock", label: "Khoá sổ" }, { id: "staff", label: "Nhân sự" },
+  { id: "home", label: "🏠 Tổng quan" }, { id: "approve", label: "Duyệt" }, { id: "score", label: "Điểm & DT" }, { id: "lock", label: "Khoá sổ" }, { id: "staff", label: "Nhân sự" },
   { id: "items", label: "Môn & sao thưởng/phạt", owner: true }, { id: "targets", label: "Target NV", owner: true },
   { id: "accounts", label: "Tài khoản NV", owner: true }, { id: "settings", label: "Cài đặt", owner: true },
   { id: "telegram", label: "Telegram" }, { id: "members", label: "Phân quyền", owner: true }, { id: "audit", label: "Nhật ký", owner: true },
 ];
-let tab = "approve", root, offs = [];
+let tab = "home", root, offs = [];
 
 export async function render(view) {
   root = view;
-  view.innerHTML = `<div class="page-h"><div><h1>Quản lý</h1><p>Duyệt yêu cầu, khoá sổ, nhân sự, môn thi đua, cài đặt và thông báo Telegram</p></div></div>
+  view.innerHTML = `<div class="page-h"><div><h1>Quản lý</h1><p>Bắt đầu ở <b>🏠 Tổng quan</b>: việc cần làm, lịch quản lý và ô tìm chức năng</p></div></div>
     <div class="subtabs" id="aTabs"></div><div id="aBody"></div>`;
   $("#aTabs").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) { tab = b.dataset.t; draw(); } };
   offs.push(onChange((w) => {
-    if (tab === "approve" && ["pending", "proposals", "changes"].includes(w)) draw();
+    if ((tab === "approve" || tab === "home") && ["pending", "proposals", "changes"].includes(w)) draw();
     if (w === "pending") drawTabs();
     if (tab === "lock" && w === "locked") draw();
   }));
@@ -31,13 +32,21 @@ function drawTabs() {
   $("#aTabs").innerHTML = TABS.filter((t) => !t.owner || isOwner()).map((t) => `<button type="button" data-t="${t.id}" class="${t.id === tab ? "on" : ""}">${t.label}${t.id === "approve" && n ? ` <b class="badge">${n}</b>` : ""}</button>`).join("");
 }
 async function draw() {
-  if (!TABS.some((t) => t.id === tab && (!t.owner || isOwner()))) tab = "approve";
+  if (!TABS.some((t) => t.id === tab && (!t.owner || isOwner()))) tab = "home";
   drawTabs();
   const body = $("#aBody"); body.onclick = null; body.innerHTML = `<div class="empty">Đang tải…</div>`;
-  try { await ({ approve, score: scoreAdmin, lock, staff, items, targets, accounts, settings, telegram, members, audit })[tab](body); }
+  try { await ({ home: (b) => home(b, nav), approve, score: scoreAdmin, lock, staff, items, targets, accounts, settings, telegram, members, audit })[tab](body); }
   catch (e) { body.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const err = (e) => toast(errMsg(e), 4500);
+// Mở 1 chức năng từ Tổng quan: trang khác, hoặc tab (+ tab con, + cuộn tới khung) trong Quản lý
+async function nav(go) {
+  if (go.page) { document.querySelector(`#nav [data-page="${go.page}"]`)?.click(); return; }
+  tab = go.tab; if (go.sub) setScoreSub(go.sub);
+  await draw();
+  const el = go.focus && document.querySelector(go.focus);
+  if (el) { if (el.tagName === "DETAILS") el.open = true; el.scrollIntoView({ behavior: "smooth", block: "start" }); } else window.scrollTo(0, 0);
+}
 
 // ---------- Duyệt ----------
 async function approve(body) {
@@ -286,7 +295,7 @@ async function settings(body) {
   const rules = Array.isArray(setting("ITEM_RULES", [])) ? setting("ITEM_RULES", []) : [];
   const itemNames = [...new Set(S.items.map((i) => i.name))];
   body.innerHTML = `${starCardHtml()}
-    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>⚙️ Cài đặt chung</h2><button class="btn small primary" id="stSave" type="button">💾 Lưu</button></div>
+    <div class="card" style="margin-bottom:14px" id="genCard"><div class="card-h"><h2>⚙️ Cài đặt chung</h2><button class="btn small primary" id="stSave" type="button">💾 Lưu</button></div>
       <div class="fields">
         <label>Tên siêu thị<input id="st_STORE_NAME" value="${esc(setting("STORE_NAME", ""))}"></label>
         <label>Giờ chốt báo cáo<input id="st_CUTOFF_TIME" type="time" value="${esc(setting("CUTOFF_TIME", "22:20"))}"></label>
@@ -300,7 +309,7 @@ async function settings(body) {
         ${["s4", "s3", "s2", "s1", "complaints"].map((k) => `<label>Phục vụ: trừ mỗi ${k === "complaints" ? "khiếu nại" : k.slice(1) + "★"}<input type="number" step="any" min="0" class="rd" data-k="${k}" value="${esc((setting("RATING_DEDUCT", {}) || {})[k] ?? "")}"></label>`).join("")}</div>
       <label style="margin-top:10px">Các loại lỗi vi phạm (mỗi dòng 1 loại)<textarea id="st_VIOLATION_TYPES">${esc((setting("VIOLATION_TYPES", []) || []).join("\n"))}</textarea></label>
       <p class="small muted" style="margin-top:10px">Số sao trừ = sao phạt của môn × hệ số theo chuỗi (chuỗi tính các ngày trước ngày báo cáo). Chuỗi nhỏ hơn cả hai ngưỡng: chỉ ghi nhận chuỗi.</p></div>
-    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🙈 Ẩn trang / chức năng</h2><button class="btn small primary" id="hdSave" type="button">💾 Lưu</button></div>
+    <div class="card" style="margin-bottom:14px" id="hideCard"><div class="card-h"><h2>🙈 Ẩn trang / chức năng</h2><button class="btn small primary" id="hdSave" type="button">💾 Lưu</button></div>
       <p class="small muted">Tick để ẩn với từng vai trò. Chủ quản luôn thấy tất cả.</p>
       <div class="tbl-wrap"><table><thead><tr><th>Trang / chức năng</th><th class="num">Ẩn với nhân viên</th><th class="num">Ẩn với quản lý</th></tr></thead><tbody>
       ${FEATURES.map(([k, l]) => { const h = setting("HIDE", {}) || {}; return `<tr><td>${esc(l)}</td><td class="num">${k === "admin" ? "—" : `<input type="checkbox" class="hd" data-r="employee" value="${k}" ${(h.employee || []).includes(k) ? "checked" : ""}>`}</td><td class="num"><input type="checkbox" class="hd" data-r="manager" value="${k}" ${(h.manager || []).includes(k) ? "checked" : ""}></td></tr>`; }).join("")}

@@ -10,7 +10,7 @@ Người dùng sẽ gửi "Sửa <mã>: …". Chỉ mở đúng file/hàm của 
    - SQL: tạo migration MỚI `supabase/migrations/2026111500XXXX_v2_<tên>.sql` (số kế tiếp), `create or replace` nguyên hàm. Không sửa migration cũ. Đổi chữ ký thì `drop function` trước.
 3. Kiểm tra: `bash supabase/tests/check.sh` (thêm `--ui` nếu đổi giao diện lớn). Phải ra `diffs=0` và `✅ OK`.
 4. Commit + `git -c push.negotiate=true push origin main`, rồi `gh run list -R dohung712/baocao -L 2` để xem workflow "Supabase v2 deploy" và Pages đều success.
-5. Nếu đổi chức năng/hàm: cập nhật dòng tương ứng trong TOOL.md, chạy `node supabase/scripts/fn-index.mjs` để làm mới mục 8.
+5. Nếu đổi chức năng/hàm: cập nhật dòng tương ứng trong TOOL.md, chạy `node supabase/scripts/fn-index.mjs` để làm mới mục 8. Chức năng quản lý mới → thêm 1 dòng vào `FEATURES` (và `PLAN` nếu là việc định kỳ) trong `v2/js/pages/admin-home.js`.
 6. Trả lời người dùng bằng tiếng Việt, ngắn: đã đổi gì, xem ở đâu.
 
 ## Lưu ý

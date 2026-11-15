@@ -39,6 +39,12 @@ async function login(email, vp) {
   await p.context().close(); }
 { const p = await login("dohung712@gmail.com", { width: 1360, height: 900 });
   await p.evaluate(() => document.querySelector('[data-page="admin"]').click()); await p.waitForTimeout(1500);
+  await p.screenshot({ path: `${OUT}/home.png`, fullPage: true });
+  console.log("tổng quan:", (await p.$$eval(".hm-card", (x) => x.map((c) => c.querySelector("small").textContent + "=" + c.querySelector("b").textContent))).join(" | "));
+  await p.fill("#hmQ", "trừ sao"); await p.waitForTimeout(200); console.log("tìm 'trừ sao':", (await p.$$eval(".hm-item b", (x) => x.map((b) => b.textContent))).join(" | "));
+  await p.click('.hm-item[data-go="F2b"]'); await p.waitForTimeout(1500); console.log("mở F2b:", await p.$eval("#aTabs .on", (b) => b.textContent), !!(await p.$("#starCard")));
+  await p.click("#aTabs [data-t=home]"); await p.waitForTimeout(1200);
+  await p.click('.hm-card [data-go="B5"]'); await p.waitForTimeout(1500);
   await p.screenshot({ path: `${OUT}/approve.png` });
   const btn = await p.$('[data-hot][data-ok="1"]'); if (btn) { await btn.click(); await p.waitForTimeout(1500); console.log("duyệt:", await p.textContent("#toast")); } else console.log("không thấy thưởng nóng chờ duyệt");
   await p.context().close(); }

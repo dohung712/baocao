@@ -347,3 +347,24 @@ th.sorted-asc::after{content:" ▲";font-size:10px;color:var(--brand2)}
 th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 .sort-pick{display:flex;align-items:center;gap:6px;font-size:13px;margin:0 0 8px}
 .sort-pick select{width:auto;padding:5px 8px}
+/* Quản lý → Tổng quan */
+.hm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.hm-card{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--card)}
+.hm-card.todo{border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn-soft) 45%,var(--card))}
+.hm-card.ok .hm-ic{filter:grayscale(.2)}
+.hm-ic{font-size:24px}
+.hm-tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.hm-tx small{font-size:12px;color:var(--muted)}
+.hm-tx b{font-size:17px}
+.hm-tx .tiny{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-plan{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.hm-col h3{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.hm-step{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.hm-step label{flex:1;font-size:14px;align-items:flex-start}
+.hm-step input:checked + span{text-decoration:line-through;color:var(--muted)}
+.hm-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:420px;overflow:auto}
+.hm-item{display:flex;align-items:center;gap:10px;text-align:left;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer}
+.hm-item:hover{border-color:var(--brand2)}
+.hm-item .grow{display:flex;flex-direction:column}
+.hm-step input[type=checkbox]{flex:none;width:17px;height:17px;margin:2px 4px 0 0}
+.hm-step label.inline{display:flex;gap:4px}
