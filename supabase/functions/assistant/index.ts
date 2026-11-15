@@ -1,6 +1,6 @@
 // Edge Function "assistant": trả lời câu hỏi tự do bằng AI (Gemini) dựa trên số liệu thi đua hiện tại.
 // Chỉ quản lý / chủ quản dùng; câu hỏi thống kê thường được giao diện tự trả lời không cần AI.
-import { json, CORS, rest, rpc, member, vnParts, addDays } from "../_shared/common.ts";
+import { json, CORS, rest, rpc, member, vnParts, addDays, gemini } from "../_shared/common.ts";
 
 async function context() {
   const today = vnParts().date, month = today.slice(0, 8) + "01", in7 = addDays(today, 7), from30 = addDays(today, -30);
@@ -59,13 +59,7 @@ Deno.serve(async (req) => {
       .map((h: any) => ({ role: h.role === "ai" ? "model" : "user", parts: [{ text: String(h.text || "").slice(0, 2000) }] }));
     const system = "Bạn là trợ lý thi đua bán hàng của siêu thị (Thế Giới Di Động / Topzone). Trả lời bằng tiếng Việt, ngắn gọn, đi thẳng vào số liệu, dùng gạch đầu dòng khi liệt kê. " +
       "CHỈ dùng dữ liệu JSON được cung cấp; nếu dữ liệu không có thì nói rõ là không có. Không bịa số. Ngày hiển thị dạng dd/mm. Sao ký hiệu ⭐.\n\nDỮ LIỆU:\n" + JSON.stringify(ctx);
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
-      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [...history, { role: "user", parts: [{ text: q }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1500 } }),
-    });
-    const j = await r.json();
-    if (!r.ok) throw new Error("AI lỗi: " + (j.error?.message || r.status));
-    const text = (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim();
+    const text = await gemini(key, { systemInstruction: { parts: [{ text: system }] }, contents: [...history, { role: "user", parts: [{ text: q }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1500 } });
     return json({ status: "success", answer: text || "AI không trả lời được câu này." });
   } catch (e) {
     return json({ status: "error", message: (e as Error).message || "Lỗi" });

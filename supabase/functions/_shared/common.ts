@@ -40,3 +40,19 @@ export function vnParts(d = new Date()) {
   return { date: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}`, dow: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(p.weekday) };
 }
 export const addDays = (d: string, n: number) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+
+// Gọi Gemini, tự thử model kế tiếp khi model cũ bị ngừng (404) hoặc quá tải (429/503)
+export const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash", "gemini-2.5-flash"];
+export async function gemini(key: string, payload: Record<string, unknown>) {
+  let last = "";
+  for (const m of GEMINI_MODELS) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(payload),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) return (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim();
+    last = j.error?.message || String(r.status);
+    if (![404, 429, 500, 503].includes(r.status)) break;
+  }
+  throw new Error("AI lỗi: " + last);
+}

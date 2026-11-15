@@ -32,6 +32,13 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DRIVE_UPLOAD_URL: ${{ secrets.DRIVE_UPLOAD_URL }}
           DRIVE_UPLOAD_SECRET: ${{ secrets.DRIVE_UPLOAD_SECRET }}
+      - name: Kiểm tra nối Drive và AI (chỉ in trạng thái)
+        run: node supabase/scripts/check-integrations.mjs
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DRIVE_UPLOAD_URL: ${{ secrets.DRIVE_UPLOAD_URL }}
+          DRIVE_UPLOAD_SECRET: ${{ secrets.DRIVE_UPLOAD_SECRET }}
       - name: Chép quỹ cũ từ Firebase (chỉ 1 lần, chỉ in số lượng)
         run: node supabase/scripts/import-quy.mjs
         continue-on-error: true

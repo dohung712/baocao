@@ -3,7 +3,7 @@
 //  • upload:    tải file lên thư mục Google Drive qua Apps Script (giữ mã bí mật ở máy chủ)
 //  • delete:    chuyển file Drive vào thùng rác khi xoá việc
 // Chỉ quản lý / chủ quản dùng.
-import { json, CORS, rest, member } from "../_shared/common.ts";
+import { json, CORS, rest, member, gemini } from "../_shared/common.ts";
 
 const secret = async (k: string) => (await rest("private_settings?select=value&key=eq." + k))[0]?.value as string | undefined;
 
@@ -23,14 +23,8 @@ async function summarize(text: string, files: { mime: string; data: string }[]) 
   for (const f of files.slice(0, 4)) if (/^(image\/|application\/pdf)/.test(f.mime) && f.data.length < 14_000_000) parts.push({ inline_data: { mime_type: f.mime, data: f.data } });
   const system = "Bạn là trợ lý của quản lý siêu thị bán lẻ điện thoại (Thế Giới Di Động / Topzone). Đọc nội dung (và file đính kèm nếu có) rồi tóm tắt để nhân viên đọc nhanh trên điện thoại. " +
     "Trả về JSON {\"title\": tiêu đề ngắn ≤ 70 ký tự, \"summary\": các ý chính, mỗi ý 1 dòng bắt đầu bằng \"• \", tối đa 7 ý, ghi rõ việc phải làm, hạn chót, đối tượng, con số quan trọng; không thêm thông tin không có trong nội dung, \"deadline\": ngày hạn dạng YYYY-MM-DD nếu nội dung có nêu, không thì null}. Tiếng Việt.";
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
-    method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 1200, responseMimeType: "application/json" } }),
-  });
-  const j = await r.json();
-  if (!r.ok) throw new Error("AI lỗi: " + (j.error?.message || r.status));
-  const out = (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim();
+  const out = await gemini(key, { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts }],
+    generationConfig: { temperature: 0.2, maxOutputTokens: 1500, responseMimeType: "application/json" } });
   try { const o = JSON.parse(out); return { title: String(o.title || "").slice(0, 120), summary: String(o.summary || "").trim(), deadline: /^\d{4}-\d{2}-\d{2}$/.test(o.deadline || "") ? o.deadline : null }; }
   catch { return { title: "", summary: out, deadline: null }; }
 }
