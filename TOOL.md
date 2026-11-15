@@ -27,6 +27,8 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 |---|---|---|---|
 | H1 | **🏠 Tổng quan** (tab đầu của Quản lý): Việc cần làm ngay (chờ duyệt, chưa báo cáo, thiếu target, lần dán kết quả siêu thị, phục vụ tuần trước, Telegram) · Lịch quản lý ngày/tuần/tháng có tick · Tìm chức năng (gõ chữ → nút mở đúng chỗ) · Tuỳ chỉnh nhanh | Quản lý → 🏠 Tổng quan | `pages/admin-home.js` (FEATURES = danh mục chức năng, PLAN = lịch) |
 
+| H2 | **Gợi ý tự hiện**: rê chuột lên một mục `HELP_DELAY_S` giây (mặc định 15) hoặc nhấn giữ 0,8 giây trên điện thoại → bong bóng giải thích; mỗi người bật/tắt ở nút tài khoản | Mọi trang | `js/help.js` (mảng H: selector → tiêu đề, nội dung) |
+
 > Thêm chức năng mới thì thêm 1 dòng vào `FEATURES` trong `admin-home.js` (mã, tên, chỗ, từ khoá, đích mở) để ô tìm kiếm thấy được.
 
 ### A. Đăng nhập và tài khoản
@@ -127,7 +129,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 - Target báo cáo ngày = 200% × target tháng ÷ số ngày làm việc (mặc định số ngày trong tháng − `DAYS_OFF`), làm tròn lên, tối thiểu 0,5. Điểm thi đua xếp hạng vẫn so với target tháng.
 
 ## 4. Cài đặt (bảng `settings`)
-`DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
+`HELP_DELAY_S DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
 Khoá bí mật (bảng `private_settings`, không đọc được từ web): `TELEGRAM_BOT_TOKEN GEMINI_API_KEY CRON_SECRET`
 
 ---

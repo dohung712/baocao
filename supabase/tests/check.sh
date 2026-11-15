@@ -17,6 +17,6 @@ for t in rls_test.sql modules_test.sql scoring_test.sql x3_test.sql hot_test.sql
 done
 if [ "$1" = "--ui" ]; then
   echo "▶ Giao diện"; cd ui; pkill -f "node server.mjs" || true; (node server.mjs > /tmp/uiserver.log 2>&1 &); sleep 1
-  for r in run3.mjs run4.mjs run5.mjs run6.mjs mobile.mjs; do timeout 240 node $r 2>&1 | grep -E "error|ERROR|Timeout|toast|no browser|overflow|ảnh" | head -8; done
+  for r in run3.mjs run4.mjs run5.mjs run6.mjs run7.mjs mobile.mjs; do timeout 240 node $r 2>&1 | grep -E "error|ERROR|Timeout|toast|no browser|overflow|ảnh" | head -8; done
 fi
 echo "✅ OK"

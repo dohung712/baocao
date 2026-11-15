@@ -1,5 +1,6 @@
 // Khởi động ứng dụng: đăng nhập, điều hướng, đồng bộ
 import { $, esc, toast, modal, enableAutoSort } from "./ui.js";
+import { initHelp, helpOn, setHelp } from "./help.js";
 import { sb, S, loadMe, loadAll, startRealtime, stopRealtime, onLive, onChange, isManager, roleLabel, errMsg, setting, SUPABASE_URL, staffEmail, isHidden } from "./store.js";
 import * as report from "./pages/report.js";
 import * as historyPage from "./pages/history.js";
@@ -146,8 +147,9 @@ async function setPassword(afterLink = false, forced = false) {
 
 $("#btnMe").onclick = async () => {
   const v = await modal(`<h3>${esc(S.me.email)}</h3><p class="muted">${roleLabel(S.me.role)}${S.me.staff_id ? " · Mã NV " + esc(S.me.staff_id) : ""}${S.me.stores?.length ? " · " + esc(S.me.stores.join(", ")) : ""}</p>
-    <div class="stack"><button class="btn" data-v="pass">🔑 Đổi mật khẩu</button><button class="btn" data-v="old">↩️ Mở bản cũ</button><button class="btn danger" data-v="out">Đăng xuất</button></div>`);
+    <div class="stack"><button class="btn" data-v="pass">🔑 Đổi mật khẩu</button><button class="btn" data-v="help">💡 Gợi ý tự hiện: ${helpOn() ? "Đang bật — bấm để tắt" : "Đang tắt — bấm để bật"}</button><button class="btn" data-v="old">↩️ Mở bản cũ</button><button class="btn danger" data-v="out">Đăng xuất</button></div>`);
   if (v === "pass") setPassword();
+  if (v === "help") { setHelp(!helpOn()); toast(helpOn() ? `Đã bật: rê chuột lên một mục ${setting("HELP_DELAY_S", 15)} giây (điện thoại: nhấn giữ) để xem gợi ý` : "Đã tắt gợi ý tự hiện"); }
   if (v === "old") location.href = "../";
   if (v === "out") { stopRealtime(); await sb.auth.signOut(); location.reload(); }
 };
@@ -161,6 +163,7 @@ sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_OUT") { stopRealtime(); s
 document.addEventListener("visibilitychange", () => { if (!document.hidden && S.me) loadAll().catch(() => {}); });
 
 enableAutoSort();
+initHelp();
 (async () => {
   const { data: { session } } = await sb.auth.getSession();
   if (session) enterApp(); else show("login");
