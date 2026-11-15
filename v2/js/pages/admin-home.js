@@ -29,6 +29,7 @@ export const FEATURES = [
   { c: "A3", t: "Phân quyền quản lý", w: "Quản lý → Phân quyền", k: "phân quyền quản lý email", go: { tab: "members" }, owner: true },
   { c: "E1", t: "Telegram: bật/tắt, giờ gửi từng mục", w: "Quản lý → Telegram", k: "telegram tin nhắn tóm tắt", go: { tab: "telegram" } },
   { c: "D1", t: "TikTok, vệ sinh, lịch bận, roadshow", w: "CV", k: "tiktok vệ sinh lịch bận roadshow cv", go: { page: "cv" } },
+  { c: "D6", t: "Quỹ thu chi (thêm, sửa, xoá, thống kê, CSV)", w: "CV → 💵 Quỹ", k: "quỹ thu chi tiền số dư chi phí", go: { page: "cv", cv: "fund" } },
   { c: "F6", t: "Nhật ký thao tác", w: "Quản lý → Nhật ký", k: "nhật ký audit", go: { tab: "audit" }, owner: true },
   { c: "G2", t: "Luật đang áp dụng (cho nhân viên xem)", w: "Rule", k: "rule luật quy tắc", go: { page: "rules" } },
 ];

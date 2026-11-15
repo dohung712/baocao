@@ -26,6 +26,9 @@ jobs:
           node-version: 20
       - name: Áp SQL migrations
         run: node supabase/scripts/apply-migrations.mjs
+      - name: Chép quỹ cũ từ Firebase (chỉ 1 lần, chỉ in số lượng)
+        run: node supabase/scripts/import-quy.mjs
+        continue-on-error: true
       - uses: supabase/setup-cli@v1
         with:
           version: latest

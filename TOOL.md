@@ -77,6 +77,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | D2 | Vệ sinh: lịch + ảnh | CV → Vệ sinh | `pages/cv.js`, `js/photos.js` | `clean_*`, bucket `thidua-v2` |
 | D3 | Lịch bận/OFF + kiểm tra HRM | CV → Lịch bận | `pages/cv.js`, `js/lib-hrm.js` | `busy_*` |
 | D4 | Roadshow | CV → Roadshow | `pages/cv.js` | `rs_*` |
+| D6 | **Quỹ thu chi** (thay tool quy cũ dùng Firebase): số dư, thu/chi tháng, thêm khoản (mọi thành viên), sửa/xoá (quản lý; người tạo trong 24 giờ), lọc tháng/loại/danh mục/người, thống kê, copy, CSV, nhật ký; danh mục & đối tác (chủ quản). Dữ liệu cũ chép 1 lần bằng GitHub Actions | CV → 💵 Quỹ | `pages/cv-fund.js` | `fund_tx`, `fund_save`, `fund_delete`, `fund_log`, settings `FUND_CATEGORIES`, `FUND_PARTNERS`; `supabase/scripts/import-quy.mjs` |
 | D5 | Thống kê CV theo NV | CV → Thống kê | `pages/cv.js` | (đọc các bảng trên) |
 
 ### E. Telegram
@@ -129,7 +130,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 - Target báo cáo ngày = 200% × target tháng ÷ số ngày làm việc (mặc định số ngày trong tháng − `DAYS_OFF`), làm tròn lên, tối thiểu 0,5. Điểm thi đua xếp hạng vẫn so với target tháng.
 
 ## 4. Cài đặt (bảng `settings`)
-`HELP_DELAY_S DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
+`FUND_CATEGORIES FUND_PARTNERS FUND_IMPORTED_AT HELP_DELAY_S DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
 Khoá bí mật (bảng `private_settings`, không đọc được từ web): `TELEGRAM_BOT_TOKEN GEMINI_API_KEY CRON_SECRET`
 
 ---
@@ -220,6 +221,9 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `delete_result` | function | 000200_logic.sql:296 |
 | `delete_revenue_adjust` | function | 000700_scoring.sql:241 |
 | `delete_violation` | function | 000700_scoring.sql:321 |
+| `fund_delete` | function | 000770_fund.sql:62 |
+| `fund_log` | function | 000770_fund.sql:79 |
+| `fund_save` | function | 000770_fund.sql:32 |
 | `import_month_targets` | function | 000720_report_items_from_contest.sql:274 |
 | `is_after_cutoff` | function | 000100_core.sql:175 |
 | `is_manager` | function | 000100_core.sql:146 |
@@ -260,7 +264,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `submit_daily_report` | function | 000200_logic.sql:225 |
 | `tiktok_due_dates` | function | 000600_modules.sql:136 |
 | `tiktok_manage` | function | 000600_modules.sql:189 |
-| `tiktok_submit` | function | 000600_modules.sql:143 |
+| `tiktok_submit` | function | 000760_tiktok_early.sql:10 |
 | `vn_hm` | function | 000600_modules.sql:122 |
 | `vn_now` | function | 000100_core.sql:7 |
 | `vn_today` | function | 000100_core.sql:9 |
@@ -268,6 +272,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `cleaning` | table | 000600_modules.sql:33 |
 | `daily_results` | table | 000100_core.sql:40 |
 | `extra_proposals` | table | 000100_core.sql:58 |
+| `fund_tx` | table | 000770_fund.sql:5 |
 | `hot_bonuses` | table | 000740_star_suggest_hot.sql:91 |
 | `items` | table | 000100_core.sql:26 |
 | `locked_dates` | table | 000100_core.sql:86 |

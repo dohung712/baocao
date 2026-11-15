@@ -376,3 +376,27 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 .help-act button{font:inherit;font-size:12px;border:0;border-radius:8px;padding:5px 10px;cursor:pointer;background:rgba(255,255,255,.15);color:inherit}
 .help-act button:first-child{background:var(--card);color:var(--ink);font-weight:600}
 @keyframes helpIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* CV → Quỹ */
+.fund-kpi{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.fk{border-radius:16px;padding:14px 16px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.fk small{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.fk b{font-size:24px;font-variant-numeric:tabular-nums}
+.fk span{font-size:12px;color:var(--muted)}
+.fk.du{background:linear-gradient(135deg,var(--brand),var(--brand2));border:0}
+.fk.du small,.fk.du span{color:rgba(255,255,255,.8)}.fk.du b{color:#fff}
+.fk.thu b{color:var(--ok)}.fk.chi b{color:var(--bad)}
+.fund-kind{width:100%;display:flex}.fund-kind button{flex:1;padding:10px;font-weight:700}
+.fund-kind button.thu.on{background:var(--ok);color:#fff}.fund-kind button.chi.on{background:var(--bad);color:#fff}
+.fund-quick{margin-top:8px}
+.fund-filter{gap:8px;margin:8px 0;flex-wrap:wrap}
+.fund-bars{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.fb{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:8px;align-items:center;font-size:13px}
+.fb-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-b{height:10px;background:var(--bg);border-radius:9px;overflow:hidden;display:flex;flex-direction:column}
+.fb-b i{display:block;height:100%;border-radius:9px}.fb-b.two{height:14px}.fb-b.two i{height:50%}
+.fb-b i.thu{background:var(--ok)}.fb-b i.chi{background:var(--bad)}
+.fb b{font-size:12px;white-space:nowrap}
+@media (max-width:640px){.fund-kpi{grid-template-columns:1fr 1fr}.fk.du{grid-column:1/-1}.fk b{font-size:20px}}
+.m-only{display:none}
+@media (max-width:640px){.m-only{display:block}.fund-tbl th:nth-child(4),.fund-tbl td:nth-child(4),.fund-tbl th:nth-child(5),.fund-tbl td:nth-child(5){display:none}
+  .fund-hist .card-h{flex-wrap:wrap}.fund-hist .card-h h2{flex-basis:100%}.fund-filter select{flex:1}}

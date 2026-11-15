@@ -41,7 +41,7 @@ async function draw() {
 const err = (e) => toast(errMsg(e), 4500);
 // Mở 1 chức năng từ Tổng quan: trang khác, hoặc tab (+ tab con, + cuộn tới khung) trong Quản lý
 async function nav(go) {
-  if (go.page) { document.querySelector(`#nav [data-page="${go.page}"]`)?.click(); return; }
+  if (go.page) { if (go.cv) try { localStorage.setItem("thidua-v2-cv", go.cv); } catch { /* bỏ qua */ } document.querySelector(`#nav [data-page="${go.page}"]`)?.click(); return; }
   tab = go.tab; if (go.sub) setScoreSub(go.sub);
   await draw();
   const el = go.focus && document.querySelector(go.focus);
@@ -288,7 +288,7 @@ const NUM_SETTINGS = [
 ];
 export const FEATURES = [
   ["report", "📝 Báo cáo"], ["report.revenue", "· Ô doanh thu QĐ trong báo cáo"], ["report.extra", "· Bán thêm ngoài thi đua"],
-  ["cv", "🗂️ CV"], ["cv.tiktok", "· TikTok"], ["cv.clean", "· Vệ sinh"], ["cv.busy", "· Lịch bận"], ["cv.rs", "· Roadshow"], ["cv.stats", "· Thống kê"],
+  ["cv", "🗂️ CV"], ["cv.tiktok", "· TikTok"], ["cv.clean", "· Vệ sinh"], ["cv.busy", "· Lịch bận"], ["cv.rs", "· Roadshow"], ["cv.fund", "· Quỹ thu chi"], ["cv.stats", "· Thống kê"],
   ["score", "🏅 Xếp hạng điểm"], ["me", "👤 Của tôi"], ["ranking", "🏆 BXH sao"], ["history", "🕒 Lịch sử"], ["store", "🏢 Siêu thị"], ["assistant", "🤖 Trợ lý"], ["rules", "📖 Rule"], ["admin", "⚙️ Quản lý (với quản lý)"],
 ];
 async function settings(body) {

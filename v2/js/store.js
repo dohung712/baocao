@@ -96,6 +96,7 @@ export function startRealtime() {
     change_requests: () => { loadPending(); emit("changes"); },
     store_contest: () => emit("contest"),
     hot_bonuses: () => { loadPending(); emit("proposals"); },
+    fund_tx: () => emit("cv"),
     tiktok_submissions: () => { loadStaff(); emit("cv"); }, cleaning: () => emit("cv"), busy: () => emit("cv"), roadshow: () => emit("cv"),
     staff_targets: () => emit("targets"),
     star_adjustments: () => { loadStaff(); emit("score"); }, revenue_entries: () => emit("score"), monthly_targets: () => emit("score"),

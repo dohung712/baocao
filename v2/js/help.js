@@ -23,6 +23,10 @@ const H = [
   ["#btnSend", "🚀 Gửi báo cáo", "Gửi khi đã nhập đủ các môn và doanh thu. Sau giờ chốt, sửa báo cáo cần quản lý duyệt."],
   ["#btnImg", "🖼️ Ảnh báo cáo", "Tạo ảnh báo cáo của ngày này để lưu hoặc gửi qua Zalo/Line."],
   ["#missing", "Chưa báo cáo hôm nay", "Bấm tên để mở nhanh báo cáo của nhân viên đó (nộp hộ hoặc nhắc).", true],
+  // Quỹ
+  ['#cvTabs [data-t="fund"]', "💵 Quỹ", "Thu chi của siêu thị: số dư, thêm khoản, lịch sử, thống kê theo danh mục và người."],
+  [".fund-kpi", "Số dư quỹ", "Số dư = tổng thu − tổng chi từ trước tới nay. Hai ô bên cạnh là thu, chi của tháng đang xem."],
+  ["#fForm", "Thêm khoản thu / chi", "Chọn Thu hoặc Chi, nhập tên, số tiền, ngày, danh mục, người. Người nhập được sửa/xoá trong 24 giờ, sau đó chỉ quản lý."],
   // Xếp hạng
   ["#scFull", "So tiến độ / So target cả tháng", "Tiến độ: target chia theo số ngày đã qua (giữa tháng). Cả tháng: so với target của cả tháng (chốt cuối tháng)."],
   [".sc-row, tr[data-sid]", "Chi tiết điểm", "Bấm để xem điểm doanh thu, thi đua, phục vụ, vi phạm đến từ đâu."],
