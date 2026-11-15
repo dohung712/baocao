@@ -97,3 +97,53 @@ export const ymOf = (d) => d.slice(0, 7);
 export function shiftMonth(ym, n) { const [y, m] = ym.split("-").map(Number); const d = new Date(Date.UTC(y, m - 1 + n, 1)); return d.toISOString().slice(0, 7); }
 export const monthLabel = (ym) => `Tháng ${Number(ym.slice(5, 7))}/${ym.slice(0, 4)}`;
 export const norm = (x) => String(x || "").replace(/Đ/g, "D").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").toLowerCase().trim();
+
+// ---------- Sắp xếp mọi bảng: bấm tiêu đề cột để xếp tăng/giảm, nhớ lựa chọn khi bảng vẽ lại ----------
+// Bỏ qua: bảng có class "nosort", cột có class "nosort" hoặc data-sort (bảng tự xếp theo dữ liệu).
+const sortMem = new Map();
+const tableSig = (t) => location.hash.split("?")[0] + "|" + [...t.tHead.rows[0].cells].map((c) => c.textContent.replace(/[▲▼]/g, "").trim()).join("|");
+function cellKey(td) {
+  if (!td) return "";
+  const cb = td.querySelector("input[type=checkbox]"); if (cb && !td.querySelector("input:not([type=checkbox]),select")) return cb.checked ? 1 : 0;
+  const inp = td.querySelector("input:not([type=checkbox]),select");
+  if (inp) { const v = inp.value.trim(), n = Number(v); return v !== "" && !Number.isNaN(n) ? n : v.toLowerCase(); }
+  const t = (td.dataset.sortv ?? td.innerText).trim().replace(/−/g, "-");
+  let m = t.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?(?:\D|$)/); if (m) return Number(m[3] || 2000) * 10000 + Number(m[2]) * 100 + Number(m[1]);
+  m = t.match(/^(?:[A-Za-zÀ-ỹ]{1,3}\s)?(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return Number(m[3]) * 10000 + Number(m[2]) * 100 + Number(m[1]);
+  m = t.match(/^[+-]?\d[\d.]*(?:,\d+)?/); if (m) return Number(m[0].replace(/\./g, "").replace(",", "."));
+  return t.toLowerCase();
+}
+function sortTable(table, col, dir) {
+  const tb = table.tBodies[0]; if (!tb) return;
+  const rows = [...tb.rows]; if (rows.length < 2 || rows.some((r) => r.cells.length === 1 && r.cells[0].colSpan > 1)) return;
+  const keyed = rows.map((r, i) => ({ r, i, k: cellKey(r.cells[col]) }));
+  keyed.sort((a, b) => {
+    const x = a.k, y = b.k, nx = typeof x === "number", ny = typeof y === "number";
+    if (x === "" && y !== "") return 1; if (y === "" && x !== "") return -1;
+    const c = nx && ny ? x - y : nx ? -1 : ny ? 1 : String(x).localeCompare(String(y), "vi", { numeric: true });
+    return c * dir || a.i - b.i;
+  });
+  keyed.forEach(({ r }) => tb.appendChild(r));
+  [...table.tHead.rows[0].cells].forEach((c, i) => { c.classList.toggle("sorted-asc", i === col && dir > 0); c.classList.toggle("sorted-desc", i === col && dir < 0); });
+}
+export function enableAutoSort(root = document) {
+  root.addEventListener("click", (e) => {
+    const th = e.target.closest("thead th"); if (!th || th.dataset.sort !== undefined || th.classList.contains("nosort") || e.target.closest("input,select,button,a")) return;
+    const table = th.closest("table"); if (!table || table.classList.contains("nosort") || !table.tHead || !table.tBodies[0]) return;
+    const col = th.cellIndex, sig = tableSig(table), cur = sortMem.get(sig);
+    const dir = cur && cur.col === col ? -cur.dir : (typeof cellKey(table.tBodies[0].rows[0]?.cells[col]) === "number" ? -1 : 1); // số: lớn → nhỏ trước
+    sortMem.set(sig, { col, dir }); sortTable(table, col, dir);
+  });
+  let pending = false;
+  new MutationObserver(() => {
+    if (pending || !sortMem.size) return; pending = true;
+    requestAnimationFrame(() => {
+      pending = false;
+      document.querySelectorAll("table:not(.nosort)").forEach((t) => {
+        if (!t.tHead?.rows[0] || !t.tBodies[0]) return;
+        const s = sortMem.get(tableSig(t)); if (!s) return;
+        const th = t.tHead.rows[0].cells[s.col]; if (th && !th.classList.contains(s.dir > 0 ? "sorted-asc" : "sorted-desc")) sortTable(t, s.col, s.dir);
+      });
+    });
+  }).observe(document.body, { childList: true, subtree: true });
+}

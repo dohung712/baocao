@@ -340,3 +340,10 @@ tr.mine td{background:color-mix(in srgb,var(--info-soft) 60%,transparent)}
 .sg-rules{display:flex;flex-direction:column;gap:6px;margin-top:10px;background:var(--bg);border-radius:12px;padding:10px 12px;line-height:2.3}
 .sg-rules input{display:inline-block;height:32px;padding:4px 6px;margin:0 2px}
 .sg-tbl td,.sg-tbl th{white-space:nowrap}
+/* Sắp xếp bảng */
+table:not(.nosort) thead th:not(.nosort){cursor:pointer;user-select:none}
+table:not(.nosort) thead th:not(.nosort):hover{color:var(--ink)}
+th.sorted-asc::after{content:" ▲";font-size:10px;color:var(--brand2)}
+th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
+.sort-pick{display:flex;align-items:center;gap:6px;font-size:13px;margin:0 0 8px}
+.sort-pick select{width:auto;padding:5px 8px}

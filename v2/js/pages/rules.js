@@ -17,6 +17,7 @@ export async function render(view) {
       <li>Sửa báo cáo đã nộp sau giờ chốt, hoặc ngày đã <b>khoá sổ</b>: gửi yêu cầu sửa kèm lý do, quản lý duyệt mới cập nhật.</li></ul></div>
     <div class="card"><h2>2. Về số & thưởng sao</h2>
       <ul><li>Thực đạt ≥ target ngày → <b>Về số</b>, được sao thưởng của môn.</li>
+      <li>Target báo cáo ngày = <b>${n("DAILY_TARGET_PCT", 200)}%</b> × (target thi đua tháng ÷ số ngày làm việc), làm tròn lên, tối thiểu <b>${n("DAILY_TARGET_MIN", 0.5)}</b>. Bảng xếp hạng thi đua vẫn tính theo target tháng.</li>
       <li>Môn đánh dấu <b>X2</b> đạt ≥ <b>${n("DOUBLE_BONUS_RATE", 150)}%</b> target → sao thưởng ×2. Môn <b>X3</b>: ≥ ${n("DOUBLE_BONUS_RATE", 150)}% → ×2, ≥ <b>${n("TRIPLE_BONUS_RATE", 200)}%</b> → ×3.</li>
       <li>Target, sao thưởng, sao phạt khai báo ở <b>Quản lý → Môn thi đua</b>; riêng từng nhân viên ở <b>Quản lý → Target NV</b>.</li>
       <li>Bán thêm ngoài danh mục: đề xuất sao khi nộp báo cáo, quản lý duyệt mới cộng.</li></ul></div>

@@ -75,3 +75,7 @@ export function bindStarCard(save) {
   draw();
 }
 export const multLabel = (i) => i.is_x3 || i.isX3 ? "X3" : i.is_x2 || i.isX2 ? "X2" : "";
+// Target báo cáo ngày của NV đã giao môn tháng (giống _daily_target ở máy chủ): % × (target tháng ÷ ngày làm), làm tròn lên, tối thiểu
+export const dailyPct = () => Number(setting("DAILY_TARGET_PCT", 200)) || 100;
+export const dailyMin = () => Number(setting("DAILY_TARGET_MIN", 0.5)) || 0;
+export const dailyTarget = (base) => Math.max(dailyMin(), Math.ceil(Math.round(base * dailyPct() * 100) / 100) / 100);

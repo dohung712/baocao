@@ -25,6 +25,12 @@ for (const vp of [{ width: 1360, height: 900 }, { width: 412, height: 915 }]) {
     await p.click("#psSave"); await p.waitForTimeout(1200); console.log("save:", await p.textContent("#toast"));
     await p.click("#psOld"); await p.click("#psSave"); await p.waitForTimeout(1200);
     await p.click("#aTabs [data-t=items]"); await p.waitForTimeout(900);
+    const th = p.locator("table", { has: p.locator("#itRows") }).locator("thead th", { hasText: "Sao thưởng" });
+    await th.click(); await p.waitForTimeout(200);
+    const v1 = await p.$$eval('#itRows [name=bonus_star]', (x) => x.map((i) => +i.value)); await th.click(); await p.waitForTimeout(200);
+    const v2 = await p.$$eval('#itRows [name=bonus_star]', (x) => x.map((i) => +i.value));
+    const desc = v1.every((v, i) => i === 0 || v1[i - 1] >= v), asc = v2.every((v, i) => i === 0 || v2[i - 1] <= v);
+    console.log("sort bảng môn:", desc && asc ? "OK" : "SAI " + v1 + " / " + v2);
     await p.selectOption('#itRows tr:first-child select[name=mult]', "x3"); await p.click("#itSave"); await p.waitForTimeout(1500); console.log("items:", await p.textContent("#toast"));
     await p.evaluate(() => document.querySelector('[data-page="rules"]').click()); await p.waitForTimeout(1000); await p.screenshot({ path: `${OUT}/rules.png`, fullPage: true });
   }

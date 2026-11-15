@@ -31,7 +31,7 @@ async function login(email, vp) {
   console.log("apply:", await p.textContent("#toast"));
   await p.context().close(); }
 { const p = await login("nv1001@x.vn", { width: 412, height: 915 });
-  for (const inp of await p.$$("input.actual")) { const n = await inp.getAttribute("data-item"); await inp.fill(n === "Bảo hiểm Tổng" ? "8" : "1"); }
+  for (const inp of await p.$$("input.actual")) { const n = await inp.getAttribute("data-item"); await inp.fill(n === "Bảo hiểm Tổng" ? "12" : "1"); }
   await p.fill("#xRev", "12"); await p.waitForTimeout(1200); await p.click("#btnSend"); await p.waitForTimeout(2500);
   const pop = await p.$(".hot-pop"); console.log("popup thưởng nóng:", pop ? (await pop.innerText()).replace(/\s+/g, " ").slice(0, 160) : "KHÔNG");
   await p.screenshot({ path: `${OUT}/hot-popup.png` });

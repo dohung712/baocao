@@ -27,6 +27,7 @@ export async function render(view) {
   $("#scFull").onclick = (e) => { const b = e.target.closest("[data-f]"); if (!b) return; $$("#scFull button").forEach((x) => x.classList.toggle("on", x === b)); st.full = b.dataset.f === "1"; load(); };
   $("#scDept")?.addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (!b) return; $$("#scDept button").forEach((x) => x.classList.toggle("on", x === b)); st.dept = b.dataset.d; draw(); });
   $("#scTable").addEventListener("click", onClick);
+  $("#scTable").addEventListener("change", (e) => { if (e.target.id === "scSortM") { st.sort = { key: e.target.value, dir: e.target.value === "name" ? 1 : -1 }; draw(); } });
   $("#scTop").addEventListener("click", (e) => { const c = e.target.closest("[data-sid]"); if (c) detail(c.dataset.sid); });
   const mq = matchMedia("(max-width:640px)"), onMq = () => draw(); mq.addEventListener?.("change", onMq);
   $("#scCopy").onclick = copy; $("#scCsv")?.addEventListener("click", exportCsv);
@@ -64,7 +65,8 @@ function draw() {
   const noT = st.rows.filter((r) => r.revenue != null && r.revenue_target == null).length, noI = st.rows.filter((r) => !r.items_total).length;
   const warn = isManager() && (noT || noI) ? `<div class="banner warn"><div>${noT ? `<strong>${noT}</strong> nhân viên chưa có target DT tháng. ` : ""}${noI ? `<strong>${noI}</strong> nhân viên chưa được giao môn thi đua tháng. ` : ""}${isManager() ? "Quản lý khai báo ở <strong>Quản lý → Điểm & DT → Target tháng</strong>." : ""}</div></div>` : "";
   if (matchMedia("(max-width:640px)").matches) {
-    $("#scTable").innerHTML = `${warn}<p class="small muted" style="margin:0 0 8px">Bấm vào tên để xem điểm đến từ đâu.</p><div class="sc-list">${list.map((r) => `<button type="button" class="sc-row ${r.staff_id === S.me.staff_id ? "mine" : ""}" data-sid="${esc(r.staff_id)}">
+    $("#scTable").innerHTML = `${warn}<div class="sort-pick">Sắp xếp <select id="scSortM">${[["total", "Tổng điểm"], ["rev_score", "Điểm DT"], ["contest_score", "Điểm thi đua"], ["service_score", "Điểm phục vụ"], ["violations", "Vi phạm"], ["name", "Tên"]].map(([k, l]) => `<option value="${k}" ${st.sort.key === k ? "selected" : ""}>${l}</option>`).join("")}</select>
+      <button class="btn small" id="scDirM" type="button">${st.sort.dir < 0 ? "↓ Cao → thấp" : "↑ Thấp → cao"}</button><span class="muted small">· Bấm tên để xem chi tiết</span></div><div class="sc-list">${list.map((r) => `<button type="button" class="sc-row ${r.staff_id === S.me.staff_id ? "mine" : ""}" data-sid="${esc(r.staff_id)}">
       <span class="rank ${r.rank <= 3 ? "r" + r.rank : ""}">${r.rank}</span>
       <span class="sc-mid"><b>${esc(r.name)}${r.staff_id === S.me.staff_id ? ' <span class="pill info">Bạn</span>' : ""}</b><span class="tiny muted">${esc(r.dept)}</span>
         <span class="sc-bars"><span>DT ${bar(r.rev_score, W.r)}<b>${fmt(r.rev_score, 1)}</b></span><span>TĐ ${bar(r.contest_score, W.c)}<b>${fmt(r.contest_score, 1)}</b></span><span>PV ${bar(r.service_score, W.s)}<b>${fmt(r.service_score, 1)}</b></span>${Number(r.violation_points) ? `<span class="neg">VP −${fmt(r.violation_points)}</span>` : ""}</span></span>
@@ -91,6 +93,7 @@ function draw() {
 
 function onClick(e) {
   const th = e.target.closest("th[data-sort]"); if (th) { sorter(st.sort, th.dataset.sort); return draw(); }
+  if (e.target.id === "scDirM") { st.sort.dir = -st.sort.dir; return draw(); }
   const a = e.target.closest("[data-items]");
   if (!a) { const row = e.target.closest("[data-sid]"); if (row) detail(row.dataset.sid); return; }
   e.preventDefault();

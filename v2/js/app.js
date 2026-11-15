@@ -1,5 +1,5 @@
 // Khởi động ứng dụng: đăng nhập, điều hướng, đồng bộ
-import { $, esc, toast, modal } from "./ui.js";
+import { $, esc, toast, modal, enableAutoSort } from "./ui.js";
 import { sb, S, loadMe, loadAll, startRealtime, stopRealtime, onLive, onChange, isManager, roleLabel, errMsg, setting, SUPABASE_URL, staffEmail, isHidden } from "./store.js";
 import * as report from "./pages/report.js";
 import * as historyPage from "./pages/history.js";
@@ -160,6 +160,7 @@ onChange((what) => { if (what === "pending") renderNav(); if (what === "settings
 sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_OUT") { stopRealtime(); show("login"); } });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && S.me) loadAll().catch(() => {}); });
 
+enableAutoSort();
 (async () => {
   const { data: { session } } = await sb.auth.getSession();
   if (session) enterApp(); else show("login");

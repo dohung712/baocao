@@ -115,7 +115,7 @@ function drawBody() {
   $("#rBody").innerHTML = `
     <div id="rHead" class="stack" style="margin-bottom:12px"></div>
     ${f.items.length ? `
-    <div class="tbl-wrap"><table class="items-tbl">
+    <div class="tbl-wrap"><table class="items-tbl nosort">
       <thead><tr><th>#</th><th>Môn thi đua</th><th class="num">Thực đạt</th><th>Target · Chuỗi</th><th>Kết quả</th></tr></thead>
       <tbody id="rRows"></tbody>
     </table></div>

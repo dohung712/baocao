@@ -51,7 +51,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 |---|---|---|---|---|
 | C1 | **Dán báo cáo target tháng**: đọc văn bản "=== SIÊU THỊ …" | Quản lý → Điểm & DT → Target tháng | `js/lib-targets.js` (parseTargetReport), `pages/admin-score.js` (importPreview) | `import_month_targets` |
 | C2 | Giao môn từng NV + số ngày làm việc + target DT | Target tháng → "Giao môn" / ô Target DT | `pages/admin-score.js` (targets) | `save_monthly_target`, `monthly_targets`, `_ensure_contest_items` |
-| C3 | Target ngày = target tháng ÷ số ngày làm việc | (tự động) | n/a | `_staff_items`, `_work_days` (cài đặt `DAYS_OFF`) |
+| C3 | Target **báo cáo ngày** = `DAILY_TARGET_PCT` (200%) × target tháng ÷ số ngày làm việc, làm tròn lên 2 số lẻ, tối thiểu `DAILY_TARGET_MIN` (0,5). Xếp hạng thi đua (C10) vẫn theo target tháng | (tự động); chỉnh ở Cài đặt chung | `js/star-rules.js` (dailyTarget) | `_daily_target`, `_staff_items`, `_work_days` (`DAYS_OFF`) |
 | C4 | Môn target ngày < 1 thì không trừ sao chuỗi | Tick khi dán target | `pages/admin-score.js` | `import_month_targets` → `ITEM_RULES` (noPen) |
 | C5 | Doanh thu QĐ lũy kế + điều chỉnh có lịch sử | Điểm & DT → Doanh thu | `pages/admin-score.js` (revenue) | `adjust_revenue`, `delete_revenue_adjust` |
 | C6 | Phục vụ (lượt 5★…1★, khiếu nại) | Điểm & DT → Phục vụ; NV tự nhập ở Của tôi | `pages/admin-score.js`, `pages/me.js` | `save_rating`, `delete_rating`, `ratings` |
@@ -94,6 +94,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | G1 | Trợ lý AI (Gemini) | Trợ lý | `pages/assistant.js`, `functions/assistant/index.ts` (cần `GEMINI_API_KEY` ở Cài đặt) |
 | G2 | Trang luật | Rule | `pages/rules.js` |
 | G3 | Giao diện chung, menu, tabbar mobile | n/a | `v2/index.html`, `v2/css/app.css`, `js/ui.js`, `js/app.js` |
+| G4 | **Sắp xếp mọi bảng**: bấm tiêu đề cột → giảm/tăng (số, ngày, chữ tiếng Việt), nhớ khi bảng vẽ lại; bỏ qua bảng/cột có class `nosort`. Xếp hạng điểm trên điện thoại có ô chọn sắp xếp | Mọi trang | `js/ui.js` (enableAutoSort), `pages/score.js` | n/a |
 
 ---
 
@@ -116,10 +117,10 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 
 **Target tháng (C1–C3)**:
 - Target tháng mỗi NV = Tổng ÷ số NS trong báo cáo.
-- Target ngày = target tháng ÷ số ngày làm việc (mặc định số ngày trong tháng − `DAYS_OFF`).
+- Target báo cáo ngày = 200% × target tháng ÷ số ngày làm việc (mặc định số ngày trong tháng − `DAYS_OFF`), làm tròn lên, tối thiểu 0,5. Điểm thi đua xếp hạng vẫn so với target tháng.
 
 ## 4. Cài đặt (bảng `settings`)
-`STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
+`DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
 Khoá bí mật (bảng `private_settings`, không đọc được từ web): `TELEGRAM_BOT_TOKEN GEMINI_API_KEY CRON_SECRET`
 
 ---
@@ -184,12 +185,13 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | Tên | Loại | File:dòng (bản mới nhất) |
 |---|---|---|
 | `_compute_report` | function | 000730_x3_scoreboard.sql:71 |
+| `_daily_target` | function | 000750_daily_target_x2.sql:8 |
 | `_ensure_contest_items` | function | 000720_report_items_from_contest.sql:59 |
 | `_item_streak` | function | 000200_logic.sql:24 |
 | `_manager_scope` | function | 000200_logic.sql:271 |
 | `_member_for_staff` | function | 000600_modules.sql:125 |
 | `_require_member` | function | 000200_logic.sql:189 |
-| `_staff_items` | function | 000740_star_suggest_hot.sql:15 |
+| `_staff_items` | function | 000750_daily_target_x2.sql:15 |
 | `_work_days` | function | 000720_report_items_from_contest.sql:9 |
 | `add_violation` | function | 000700_scoring.sql:310 |
 | `adjust_revenue` | function | 000700_scoring.sql:229 |
