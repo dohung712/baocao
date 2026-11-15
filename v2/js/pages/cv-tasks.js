@@ -7,6 +7,12 @@ const KIND = { announce: ["📢", "Triển khai toàn NV"], assign: ["📌", "Gi
 const REMIND = { none: "Không nhắc lại", week: "🔁 Nhắc hằng tuần", month: "🔁 Nhắc hằng tháng", "2month": "🔁 Nhắc 2 tháng/lần" };
 let V = { sub: "", showDone: false, edit: null, draft: null }, T = [], A = [];
 const myKey = () => S.me.staff_id || S.me.email;
+// Việc thời vụ đã quá ngày tự ẩn (NV không thấy nữa, QL tìm lại được)
+const autoHidden = (t) => !!t.hide_after && t.hide_after < vnToday() && !t.keep && t.remind === "none";
+const graceDays = () => Number(setting("TASK_HIDE_GRACE_DAYS", 3)) || 0, autoDays = () => Number(setting("TASK_AUTO_HIDE_DAYS", 30)) || 30;
+const addD = (d, n) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+// Dấu hiệu việc cần lặp lại / lâu dài (khi chưa có AI)
+const REPEAT_HINT = /(h[aằà]ng|m[ỗo]i)\s*(ng[aà]y|tu[aầ]n|th[aá]ng|qu[yý])|đ[iị]nh\s*k[yỳ]|th[ưu][ờo]ng\s*xuy[eê]n|l[aâ]u\s*d[aà]i|quy\s*đ[iị]nh|quy\s*tr[iì]nh|n[ộo]i\s*quy|b[aắ]t\s*bu[ộo]c\s*lu[oô]n/i;
 
 // Kỳ nhắc lại — giống public._task_period
 function isoWeek(d) { const x = new Date(d + "T00:00:00Z"), day = (x.getUTCDay() + 6) % 7; x.setUTCDate(x.getUTCDate() - day + 3); const y = x.getUTCFullYear(), f = new Date(Date.UTC(y, 0, 4)); return `${y}-W${String(1 + Math.round(((x - f) / 864e5 - 3 + ((f.getUTCDay() + 6) % 7)) / 7)).padStart(2, "0")}`; }
@@ -43,8 +49,9 @@ function filesHtml(files) {
   return `<div class="tk-files">${files.map((f) => /^image\//.test(f.mime) ? `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="tk-img"><img loading="lazy" src="https://drive.google.com/thumbnail?id=${encodeURIComponent(f.id)}&sz=w600" alt="${esc(f.name)}"></a>`
     : `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="chip">📄 ${esc(f.name)}</a>`).join("")}</div>`;
 }
-const badges = (t) => `${t.important ? '<span class="pill bad">⭐ Quan trọng</span>' : ""}${t.remind !== "none" ? `<span class="pill info">${REMIND[t.remind]}</span>` : ""}${t.deadline ? `<span class="pill ${t.status === "open" && t.deadline < vnToday() ? "bad" : "warn"}">⏳ Hạn ${dmy(t.deadline)}</span>` : ""}`;
-const summaryHtml = (t) => t.summary ? `<div class="tk-sum">${esc(t.summary).replace(/\n/g, "<br>")}</div>` : "";
+const badges = (t) => `${t.important ? '<span class="pill bad">⭐ Quan trọng</span>' : ""}${t.remind !== "none" ? `<span class="pill info">${REMIND[t.remind]}</span>` : ""}${t.keep ? '<span class="pill ok">📌 Lâu dài</span>' : ""}${isManager() && t.hide_after && t.remind === "none" && !t.keep ? `<span class="pill mute">🕒 ${autoHidden(t) ? "Đã tự ẩn" : "Tự ẩn sau"} ${dm(t.hide_after)}</span>` : ""}${t.deadline ? `<span class="pill ${t.status === "open" && t.deadline < vnToday() ? "bad" : "warn"}">⏳ Hạn ${dmy(t.deadline)}</span>` : ""}`;
+const summaryHtml = (t) => (t.summary ? `<div class="tk-sum"><div class="tk-lbl">📌 Nội dung chính</div>${esc(t.summary).replace(/\n/g, "<br>")}</div>` : "")
+  + (t.notes ? `<div class="tk-note"><div class="tk-lbl">⚠️ Lưu ý</div>${esc(t.notes).replace(/\n/g, "<br>")}</div>` : "");
 const contentHtml = (t) => t.content ? `<details class="tk-full"><summary>Xem nội dung đầy đủ</summary><div>${esc(t.content).replace(/\n/g, "<br>")}</div></details>` : "";
 const byLine = (t) => `<span class="tiny muted">${KIND[t.kind][0]} ${KIND[t.kind][1]} · ${dmy(t.created_at.slice(0, 10))} · ${esc(t.created_by?.split("@")[0] || "")}</span>`;
 const when = (ts) => ts ? new Date(ts).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "";
@@ -109,10 +116,24 @@ const mgrButtons = (t) => `<span class="grow"></span>${["announce", "assign"].in
   <button class="btn small ghost" data-edit="${t.id}" type="button">✏️</button>${t.status === "open" ? `<button class="btn small ghost" data-st="${t.id}|archived" type="button" title="Lưu trữ">🗄️</button>` : `<button class="btn small ghost" data-st="${t.id}|open" type="button">↩️ Mở lại</button>`}
   <button class="btn small ghost danger" data-st="${t.id}|delete" type="button">🗑️</button>`;
 function board(body) {
-  const open = T.filter((t) => ["announce", "assign"].includes(t.kind) && t.status === "open"), old = T.filter((t) => ["announce", "assign"].includes(t.kind) && t.status !== "open");
-  $("#tkBody").innerHTML = `<div class="row" style="margin:6px 0 10px"><button class="btn primary" data-go-new type="button">➕ Đăng việc / giao việc</button><span class="small muted">Bấm thanh tiến độ để xem ai đã đọc, đã hoàn thành và lúc nào.</span></div>
+  const mine = T.filter((t) => ["announce", "assign"].includes(t.kind));
+  const open = mine.filter((t) => t.status === "open" && !autoHidden(t)), hid = mine.filter((t) => t.status === "open" && autoHidden(t)), old = mine.filter((t) => t.status !== "open");
+  $("#tkBody").innerHTML = `<div class="row" style="margin:6px 0 10px"><button class="btn primary" data-go-new type="button">➕ Đăng việc / giao việc</button>
+      <input id="tkQ" placeholder="🔎 Tìm mọi việc (kể cả đã ẩn, đã lưu trữ)…" value="${esc(V.q || "")}" style="flex:1;min-width:200px;width:auto"></div>
+    <div id="tkFound"></div>
+    <div id="tkMain"><p class="small muted" style="margin:0">Bấm thanh tiến độ để xem ai đã đọc, đã hoàn thành và lúc nào. Việc thời vụ tự ẩn với nhân viên sau hạn chót ${graceDays()} ngày (không có hạn: sau ${autoDays()} ngày).</p>
     <div class="tk-list">${open.map((t) => card(t, true)).join("") || '<div class="empty">Chưa có việc đang triển khai.</div>'}</div>
-    ${old.length ? `<details><summary class="small"><b>Đã lưu trữ (${old.length})</b></summary><div class="tk-list">${old.map((t) => card(t, true)).join("")}</div></details>` : ""}`;
+    ${hid.length ? `<details><summary class="small"><b>🕒 Đã tự ẩn với nhân viên (${hid.length})</b> <span class="muted">— sửa hạn / tick Lâu dài để hiện lại</span></summary><div class="tk-list">${hid.map((t) => card(t, true)).join("")}</div></details>` : ""}
+    ${old.length ? `<details><summary class="small"><b>🗄️ Đã lưu trữ (${old.length})</b></summary><div class="tk-list">${old.map((t) => card(t, true)).join("")}</div></details>` : ""}</div>`;
+  const search = () => {
+    const q = (V.q || "").trim().toLowerCase(), f = $("#tkFound"), m = $("#tkMain"); if (!f) return;
+    if (!q) { f.innerHTML = ""; m.hidden = false; return; }
+    const words = q.split(/\s+/), hits = T.filter((t) => words.every((w) => [t.title, t.summary, t.notes, t.content, t.link_url, KIND[t.kind][1]].join(" ").toLowerCase().includes(w)));
+    m.hidden = true;
+    f.innerHTML = `<p class="small"><b>${hits.length}</b> việc khớp “${esc(V.q)}”</p><div class="tk-list">${hits.map((t) => card(t, true).replace('<div class="tk-head">', `<div class="tiny muted">${t.status === "archived" ? "🗄️ Đã lưu trữ · " : autoHidden(t) ? "🕒 Đã tự ẩn · " : t.status === "done" ? "✅ Đã xong · " : ""}</div><div class="tk-head">`)).join("") || '<div class="empty">Không tìm thấy.</div>'}</div>`;
+  };
+  $("#tkQ").oninput = (e) => { V.q = e.target.value; search(); };
+  search();
   $("#tkBody").onclick = (e) => { if (e.target.closest("[data-go-new]")) { V.sub = "new"; V.edit = null; return draw(body); } act(e, body); };
 }
 function deadline(body) {
@@ -140,23 +161,48 @@ function form(body) {
       <label class="k-not-link">Nội dung (dán từ Zalo, email, văn bản…)<textarea id="tkContent" style="min-height:150px" placeholder="Dán nội dung công việc vào đây. Có thể dán ảnh chụp màn hình (Ctrl+V) để đính kèm.">${esc(e.kind === "link" ? "" : e.content || "")}</textarea></label>
       <div class="k-not-link"><label>Ảnh / PDF đính kèm (lưu Google Drive)<input type="file" id="tkFiles" accept="image/*,application/pdf" multiple></label>
         <div class="tk-files" id="tkPrev">${(e.files || []).map((f, i) => `<span class="chip" data-old="${i}">${/^image/.test(f.mime) ? "🖼️" : "📄"} ${esc(f.name)} <button type="button" data-rmold="${i}">✕</button></span>`).join("")}</div></div>
-      <div class="row k-not-link"><button class="btn" id="tkAi" type="button">✨ AI tóm tắt ý chính</button><span class="small muted" id="tkAiMsg">AI đọc nội dung và file đính kèm, đề xuất tiêu đề + ý chính + hạn chót.</span></div>
+      <div class="row k-not-link"><button class="btn" id="tkAi" type="button">✨ AI tóm tắt ý chính</button><span class="small muted" id="tkAiMsg">AI đọc nội dung và file đính kèm: tiêu đề, hạn chót, nội dung chính, lưu ý, có cần lặp lại không.</span></div>
       <label>Tiêu đề<input id="tkTitle" maxlength="160" value="${esc(e.title || "")}" placeholder="VD: Triển khai CTKM tháng 11"></label>
-      <label class="k-not-link">Tóm tắt ý chính (nhân viên đọc phần này trước)<textarea id="tkSum" style="min-height:110px" placeholder="• Ý 1&#10;• Ý 2">${esc(e.summary || "")}</textarea></label>
+      <label class="k-not-link">📌 Nội dung chính (nhân viên đọc phần này trước)<textarea id="tkSum" style="min-height:110px" placeholder="• Việc phải làm&#10;• Đối tượng, thời gian">${esc(e.summary || "")}</textarea></label>
+      <label class="k-not-link">⚠️ Lưu ý<textarea id="tkNotes" style="min-height:70px" placeholder="• Điều cấm / dễ sai / chế tài">${esc(e.notes || "")}</textarea></label>
       <label class="k-link">Đường link trang tính<input id="tkUrl" value="${esc(e.link_url || "")}" placeholder="https://docs.google.com/spreadsheets/…"></label>
       <label class="k-link">Nhóm<input id="tkGroup" list="tkGroups" value="${esc(e.kind === "link" ? e.content || "" : "")}" placeholder="VD: Trang tính quản lý"><datalist id="tkGroups">${[...new Set([...(setting("TASK_LINK_GROUPS", []) || []), ...T.filter((t) => t.kind === "link").map((t) => t.content).filter(Boolean)])].map((g) => `<option value="${esc(g)}">`).join("")}</datalist></label>
       <div class="k-announce"><div class="small"><b>Gửi cho</b></div><div class="chips">${depts().map((d) => `<label class="chip inline"><input type="checkbox" class="tkDept" value="${esc(d)}" ${(e.depts || []).includes(d) ? "checked" : ""}> ${esc(d)}</label>`).join("")}<span class="small muted">Không tick = cả siêu thị</span></div></div>
       <div class="k-assign"><div class="small row"><b>Giao cho nhân viên</b><button class="btn small ghost" id="tkAll" type="button">Chọn tất cả</button></div><div class="chips">${staff.map((s) => `<label class="chip inline"><input type="checkbox" class="tkStaff" value="${esc(s.id)}" ${(e.assignees || []).includes(s.id) ? "checked" : ""}> ${esc(shortName(s.name))}</label>`).join("")}</div></div>
       <div class="fields k-not-link"><label class="k-dl">Hạn chót<input id="tkDl" type="date" value="${esc(e.deadline || "")}"></label>
-        <label>Nhắc lại<select id="tkRemind">${Object.entries(REMIND).map(([k, l]) => `<option value="${k}" ${e.remind === k ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
+        <label>Nhắc lại<select id="tkRemind">${Object.entries(REMIND).map(([k, l]) => `<option value="${k}" ${e.remind === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label class="k-hide">Tự ẩn với NV sau ngày<input id="tkHide" type="date" value="${esc(V.edit && e.hide_after ? e.hide_after : "")}"></label></div>
+      <label class="inline k-life"><input type="checkbox" id="tkKeep" ${e.keep ? "checked" : ""}> 📌 Lâu dài (quy định / quy trình — không tự ẩn)</label>
+      <div id="tkWarn" class="k-not-link"></div>
       <label class="inline"><input type="checkbox" id="tkImp" ${e.important ? "checked" : ""}> ⭐ Quan trọng (ghim lên đầu)</label>
-      <p class="tiny muted k-not-link" style="margin:0">Nhắc lại: sang tuần / tháng / 2 tháng mới, việc tự hiện lại để nhân viên xác nhận đọc lại lần nữa.</p>
+      <p class="tiny muted k-not-link" style="margin:0" id="tkLife"></p>
       <div class="row"><button class="btn primary big" id="tkSave" type="button">${V.edit ? "💾 Lưu thay đổi" : "🚀 Đăng"}</button><button class="btn" id="tkCancel" type="button">Huỷ</button><span class="small muted" id="tkMsg"></span></div>
     </div></div>`;
   let kind = e.kind, oldFiles = [...(e.files || [])];
   const setKind = (k) => { kind = k; $$("#tkKind button").forEach((b) => b.classList.toggle("on", b.dataset.k === k));
     $$(".k-link").forEach((x) => x.hidden = k !== "link"); $$(".k-not-link").forEach((x) => x.hidden = k === "link");
-    $$(".k-announce").forEach((x) => x.hidden = k !== "announce"); $$(".k-assign").forEach((x) => x.hidden = k !== "assign"); };
+    $$(".k-announce").forEach((x) => x.hidden = k !== "announce"); $$(".k-assign").forEach((x) => x.hidden = k !== "assign");
+    $$(".k-hide, .k-life").forEach((x) => x.hidden = !["announce", "assign"].includes(k)); life(); };
+  // Vòng đời việc: nhắc lại / lâu dài / thời vụ tự ẩn + cảnh báo chọn lặp lại cho đúng
+  let ai = null, hideTouched = !!(V.edit && e.hide_after);
+  const REP_TXT = { week: "nhắc hằng tuần", month: "nhắc hằng tháng", "2month": "nhắc 2 tháng/lần" };
+  function life() {
+    const box = $("#tkWarn"), info = $("#tkLife"); if (!box || !info) return;
+    const rem = $("#tkRemind").value, keep = $("#tkKeep").checked, life = ["announce", "assign"].includes(kind), dl = $("#tkDl").value;
+    const hideOn = life && rem === "none" && !keep; $("#tkHide").disabled = !hideOn;
+    if (hideOn && !hideTouched) $("#tkHide").value = dl ? addD(dl, graceDays()) : addD(vnToday(), autoDays());
+    info.textContent = !life ? "Nhắc lại: sang kỳ mới việc tự hiện lại để xác nhận lần nữa." : rem !== "none" ? `🔁 Việc lặp lại: mỗi kỳ (${REMIND[rem].replace("🔁 ", "").toLowerCase()}) nhân viên xác nhận lại, không tự ẩn.`
+      : keep ? "📌 Việc lâu dài: luôn hiện với nhân viên, không tự ẩn." : `🕒 Việc thời vụ: tự ẩn với nhân viên sau ${$("#tkHide").value ? dmy($("#tkHide").value) : "hạn"} — quản lý vẫn tìm lại được.`;
+    const warns = [];
+    if (life && ai && ai.repeat !== "none" && rem !== ai.repeat) warns.push(`AI thấy việc này nên <b>${REP_TXT[ai.repeat]}</b>${ai.repeat_reason ? ` (${esc(ai.repeat_reason)})` : ""}. Bạn đang chọn: <b>${esc(REMIND[rem])}</b>. <button class="btn small" type="button" data-apply-rep="${ai.repeat}">Chọn ${REP_TXT[ai.repeat]}</button>`);
+    if (life && ai && ai.long_term && rem === "none" && !keep) warns.push(`AI thấy đây là việc <b>lâu dài</b>${ai.repeat_reason && ai.repeat === "none" ? ` (${esc(ai.repeat_reason)})` : ""} — nếu không chọn sẽ tự ẩn sau ${$("#tkHide").value ? dmy($("#tkHide").value) : "hạn"}. <button class="btn small" type="button" data-apply-keep>Tick Lâu dài</button>`);
+    if (life && !ai && rem === "none" && !keep && REPEAT_HINT.test($("#tkContent").value + " " + $("#tkTitle").value + " " + $("#tkSum").value)) warns.push(`Nội dung có dấu hiệu là việc <b>định kỳ / lâu dài</b> (hằng ngày, hằng tháng, quy định…). Kiểm tra lại mục <b>Nhắc lại</b> hoặc tick <b>Lâu dài</b>, nếu không việc sẽ tự ẩn sau ${$("#tkHide").value ? dmy($("#tkHide").value) : "hạn"}.`);
+    box.innerHTML = warns.length ? `<div class="banner warn" style="margin:0"><span>⚠️</span><div>${warns.join("<br>")}</div></div>` : "";
+    return warns.length;
+  }
+  $("#tkForm").addEventListener("input", (ev) => { if (ev.target.id === "tkHide") hideTouched = true; if (["tkRemind", "tkKeep", "tkDl", "tkHide", "tkContent", "tkTitle", "tkSum"].includes(ev.target.id)) life(); });
+  $("#tkForm").addEventListener("change", (ev) => { if (["tkRemind", "tkKeep"].includes(ev.target.id)) life(); });
+  $("#tkWarn").onclick = (ev) => { const r = ev.target.closest("[data-apply-rep]"), k = ev.target.closest("[data-apply-keep]"); if (r) $("#tkRemind").value = r.dataset.applyRep; if (k) $("#tkKeep").checked = true; life(); };
   setKind(kind);
   $("#tkKind").onclick = (ev) => { const b = ev.target.closest("[data-k]"); if (b) setKind(b.dataset.k); };
   $("#tkAll").onclick = () => { const all = $$(".tkStaff"), on = !all.every((c) => c.checked); all.forEach((c) => c.checked = on); };
@@ -176,8 +222,9 @@ function form(body) {
     if (!text && !files.length) return toast("Dán nội dung hoặc thêm ảnh/PDF trước");
     ev.target.disabled = true; $("#tkAiMsg").textContent = "AI đang đọc…";
     try { const r = await callFn("tasks", { mode: "summarize", text, files });
-      if (r.title && !$("#tkTitle").value.trim()) $("#tkTitle").value = r.title; if (r.summary) $("#tkSum").value = r.summary; if (r.deadline && !$("#tkDl").value) $("#tkDl").value = r.deadline;
-      $("#tkAiMsg").textContent = "✅ Đã tóm tắt — kiểm tra và sửa nếu cần."; }
+      if (r.title && !$("#tkTitle").value.trim()) $("#tkTitle").value = r.title; if (r.summary) $("#tkSum").value = r.summary; if (r.notes) $("#tkNotes").value = r.notes; if (r.deadline && !$("#tkDl").value) $("#tkDl").value = r.deadline;
+      ai = { repeat: r.repeat || "none", long_term: !!r.long_term, repeat_reason: r.repeat_reason || "" };
+      $("#tkAiMsg").textContent = `✅ Đã tóm tắt — kiểm tra và sửa nếu cần.${ai.repeat !== "none" ? ` AI gợi ý: ${REP_TXT[ai.repeat]}.` : ai.long_term ? " AI gợi ý: việc lâu dài." : " AI: việc thời vụ."}`; life(); }
     catch (x) { $("#tkAiMsg").textContent = "⚠️ " + errMsg(x); }
     ev.target.disabled = false;
   };
@@ -185,6 +232,7 @@ function form(body) {
   $("#tkSave").onclick = async (ev) => {
     const title = $("#tkTitle").value.trim(); if (!title) return toast("Nhập tiêu đề");
     if (kind === "assign" && !$$(".tkStaff:checked").length) return toast("Chọn nhân viên được giao");
+    if (life() && !(await confirmBox("Kiểm tra lại việc lặp lại?", "Việc này có vẻ cần <b>nhắc lại định kỳ</b> hoặc là <b>việc lâu dài</b>, nhưng đang để thời vụ (sẽ tự ẩn). Vẫn đăng như vậy?", "Vẫn đăng"))) return;
     ev.target.disabled = true;
     try {
       const up = []; const todo = pending.filter(Boolean);
@@ -192,7 +240,8 @@ function form(body) {
       $("#tkMsg").textContent = "Đang lưu…";
       const data = { kind, title, content: kind === "link" ? $("#tkGroup").value.trim() : $("#tkContent").value.trim(), summary: kind === "link" ? "" : $("#tkSum").value.trim(), link_url: $("#tkUrl").value.trim(),
         files: [...oldFiles.filter(Boolean), ...up], depts: kind === "announce" ? $$(".tkDept:checked").map((c) => c.value) : [], assignees: kind === "assign" ? $$(".tkStaff:checked").map((c) => c.value) : [],
-        important: $("#tkImp").checked, remind: kind === "link" ? "none" : $("#tkRemind").value, deadline: kind === "link" ? "" : $("#tkDl").value };
+        important: $("#tkImp").checked, remind: kind === "link" ? "none" : $("#tkRemind").value, deadline: kind === "link" ? "" : $("#tkDl").value,
+        notes: kind === "link" ? "" : $("#tkNotes").value.trim(), keep: $("#tkKeep").checked, hide_after: hideTouched && !$("#tkHide").disabled ? $("#tkHide").value : "" };
       const res = await rpc("task_save", { p_id: V.edit?.id ?? null, p_data: data });
       toast(res.message); V.edit = null; V.draft = null; V.sub = kind === "link" ? "link" : kind === "deadline" ? "deadline" : "board"; await tasks($("#cvBody") || body);
     } catch (x) { toast(errMsg(x), 5000); ev.target.disabled = false; $("#tkMsg").textContent = ""; }

@@ -15,7 +15,7 @@ async function login(email, ctx) {
   await p.route(/fonts\.(googleapis|gstatic)|drive\.google\.com/, (r) => r.abort());
   await p.route(/cdn\.jsdelivr\.net\/npm\/@supabase/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
   await p.route(/functions\/v1\/tasks/, (r) => { const j = JSON.parse(r.request().postData() || "{}"); calls.push(j.mode);
-    const body = j.mode === "summarize" ? { status: "success", title: "Triển khai CTKM Samsung T11", summary: "• Giảm 10% Galaxy S25\n• Áp dụng 15–30/11\n• Báo cáo số bán mỗi tối", deadline: "2026-11-30" }
+    const body = j.mode === "summarize" ? { status: "success", title: "Triển khai CTKM Samsung T11", summary: "• Giảm 10% Galaxy S25\n• Áp dụng 15–30/11\n• Báo cáo số bán mỗi tối", notes: "• Không áp dụng kèm trả góp 0%", deadline: "2026-11-30", repeat: "week", long_term: false, repeat_reason: "Báo cáo số bán mỗi tối trong đợt" }
       : j.mode === "upload" ? { status: "success", file: { id: "FILEID1234567", name: j.name, mime: j.mime, url: "https://drive.google.com/file/d/FILEID1234567/view", size: 100 } } : { status: "success" };
     r.fulfill({ contentType: "application/json", body: JSON.stringify(body) }); });
   await p.route(/functions\/v1\/(notify|assistant)/, (r) => r.fulfill({ contentType: "application/json", body: '{"status":"success","items":[]}' }));
@@ -33,12 +33,16 @@ async function login(email, ctx) {
   await p.setInputFiles("#tkFiles", `${OUT}/a.png`); await p.waitForTimeout(500);
   await p.click("#tkAi"); await p.waitForTimeout(800);
   console.log("AI:", await p.inputValue("#tkTitle"), "|", (await p.inputValue("#tkSum")).split("\n").length, "ý | hạn", await p.inputValue("#tkDl"));
-  await p.check("#tkImp"); await p.selectOption("#tkRemind", "week");
+  console.log("cảnh báo:", (await p.textContent("#tkWarn")).replace(/\s+/g, " ").slice(0, 120), "| lưu ý:", await p.inputValue("#tkNotes"));
+  await p.click("[data-apply-rep]"); await p.waitForTimeout(200); console.log("sau khi chọn:", await p.inputValue("#tkRemind"), "| cảnh báo còn:", (await p.textContent("#tkWarn")).trim().length);
+  await p.check("#tkImp");
   await p.screenshot({ path: `${OUT}/form.png`, fullPage: true });
   await p.click("#tkSave"); await p.waitForTimeout(2500); console.log("đăng:", await p.textContent("#toast"), "| gọi:", calls.join(","));
   // giao việc cho NV 1001
   await p.click('#tkSubs [data-s="new"]'); await p.waitForTimeout(400); await p.click('#tkKind [data-k="assign"]');
-  await p.fill("#tkTitle", "Kiểm tra giá kệ Samsung"); await p.check('.tkStaff[value="1001"]'); await p.click("#tkSave"); await p.waitForTimeout(2000); console.log("giao:", await p.textContent("#toast"));
+  await p.fill("#tkTitle", "Kiểm tra giá kệ Samsung"); await p.fill("#tkContent", "Kiểm tra giá kệ hằng tuần theo quy định"); await p.check('.tkStaff[value="1001"]');
+  console.log("cảnh báo không AI:", (await p.textContent("#tkWarn")).trim() ? "có" : "không", "| tự ẩn:", await p.inputValue("#tkHide"));
+  await p.click("#tkSave"); await p.waitForTimeout(400); const cf = await p.$("#modalBody [data-v=ok]"); console.log("hỏi xác nhận:", !!cf); if (cf) await cf.click(); await p.waitForTimeout(2000); console.log("giao:", await p.textContent("#toast"));
   await p.click('#tkSubs [data-s="link"]'); await p.waitForTimeout(400); await p.click('[data-go-new="link"]'); await p.waitForTimeout(300);
   await p.fill("#tkTitle", "Sheet tồn kho"); await p.fill("#tkUrl", "https://docs.google.com/spreadsheets/d/x"); await p.fill("#tkGroup", "Trang tính quản lý"); await p.click("#tkSave"); await p.waitForTimeout(1500); console.log("link:", await p.textContent("#toast"));
   await p.context().close(); }

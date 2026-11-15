@@ -32,4 +32,18 @@ do $$ declare p text; begin
   perform public.task_set_status(current_setting('my.c')::bigint, 'delete');
   raise notice 'việc ok: kỳ %', p;
 end $$;
+-- việc thời vụ quá hạn tự ẩn với NV; lâu dài / nhắc lại thì không
+select set_config('request.jwt.claims', '{"email":"mgr@x.vn","role":"authenticated"}', false) \g /dev/null
+do $$ declare a jsonb; b jsonb; c jsonb; begin
+  a := public.task_save(null, jsonb_build_object('kind','announce','title','CTKM cũ','deadline', (public.vn_today() - 10)::text));
+  b := public.task_save(null, jsonb_build_object('kind','announce','title','Nội quy','keep', true));
+  c := public.task_save(null, jsonb_build_object('kind','announce','title','Không hạn'));
+  if (a ->> 'hide_after')::date <> public.vn_today() - 7 or b ->> 'hide_after' is not null or (c ->> 'hide_after')::date <> public.vn_today() + 30 then raise exception 'ngày tự ẩn sai: % % %', a, b, c; end if;
+end $$;
+select set_config('request.jwt.claims', '{"email":"nv1003@x.vn","role":"authenticated"}', false) \g /dev/null
+do $$ begin
+  if exists (select 1 from public.tasks where title = 'CTKM cũ') then raise exception 'việc hết hạn phải tự ẩn với NV'; end if;
+  if not exists (select 1 from public.tasks where title = 'Nội quy') then raise exception 'việc lâu dài phải hiện'; end if;
+  raise notice 'tự ẩn ok';
+end $$;
 reset role;

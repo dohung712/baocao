@@ -30,6 +30,10 @@ const H = [
   ["#tkKind", "Loại việc", "Triển khai toàn NV (đọc & nắm rõ) · Giao việc NV (hoàn thành + ghi chú) · Việc QL có deadline · Link trang tính.", true],
   ["#tkAi", "✨ AI tóm tắt", "AI đọc nội dung dán vào + ảnh/PDF, đề xuất tiêu đề, ý chính, hạn chót. Sửa lại trước khi đăng.", true],
   ["#tkRemind", "Nhắc lại", "Sang tuần / tháng / 2 tháng mới, việc tự hiện lại để nhân viên xác nhận đọc lại.", true],
+  ["#tkKeep", "📌 Lâu dài", "Quy định / quy trình áp dụng lâu dài: luôn hiện với nhân viên, không tự ẩn.", true],
+  ["#tkHide", "Tự ẩn sau ngày", "Việc thời vụ tự ẩn với nhân viên sau ngày này (mặc định hạn chót + 3 ngày). Quản lý vẫn tìm lại được.", true],
+  ["#tkWarn", "Cảnh báo lặp lại", "Tool/AI thấy việc có vẻ cần nhắc định kỳ hoặc là việc lâu dài — bấm nút để chọn đúng.", true],
+  ["#tkQ", "Tìm việc", "Tìm trong mọi việc, kể cả việc đã tự ẩn và đã lưu trữ.", true],
   [".tk-prog", "Tiến độ", "Bấm để xem ai đã đọc / hoàn thành và lúc nào; nút “Copy lời nhắc” để nhắc người chưa làm.", true],
   // Quỹ
   ['#cvTabs [data-t="fund"]', "💵 Quỹ", "Thu chi của siêu thị: số dư, thêm khoản, lịch sử, thống kê theo danh mục và người."],

@@ -77,7 +77,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | D2 | Vệ sinh: lịch + ảnh | CV → Vệ sinh | `pages/cv.js`, `js/photos.js` | `clean_*`, bucket `thidua-v2` |
 | D3 | Lịch bận/OFF + kiểm tra HRM | CV → Lịch bận | `pages/cv.js`, `js/lib-hrm.js` | `busy_*` |
 | D4 | Roadshow | CV → Roadshow | `pages/cv.js` | `rs_*` |
-| D7 | **Việc**: 🔗 Link trang tính (chỉ QL) · ⏰ Việc QL có deadline (QL bấm Hoàn thành + ghi chú) · 📢 Triển khai toàn NV / theo bộ phận (NV bấm "Đã đọc & nắm rõ") · 📌 Giao việc NV (NV bấm "Hoàn thành" + ghi chú). QL dán nội dung + ảnh/PDF (lưu Google Drive qua Apps Script) → ✨ AI tóm tắt (Gemini) → tick ⭐ Quan trọng, nhắc lại tuần / tháng / 2 tháng (mỗi kỳ NV xác nhận lại). QL xem tiến độ ai đã đọc / hoàn thành lúc nào, copy lời nhắc | CV → 📋 Việc | `pages/cv-tasks.js`, Edge function `tasks` (summarize / upload / delete), `supabase/apps-script/drive-upload.gs` | `tasks`, `task_acks`, `task_save`, `task_set_status`, `task_ack`, `_task_period`, `can_see_task`; khoá `GEMINI_API_KEY`, `DRIVE_UPLOAD_URL`, `DRIVE_UPLOAD_SECRET` (GitHub Secrets → `set-private.mjs`) |
+| D7 | **Việc**: 🔗 Link trang tính (chỉ QL) · ⏰ Việc QL có deadline (QL bấm Hoàn thành + ghi chú) · 📢 Triển khai toàn NV / theo bộ phận (NV bấm "Đã đọc & nắm rõ") · 📌 Giao việc NV (NV bấm "Hoàn thành" + ghi chú). QL dán nội dung + ảnh/PDF (lưu Google Drive qua Apps Script) → ✨ AI tóm tắt (Gemini): **tiêu đề, hạn chót, nội dung chính, lưu ý, gợi ý lặp lại / lâu dài** → cảnh báo nếu chọn nhắc lại chưa đúng (cả khi không dùng AI, dò chữ "hằng tuần, quy định…") → tick ⭐ Quan trọng, nhắc lại tuần / tháng / 2 tháng (mỗi kỳ NV xác nhận lại), 📌 Lâu dài. **Việc thời vụ tự ẩn** với NV sau hạn + `TASK_HIDE_GRACE_DAYS` (3) ngày, không có hạn thì sau `TASK_AUTO_HIDE_DAYS` (30) ngày; QL tìm lại bằng ô 🔎. QL xem tiến độ ai đã đọc / hoàn thành lúc nào, copy lời nhắc | CV → 📋 Việc | `pages/cv-tasks.js`, Edge function `tasks` (summarize / upload / delete), `supabase/apps-script/drive-upload.gs` | `tasks`, `task_acks`, `task_save`, `task_set_status`, `task_ack`, `_task_period`, `_task_hide_after`, `can_see_task`; khoá `GEMINI_API_KEY`, `DRIVE_UPLOAD_URL`, `DRIVE_UPLOAD_SECRET` (GitHub Secrets → `set-private.mjs`) |
 | D6 | **Quỹ thu chi** (thay tool quy cũ dùng Firebase): số dư, thu/chi tháng, thêm khoản (mọi thành viên), sửa/xoá (quản lý; người tạo trong 24 giờ), lọc tháng/loại/danh mục/người, thống kê, copy, CSV, nhật ký; danh mục & đối tác (chủ quản). Dữ liệu cũ chép 1 lần bằng GitHub Actions | CV → 💵 Quỹ | `pages/cv-fund.js` | `fund_tx`, `fund_save`, `fund_delete`, `fund_log`, settings `FUND_CATEGORIES`, `FUND_PARTNERS`; `supabase/scripts/import-quy.mjs` |
 | D5 | Thống kê CV theo NV | CV → Thống kê | `pages/cv.js` | (đọc các bảng trên) |
 
@@ -131,7 +131,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 - Target báo cáo ngày = 200% × target tháng ÷ số ngày làm việc (mặc định số ngày trong tháng − `DAYS_OFF`), làm tròn lên, tối thiểu 0,5. Điểm thi đua xếp hạng vẫn so với target tháng.
 
 ## 4. Cài đặt (bảng `settings`)
-`FUND_CATEGORIES FUND_PARTNERS FUND_IMPORTED_AT HELP_DELAY_S DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
+`TASK_HIDE_GRACE_DAYS TASK_AUTO_HIDE_DAYS FUND_CATEGORIES FUND_PARTNERS FUND_IMPORTED_AT HELP_DELAY_S DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
 Khoá bí mật (bảng `private_settings`, không đọc được từ web): `TELEGRAM_BOT_TOKEN GEMINI_API_KEY CRON_SECRET`
 
 ---
@@ -203,6 +203,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_member_for_staff` | function | 000600_modules.sql:125 |
 | `_require_member` | function | 000200_logic.sql:189 |
 | `_staff_items` | function | 000750_daily_target_x2.sql:15 |
+| `_task_hide_after` | function | 000790_tasks_notes_autohide.sql:12 |
 | `_task_period` | function | 000780_tasks.sql:35 |
 | `_work_days` | function | 000720_report_items_from_contest.sql:9 |
 | `add_violation` | function | 000700_scoring.sql:310 |
@@ -213,7 +214,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `busy_delete` | function | 000600_modules.sql:262 |
 | `busy_register` | function | 000600_modules.sql:246 |
 | `can_see_staff` | function | 000100_core.sql:150 |
-| `can_see_task` | function | 000780_tasks.sql:45 |
+| `can_see_task` | function | 000790_tasks_notes_autohide.sql:22 |
 | `check_hot_bonus` | function | 000740_star_suggest_hot.sql:112 |
 | `clean_delete` | function | 000600_modules.sql:232 |
 | `clean_register` | function | 000600_modules.sql:206 |
@@ -266,7 +267,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `staff_total` | function | 000700_scoring.sql:120 |
 | `submit_daily_report` | function | 000200_logic.sql:225 |
 | `task_ack` | function | 000780_tasks.sql:120 |
-| `task_save` | function | 000780_tasks.sql:68 |
+| `task_save` | function | 000790_tasks_notes_autohide.sql:35 |
 | `task_set_status` | function | 000780_tasks.sql:99 |
 | `tiktok_due_dates` | function | 000600_modules.sql:136 |
 | `tiktok_manage` | function | 000600_modules.sql:189 |
