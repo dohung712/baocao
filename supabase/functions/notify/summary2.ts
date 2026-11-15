@@ -35,7 +35,8 @@ export function tiktokMsg(store: string, date: string, staff: Staff[], subs: any
     const done = new Set(subs.filter((s) => s.due === due).map((s) => s.staff_id));
     const miss = staff.filter((s) => !done.has(s.id));
     L.push(`Hạn hôm nay (${dow(due)} ${dm(due)}): <b>${staff.length - miss.length}/${staff.length}</b> đã nộp`);
-    if (miss.length) L.push(`⏳ Chưa nộp: ${miss.map((s) => esc(short(s.name))).join(", ")} — nộp trước 24h để được thưởng`);
+    if (miss.length) L.push(`⏳ Chưa nộp: ${miss.map((s) => esc(short(s.name))).join(", ")} — nộp trước 24h hôm nay để không bị trừ sao`);
+    L.push("🌟 Nộp trước ngày hạn được thưởng sao, nộp đúng ngày hạn không thưởng không trừ.");
   }
   const od = [...overdue.entries()].filter(([, v]) => v.length);
   if (od.length) { L.push("", "❌ <b>Quá hạn chưa nộp (đang bị trừ mỗi ngày)</b>"); od.forEach(([n, v]) => L.push(`• ${esc(short(n))}: ${v.map(dm).join(", ")}`)); }

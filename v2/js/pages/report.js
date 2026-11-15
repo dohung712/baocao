@@ -101,7 +101,7 @@ function drawHead() {
     try {
       const rows = ex.filter((r) => !["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)).map((r) => {
         const it = f.items.find((i) => i.name === r.item_name), rate = Number(r.rate_pct);
-        return { name: r.item_name, actual: Number(r.actual), target: rate > 0 ? Number(r.actual) * 100 / rate : Number(it?.target || 0), rate: Math.round(rate || 0), star: r.star_change, status: r.status, comp: r.compensation };
+        return { name: r.item_name, actual: Number(r.actual), target: Number(it?.target || 0) || (rate > 0 ? Number(r.actual) * 100 / rate : 0), rate: Math.round(rate || 0), star: r.star_change, status: r.status, comp: r.compensation, streak: it?.streak ?? 0, needed: it?.penalty };
       });
       const late = ex.filter((r) => ["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)).map((r) => ({ name: r.item_name, star: r.star_change }));
       await exportImage(rows, late, ex.reduce((a, r) => a + r.star_change, 0), f.total_star);
@@ -150,15 +150,17 @@ function drawBody() {
 }
 
 const schedule = debounce(() => runPreview(), 350);
-const itemsFilled = () => st.form.items.every((i) => st.inputs[i.name] !== undefined && st.inputs[i.name] !== "" && Number(st.inputs[i.name]) >= 0);
+// Môn để trống = 0 (không bắt buộc nhập); chỉ chặn số âm
+const itemsFilled = () => st.form.items.every((i) => !(Number(st.inputs[i.name]) < 0));
+const anyInput = () => st.form.items.some((i) => st.inputs[i.name] !== undefined && st.inputs[i.name] !== "");
 const needRev = () => !isHidden("report.revenue");
 const revFilled = () => !needRev() || (st.revenue !== "" && Number(st.revenue) >= 0);
 const filled = () => itemsFilled() && revFilled();
-const payload = () => st.form.items.map((i) => ({ itemName: i.name, actual: Number(st.inputs[i.name]), compensation: st.comps[i.name] || "DUNG_SAO" }));
+const payload = () => st.form.items.map((i) => ({ itemName: i.name, actual: Number(st.inputs[i.name]) || 0, compensation: st.comps[i.name] || "DUNG_SAO" }));
 
 async function runPreview() {
   if (!$("#rRows")) return; // đã rời trang
-  if (!itemsFilled()) { st.preview = null; drawRows(); drawSum(); return; }
+  if (!itemsFilled() || (!anyInput() && !st.form.existing?.length)) { st.preview = null; drawRows(); drawSum(); return; }
   const key = JSON.stringify(payload());
   try {
     const res = await rpc("preview_daily_report", { p_staff: st.staffId, p_date: st.date, p_reports: payload() });
@@ -169,8 +171,8 @@ async function runPreview() {
 
 function resultCell(item, pr) {
   const v = st.inputs[item.name];
-  if (v === undefined || v === "") return `<span class="muted small">Nhập số…</span>`;
-  const rate = Math.round(Number(v) / (Number(item.target) || 1) * 100);
+  if ((v === undefined || v === "") && !pr) return `<span class="muted small">Bỏ trống = 0</span>`;
+  const rate = Math.round((Number(v) || 0) / (Number(item.target) || 1) * 100);
   if (!pr) return rate >= 100 ? `<span class="pill ok">Về số ${rate}%</span>` : `<span class="pill mute">${rate}%</span>`;
   const chooser = `<span class="choice"><button type="button" data-item="${esc(item.name)}" data-comp="DUNG_SAO" class="${(st.comps[item.name] || "DUNG_SAO") === "DUNG_SAO" ? "on" : ""}">Dùng sao</button><button type="button" data-item="${esc(item.name)}" data-comp="TANG_CA" class="${st.comps[item.name] === "TANG_CA" ? "on" : ""}">Tăng ca</button></span>`;
   if (pr.status === "Về số") { const k = item.bonus ? Math.round(pr.starChange / item.bonus) : 1; return `<span class="pill ok">Về số ${pr.rate}%</span> ${starHtml(pr.starChange)}${k >= 2 ? ` <span class="pill star">X${k}</span>` : ""}`; }
@@ -213,19 +215,19 @@ function drawSum() {
   const after = p ? p.total_before - p.old_day_change + p.day_change : null;
   $("#rSum").innerHTML = `
     <div class="kpis">
-      <div><small>Đã nhập</small><b>${nFilled}/${items.length}</b></div>
+      <div><small>Có số</small><b>${nFilled}/${items.length}</b></div>
       <div><small>Về số</small><b class="pos">${ok}/${items.length}</b></div>
       <div><small>Sao ca này</small><b>${day === null ? "—" : `<span class="${day >= 0 ? "pos" : "neg"}">${sign(day)}⭐</span>`}</b></div>
       <div><small>Tổng sau ca</small><b class="star">${after === null ? "—" : fmt(after) + "⭐"}</b></div>
     </div>
     <button class="btn primary big" id="btnSend" type="button">🚀 ${st.form.existing?.length ? "Cập nhật" : "Gửi báo cáo"}</button>
-    ${filled() ? "" : `<div class="miss-hint">Còn thiếu: ${[items.length - nFilled ? `${items.length - nFilled} môn` : "", revFilled() ? "" : "doanh thu QĐ"].filter(Boolean).join(", ")}</div>`}`;
+    ${filled() ? "" : `<div class="miss-hint">Còn thiếu: doanh thu QĐ (không có ghi 0)</div>`}`;
   $("#btnSend").classList.toggle("dim", !filled());
   $("#btnSend").onclick = () => submit();
 }
 
 async function submit(reason = null) {
-  if (!itemsFilled()) { const miss = st.form.items.find((i) => st.inputs[i.name] === undefined || st.inputs[i.name] === ""); const el = miss && $(`input.actual[data-item="${CSS.escape(miss.name)}"]`); el?.scrollIntoView({ block: "center", behavior: "smooth" }); el?.focus(); return toast("Nhập đủ số liệu tất cả các môn"); }
+  if (!itemsFilled()) return toast("Số thực đạt không được âm");
   if (!revFilled()) { const c = $("#revCard"); c?.classList.add("miss"); c?.scrollIntoView({ block: "center", behavior: "smooth" }); $("#xRev")?.focus(); return toast("Nhập doanh thu QĐ trong ca (không bán được ghi 0)"); }
   const btn = $("#btnSend"); btn.disabled = true; st.busy = true;
   try {
@@ -269,9 +271,9 @@ async function showDone(res) {
     st.revenue !== "" ? `💰 DT QĐ: ${fmt(Number(st.revenue), 2)} ${setting("REVENUE_UNIT", "")}` : "",
     st.extra.trim() ? `🎁 Bán thêm: ${st.extra.trim()} (đề xuất ${fmt(Number(st.extraStars) || 0)}⭐)` : "",
   ].filter(Boolean).join("\n");
-  const imgRows = items.map((r) => ({ name: r.itemName, actual: r.actual, target: r.target, rate: r.rate, star: r.starChange, status: r.status, comp: r.compensation }));
+  const imgRows = items.map((r) => ({ name: r.itemName, actual: r.actual, target: r.target, rate: r.rate, star: r.starChange, status: r.status, comp: r.compensation, streak: r.streak, needed: r.needed }));
   const late = res.rows.filter((r) => ["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)).map((r) => ({ name: r.itemName, star: r.starChange }));
-  let blob = null; const ready = imageBlob(imgRows, late, res.day_change, res.total_star).then((b) => (blob = b)).catch(() => null);
+  let blob = null; const ready = imageBlob(imgRows, late, res.day_change, res.total_star, true).then((b) => (blob = b)).catch(() => null);
   const v = await modal(`<h3>✅ Đã gửi báo cáo</h3>
     <div class="kpis" style="margin-bottom:10px"><div><small>Về số</small><b class="pos">${ok.length}/${items.length}</b></div><div><small>Sao ca này</small><b class="${res.day_change >= 0 ? "pos" : "neg"}">${sign(res.day_change)}⭐</b></div><div><small>Tổng sao</small><b class="star">${fmt(res.total_star)}⭐</b></div></div>
     <pre class="preview">${esc(text)}</pre>
@@ -282,11 +284,18 @@ async function showDone(res) {
 
 // ---------- Ảnh báo cáo ----------
 const imgName = () => `bao-cao_${st.staffId}_${st.date}.png`;
-function imageBlob(rows, late, dayChange, total) {
+async function imageBlob(rows, late, dayChange, total, fresh = false) {
   const s = staffById(st.staffId) || {};
-  return reportPng({ store: setting("STORE_NAME", "") || "Thi Đua & BXH", name: s.name || st.staffId, id: st.staffId, dept: s.dept || "", dateLabel: `${dow(st.date)} ${dmy(st.date)}`,
-    rows, late, dayChange, total, okCount: rows.filter((r) => r.status === "Về số").length,
-    revenue: st.revenue !== "" ? Number(st.revenue) : null, unit: setting("REVENUE_UNIT", ""), extra: st.extra.trim() });
+  // H.QUA: thực đạt ở lần báo cáo gần nhất trước ngày này
+  let pv = [];
+  try { ({ data: pv } = await sb.from("daily_results").select("report_date,item_name,actual,status").eq("staff_id", st.staffId).lt("report_date", st.date).order("report_date", { ascending: false }).limit(80)); } catch { pv = []; }
+  const lastDay = pv?.[0]?.report_date, prev = new Map((pv || []).filter((r) => r.report_date === lastDay && ["Về số", "Chưa về"].includes(r.status)).map((r) => [r.item_name, Number(r.actual)]));
+  rows = rows.map((r) => ({ ...r, prev: prev.has(r.name) ? prev.get(r.name) : null }));
+  const ex = st.form.existing?.find((r) => r.submitted_at);
+  return reportPng({ store: setting("STORE_NAME", "") || "Thi Đua & BXH", name: s.name || st.staffId, id: st.staffId, dept: s.dept || "", date: st.date, dateLabel: `${dow(st.date)} ${dmy(st.date)}`,
+    updatedAt: !fresh && ex ? new Date(ex.submitted_at) : new Date(), prevDay: lastDay || null,
+    rows, late, dayChange, total, totalBefore: total - dayChange, okCount: rows.filter((r) => r.status === "Về số").length,
+    revenue: st.revenue !== "" ? Number(st.revenue) : null, unit: setting("REVENUE_UNIT", ""), extra: st.extra.trim(), extraStars: Number(st.extraStars) || 0 });
 }
 async function exportImage(rows, late, dayChange, total) {
   const blob = await imageBlob(rows, late, dayChange, total);

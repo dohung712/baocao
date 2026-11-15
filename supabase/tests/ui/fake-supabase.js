@@ -18,6 +18,8 @@ class Q {
   eq(c, v) { this.w.push(`${c} = ${lit(v)}`); return this; }
   gte(c, v) { this.w.push(`${c} >= ${lit(v)}`); return this; }
   lte(c, v) { this.w.push(`${c} <= ${lit(v)}`); return this; }
+  lt(c, v) { this.w.push(`${c} < ${lit(v)}`); return this; }
+  gt(c, v) { this.w.push(`${c} > ${lit(v)}`); return this; }
   in(c, arr) { this.w.push(`${c} in (${arr.map(lit).join(",")})`); return this; }
   order(c, o = {}) { this.o.push(`${c} ${o.ascending === false ? "desc" : "asc"}`); return this; }
   limit(n) { this.lim = n; return this; }

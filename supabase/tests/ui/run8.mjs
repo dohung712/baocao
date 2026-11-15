@@ -1,0 +1,31 @@
+// Kiểm thử: để trống môn (= 0), DT ghi 0 vẫn gửi được; ảnh báo cáo đầy đủ; TikTok nộp sớm / link trùng
+import { createRequire } from "node:module";
+const { chromium } = createRequire(import.meta.url)("playwright");
+import { readFileSync, mkdirSync } from "node:fs";
+const OUT = "/tmp/ui-shots8"; mkdirSync(OUT, { recursive: true });
+const fake = readFileSync(new URL("./fake-supabase.js", import.meta.url), "utf8");
+const errors = [];
+const b = await chromium.launch();
+const p = await (await b.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, acceptDownloads: true })).newPage();
+p.on("pageerror", (e) => errors.push("pageerror: " + e.message)); p.on("console", (m) => { if (m.type() === "error") errors.push("console: " + m.text()); });
+await p.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
+await p.route(/cdn\.jsdelivr\.net\/npm\/@supabase/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
+await p.route(/functions\/v1\//, (r) => r.fulfill({ contentType: "application/json", body: '{"status":"success","items":[]}' }));
+await p.goto("http://localhost:8790/v2/");
+await p.fill("#lEmail", "nv1003@x.vn"); await p.fill("#lPass", "x"); await p.click("#fPass button[type=submit]");
+await p.waitForSelector("#app:not([hidden])", { timeout: 30000 }); await p.waitForTimeout(1500);
+const ins = await p.$$("input.actual"); for (const i of ins) await i.fill("");
+if (ins[0]) await ins[0].fill("3");
+await p.click("#btnSend"); await p.waitForTimeout(500); console.log("chưa nhập DT:", await p.textContent("#toast"));
+await p.fill("#xRev", "0"); await p.waitForTimeout(800); await p.click("#btnSend"); await p.waitForTimeout(2500);
+console.log("gửi:", await p.$("#doneImg") ? "OK (có nút ảnh)" : "KHÔNG");
+const dl = p.waitForEvent("download", { timeout: 8000 }).catch(() => null); await p.click("#doneImg"); const d = await dl;
+if (d) { await d.saveAs(`${OUT}/report.png`); console.log("ảnh:", d.suggestedFilename()); } else console.log("không tải ảnh, toast:", await p.textContent("#toast"));
+await p.click('#modalBody [data-v=ok]').catch(() => {}); await p.waitForTimeout(800);
+// TikTok
+await p.click('#tabbar [data-page="cv"]'); await p.waitForTimeout(1500);
+await p.click('#cvTabs [data-t="tiktok"]').catch(() => {}); await p.waitForTimeout(1000);
+await p.fill("#ttLinks", "https://www.tiktok.com/@abc/video/7570000000000000001"); await p.fill("#ttFb", "https://www.facebook.com/share/v/abc123");
+await p.click("#ttSend"); await p.waitForTimeout(1500); console.log("tiktok 1:", await p.textContent("#toast"));
+await b.close();
+console.log(errors.length ? errors.join("\n") : "no browser errors");

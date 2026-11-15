@@ -38,7 +38,7 @@ export async function render(view) {
       <li>🔥 <b>Thưởng nóng ${fmt(SP.hot_stars)}⭐</b>: môn target thấp, bán trong ngày ≥ ${fmt(SP.hot_store_pct)}% target tháng của siêu thị hoặc &gt; ${fmt(SP.hot_staff_pct)}% target ngày của bạn (quản lý duyệt).</li></ul>
       <p class="small muted">Sao hiện tại từng môn xem ở bảng “Danh mục môn hiện tại” bên dưới.</p></div>
     <div class="card"><h2>6. Công việc (CV)</h2>
-      <ul><li><b>TikTok</b>: hạn Thứ 3 & Thứ 6, cần link TikTok + link Facebook cá nhân. Đúng hạn <b class="pos">+${n("TIKTOK_REWARD", 300)}⭐</b>; quá hạn chưa nộp trừ <b class="neg">−${n("TIKTOK_PENALTY", 300)}⭐/ngày</b> vào báo cáo cuối ngày.</li>
+      <ul><li><b>TikTok</b>: hạn Thứ 3 & Thứ 6, cần link TikTok + link Facebook cá nhân, link phải mới (không trùng của mình và người khác). Nộp <b>trước</b> ngày hạn <b class="pos">+${n("TIKTOK_REWARD", 100)}⭐</b>; nộp đúng ngày hạn không thưởng, không trừ; quá hạn chưa nộp trừ <b class="neg">−${n("TIKTOK_PENALTY", 300)}⭐/ngày</b> vào báo cáo cuối ngày.</li>
       <li><b>Vệ sinh</b>: mỗi ngày 1 người đăng ký, nộp đúng 3 ảnh.</li>
       <li><b>Lịch bận/OFF</b>: Thứ 2–6 tối đa ${n("BUSY_MAX_WEEKDAY", 3)} người/ngày; Thứ 7, CN không giới hạn.</li>
       <li><b>Roadshow</b>: khung sáng 6h–10h30, chiều 15h–18h; mỗi lượt ≥ ${n("RS_MIN_KM", 5)} km, ≥ ${n("RS_MIN_MIN", 30)} phút, 3–6 ảnh.</li>

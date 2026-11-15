@@ -282,7 +282,7 @@ const NUM_SETTINGS = [
   ["DAILY_TARGET_MIN", "Báo cáo ngày: target tối thiểu", "Target báo cáo ngày làm tròn lên, không nhỏ hơn số này"],
   ["HELP_DELAY_S", "Gợi ý tự hiện: số giây rê chuột", "Rê chuột lên một mục bao lâu thì hiện bong bóng hướng dẫn (điện thoại: nhấn giữ 0,8 giây)"],
   ["LATE_STEP", "Sao phạt nộp trễ mỗi lần", "Lần N trong tháng bị trừ N × số này"],
-  ["TIKTOK_REWARD", "TikTok: sao thưởng đúng hạn", ""], ["TIKTOK_PENALTY", "TikTok: sao phạt mỗi ngày trễ", ""], ["TIKTOK_MIN_LINKS", "TikTok: số link tối thiểu", ""], ["TIKTOK_FB_MIN", "TikTok: số link Facebook tối thiểu", ""],
+  ["TIKTOK_REWARD", "TikTok: sao thưởng nộp trước hạn", "Nộp trước ngày hạn được thưởng; đúng ngày hạn không thưởng không trừ"], ["TIKTOK_PENALTY", "TikTok: sao phạt mỗi ngày trễ", ""], ["TIKTOK_MIN_LINKS", "TikTok: số link tối thiểu", ""], ["TIKTOK_FB_MIN", "TikTok: số link Facebook tối thiểu", ""],
   ["BUSY_MAX_WEEKDAY", "Lịch bận: tối đa người/ngày (T2–T6)", ""], ["RS_MIN_KM", "Roadshow: km tối thiểu", ""], ["RS_MIN_MIN", "Roadshow: phút tối thiểu", ""],
   ["W_REVENUE", "Xếp hạng: trọng số Doanh thu", "Điểm tối đa phần doanh thu"], ["W_CONTEST", "Xếp hạng: trọng số Thi đua", ""], ["W_SERVICE", "Xếp hạng: trọng số Phục vụ", ""], ["VIOLATION_POINTS", "Xếp hạng: điểm trừ mỗi lỗi", ""],
 ];

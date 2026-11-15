@@ -61,20 +61,21 @@ function ttTarget(staffId, today, start) {
 async function tiktok(body) {
   const today = vnToday(), start = String(setting("TIKTOK_START_DATE", today)).slice(0, 10);
   D.tiktok = await load("tiktok_submissions", "due", addDays(start, -1) < addDays(today, -90) ? addDays(today, -90) : addDays(start, -1), addDays(today, 14));
-  const reward = setting("TIKTOK_REWARD", 300), pen = setting("TIKTOK_PENALTY", 300), minL = setting("TIKTOK_MIN_LINKS", 1);
+  const reward = setting("TIKTOK_REWARD", 100), pen = setting("TIKTOK_PENALTY", 300), minL = setting("TIKTOK_MIN_LINKS", 1);
   const cols = dueDates(start > addDays(today, -35) ? start : addDays(today, -35), addDays(today, 7)).slice(-10);
   const sel = isManager() ? ($("#cvStaff")?.value || me() || visibleStaff()[0]?.id) : me();
   body.innerHTML = `
     <div class="grid2" style="margin-bottom:14px">
       <div class="card"><div class="card-h"><h2>📱 Nộp link TikTok</h2><span class="pill info">Hạn Thứ 3 & Thứ 6</span></div>
-        <ol class="small muted" style="margin:0 0 10px;padding-left:18px"><li>Úp video lên <b>TikTok</b> → Chia sẻ → Sao chép liên kết → dán ô ①.</li><li>Úp lên <b>Facebook cá nhân</b> (Công khai) → Sao chép liên kết → dán ô ②.</li><li>Mỗi link 1 dòng, không dùng lại link kỳ trước.</li></ol>
+        <ol class="small muted" style="margin:0 0 10px;padding-left:18px"><li>Úp video lên <b>TikTok</b> → Chia sẻ → Sao chép liên kết → dán ô ①.</li><li>Úp lên <b>Facebook cá nhân</b> (Công khai) → Sao chép liên kết → dán ô ②.</li><li>Mỗi link 1 dòng. Link phải mới: không trùng link kỳ trước, không trùng link của người khác.</li></ol>
         <div class="stack"><label>Nhân viên${staffPicker()}</label>
           <div id="ttTarget"></div>
           <label>① Link TikTok (tối thiểu ${minL})<textarea id="ttLinks" placeholder="https://vt.tiktok.com/…"></textarea></label>
           <label>② Link Facebook cá nhân<textarea id="ttFb" placeholder="https://www.facebook.com/…"></textarea></label>
           <button class="btn primary" id="ttSend" type="button">📤 Gửi link</button></div></div>
       <div class="card"><div class="card-h"><h2>Quy định</h2></div><ul class="small" style="margin:0;padding-left:18px;line-height:1.7">
-        <li>Nộp đúng hạn (trong ngày hạn hoặc trước): <b class="pos">+${fmt(reward)}⭐</b>.</li>
+        <li>Nộp <b>trước</b> ngày hạn: <b class="pos">+${fmt(reward)}⭐</b>.</li>
+        <li>Nộp <b>đúng ngày hạn</b>: không thưởng, không trừ.</li>
         <li>Quá hạn chưa nộp: mỗi ngày bị trừ <b class="neg">−${fmt(pen)}⭐</b> vào báo cáo cuối ngày cho tới khi nộp.</li>
         <li>Nộp trễ: ghi nhận, không thưởng. Kỳ được miễn (nghỉ phép, ốm…) do quản lý đánh dấu.</li>
         <li>Bắt đầu tính từ ${dmy(start)}.</li></ul></div>
@@ -82,17 +83,17 @@ async function tiktok(body) {
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>📊 Theo dõi các kỳ (cả team)</h2>${isManager() ? '<span class="small muted">Bấm ô để miễn / xoá kỳ</span>' : ""}</div>
       <div class="tbl-wrap"><table><thead><tr><th>Nhân viên</th>${cols.map((d) => `<th class="num">${ttLabel(d)}</th>`).join("")}</tr></thead><tbody>
       ${visibleStaff().map((s) => `<tr><td>${esc(shortName(s.name))}</td>${cols.map((d) => { const t = D.tiktok.find((x) => x.staff_id === s.id && x.due === d);
-        const [ic, cl, tt] = t ? (t.status === "ĐÚNG HẠN" ? ["✅", "pos", "Đúng hạn"] : t.status === "MIỄN" ? ["🛡️", "muted", "Miễn"] : ["⏰", "", "Nộp trễ " + dm(t.submit_date)]) : d < today ? ["❌", "neg", "Chưa nộp — đang bị trừ"] : ["⏳", "muted", "Chưa tới hạn"];
+        const [ic, cl, tt] = t ? (t.status === "SỚM" ? ["🌟", "pos", "Nộp sớm " + dm(t.submit_date) + " (+thưởng)"] : t.status === "ĐÚNG HẠN" ? ["✅", "pos", "Đúng hạn"] : t.status === "MIỄN" ? ["🛡️", "muted", "Miễn"] : ["⏰", "", "Nộp trễ " + dm(t.submit_date)]) : d < today ? ["❌", "neg", "Chưa nộp — đang bị trừ"] : ["⏳", "muted", "Chưa tới hạn"];
         return `<td class="num ${cl}" title="${esc(tt)}" ${isManager() ? `data-tt="${esc(s.id)}|${d}" style="cursor:pointer"` : ""}>${ic}</td>`; }).join("")}</tr>`).join("")}
       </tbody></table></div>
-      <div class="legend"><span>✅ Đúng hạn (+thưởng)</span><span>⏰ Nộp trễ</span><span>❌ Chưa nộp (đang bị trừ mỗi ngày)</span><span>⏳ Chưa tới hạn</span><span>🛡️ Được miễn</span></div></div>
+      <div class="legend"><span>🌟 Nộp sớm (+thưởng)</span><span>✅ Đúng ngày hạn</span><span>⏰ Nộp trễ</span><span>❌ Chưa nộp (đang bị trừ mỗi ngày)</span><span>⏳ Chưa tới hạn</span><span>🛡️ Được miễn</span></div></div>
     <div class="card"><div class="card-h"><h3>🧾 Link đã nộp gần đây</h3></div>
-      ${D.tiktok.filter((t) => t.status !== "MIỄN").length ? `<div class="tbl-wrap"><table><tbody>${D.tiktok.filter((t) => t.status !== "MIỄN").sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 30).map((t) => `<tr><td>${esc(shortName(name(t.staff_id)))}</td><td>${ttLabel(t.due)}</td><td><span class="pill ${t.status === "ĐÚNG HẠN" ? "ok" : "warn"}">${esc(t.status)}</span></td>
-        <td class="small">${[...t.tiktok_links, ...t.fb_links].map((l) => `<a href="${esc(l)}" target="_blank" rel="noopener">${esc(l.replace(/^https?:\/\//, "").slice(0, 38))}</a>`).join("<br>")}</td><td class="tiny muted">${dmy(t.submit_date)} ${esc(t.submit_time)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Chưa có.</p>`}</div>`;
+      ${D.tiktok.filter((t) => t.status !== "MIỄN").length ? `<div class="tbl-wrap"><table><tbody>${D.tiktok.filter((t) => t.status !== "MIỄN").sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 30).map((t) => `<tr><td>${esc(shortName(name(t.staff_id)))}</td><td>${ttLabel(t.due)}</td><td><span class="pill ${t.status === "TRỄ" ? "warn" : "ok"}">${esc(t.status)}</span></td>
+        <td class="small">${[...t.tiktok_links, ...t.fb_links].map((l) => `<a href="${esc(l)}" target="_blank" rel="noopener">${esc(l.replace(/^https?:\/\//, "").slice(0, 38))}</a>${ttPosted(l) ? ` <span class="tiny muted">· đăng ${ttPosted(l)}</span>` : ""}`).join("<br>")}</td><td class="tiny muted">${dmy(t.submit_date)} ${esc(t.submit_time)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Chưa có.</p>`}</div>`;
   const showTarget = () => {
     const sid = $("#cvStaff")?.value; if (!sid) return;
     const t = ttTarget(sid, today, start);
-    $("#ttTarget").innerHTML = t.due ? `<div class="banner ${t.late ? "bad" : "info"}" style="margin:0"><div><b>Kỳ đang nộp: ${ttLabel(t.due)}</b>${t.late ? "Quá hạn — nộp ngay để dừng bị trừ sao (nộp trễ không có thưởng)." : `Nộp trước hết ngày ${dmy(t.due)} để được +${fmt(reward)}⭐.`}</div></div>` : "";
+    $("#ttTarget").innerHTML = t.due ? `<div class="banner ${t.late ? "bad" : "info"}" style="margin:0"><div><b>Kỳ đang nộp: ${ttLabel(t.due)}</b>${t.late ? "Quá hạn — nộp ngay để dừng bị trừ sao (nộp trễ không có thưởng)." : `Nộp trước ngày ${dmy(t.due)} được +${fmt(reward)}⭐ · nộp đúng ngày ${dm(t.due)} không thưởng, không trừ.`}</div></div>` : "";
   };
   const selEl = $("#cvStaff"); if (sel && selEl?.tagName === "SELECT" && [...selEl.options].some((o) => o.value === sel)) selEl.value = sel;
   $("#cvStaff")?.addEventListener("change", showTarget); showTarget();
@@ -333,7 +334,7 @@ async function stats(body) {
     const t = mine(tt), c = mine(cl), b = mine(bz), r = mine(rr);
     const days = new Set(res.filter((x) => x.staff_id === s.id).map((x) => x.report_date));
     return { s, days: days.size, ban: b.filter((x) => x.type === "BAN").length, off: b.filter((x) => x.type === "OFF").length,
-      ttOk: t.filter((x) => x.status === "ĐÚNG HẠN").length, ttLate: t.filter((x) => x.status === "TRỄ").length, ttMiss: dues.filter((d) => !t.some((x) => x.due === d)).length,
+      ttOk: t.filter((x) => x.status === "ĐÚNG HẠN" || x.status === "SỚM").length, ttLate: t.filter((x) => x.status === "TRỄ").length, ttMiss: dues.filter((d) => !t.some((x) => x.due === d)).length,
       links: t.reduce((a, x) => a + x.tiktok_links.length + x.fb_links.length, 0), clReg: c.length, clDone: c.filter((x) => x.photos.length >= 3).length,
       rsReg: r.length, rsDone: r.filter((x) => x.photos.length >= 3).length, km: r.reduce((a, x) => a + (Number(x.km) || 0), 0), late: res.filter((x) => x.staff_id === s.id && x.compensation === "PHAT_TRE").length, t, c, b, r };
   });
@@ -360,4 +361,10 @@ async function stats(body) {
     ...list.map((x) => [x.s.name, x.days, x.late, x.ban, x.off, x.ttOk, x.ttLate, x.ttMiss, `${x.clDone}/${x.clReg}`, `${x.rsDone}/${x.rsReg}`, x.km])];
   $("#stCsv").onclick = () => download(`thong-ke-cv_${ym}.csv`, csv(rows()));
   $("#stCopy").onclick = async () => toast((await copyText([`📊 THỐNG KÊ CÔNG VIỆC ${monthLabel(ym).toUpperCase()}`, ...list.map((x) => `• ${x.s.name}: BC ${x.days} ngày · Bận ${x.ban} · OFF ${x.off} · TikTok ✅${x.ttOk} ⏰${x.ttLate} ❌${x.ttMiss} · VS ${x.clDone} · RS ${x.rsDone}${x.km ? ` (${fmt(x.km, 1)}km)` : ""}`)].join("\n"))) ? "Đã copy" : "Không copy được");
+}
+
+// Thời điểm đăng video TikTok đọc từ mã video trong link dạng …/video/<id> (32 bit đầu của id = giây Unix). Link rút gọn vt.tiktok.com không đọc được.
+function ttPosted(link) {
+  const m = String(link).match(/tiktok\.com\/.*?\/(?:video|photo)\/(\d{15,20})/); if (!m) return "";
+  try { const sec = Number(BigInt(m[1]) >> 32n); if (sec < 1.4e9 || sec > Date.now() / 1000 + 86400) return ""; return new Date(sec * 1000).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }); } catch { return ""; }
 }

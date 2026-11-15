@@ -41,11 +41,11 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 ### B. Báo cáo ngày và sao
 | Mã | Chức năng | Trên web | File giao diện | Hàm / bảng SQL |
 |---|---|---|---|---|
-| B1 | Form báo cáo ngày: môn, target, chuỗi | Báo cáo | `pages/report.js` | `report_form`, `_staff_items` |
+| B1 | Form báo cáo ngày: môn, target, chuỗi. **Môn để trống = 0** (không bắt buộc nhập) | Báo cáo | `pages/report.js` (itemsFilled, payload) | `report_form`, `_staff_items` |
 | B2 | Danh sách môn của NV: **= môn thi đua tháng** nếu đã giao, chưa giao thì theo bộ phận / môn riêng | (tự động) | n/a | `_staff_items`, `_work_days` |
 | B3 | Tính sao: về số/chưa về, x2, chuỗi, tăng ca, trừ sao lũy tiến, phạt nộp trễ | Báo cáo → Xem trước/Nộp | `pages/report.js` | `_compute_report`, `preview_daily_report`, `submit_daily_report`, `_item_streak`, `ITEM_RULES` |
 | B4 | Ô doanh thu QĐ trong ca, **bắt buộc** (không bán ghi 0; ẩn được ở F4) | Báo cáo (cuối form) | `pages/report.js` (#xRev, needRev/revFilled) | `save_revenue`, `revenue_entries` |
-| B4b | **Xuất ảnh báo cáo** (PNG) để gửi Zalo/Line: sau khi gửi + nút "🖼️ Ảnh báo cáo" | Báo cáo | `js/report-image.js` (reportPng, shareOrDownload), `pages/report.js` | n/a |
+| B4b | **Xuất ảnh báo cáo** (PNG) kiểu "BÁO CÁO CHỐT THI ĐUA CA NGÀY": target, thực đạt, %, sao ±, H.QUA (lần báo cáo trước), chuỗi, bù/tăng ca, kỷ luật, bán thêm, DT, tổng kết. Sau khi gửi + nút "🖼️ Ảnh báo cáo" | Báo cáo | `js/report-image.js` (reportPng, shareOrDownload), `pages/report.js` (imageBlob) | n/a |
 | B4c | Giao diện điện thoại 6.1–6.9" (390–440px): ô nhập to, thanh tiến độ, thanh gửi dính đáy | Báo cáo | `css/app.css` (khối "Báo cáo: tối ưu điện thoại") | n/a |
 | B12 | **Thưởng nóng** 2.000⭐: môn "Target thấp", NV bán trong ngày ≥ 30% target tháng siêu thị hoặc > 1000% target ngày → popup hoa chúc mừng, quản lý duyệt mới cộng (vào `star_adjustments`) | Báo cáo (sau khi gửi) / Quản lý → Duyệt | `pages/report.js` (celebrate), `pages/admin.js` (approve) | `check_hot_bonus`, `review_hot_bonus`, `hot_bonuses` |
 | B5 | Bán thêm ngoài thi đua (đề xuất), duyệt | Báo cáo / Quản lý → Duyệt | `pages/report.js`, `pages/admin.js` (approve) | `extra_proposals`, `review_proposal` |
@@ -73,7 +73,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 ### D. CV (công việc)
 | Mã | Chức năng | Trên web | File giao diện | Hàm / bảng SQL |
 |---|---|---|---|---|
-| D1 | TikTok: nộp link, thưởng/phạt | CV → TikTok | `pages/cv.js` | `tiktok_submit`, `tiktok_manage`, `tiktok_submissions` |
+| D1 | TikTok: nộp **trước** ngày hạn +`TIKTOK_REWARD` (100⭐, trạng thái SỚM) · **đúng ngày hạn** không thưởng không trừ · trễ bị trừ mỗi ngày như cũ. Link phải mới, không trùng link đã nộp của bất kỳ ai. Hiện giờ đăng video đọc từ mã video trong link (link rút gọn vt.tiktok.com không đọc được); lượt xem / bình luận không lấy tự động được | CV → TikTok | `pages/cv.js` (ttPosted) | `tiktok_submit`, `tiktok_manage`, `tiktok_submissions` |
 | D2 | Vệ sinh: lịch + ảnh | CV → Vệ sinh | `pages/cv.js`, `js/photos.js` | `clean_*`, bucket `thidua-v2` |
 | D3 | Lịch bận/OFF + kiểm tra HRM | CV → Lịch bận | `pages/cv.js`, `js/lib-hrm.js` | `busy_*` |
 | D4 | Roadshow | CV → Roadshow | `pages/cv.js` | `rs_*` |
