@@ -98,7 +98,7 @@ export function startRealtime() {
     hot_bonuses: () => { loadPending(); emit("proposals"); },
     fund_tx: () => emit("cv"),
     tasks: () => emit("cv"), task_acks: () => emit("cv"),
-    tiktok_submissions: () => { loadStaff(); emit("cv"); }, cleaning: () => emit("cv"), busy: () => emit("cv"), roadshow: () => emit("cv"),
+    tiktok_submissions: () => { loadStaff(); emit("cv"); }, cleaning: () => emit("cv"), clean_zones: () => emit("cv"), clean_zone_checks: () => emit("cv"), busy: () => emit("cv"), roadshow: () => emit("cv"),
     staff_targets: () => emit("targets"),
     star_adjustments: () => { loadStaff(); emit("score"); }, revenue_entries: () => emit("score"), monthly_targets: () => emit("score"),
     ratings: () => emit("score"), violations: () => emit("score"),

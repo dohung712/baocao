@@ -5,6 +5,7 @@ import { uploadAll, removeAll, fillPhotos } from "../photos.js";
 import { parseSchedule } from "../lib-hrm.js";
 import { fund } from "./cv-fund.js";
 import { tasks, pendingCount } from "./cv-tasks.js";
+import { zones } from "./cv-zones.js";
 
 const TABS = [["tasks", "📋 Việc"], ["tiktok", "📱 TikTok"], ["clean", "🧹 Vệ sinh"], ["busy", "📅 Lịch bận"], ["rs", "🏃 Roadshow"], ["fund", "💵 Quỹ"], ["stats", "📊 Thống kê"]];
 const RS_TIMES = (() => { const o = []; const add = (a, b) => { for (let t = a; t <= b; t += 30) o.push(String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0")); }; add(360, 630); add(900, 1080); return o; })();
@@ -123,12 +124,13 @@ async function clean(body) {
   const from = ym + "-01", to = shiftMonth(ym, 1) + "-01", today = vnToday();
   D.clean = await load("cleaning", "clean_date", from, addDays(to, -1));
   const byDay = (d) => D.clean.find((c) => c.clean_date === d && !staffById(c.staff_id)?.hidden) || D.clean.find((c) => c.clean_date === d);
-  body.innerHTML = `<div class="card"><div class="card-h"><h2>🧹 Lịch vệ sinh</h2><span class="small muted">Mỗi ngày 1 người · nộp 3 ảnh khi xong · đã đăng ký thì chỉ quản lý xoá</span></div>
+  body.innerHTML = `<div id="zonesBox"></div><div class="card"><div class="card-h"><h2>🧹 Lịch vệ sinh</h2><span class="small muted">Mỗi ngày 1 người · nộp 3 ảnh khi xong · đã đăng ký thì chỉ quản lý xoá</span></div>
     ${calNav()}
     ${monthGrid(ym, (d) => { const c = byDay(d); if (!c) return d >= today ? `<span class="free">+ Còn trống</span>` : "";
       const st = c.photos.length >= 3 ? "ok" : d < today ? "bad" : "info"; return `<span class="tag ${st}">${esc(shortName(name(c.staff_id)))}</span>${c.photos.length >= 3 ? '<span class="tag ok">✅ Đã nộp ảnh</span>' : d < today ? '<span class="tag bad">⚠️ Chưa nộp</span>' : ""}`; })}
     <div class="legend"><span>🟦 Đã đăng ký</span><span>✅ Đã nộp ảnh</span><span>⚠️ Quá ngày chưa nộp ảnh</span></div></div>`;
   bindNav(body);
+  zones($("#zonesBox", body)).catch((x) => console.warn(x));
   body.onclick = async (e) => {
     const cell = e.target.closest("[data-day]"); if (!cell) return;
     const d = cell.dataset.day, c = byDay(d);

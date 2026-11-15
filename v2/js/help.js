@@ -27,6 +27,8 @@ const H = [
   ['#cvTabs [data-t="tasks"]', "📋 Việc", "Việc quản lý triển khai và việc được giao cho bạn. Đọc kỹ rồi bấm “Đã đọc & nắm rõ” hoặc “Hoàn thành”."],
   ["[data-ack]", "Đã đọc & nắm rõ", "Bấm sau khi đọc hết nội dung. Quản lý xem được thời gian bạn xác nhận."],
   ["[data-done]", "Hoàn thành", "Báo đã làm xong việc được giao, có thể ghi chú thêm."],
+  [".zones-card", "🧽 Khu vực vệ sinh", "Khu vực, người phụ trách và tiêu chí của từng bộ phận. Khu vực của bạn có viền xanh: làm xong bấm ✅ Xong hôm nay. Quản lý bấm ✏️ để sửa, + Thêm để thêm."],
+  [".tg-sched", "🗓️ Lịch gửi Telegram", "Mỗi đầu mục: tick Gửi, chọn Hằng ngày / Hằng tuần / Chọn thứ, đặt giờ rồi bấm 💾 Lưu lịch gửi. Quản lý chỉnh được.", true],
   ["#tkKind", "Loại việc", "Triển khai toàn NV (đọc & nắm rõ) · Giao việc NV (hoàn thành + ghi chú) · Việc QL có deadline · Link trang tính.", true],
   ["#tkAi", "✨ AI tóm tắt", "AI đọc nội dung dán vào + ảnh/PDF, đề xuất tiêu đề, ý chính, hạn chót. Sửa lại trước khi đăng.", true],
   ["#tkRemind", "Nhắc lại", "Sang tuần / tháng / 2 tháng mới, việc tự hiện lại để nhân viên xác nhận đọc lại.", true],

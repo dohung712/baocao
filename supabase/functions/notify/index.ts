@@ -74,7 +74,10 @@ function items(cfg: Record<string, any>) {
   return Object.entries(ITEMS).map(([id, d]) => {
     const x = saved.find((i) => i.id === id) || {};
     const legacy = id === "daily" ? { on: true, time: cfg.NOTIFY_DAILY_TIME } : id === "weekly" ? { on: true, time: cfg.NOTIFY_WEEKLY_TIME, dow: cfg.NOTIFY_WEEKLY_DOW } : {};
-    return { id, ...d, on: x.on ?? (legacy as any).on ?? false, time: x.time || (legacy as any).time || d.time, dow: Number(x.dow ?? (legacy as any).dow ?? d.dow ?? 0) };
+    // freq: daily (hằng ngày) · weekly (1 thứ/tuần, dow) · days (chọn nhiều thứ, dows) · due (TikTok: ngày hạn T3, T6). QL chỉnh qua save_notify_items.
+    const freq = ["daily", "weekly", "days", "due"].includes(x.freq) ? x.freq : d.freq;
+    const dows = (Array.isArray(x.dows) ? x.dows : []).map(Number).filter((n: number) => n >= 0 && n <= 6);
+    return { id, ...d, defFreq: d.freq, freq, on: x.on ?? (legacy as any).on ?? false, time: x.time || (legacy as any).time || d.time, dow: Number(x.dow ?? (legacy as any).dow ?? d.dow ?? 0), dows };
   });
 }
 
@@ -160,6 +163,7 @@ async function tick() {
     if (!it.on || now.hm < it.time) continue;
     if (it.freq === "weekly" && now.dow !== it.dow) continue;
     if (it.freq === "due" && ![2, 5].includes(now.dow)) continue;
+    if (it.freq === "days" && !it.dows.includes(now.dow)) continue;
     const period = it.freq === "weekly" ? isoWeek(now.date) : now.date;
     const sent = await rest(`notify_log?select=id&kind=eq.${it.id}&ok=eq.true&period=eq.${period}`);
     if (sent.length) continue;

@@ -424,3 +424,20 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 .tk-lbl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px}
 .tk-note{background:var(--warn-soft);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:14px;line-height:1.55}
 .tk-note .tk-lbl{color:var(--warn)}
+/* D8 Khu vực vệ sinh */
+.zone-g{margin:14px 0 8px;font-size:15px}
+.zone-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.zone{border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;background:var(--card);display:flex;flex-direction:column;gap:6px}
+.zone.mine{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft)}
+.zone.done{background:var(--ok-soft)}
+.zone-h{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.zone-h > b{flex:1 1 100%;font-size:14px}
+.zone-h .btn.ghost{margin-left:auto;padding:2px 6px}
+.zone-l{margin:0;padding-left:18px;font-size:13.5px;line-height:1.45}
+.zone-l b{color:var(--bad)}
+.zone-f{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:auto}
+.ok-t{color:var(--ok);font-weight:600}
+.zone-crit{font-size:13px}
+.tg-sched .itDays{display:inline-flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.tg-sched .itDays[hidden],.tg-sched select[hidden]{display:none}
+@media (max-width:560px){.zone-grid{grid-template-columns:1fr}}

@@ -4,7 +4,7 @@ import { scoreAdmin, setScoreSub } from "./admin-score.js";
 import { home } from "./admin-home.js";
 import { starCardHtml, bindStarCard } from "../star-rules.js";
 import { suggestHtml, bindSuggest } from "./admin-suggest.js";
-import { sb, S, rpc, notify, callFn, onChange, isOwner, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel, visibleStaff } from "../store.js";
+import { sb, S, rpc, notify, callFn, onChange, isOwner, isManager, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel, visibleStaff } from "../store.js";
 
 const TABS = [
   { id: "home", label: "🏠 Tổng quan" }, { id: "approve", label: "Duyệt" }, { id: "score", label: "Điểm & DT" }, { id: "lock", label: "Khoá sổ" }, { id: "staff", label: "Nhân sự" },
@@ -363,7 +363,7 @@ async function settings(body) {
 
 // ---------- Telegram ----------
 async function telegram(body) {
-  const own = isOwner();
+  const own = isOwner(), mgr = isManager();
   const status = own ? await rpc("private_setting_status") : {};
   const chats = Array.isArray(setting("NOTIFY_CHAT_IDS", [])) ? setting("NOTIFY_CHAT_IDS", []) : [];
   const { data: logs } = await sb.from("notify_log").select("*").order("sent_at", { ascending: false }).limit(10);
@@ -374,15 +374,18 @@ async function telegram(body) {
       <ol class="small muted" style="margin:0 0 10px;padding-left:18px"><li>Telegram → <b>@BotFather</b> → <code>/newbot</code> → copy token.</li><li>Thêm bot vào nhóm quản lý, nhắn 1 câu bất kỳ trong nhóm.</li><li>Dán token → Lưu → bấm <b>Tìm nhóm</b> → tick nhóm nhận tin → Lưu cài đặt gửi.</li></ol>
       <div class="row"><input id="tgToken" type="password" placeholder="${status.TELEGRAM_BOT_TOKEN ? "•••••••• (đã lưu — dán token mới để thay)" : "123456789:ABC…"}" class="grow" style="width:auto" autocomplete="off"><button class="btn" id="tgSaveToken" type="button">Lưu token</button><button class="btn" id="tgDetect" type="button">🔎 Tìm nhóm</button></div>
       <div id="tgChats" style="margin-top:10px"></div></div>` : ""}
-    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🗓️ Gửi tự động theo từng đầu mục</h2>${own ? `<button class="btn small primary" id="tgSave" type="button">💾 Lưu cài đặt gửi</button>` : ""}</div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🗓️ Gửi tự động theo từng đầu mục</h2>${mgr ? `<button class="btn small primary" id="tgSave" type="button">💾 Lưu lịch gửi</button>` : ""}</div>
       <div class="fields" style="margin-bottom:10px"><label>Trạng thái chung<select id="tgOn" ${own ? "" : "disabled"}><option value="false">Tắt tất cả</option><option value="true" ${setting("NOTIFY_ENABLED", false) === true ? "selected" : ""}>Bật</option></select></label>
         <label style="grid-column:span 2">Nơi nhận (chat ID, cách nhau dấu phẩy)<input id="tgIds" value="${esc(chats.join(", "))}" ${own ? "" : "disabled"} placeholder="Bấm Tìm nhóm để điền tự động"></label></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Đầu mục</th><th>Gửi</th><th>Tần suất</th><th>Giờ</th><th></th></tr></thead><tbody>
-      ${items.map((it) => `<tr data-it="${it.id}"><td><b>${esc(it.label)}</b></td><td><input type="checkbox" class="itOn" ${it.on ? "checked" : ""} ${own ? "" : "disabled"}></td>
-        <td class="small">${it.freq === "weekly" ? `Hằng tuần <select class="itDow" style="width:auto" ${own ? "" : "disabled"}>${days.map((d, i) => `<option value="${i}" ${it.dow === i ? "selected" : ""}>${d}</option>`).join("")}</select>` : it.freq === "due" ? "Ngày hạn (T3, T6)" : "Hằng ngày"}</td>
-        <td><input type="time" class="itTime" value="${esc(it.time)}" style="width:auto" ${own ? "" : "disabled"}></td>
-        <td class="num"><button class="btn small" data-pv="${it.id}" type="button">Xem trước</button> <button class="btn small" data-sd="${it.id}" type="button">Gửi ngay</button></td></tr>`).join("")}
-      </tbody></table></div><p class="small muted" style="margin-top:8px">Mỗi đầu mục gửi 1 tin riêng vào nhóm. Máy chủ kiểm tra 5 phút/lần, không cần mở web; đầu mục không có nội dung trong ngày sẽ tự bỏ qua.</p></div>
+      <div class="tbl-wrap"><table class="tg-sched"><thead><tr><th>Đầu mục</th><th>Gửi</th><th>Tần suất & ngày gửi</th><th>Giờ</th><th></th></tr></thead><tbody>
+      ${items.map((it) => { const dis = mgr ? "" : "disabled", dows = it.dows?.length ? it.dows : it.freq === "weekly" ? [it.dow ?? 0] : [];
+        return `<tr data-it="${it.id}"><td><b>${esc(it.label)}</b></td><td><input type="checkbox" class="itOn" ${it.on ? "checked" : ""} ${dis}></td>
+        <td class="small"><select class="itFreq" style="width:auto" ${dis}><option value="daily" ${it.freq === "daily" ? "selected" : ""}>Hằng ngày</option><option value="weekly" ${it.freq === "weekly" ? "selected" : ""}>Hằng tuần (1 ngày)</option><option value="days" ${it.freq === "days" ? "selected" : ""}>Chọn thứ trong tuần</option>${it.defFreq === "due" ? `<option value="due" ${it.freq === "due" ? "selected" : ""}>Ngày hạn nộp (T3, T6)</option>` : ""}</select>
+          <select class="itDow" style="width:auto" ${dis} ${it.freq === "weekly" ? "" : "hidden"}>${days.map((d, i) => `<option value="${i}" ${it.dow === i ? "selected" : ""}>${d}</option>`).join("")}</select>
+          <span class="itDays chips" ${it.freq === "days" ? "" : "hidden"}>${[1, 2, 3, 4, 5, 6, 0].map((i) => `<label class="chip inline tiny"><input type="checkbox" value="${i}" ${dows.includes(i) ? "checked" : ""} ${dis}> ${i ? "T" + (i + 1) : "CN"}</label>`).join("")}</span></td>
+        <td><input type="time" class="itTime" value="${esc(it.time)}" style="width:auto" ${dis}></td>
+        <td class="num"><button class="btn small" data-pv="${it.id}" type="button">Xem trước</button> <button class="btn small" data-sd="${it.id}" type="button">Gửi ngay</button></td></tr>`; }).join("")}
+      </tbody></table></div><p class="small muted" style="margin-top:8px">Mỗi đầu mục gửi 1 tin riêng vào nhóm, đúng giờ đã đặt (chậm tối đa ~5 phút). Quản lý đổi được giờ, tần suất (hằng ngày / hằng tuần / chọn thứ) rồi bấm <b>Lưu lịch gửi</b>. Máy chủ kiểm tra 5 phút/lần, không cần mở web; đầu mục không có nội dung trong ngày sẽ tự bỏ qua.</p></div>
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>👀 Xem trước & gửi ngay</h2></div>
       <div class="row"><select id="tgKind" style="width:auto">${items.map((it) => `<option value="${it.id}">${esc(it.label)}</option>`).join("")}</select><input type="date" id="tgDate" value="${vnToday()}" max="${vnToday()}" style="width:auto">
         <button class="btn" id="tgPreview" type="button">Xem trước</button><button class="btn primary" id="tgSend" type="button">📤 Gửi ngay</button>${own ? `<button class="btn" id="tgTest" type="button">Gửi tin thử</button>` : ""}</div>
@@ -400,12 +403,22 @@ async function telegram(body) {
       : `<p class="small muted">Bot @${esc(r.bot)} chưa thấy nhóm nào. Thêm bot vào nhóm, nhắn 1 câu trong nhóm rồi bấm Tìm lại.</p>`;
     $$("[data-chat]").forEach((cb) => cb.onchange = () => { const ids = new Set($("#tgIds").value.split(",").map((x) => x.trim()).filter(Boolean)); cb.checked ? ids.add(cb.dataset.chat) : ids.delete(cb.dataset.chat); $("#tgIds").value = [...ids].join(", "); });
   }));
+  body.addEventListener("change", (e) => {
+    const f = e.target.closest(".itFreq"); if (!f) return; const tr = f.closest("tr");
+    tr.querySelector(".itDow").hidden = f.value !== "weekly"; tr.querySelector(".itDays").hidden = f.value !== "days";
+  });
   $("#tgSave")?.addEventListener("click", (e) => run(e.target, async () => {
-    const ids = $("#tgIds").value.split(",").map((x) => x.trim()).filter(Boolean);
-    const its = $$("[data-it]", body).map((tr) => ({ id: tr.dataset.it, on: tr.querySelector(".itOn").checked, time: tr.querySelector(".itTime").value, dow: Number(tr.querySelector(".itDow")?.value ?? 0) }));
-    const rows = [["NOTIFY_ENABLED", $("#tgOn").value === "true"], ["NOTIFY_CHAT_IDS", ids], ["NOTIFY_ITEMS", its]]
-      .map(([key, value]) => ({ key, value, updated_by: S.me.email, updated_at: new Date().toISOString() }));
-    const { error } = await sb.from("settings").upsert(rows); if (error) throw error; await loadSettings(); toast("Đã lưu cài đặt gửi");
+    const its = $$("[data-it]", body).map((tr) => ({ id: tr.dataset.it, on: tr.querySelector(".itOn").checked, time: tr.querySelector(".itTime").value, freq: tr.querySelector(".itFreq").value,
+      dow: Number(tr.querySelector(".itDow").value), dows: $$(".itDays input:checked", tr).map((c) => Number(c.value)) }));
+    const bad = its.find((x) => !/^\d{2}:\d{2}$/.test(x.time) || (x.freq === "days" && !x.dows.length));
+    if (bad) throw new Error(`“${items.find((i) => i.id === bad.id)?.label}”: ${bad.freq === "days" && !bad.dows.length ? "chọn ít nhất 1 thứ" : "nhập giờ gửi"}.`);
+    await rpc("save_notify_items", { p_items: its });
+    if (own) {
+      const ids = $("#tgIds").value.split(",").map((x) => x.trim()).filter(Boolean);
+      const rows = [["NOTIFY_ENABLED", $("#tgOn").value === "true"], ["NOTIFY_CHAT_IDS", ids]].map(([key, value]) => ({ key, value, updated_by: S.me.email, updated_at: new Date().toISOString() }));
+      const { error } = await sb.from("settings").upsert(rows); if (error) throw error;
+    }
+    await loadSettings(); toast("Đã lưu lịch gửi Telegram");
   }));
   const html2text = (h) => h.replace(/<\/?b>/g, "");
   $("#tgPreview").onclick = (e) => run(e.target, async () => { const r = await notify({ mode: "preview", kind: $("#tgKind").value, date: $("#tgDate").value }); $("#tgOut").innerHTML = `<pre class="preview">${esc(html2text(r.text))}</pre>`; });
