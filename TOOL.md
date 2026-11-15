@@ -38,6 +38,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | B4 | Ô doanh thu QĐ trong ca, **bắt buộc** (không bán ghi 0; ẩn được ở F4) | Báo cáo (cuối form) | `pages/report.js` (#xRev, needRev/revFilled) | `save_revenue`, `revenue_entries` |
 | B4b | **Xuất ảnh báo cáo** (PNG) để gửi Zalo/Line: sau khi gửi + nút "🖼️ Ảnh báo cáo" | Báo cáo | `js/report-image.js` (reportPng, shareOrDownload), `pages/report.js` | n/a |
 | B4c | Giao diện điện thoại 6.1–6.9" (390–440px): ô nhập to, thanh tiến độ, thanh gửi dính đáy | Báo cáo | `css/app.css` (khối "Báo cáo: tối ưu điện thoại") | n/a |
+| B12 | **Thưởng nóng** 2.000⭐: môn "Target thấp", NV bán trong ngày ≥ 30% target tháng siêu thị hoặc > 1000% target ngày → popup hoa chúc mừng, quản lý duyệt mới cộng (vào `star_adjustments`) | Báo cáo (sau khi gửi) / Quản lý → Duyệt | `pages/report.js` (celebrate), `pages/admin.js` (approve) | `check_hot_bonus`, `review_hot_bonus`, `hot_bonuses` |
 | B5 | Bán thêm ngoài thi đua (đề xuất), duyệt | Báo cáo / Quản lý → Duyệt | `pages/report.js`, `pages/admin.js` (approve) | `extra_proposals`, `review_proposal` |
 | B6 | Sửa / xoá báo cáo đã nộp, yêu cầu sửa và duyệt | Lịch sử / Quản lý → Duyệt | `pages/history.js`, `pages/admin.js` | `review_change`, `delete_report_day`, `delete_result` |
 | B7 | Khoá sổ ngày | Quản lý → Khoá sổ | `pages/admin.js` (lock) | `locked_dates` |
@@ -80,6 +81,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 |---|---|---|---|---|
 | F1 | Nhân sự (thêm, ẩn, bộ phận, môn riêng) | Quản lý → Nhân sự | `pages/admin.js` (staff) | `staff`, `set_staff_total` |
 | F2 | Môn & sao thưởng/phạt, **Nhân sao X2/X3** (chỉ môn đánh dấu) | Quản lý → Môn & sao | `pages/admin.js` (items) | `items.is_x2`, `items.is_x3`, `_compute_report` |
+| F2c | **Gợi ý sao theo kết quả siêu thị**: dán báo cáo (Tổng / %Đạt) → nhóm 🎯 Tập trung 5đ · 🌱 Target thấp 3đ · ⚡ Gần về số (dự kiến 70–100%) 2đ · môn khác 1đ · ✅ Đã về số lũy kế 0 sao, không trừ; 1đ = +100/−50 (sửa được) → Áp dụng / Copy gửi nhóm | Quản lý → Môn & sao (khung đầu) | `pages/admin-suggest.js` | `apply_star_suggestions`, `items.focus/low_target/store_target/store_pct`, setting `STAR_POINTS` |
 | F2b | **Thưởng & trừ sao**: ngưỡng X2/X3, ngày bắt đầu trừ, tăng ca, hệ số lũy tiến + bảng xem trước | Quản lý → Cài đặt (thẻ đầu tiên) | `js/star-rules.js` (dayOutcome, starCardHtml), `pages/admin.js` | settings `STREAK_*`, `PEN_*`, `DOUBLE_/TRIPLE_BONUS_RATE` |
 | F3 | Target/sao riêng từng NV (chỉ còn tác dụng với sao khi NV đã được giao môn tháng) | Quản lý → Target NV | `pages/admin.js` (targets) | `staff_targets` |
 | F4 | Ẩn trang/chức năng theo vai trò | Cài đặt → Ẩn trang | `pages/admin.js` (FEATURES), `js/store.js` (isHidden) | setting `HIDE` |
@@ -117,7 +119,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 - Target ngày = target tháng ÷ số ngày làm việc (mặc định số ngày trong tháng − `DAYS_OFF`).
 
 ## 4. Cài đặt (bảng `settings`)
-`SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
+`STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
 Khoá bí mật (bảng `private_settings`, không đọc được từ web): `TELEGRAM_BOT_TOKEN GEMINI_API_KEY CRON_SECRET`
 
 ---
@@ -159,6 +161,8 @@ Secret duy nhất: `SUPABASE_ACCESS_TOKEN`. Log workflow là **công khai**, nê
 - [ ] B4 Ô doanh thu QĐ bắt buộc, lưu được và cộng vào lũy kế (C5)
 - [ ] B4b Gửi báo cáo xong bấm "Lưu / gửi ảnh" → mở Zalo/Line (điện thoại) hoặc tải ảnh
 - [ ] B4c Báo cáo dễ nhập trên điện thoại 6.5–6.9"
+- [ ] F2c Dán kết quả siêu thị → tick Tập trung / Target thấp → Áp dụng → sao môn đổi đúng
+- [ ] B12 NV bán vượt môn target thấp → popup hoa, quản lý duyệt → +2.000⭐
 - [ ] F2b Đổi luật trừ sao trong Cài đặt, bảng xem trước khớp kết quả báo cáo
 - [ ] C1 Dán báo cáo target tháng: số NV, môn, target đúng
 - [ ] C6 Nhập phục vụ tuần, người cao nhất được đủ 20
@@ -185,15 +189,17 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_manager_scope` | function | 000200_logic.sql:271 |
 | `_member_for_staff` | function | 000600_modules.sql:125 |
 | `_require_member` | function | 000200_logic.sql:189 |
-| `_staff_items` | function | 000730_x3_scoreboard.sql:9 |
+| `_staff_items` | function | 000740_star_suggest_hot.sql:15 |
 | `_work_days` | function | 000720_report_items_from_contest.sql:9 |
 | `add_violation` | function | 000700_scoring.sql:310 |
 | `adjust_revenue` | function | 000700_scoring.sql:229 |
 | `adjust_stars` | function | 000700_scoring.sql:157 |
 | `app_member` | function | 000100_core.sql:139 |
+| `apply_star_suggestions` | function | 000740_star_suggest_hot.sql:57 |
 | `busy_delete` | function | 000600_modules.sql:262 |
 | `busy_register` | function | 000600_modules.sql:246 |
 | `can_see_staff` | function | 000100_core.sql:150 |
+| `check_hot_bonus` | function | 000740_star_suggest_hot.sql:112 |
 | `clean_delete` | function | 000600_modules.sql:232 |
 | `clean_register` | function | 000600_modules.sql:206 |
 | `clean_report` | function | 000600_modules.sql:218 |
@@ -223,6 +229,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `reset_streak` | function | 000200_logic.sql:308 |
 | `reset_streaks` | function | 000700_scoring.sql:192 |
 | `review_change` | function | 000200_logic.sql:251 |
+| `review_hot_bonus` | function | 000740_star_suggest_hot.sql:146 |
 | `review_proposal` | function | 000200_logic.sql:318 |
 | `rs_assign` | function | 000600_modules.sql:291 |
 | `rs_delete` | function | 000600_modules.sql:322 |
@@ -250,6 +257,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `cleaning` | table | 000600_modules.sql:33 |
 | `daily_results` | table | 000100_core.sql:40 |
 | `extra_proposals` | table | 000100_core.sql:58 |
+| `hot_bonuses` | table | 000740_star_suggest_hot.sql:91 |
 | `items` | table | 000100_core.sql:26 |
 | `locked_dates` | table | 000100_core.sql:86 |
 | `monthly_targets` | table | 000700_scoring.sql:32 |

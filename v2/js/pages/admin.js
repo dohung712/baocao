@@ -2,6 +2,7 @@
 import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml } from "../ui.js";
 import { scoreAdmin } from "./admin-score.js";
 import { starCardHtml, bindStarCard } from "../star-rules.js";
+import { suggestHtml, bindSuggest } from "./admin-suggest.js";
 import { sb, S, rpc, notify, callFn, onChange, isOwner, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel, visibleStaff } from "../store.js";
 
 const TABS = [
@@ -26,7 +27,7 @@ export async function render(view) {
   return () => { offs.forEach((f) => f()); offs = []; };
 }
 function drawTabs() {
-  const n = (S.pending.proposals || 0) + (S.pending.changes || 0);
+  const n = (S.pending.proposals || 0) + (S.pending.changes || 0) + (S.pending.hot || 0);
   $("#aTabs").innerHTML = TABS.filter((t) => !t.owner || isOwner()).map((t) => `<button type="button" data-t="${t.id}" class="${t.id === tab ? "on" : ""}">${t.label}${t.id === "approve" && n ? ` <b class="badge">${n}</b>` : ""}</button>`).join("");
 }
 async function draw() {
@@ -40,14 +41,24 @@ const err = (e) => toast(errMsg(e), 4500);
 
 // ---------- Duyệt ----------
 async function approve(body) {
-  const [{ data: props, error: e1 }, { data: reqs, error: e2 }] = await Promise.all([
+  const [{ data: props, error: e1 }, { data: reqs, error: e2 }, { data: hots, error: e3 }] = await Promise.all([
     sb.from("extra_proposals").select("*").order("created_at", { ascending: false }).limit(60),
     sb.from("change_requests").select("*").order("created_at", { ascending: false }).limit(60),
+    sb.from("hot_bonuses").select("*").order("created_at", { ascending: false }).limit(60),
   ]);
-  if (e1 || e2) throw e1 || e2;
+  if (e1 || e2 || e3) throw e1 || e2 || e3;
+  const hp = hots.filter((h) => h.status === "Chờ duyệt"), hd = hots.filter((h) => h.status !== "Chờ duyệt").slice(0, 15);
   const pend = props.filter((p) => p.status === "Chờ duyệt"), done = props.filter((p) => p.status !== "Chờ duyệt").slice(0, 15);
   const rq = reqs.filter((r) => r.status === "pending"), rqDone = reqs.filter((r) => r.status !== "pending").slice(0, 10);
   body.innerHTML = `
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🔥 Thưởng nóng</h2><span class="pill ${hp.length ? "warn" : "ok"}">${hp.length} chờ duyệt</span></div>
+      ${hp.length ? `<div class="tbl-wrap"><table><thead><tr><th>Ngày</th><th>Nhân viên</th><th>Môn</th><th>Lý do</th><th class="num">Sao</th><th></th></tr></thead><tbody>
+      ${hp.map((h) => `<tr><td>${dmy(h.report_date)}</td><td>${esc(staffById(h.staff_id)?.name || h.staff_id)}</td><td><b>${esc(h.item_name)}</b></td><td class="small">${esc(h.reason)}</td>
+        <td class="num"><input type="number" min="0" step="100" value="${h.stars}" data-hstars="${h.id}" style="width:90px;text-align:right"></td>
+        <td class="num"><button class="btn small primary" data-hot="${h.id}" data-ok="1" type="button">Duyệt</button> <button class="btn small danger" data-hot="${h.id}" data-ok="0" type="button">Từ chối</button></td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="muted">Không có thưởng nóng chờ duyệt. Điều kiện: môn đánh dấu “Target thấp” ở Quản lý → Môn & sao.</p>`}
+      ${hd.length ? `<details style="margin-top:10px"><summary class="small muted">Đã xử lý gần đây</summary><div class="tbl-wrap" style="margin-top:8px"><table><tbody>${hd.map((h) => `<tr><td>${dmy(h.report_date)}</td><td>${esc(staffById(h.staff_id)?.name || h.staff_id)}</td><td>${esc(h.item_name)}</td><td class="num">${fmt(h.stars)}⭐</td><td>${h.status === "Đã duyệt" ? '<span class="pill ok">Đã duyệt</span>' : '<span class="pill bad">Từ chối</span>'}</td><td class="small muted">${esc(h.reviewed_by || "")}</td></tr>`).join("")}</tbody></table></div></details>` : ""}
+    </div>
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🎁 Thưởng bán thêm ngoài thi đua</h2><span class="pill ${pend.length ? "warn" : "ok"}">${pend.length} chờ duyệt</span></div>
       ${pend.length ? `<div class="tbl-wrap"><table><thead><tr><th>Ngày</th><th>Nhân viên</th><th>Nội dung</th><th class="num">Sao</th><th></th></tr></thead><tbody>
       ${pend.map((p) => `<tr><td>${dmy(p.report_date)}</td><td>${esc(staffById(p.staff_id)?.name || p.staff_name)}</td><td>${esc(p.content)}</td>
@@ -65,6 +76,8 @@ async function approve(body) {
       ${rqDone.length ? `<details><summary class="small muted">Đã xử lý gần đây</summary><div class="tbl-wrap" style="margin-top:8px"><table><tbody>${rqDone.map((r) => `<tr><td>${dmy(r.report_date)}</td><td>${esc(staffById(r.staff_id)?.name || r.staff_id)}</td><td class="small">${esc(r.reason)}</td><td><span class="pill ${r.status === "approved" ? "ok" : "bad"}">${r.status === "approved" ? "Đã duyệt" : "Từ chối"}</span></td><td class="tiny muted">${esc(r.reviewed_by || "")}</td></tr>`).join("")}</tbody></table></div></details>` : ""}
     </div>`;
   body.onclick = async (e) => {
+    const h = e.target.closest("[data-hot]");
+    if (h) { h.disabled = true; try { const res = await rpc("review_hot_bonus", { p_id: Number(h.dataset.hot), p_approve: h.dataset.ok === "1", p_stars: Number($(`[data-hstars="${h.dataset.hot}"]`).value) || 0 }); toast(res.message); loadPending(); loadStaff(); approve(body); } catch (x) { err(x); h.disabled = false; } return; }
     const p = e.target.closest("[data-prop]");
     if (p) { try { await rpc("review_proposal", { p_id: Number(p.dataset.prop), p_approve: p.dataset.ok === "1", p_stars: Number($(`[data-stars="${p.dataset.prop}"]`).value) || 0 }); toast(p.dataset.ok === "1" ? "Đã duyệt" : "Đã từ chối"); loadPending(); approve(body); } catch (x) { err(x); } }
     const r = e.target.closest("[data-req]");
@@ -135,7 +148,7 @@ async function staff(body) {
 // ---------- Môn thi đua ----------
 async function items(body) {
   const stores = ["Chung", ...depts()];
-  body.innerHTML = `<div class="card"><div class="card-h"><h2>📋 Danh mục môn thi đua</h2><button class="btn small" id="itAdd" type="button">+ Thêm môn</button><button class="btn small primary" id="itSave" type="button">💾 Lưu tất cả</button></div>
+  body.innerHTML = `${suggestHtml()}<div class="card"><div class="card-h"><h2>📋 Danh mục môn thi đua</h2><button class="btn small" id="itAdd" type="button">+ Thêm môn</button><button class="btn small primary" id="itSave" type="button">💾 Lưu tất cả</button></div>
     <div class="banner info"><div><b>Khai báo môn, target, sao thưởng, sao phạt</b>
       • <b>Áp dụng</b>: “Chung” = mọi bộ phận; chọn bộ phận để môn chỉ áp dụng cho bộ phận đó (trùng tên thì ưu tiên môn của bộ phận).<br>
       • <b>Target/ngày</b>: số cần đạt mỗi ngày để <i>Về số</i>. • <b>Sao thưởng</b>: cộng khi đạt ≥ 100% target. <b>Nhân sao</b>: môn X2 đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% → ×2; môn X3 đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% → ×2, ≥ ${fmt(setting("TRIPLE_BONUS_RATE", 200))}% → ×3.<br>
@@ -153,6 +166,7 @@ async function items(body) {
       <td><select name="mult" style="width:auto"><option value="">—</option><option value="x2" ${i.is_x2 && !i.is_x3 ? "selected" : ""}>X2</option><option value="x3" ${i.is_x3 ? "selected" : ""}>X3</option></select></td><td><input type="checkbox" name="active" ${i.active !== false ? "checked" : ""}></td>
       <td><button class="btn small ghost danger" data-del type="button">🗑️</button></td></tr>`;
   }
+  bindSuggest(() => items(body));
   $("#itAdd").onclick = () => { $("#itRows").insertAdjacentHTML("beforeend", row({ id: "", store: "Chung", name: "", target: 1, bonus_star: 200, penalty_star: 100, is_x2: false, is_x3: false, active: true, sort: S.items.length + 1 })); $("#itRows tr:last-child input[name=name]").focus(); };
   body.onclick = async (e) => {
     const d = e.target.closest("[data-del]"); if (!d) return;

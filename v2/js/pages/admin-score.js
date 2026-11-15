@@ -93,7 +93,7 @@ const state = {};
 const defDays = () => Math.max(1, new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 0)).getUTCDate() - (Number(setting("DAYS_OFF", 4)) || 0));
 
 // ---------- Nhập target từ báo cáo ----------
-function guessDept(label) {
+export function guessDept(label) {
   const L = label.toLowerCase(), ds = depts();
   if (/topzone|aar/.test(L)) return ds.find((d) => /topzone/i.test(d)) || "";
   if (/tgd|thế giới|the gioi|tgdd/.test(L)) return ds.find((d) => /th[ếe] gi[ớo]i|tgd/i.test(d)) || "";

@@ -244,6 +244,8 @@ async function submit(reason = null) {
     await saveRevenue();
     if (res.status === "pending") { toast("✅ " + res.message, 4000); st.busy = false; btn.disabled = false; return; }
     st.busy = false;
+    const hot = await rpc("check_hot_bonus", { p_staff: st.staffId, p_date: st.date }).catch(() => null);
+    if (hot?.hot?.length) await celebrate(hot.hot);
     await showDone(res);
     await load();
   } catch (e) { st.busy = false; btn.disabled = false; toast(errMsg(e), 4000); }
@@ -289,4 +291,20 @@ function imageBlob(rows, late, dayChange, total) {
 async function exportImage(rows, late, dayChange, total) {
   const blob = await imageBlob(rows, late, dayChange, total);
   await shareOrDownload(blob, imgName());
+}
+
+// ---------- Thưởng nóng: popup chúc mừng có hoa ----------
+async function celebrate(list) {
+  const s = staffById(st.staffId) || {}, total = list.reduce((a, h) => a + h.stars, 0);
+  const fx = document.createElement("div"); fx.className = "flowers"; fx.setAttribute("aria-hidden", "true");
+  const em = ["🌸", "💐", "🌺", "🌼", "🎉", "✨", "🌷", "🎊"];
+  fx.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;animation-delay:${(Math.random() * 1.8).toFixed(2)}s;animation-duration:${(3 + Math.random() * 2.5).toFixed(2)}s;font-size:${22 + Math.round(Math.random() * 22)}px">${em[i % em.length]}</i>`).join("");
+  document.body.appendChild(fx);
+  try {
+    await modal(`<div class="hot-pop"><div class="hot-big">💐🎉</div><h3>CHÚC MỪNG ${esc((s.name || "").toUpperCase())}!</h3>
+      <p>Bạn được đề xuất <b class="star">THƯỞNG NÓNG ${fmt(total)}⭐</b></p>
+      <ul>${list.map((h) => `<li><b>${esc(h.item)}</b>: ${esc(h.reason)}</li>`).join("")}</ul>
+      <p class="small muted">Sao được cộng khi quản lý duyệt. Cố lên nhé! 🔥</p></div>
+      <div class="modal-actions"><button class="btn primary big" data-v="ok">Tuyệt vời! 🎊</button></div>`);
+  } finally { fx.remove(); }
 }

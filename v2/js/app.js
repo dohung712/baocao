@@ -29,7 +29,7 @@ let current = null, cleanup = null, navToken = 0;
 
 function show(id) { for (const x of ["boot", "login", "app"]) $("#" + x).hidden = x !== id; }
 
-function pendingCount() { return (S.pending.proposals || 0) + (S.pending.changes || 0); }
+function pendingCount() { return (S.pending.proposals || 0) + (S.pending.changes || 0) + (S.pending.hot || 0); }
 function renderNav() {
   const pages = allowed();
   const html = (p) => {

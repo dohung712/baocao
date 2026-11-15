@@ -131,7 +131,7 @@ td input,td select{padding:6px 8px}
 
 /* Banners */
 .banner{display:flex;gap:10px;align-items:flex-start;border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:14px}
-.banner b{display:block}
+.banner b{font-weight:700}.banner > div > b:first-child{display:block}
 .banner.warn{background:var(--warn-soft);color:var(--warn)}
 .banner.bad{background:var(--bad-soft);color:var(--bad)}
 .banner.info{background:var(--info-soft);color:var(--info)}
@@ -324,3 +324,19 @@ tr.mine td{background:color-mix(in srgb,var(--info-soft) 60%,transparent)}
 #starCard label.inline input[type=number]{display:inline-block;vertical-align:middle;margin:0 4px;height:38px}
 #starCard label.inline input[type=checkbox]{vertical-align:middle}
 @media (max-width:640px){#starCard .card-h{flex-wrap:wrap}#starCard .card-h h2{flex-basis:100%}}
+/* Thưởng nóng: hoa rơi + popup */
+.flowers{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.flowers i{position:absolute;top:-60px;font-style:normal;animation:fall linear infinite}
+@keyframes fall{0%{transform:translateY(-60px) rotate(0)}100%{transform:translateY(110vh) rotate(540deg)}}
+.hot-pop{text-align:center}
+.hot-pop .hot-big{font-size:56px;line-height:1.1;animation:pop .6s ease-out}
+.hot-pop h3{font-size:20px;margin:8px 0 4px}
+.hot-pop p{margin:6px 0}
+.hot-pop .star{font-size:22px}
+.hot-pop ul{text-align:left;font-size:14px;margin:8px 0;padding-left:18px}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.flowers{display:none}}
+/* Gợi ý sao */
+.sg-rules{display:flex;flex-direction:column;gap:6px;margin-top:10px;background:var(--bg);border-radius:12px;padding:10px 12px;line-height:2.3}
+.sg-rules input{display:inline-block;height:32px;padding:4px 6px;margin:0 2px}
+.sg-tbl td,.sg-tbl th{white-space:nowrap}

@@ -251,7 +251,7 @@ function busyHrm(bz) {
     }).join("");
     conflicts.sort((a, b) => a.d.localeCompare(b.d));
     $("#hrmOut").innerHTML = `
-      ${sch.method === "guess" ? `<div class="banner warn"><div>Bản copy làm mất ô trống nên vị trí ca chỉ là <b>ước đoán</b>${sch.unique ? "" : " (có nhiều cách xếp)"} — hãy Ctrl+V trực tiếp từ HRM để chính xác.</div></div>` : ""}
+      ${sch.method === "guess" ? `<div class="banner warn"><div>Bản copy làm mất ô trống nên vị trí ca chỉ là <strong>ước đoán</strong>${sch.unique ? "" : " (có nhiều cách xếp)"} — hãy Ctrl+V trực tiếp từ HRM để chính xác.</div></div>` : ""}
       ${sch.check ? `<p class="small ${sch.check.ok === sch.check.total ? "pos" : "neg"}">${sch.check.ok === sch.check.total ? "✓" : "⚠️"} Tổng giờ công khớp ${sch.check.ok}/${sch.check.total} cột.</p>` : ""}
       ${conflicts.length ? `<div class="banner bad"><div><b>🚨 Phát hiện ${conflicts.length} xếp ca trùng ngày Bận / OFF</b>${conflicts.map((c) => `<div>${c.h}</div>`).join("")}</div></div>` : `<div class="banner ok"><div><b>✅ Không ai bị xếp ca trùng ngày Bận / OFF đã đăng ký.</b></div></div>`}
       ${warns.length ? `<div class="banner warn"><div>${warns.join("<br>")}</div></div>` : ""}
