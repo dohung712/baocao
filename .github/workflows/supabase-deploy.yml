@@ -23,7 +23,7 @@ jobs:
           fi
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Áp SQL migrations
         run: node supabase/scripts/apply-migrations.mjs
       - name: Cập nhật khoá bí mật (AI, Google Drive)
@@ -39,6 +39,11 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DRIVE_UPLOAD_URL: ${{ secrets.DRIVE_UPLOAD_URL }}
           DRIVE_UPLOAD_SECRET: ${{ secrets.DRIVE_UPLOAD_SECRET }}
+      - name: Kiểm tra AI tóm tắt thông báo mẫu (chỉ in đạt / không đạt)
+        run: LIVE=1 node --experimental-strip-types --no-warnings supabase/tests/ai_summary_test.mjs
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       - name: Chép quỹ cũ từ Firebase (chỉ 1 lần, chỉ in số lượng)
         run: node supabase/scripts/import-quy.mjs
         continue-on-error: true

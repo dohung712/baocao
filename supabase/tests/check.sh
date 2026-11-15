@@ -15,9 +15,10 @@ P="psql -h /tmp -p 5433 -U postgres -d t1 -q -v ON_ERROR_STOP=1"
 for t in rls_test.sql modules_test.sql scoring_test.sql x3_test.sql hot_test.sql tiktok_test.sql fund_test.sql tasks_test.sql; do
   if $P -f $t > /tmp/$t.out 2>&1; then echo "  ✓ $t"; else echo "  ✗ $t"; tail -5 /tmp/$t.out; exit 1; fi
 done
+echo "▶ Khuôn tóm tắt công việc (AI)"; node --experimental-strip-types --no-warnings ai_summary_test.mjs
 echo "▶ Chép quỹ cũ (dữ liệu giả)"; node import_quy_test.mjs | head -1
 if [ "$1" = "--ui" ]; then
   echo "▶ Giao diện"; cd ui; pkill -f "node server.mjs" || true; (node server.mjs > /tmp/uiserver.log 2>&1 &); sleep 1
-  for r in run3.mjs run4.mjs run5.mjs run6.mjs run7.mjs run8.mjs run9.mjs run10.mjs mobile.mjs; do timeout 240 node $r 2>&1 | grep -E "error|ERROR|Timeout|toast|no browser|overflow|ảnh" | head -8; done
+  for r in run3.mjs run4.mjs run5.mjs run6.mjs run7.mjs run8.mjs run9.mjs run10.mjs run11.mjs mobile.mjs; do timeout 240 node --experimental-strip-types --no-warnings $r 2>&1 | grep -E "error|ERROR|Timeout|toast|no browser|overflow|ảnh" | head -8; done
 fi
 echo "✅ OK"

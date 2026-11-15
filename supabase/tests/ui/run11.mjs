@@ -1,0 +1,32 @@
+// Kiểm thử: dán thông báo mẫu UniPass → AI (kết quả đã ghi lại) điền tiêu đề/hạn/nội dung chính/lưu ý → cảnh báo Lâu dài → thẻ việc có link
+import { createRequire } from "node:module";
+const { chromium } = createRequire(import.meta.url)("playwright");
+import { readFileSync, mkdirSync } from "node:fs";
+const { toFields } = await import("../../functions/tasks/prompt.ts");
+const OUT = "/tmp/ui-shots11"; mkdirSync(OUT, { recursive: true });
+const fake = readFileSync(new URL("./fake-supabase.js", import.meta.url), "utf8");
+const TEXT = readFileSync(new URL("../fixtures/task-unipass.txt", import.meta.url), "utf8");
+const AI = toFields(JSON.parse(readFileSync(new URL("../fixtures/task-unipass.ai.json", import.meta.url), "utf8")));
+const errors = [];
+const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 1360, height: 900 } })).newPage();
+p.on("pageerror", (e) => errors.push("pageerror: " + e.message));
+await p.route(/fonts\.(googleapis|gstatic)|drive\.google\.com/, (r) => r.abort());
+await p.route(/cdn\.jsdelivr\.net\/npm\/@supabase/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
+await p.route(/functions\/v1\/tasks/, (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ status: "success", ...AI }) }));
+await p.route(/functions\/v1\/(notify|assistant)/, (r) => r.fulfill({ contentType: "application/json", body: '{"status":"success","items":[]}' }));
+await p.goto("http://localhost:8790/v2/"); await p.evaluate(() => localStorage.setItem("thidua-v2-cv", "tasks"));
+await p.fill("#lEmail", "dohung712@gmail.com"); await p.fill("#lPass", "x"); await p.click("#fPass button[type=submit]");
+await p.waitForSelector("#app:not([hidden])", { timeout: 30000 }); await p.waitForTimeout(800);
+await p.click('#nav [data-page="cv"]'); await p.waitForTimeout(1500); await p.click('#tkSubs [data-s="new"]'); await p.waitForTimeout(400);
+await p.fill("#tkContent", TEXT); await p.click("#tkAi"); await p.waitForTimeout(600);
+console.log("tiêu đề:", await p.inputValue("#tkTitle"), "| hạn:", await p.inputValue("#tkDl"));
+console.log("cảnh báo:", (await p.textContent("#tkWarn")).replace(/\s+/g, " ").slice(0, 200));
+await p.screenshot({ path: `${OUT}/form.png`, fullPage: true });
+await p.click("[data-apply-keep]"); await p.waitForTimeout(200); console.log("lâu dài:", await p.isChecked("#tkKeep"), "| tự ẩn bị khoá:", await p.isDisabled("#tkHide"));
+await p.click("#tkSave"); await p.waitForTimeout(400); const cf = await p.$("#modalBody [data-v=ok]"); if (cf) { console.log("hỏi xác nhận (không mong đợi)"); await cf.click(); }
+await p.waitForTimeout(1800); console.log("đăng:", await p.textContent("#toast"));
+const card = p.locator(".tk-card", { hasText: "Hế Lô Xinh Viên" }).first();
+console.log("thẻ:", (await card.locator(".tk-lbl").allTextContents()).join(" | "), "| link:", (await card.locator('a.chip[href*="newinsite"]').allTextContents()).join(" | "), "| huy hiệu:", (await card.locator(".tk-badges").textContent()).replace(/\s+/g, " "));
+await card.screenshot({ path: `${OUT}/card.png` });
+await b.close();
+console.log(errors.length ? errors.join("\n") : "no browser errors");

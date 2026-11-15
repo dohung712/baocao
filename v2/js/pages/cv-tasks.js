@@ -61,6 +61,18 @@ function filesHtml(files) {
 const badges = (t) => `${t.important ? '<span class="pill bad">⭐ Quan trọng</span>' : ""}${t.remind !== "none" ? `<span class="pill info">${REMIND[t.remind]}</span>` : ""}${t.keep ? '<span class="pill ok">📌 Lâu dài</span>' : ""}${isManager() && t.hide_after && t.remind === "none" && !t.keep ? `<span class="pill mute">🕒 ${autoHidden(t) ? "Đã tự ẩn" : "Tự ẩn sau"} ${dm(t.hide_after)}</span>` : ""}${t.deadline ? `<span class="pill ${t.status === "open" && t.deadline < vnToday() ? "bad" : "warn"}">⏳ Hạn ${dmy(t.deadline)}</span>` : ""}`;
 const summaryHtml = (t) => (t.summary ? `<div class="tk-sum"><div class="tk-lbl">📌 Nội dung chính</div>${esc(t.summary).replace(/\n/g, "<br>")}</div>` : "")
   + (t.notes ? `<div class="tk-note"><div class="tk-lbl">⚠️ Lưu ý</div>${esc(t.notes).replace(/\n/g, "<br>")}</div>` : "");
+// Link trong nội dung (dạng [Tại đây](https://…) hoặc https://… trần) → nút bấm, lấy chữ đầu dòng làm nhãn
+function linksHtml(t) {
+  const out = [], seen = new Set();
+  for (const line of String(t.content || "").split("\n")) {
+    for (const m of line.matchAll(/\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s)]+)/g)) {
+      const url = m[2] || m[3]; if (seen.has(url)) continue; seen.add(url);
+      const before = line.slice(0, m.index).replace(/[\[\]():•\-*]+/g, " ").trim(), label = ((before ? before + " " : "") + (m[1] || "").trim()).replace(/\s*t[ạa]i\s*đ[âa]y\s*$/i, "").trim();
+      out.push(`<a class="chip" href="${esc(url)}" target="_blank" rel="noopener">🔗 ${esc((label.trim() || url.replace(/^https?:\/\//, "")).slice(0, 60))}</a>`);
+    }
+  }
+  return out.length ? `<div class="tk-files">${out.slice(0, 8).join("")}</div>` : "";
+}
 const contentHtml = (t) => t.content ? `<details class="tk-full"><summary>Xem nội dung đầy đủ</summary><div>${esc(t.content).replace(/\n/g, "<br>")}</div></details>` : "";
 const byLine = (t) => `<span class="tiny muted">${KIND[t.kind][0]} ${KIND[t.kind][1]} · ${dmy(t.created_at.slice(0, 10))} · ${esc(t.created_by?.split("@")[0] || "")}</span>`;
 const when = (ts) => ts ? new Date(ts).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "";
@@ -83,7 +95,7 @@ function card(t, mgr) {
   if (!mgr && t.kind === "announce") action = a?.read_at ? `<span class="pill ok">✅ Đã đọc & nắm rõ · ${when(a.read_at)}</span>` : `<button class="btn primary" data-ack="${t.id}" type="button">✅ Đã đọc & nắm rõ</button>`;
   if (!mgr && isAssign) action = a?.done_at ? `<span class="pill ok">✅ Hoàn thành · ${when(a.done_at)}</span>${a.note ? ` <span class="small muted">“${esc(a.note)}”</span>` : ""} <button class="btn small ghost" data-undo="${t.id}" type="button">Huỷ</button>` : `<button class="btn primary" data-done="${t.id}" type="button">✔️ Hoàn thành</button>`;
   return `<div class="card tk-card ${t.important ? "imp" : ""}" data-id="${t.id}"><div class="tk-head"><b>${esc(t.title)}</b><div class="tk-badges">${badges(t)}</div></div>${byLine(t)}
-    ${summaryHtml(t)}${contentHtml(t)}${filesHtml(t.files)}${mgr ? progress(t) : ""}<div class="tk-act">${action}${mgr ? mgrButtons(t) : ""}</div></div>`;
+    ${summaryHtml(t)}${linksHtml(t)}${contentHtml(t)}${filesHtml(t.files)}${mgr ? progress(t) : ""}<div class="tk-act">${action}${mgr ? mgrButtons(t) : ""}</div></div>`;
 }
 async function act(e, body) {
   const g = (s) => e.target.closest(`[${s}]`)?.getAttribute(s);
@@ -202,12 +214,13 @@ function form(body) {
     if (hideOn && !hideTouched) $("#tkHide").value = dl ? addD(dl, graceDays()) : addD(vnToday(), autoDays());
     info.textContent = !life ? "Nhắc lại: sang kỳ mới việc tự hiện lại để xác nhận lần nữa." : rem !== "none" ? `🔁 Việc lặp lại: mỗi kỳ (${REMIND[rem].replace("🔁 ", "").toLowerCase()}) nhân viên xác nhận lại, không tự ẩn.`
       : keep ? "📌 Việc lâu dài: luôn hiện với nhân viên, không tự ẩn." : `🕒 Việc thời vụ: tự ẩn với nhân viên sau ${$("#tkHide").value ? dmy($("#tkHide").value) : "hạn"} — quản lý vẫn tìm lại được.`;
-    const warns = [];
+    const warns = [], past = dl && dl < vnToday() ? `Hạn hoàn tất <b>${dmy(dl)}</b> đã qua — kiểm tra lại hạn (nhân viên vẫn cần đọc nếu là chương trình đang chạy).` : "";
     if (life && ai && ai.repeat !== "none" && rem !== ai.repeat) warns.push(`AI thấy việc này nên <b>${REP_TXT[ai.repeat]}</b>${ai.repeat_reason ? ` (${esc(ai.repeat_reason)})` : ""}. Bạn đang chọn: <b>${esc(REMIND[rem])}</b>. <button class="btn small" type="button" data-apply-rep="${ai.repeat}">Chọn ${REP_TXT[ai.repeat]}</button>`);
     if (life && ai && ai.long_term && rem === "none" && !keep) warns.push(`AI thấy đây là việc <b>lâu dài</b>${ai.repeat_reason && ai.repeat === "none" ? ` (${esc(ai.repeat_reason)})` : ""} — nếu không chọn sẽ tự ẩn sau ${$("#tkHide").value ? dmy($("#tkHide").value) : "hạn"}. <button class="btn small" type="button" data-apply-keep>Tick Lâu dài</button>`);
     if (life && !ai && rem === "none" && !keep && REPEAT_HINT.test($("#tkContent").value + " " + $("#tkTitle").value + " " + $("#tkSum").value)) warns.push(`Nội dung có dấu hiệu là việc <b>định kỳ / lâu dài</b> (hằng ngày, hằng tháng, quy định…). Kiểm tra lại mục <b>Nhắc lại</b> hoặc tick <b>Lâu dài</b>, nếu không việc sẽ tự ẩn sau ${$("#tkHide").value ? dmy($("#tkHide").value) : "hạn"}.`);
-    box.innerHTML = warns.length ? `<div class="banner warn" style="margin:0"><span>⚠️</span><div>${warns.join("<br>")}</div></div>` : "";
-    return warns.length;
+    const all = past ? [...warns, past] : warns;
+    box.innerHTML = all.length ? `<div class="banner warn" style="margin:0"><span>⚠️</span><div>${all.join("<br>")}</div></div>` : "";
+    return warns.length;   // chỉ cảnh báo lặp lại / lâu dài mới hỏi xác nhận khi đăng
   }
   $("#tkForm").addEventListener("input", (ev) => { if (ev.target.id === "tkHide") hideTouched = true; if (["tkRemind", "tkKeep", "tkDl", "tkHide", "tkContent", "tkTitle", "tkSum"].includes(ev.target.id)) life(); });
   $("#tkForm").addEventListener("change", (ev) => { if (["tkRemind", "tkKeep"].includes(ev.target.id)) life(); });

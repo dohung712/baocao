@@ -4,6 +4,7 @@
 //  • delete:    chuyển file Drive vào thùng rác khi xoá việc
 // Chỉ quản lý / chủ quản dùng.
 import { json, CORS, rest, member, gemini } from "../_shared/common.ts";
+import { SCHEMA, systemPrompt, toFields } from "./prompt.ts";
 
 const secret = async (k: string) => (await rest("private_settings?select=value&key=eq." + k))[0]?.value as string | undefined;
 
@@ -19,29 +20,12 @@ async function drive(payload: Record<string, unknown>) {
 async function summarize(text: string, files: { mime: string; data: string }[]) {
   const key = await secret("GEMINI_API_KEY");
   if (!key) throw new Error("Chưa cài khoá AI (Quản lý → Cài đặt → Trợ lý AI).");
-  const parts: any[] = [{ text: "NỘI DUNG CÔNG VIỆC CẦN TRIỂN KHAI:\n" + (text || "(xem file đính kèm)") }];
+  const parts: any[] = [{ text: "NỘI DUNG CÔNG VIỆC / THÔNG BÁO CẦN TÓM TẮT:\n\n" + (text || "(xem file đính kèm)") }];
   for (const f of files.slice(0, 4)) if (/^(image\/|application\/pdf)/.test(f.mime) && f.data.length < 14_000_000) parts.push({ inline_data: { mime_type: f.mime, data: f.data } });
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
-  const system = `Bạn là trợ lý của quản lý siêu thị bán lẻ điện thoại (Thế Giới Di Động / Topzone). Hôm nay ${today}. Đọc nội dung (và file đính kèm nếu có) rồi tóm tắt để nhân viên đọc nhanh trên điện thoại. ` +
-    "Trả về JSON đúng các khoá: " +
-    "\"title\": tiêu đề công việc ngắn gọn ≤ 70 ký tự; " +
-    "\"deadline\": hạn chót dạng YYYY-MM-DD nếu nội dung có nêu (suy ra năm từ hôm nay), không có thì null; " +
-    "\"main\": mảng các ý NỘI DUNG CHÍNH (việc phải làm, đối tượng, thời gian áp dụng, con số), tối đa 6 ý, mỗi ý 1 câu ngắn; " +
-    "\"notes\": mảng các LƯU Ý (điều cấm, điều dễ sai, chế tài, giấy tờ cần, người liên hệ), tối đa 4 ý, không có thì []; " +
-    "\"repeat\": việc có cần nhắc lại định kỳ không: \"week\" | \"month\" | \"2month\" | \"none\"; " +
-    "\"long_term\": true nếu là quy định / quy trình áp dụng lâu dài (không hết hạn), false nếu là việc thời vụ (CTKM, sự kiện, đợt kiểm kê… có thời hạn); " +
-    "\"repeat_reason\": 1 câu giải thích vì sao chọn repeat / long_term. " +
-    "Không thêm thông tin không có trong nội dung. Tiếng Việt.";
-  const out = await gemini(key, { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts }],
-    generationConfig: { temperature: 0.2, maxOutputTokens: 1800, responseMimeType: "application/json" } });
-  const list = (x: unknown) => (Array.isArray(x) ? x : String(x || "").split("\n")).map((v) => String(v).replace(/^[•\-\*\s]+/, "").trim()).filter(Boolean);
-  try {
-    const o = JSON.parse(out);
-    const main = list(o.main ?? o.summary), notes = list(o.notes);
-    return { title: String(o.title || "").slice(0, 120), deadline: /^\d{4}-\d{2}-\d{2}$/.test(o.deadline || "") ? o.deadline : null,
-      summary: main.map((v) => "• " + v).join("\n"), notes: notes.map((v) => "• " + v).join("\n"),
-      repeat: ["week", "month", "2month"].includes(o.repeat) ? o.repeat : "none", long_term: !!o.long_term, repeat_reason: String(o.repeat_reason || "").slice(0, 300) };
-  }
+  const today = new Date().toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+  const out = await gemini(key, { systemInstruction: { parts: [{ text: systemPrompt(today) }] }, contents: [{ role: "user", parts }],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 2500, responseMimeType: "application/json", responseSchema: SCHEMA } });
+  try { return toFields(JSON.parse(out)); }
   catch { return { title: "", summary: out, notes: "", deadline: null, repeat: "none", long_term: false, repeat_reason: "" }; }
 }
 
