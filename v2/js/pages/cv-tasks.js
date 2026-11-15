@@ -2,6 +2,7 @@
 // QL/TC dán nội dung + ảnh/PDF (lưu Google Drive) → AI tóm tắt ý chính → tick Quan trọng / nhắc tuần / tháng / 2 tháng.
 import { $, $$, esc, toast, modal, confirmBox, vnToday, dmy, dm, shortName, copyText } from "../ui.js";
 import { sb, S, rpc, callFn, isManager, visibleStaff, staffById, setting, errMsg, depts } from "../store.js";
+import { officeText } from "../lib-office.js";
 
 const KIND = { announce: ["📢", "Triển khai toàn NV"], assign: ["📌", "Giao việc NV"], deadline: ["⏰", "Việc QL có deadline"], link: ["🔗", "Link trang tính"] };
 const REMIND = { none: "Không nhắc lại", week: "🔁 Nhắc hằng tuần", month: "🔁 Nhắc hằng tháng", "2month": "🔁 Nhắc 2 tháng/lần" };
@@ -44,10 +45,18 @@ function draw(body) {
 }
 
 // ---------- Thẻ việc ----------
+// Loại file đính kèm được nhận (ngoài ảnh): PDF, Excel, Word, PowerPoint, file nén, văn bản
+const FILE_TYPES = { pdf: ["application/pdf", "📄"], xlsx: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "📊"], xls: ["application/vnd.ms-excel", "📊"], csv: ["text/csv", "📊"],
+  docx: ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "📝"], doc: ["application/msword", "📝"], pptx: ["application/vnd.openxmlformats-officedocument.presentationml.presentation", "📽️"], ppt: ["application/vnd.ms-powerpoint", "📽️"],
+  zip: ["application/zip", "🗜️"], rar: ["application/vnd.rar", "🗜️"], "7z": ["application/x-7z-compressed", "🗜️"], txt: ["text/plain", "📃"] };
+const ACCEPT = "image/*," + Object.keys(FILE_TYPES).map((x) => "." + x).join(",");
+const extOf = (n) => (String(n).match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase() || "";
+const iconOf = (f) => /^image\//.test(f.mime) ? "🖼️" : (FILE_TYPES[extOf(f.name)] || [])[1] || "📎";
+const sizeTxt = (b) => !b ? "" : b > 1e6 ? (b / 1e6).toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + " MB" : Math.max(1, Math.round(b / 1e3)) + " KB";
 function filesHtml(files) {
   if (!files?.length) return "";
   return `<div class="tk-files">${files.map((f) => /^image\//.test(f.mime) ? `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="tk-img"><img loading="lazy" src="https://drive.google.com/thumbnail?id=${encodeURIComponent(f.id)}&sz=w600" alt="${esc(f.name)}"></a>`
-    : `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="chip">📄 ${esc(f.name)}</a>`).join("")}</div>`;
+    : `<a href="${esc(f.url)}" target="_blank" rel="noopener" class="chip">${iconOf(f)} ${esc(f.name)}${f.size ? ` <span class="tiny muted">${sizeTxt(f.size)}</span>` : ""}</a>`).join("")}</div>`;
 }
 const badges = (t) => `${t.important ? '<span class="pill bad">⭐ Quan trọng</span>' : ""}${t.remind !== "none" ? `<span class="pill info">${REMIND[t.remind]}</span>` : ""}${t.keep ? '<span class="pill ok">📌 Lâu dài</span>' : ""}${isManager() && t.hide_after && t.remind === "none" && !t.keep ? `<span class="pill mute">🕒 ${autoHidden(t) ? "Đã tự ẩn" : "Tự ẩn sau"} ${dm(t.hide_after)}</span>` : ""}${t.deadline ? `<span class="pill ${t.status === "open" && t.deadline < vnToday() ? "bad" : "warn"}">⏳ Hạn ${dmy(t.deadline)}</span>` : ""}`;
 const summaryHtml = (t) => (t.summary ? `<div class="tk-sum"><div class="tk-lbl">📌 Nội dung chính</div>${esc(t.summary).replace(/\n/g, "<br>")}</div>` : "")
@@ -159,9 +168,9 @@ function form(body) {
     <div class="seg tk-kinds" id="tkKind">${kinds.map(([k, [ic, l]]) => `<button type="button" data-k="${k}">${ic} ${l}</button>`).join("")}</div>
     <div class="stack" style="margin-top:12px">
       <label class="k-not-link">Nội dung (dán từ Zalo, email, văn bản…)<textarea id="tkContent" style="min-height:150px" placeholder="Dán nội dung công việc vào đây. Có thể dán ảnh chụp màn hình (Ctrl+V) để đính kèm.">${esc(e.kind === "link" ? "" : e.content || "")}</textarea></label>
-      <div class="k-not-link"><label>Ảnh / PDF đính kèm (lưu Google Drive)<input type="file" id="tkFiles" accept="image/*,application/pdf" multiple></label>
-        <div class="tk-files" id="tkPrev">${(e.files || []).map((f, i) => `<span class="chip" data-old="${i}">${/^image/.test(f.mime) ? "🖼️" : "📄"} ${esc(f.name)} <button type="button" data-rmold="${i}">✕</button></span>`).join("")}</div></div>
-      <div class="row k-not-link"><button class="btn" id="tkAi" type="button">✨ AI tóm tắt ý chính</button><span class="small muted" id="tkAiMsg">AI đọc nội dung và file đính kèm: tiêu đề, hạn chót, nội dung chính, lưu ý, có cần lặp lại không.</span></div>
+      <div class="k-not-link"><label>File đính kèm: ảnh, PDF, Excel, Word, PowerPoint, file nén (.zip .rar .7z) — mỗi file tối đa 10MB, lưu Google Drive<input type="file" id="tkFiles" accept="${ACCEPT}" multiple></label>
+        <div class="tk-files" id="tkPrev">${(e.files || []).map((f, i) => `<span class="chip" data-old="${i}">${iconOf(f)} ${esc(f.name)} <button type="button" data-rmold="${i}">✕</button></span>`).join("")}</div></div>
+      <div class="row k-not-link"><button class="btn" id="tkAi" type="button">✨ AI tóm tắt ý chính</button><span class="small muted" id="tkAiMsg">AI đọc nội dung dán vào + ảnh, PDF, Word, Excel, PowerPoint đính kèm: tiêu đề, hạn chót, nội dung chính, lưu ý, có cần lặp lại không.</span></div>
       <label>Tiêu đề<input id="tkTitle" maxlength="160" value="${esc(e.title || "")}" placeholder="VD: Triển khai CTKM tháng 11"></label>
       <label class="k-not-link">📌 Nội dung chính (nhân viên đọc phần này trước)<textarea id="tkSum" style="min-height:110px" placeholder="• Việc phải làm&#10;• Đối tượng, thời gian">${esc(e.summary || "")}</textarea></label>
       <label class="k-not-link">⚠️ Lưu ý<textarea id="tkNotes" style="min-height:70px" placeholder="• Điều cấm / dễ sai / chế tài">${esc(e.notes || "")}</textarea></label>
@@ -208,9 +217,9 @@ function form(body) {
   $("#tkAll").onclick = () => { const all = $$(".tkStaff"), on = !all.every((c) => c.checked); all.forEach((c) => c.checked = on); };
   const addFiles = async (list) => {
     for (const f of list) {
-      if (!/^(image\/|application\/pdf)/.test(f.type)) { toast("Chỉ nhận ảnh hoặc PDF: " + f.name); continue; }
+      if (!/^image\//.test(f.type) && !FILE_TYPES[extOf(f.name)]) { toast("Không nhận loại file này: " + f.name); continue; }
       const item = await prepare(f); if (!item) continue; pending.push(item);
-      $("#tkPrev").insertAdjacentHTML("beforeend", `<span class="chip" data-new="${pending.length - 1}">${item.preview ? `<img src="${item.preview}" alt="">` : "📄"} ${esc(item.name)} <button type="button" data-rmnew="${pending.length - 1}">✕</button></span>`);
+      $("#tkPrev").insertAdjacentHTML("beforeend", `<span class="chip" data-new="${pending.length - 1}">${item.preview ? `<img src="${item.preview}" alt="">` : iconOf(item)} ${esc(item.name)} <span class="tiny muted">${sizeTxt(item.size)}</span> <button type="button" data-rmnew="${pending.length - 1}">✕</button></span>`);
     }
   };
   $("#tkFiles").onchange = (ev) => { addFiles([...ev.target.files]); ev.target.value = ""; };
@@ -218,7 +227,8 @@ function form(body) {
   $("#tkPrev").onclick = (ev) => { const o = ev.target.closest("[data-rmold]"), n = ev.target.closest("[data-rmnew]");
     if (o) { oldFiles[Number(o.dataset.rmold)] = null; o.closest(".chip").remove(); } if (n) { pending[Number(n.dataset.rmnew)] = null; n.closest(".chip").remove(); } };
   $("#tkAi").onclick = async (ev) => {
-    const text = $("#tkContent").value.trim(), files = pending.filter(Boolean).filter((p) => p.data.length < 9_000_000).map((p) => ({ mime: p.mime, data: p.data }));
+    const docs = pending.filter((p) => p?.text).map((p) => `\n\n--- Nội dung file ${p.name} ---\n${p.text}`).join("").slice(0, 18000);
+    const text = ($("#tkContent").value.trim() + docs).trim(), files = pending.filter(Boolean).filter((p) => /^(image\/|application\/pdf)/.test(p.mime) && p.data.length < 9_000_000).map((p) => ({ mime: p.mime, data: p.data }));
     if (!text && !files.length) return toast("Dán nội dung hoặc thêm ảnh/PDF trước");
     ev.target.disabled = true; $("#tkAiMsg").textContent = "AI đang đọc…";
     try { const r = await callFn("tasks", { mode: "summarize", text, files });
@@ -250,11 +260,16 @@ function form(body) {
 // Ảnh: thu nhỏ ≤ 1600px JPEG; PDF ≤ 10MB
 async function prepare(f) {
   const b64 = (blob) => new Promise((res) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.readAsDataURL(blob); });
-  if (f.type === "application/pdf") { if (f.size > 10e6) { toast("PDF quá lớn (tối đa 10MB): " + f.name); return null; } return { name: f.name, mime: f.type, data: await b64(f) }; }
+  if (!/^image\//.test(f.type) || /svg|gif/.test(f.type)) {   // PDF, Excel, Word, nén…: gửi nguyên file
+    if (f.size > 10e6) { toast("File quá lớn (tối đa 10MB): " + f.name); return null; }
+    const mime = f.type || (FILE_TYPES[extOf(f.name)] || [])[0] || "application/octet-stream";
+    let text = ""; try { text = await officeText(f); } catch { text = ""; }   // chữ trong Word/Excel/PowerPoint cho AI đọc
+    return { name: f.name, mime, size: f.size, data: await b64(f), text };
+  }
   const img = await new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = URL.createObjectURL(f); });
   if (!img) { toast("Không đọc được ảnh: " + f.name); return null; }
   const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
   c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
   const blob = await new Promise((res) => c.toBlob(res, "image/jpeg", 0.85));
-  return { name: f.name.replace(/\.\w+$/, "") + ".jpg", mime: "image/jpeg", data: await b64(blob), preview: c.toDataURL("image/jpeg", 0.5) };
+  return { name: f.name.replace(/\.\w+$/, "") + ".jpg", mime: "image/jpeg", size: blob.size, data: await b64(blob), preview: c.toDataURL("image/jpeg", 0.5) };
 }

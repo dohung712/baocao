@@ -14,9 +14,9 @@ async function login(email, ctx) {
   p.on("console", (m) => { if (m.type() === "error" && !/ERR_FAILED|thumbnail/.test(m.text())) errors.push(email + " console: " + m.text()); });
   await p.route(/fonts\.(googleapis|gstatic)|drive\.google\.com/, (r) => r.abort());
   await p.route(/cdn\.jsdelivr\.net\/npm\/@supabase/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
-  await p.route(/functions\/v1\/tasks/, (r) => { const j = JSON.parse(r.request().postData() || "{}"); calls.push(j.mode);
+  await p.route(/functions\/v1\/tasks/, (r) => { const j = JSON.parse(r.request().postData() || "{}"); calls.push(j.mode + (j.mode === "upload" ? ":" + j.mime.split("/").pop().slice(0, 20) : j.mode === "summarize" ? `(${/Galaxy S25 \| 22990000/.test(j.text) ? "xlsx" : ""}${/kiểm kê ngày 20\/11/.test(j.text) ? "+docx" : ""}+${j.files.length}ảnh)` : ""));
     const body = j.mode === "summarize" ? { status: "success", title: "Triển khai CTKM Samsung T11", summary: "• Giảm 10% Galaxy S25\n• Áp dụng 15–30/11\n• Báo cáo số bán mỗi tối", notes: "• Không áp dụng kèm trả góp 0%", deadline: "2026-11-30", repeat: "week", long_term: false, repeat_reason: "Báo cáo số bán mỗi tối trong đợt" }
-      : j.mode === "upload" ? { status: "success", file: { id: "FILEID1234567", name: j.name, mime: j.mime, url: "https://drive.google.com/file/d/FILEID1234567/view", size: 100 } } : { status: "success" };
+      : j.mode === "upload" ? { status: "success", file: { id: "FILEID1234567", name: j.name, mime: j.mime, url: "https://drive.google.com/file/d/FILEID1234567/view", size: 2048 } } : { status: "success" };
     r.fulfill({ contentType: "application/json", body: JSON.stringify(body) }); });
   await p.route(/functions\/v1\/(notify|assistant)/, (r) => r.fulfill({ contentType: "application/json", body: '{"status":"success","items":[]}' }));
   await p.goto("http://localhost:8790/v2/");
@@ -30,7 +30,8 @@ async function login(email, ctx) {
   await p.click('#tkSubs [data-s="new"]'); await p.waitForTimeout(500);
   await p.click('#tkKind [data-k="announce"]');
   await p.fill("#tkContent", "Từ 15/11 đến 30/11 giảm 10% Galaxy S25 cho khách mua kèm bảo hiểm. Mỗi tối báo cáo số bán vào nhóm.");
-  await p.setInputFiles("#tkFiles", `${OUT}/a.png`); await p.waitForTimeout(500);
+  await p.setInputFiles("#tkFiles", [`${OUT}/a.png`, `${OUT}/kh.docx`, `${OUT}/gia.xlsx`, `${OUT}/tailieu.zip`]); await p.waitForTimeout(800);
+  console.log("file chờ:", (await p.$$eval("#tkPrev .chip", (x) => x.map((c) => c.textContent.replace(/\s+/g, " ").trim()))).join(" | "));
   await p.click("#tkAi"); await p.waitForTimeout(800);
   console.log("AI:", await p.inputValue("#tkTitle"), "|", (await p.inputValue("#tkSum")).split("\n").length, "ý | hạn", await p.inputValue("#tkDl"));
   console.log("cảnh báo:", (await p.textContent("#tkWarn")).replace(/\s+/g, " ").slice(0, 120), "| lưu ý:", await p.inputValue("#tkNotes"));
