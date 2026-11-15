@@ -195,7 +195,7 @@ async function targets(body) {
   body.innerHTML = `<div class="card"><div class="card-h"><h2>🎯 Target & sao riêng từng nhân viên</h2>
       <div class="seg" id="tgField">${Object.entries(label).map(([k, l]) => `<button type="button" data-f="${k}" class="${k === tgField ? "on" : ""}">${l}</button>`).join("")}</div>
       <button class="btn small primary" id="tgSave" type="button">💾 Lưu</button></div>
-    <p class="small muted">Ô trống = dùng mức chung của môn (số mờ). Nhập số để đặt riêng cho nhân viên đó; xoá số để quay về mức chung. Ô gạch = môn không áp dụng cho nhân viên.</p>
+    <p class="small muted">Ô trống = dùng mức chung của môn (số mờ). Nhập số để đặt riêng cho nhân viên đó; xoá số để quay về mức chung. Ô gạch = môn không áp dụng cho nhân viên.<br>Nhân viên <b>đã được giao môn thi đua tháng</b> (Điểm & DT → Target tháng) báo cáo ngày theo môn thi đua, target ngày = target tháng ÷ số ngày làm việc; bảng này khi đó chỉ còn tác dụng với sao thưởng/phạt.</p>
     <div class="tbl-wrap"><table class="matrix"><thead><tr><th>Nhân viên</th>${names.map((n) => `<th class="num">${esc(n)}</th>`).join("")}</tr></thead><tbody>
     ${staffList.map((s) => { const m = itemsFor(s); return `<tr><td><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.dept)}</div></td>${names.map((n) => { const it = m.get(n); if (!it) return `<td class="num muted">—</td>`;
       const o = ov.get(s.id + "|" + n), v = o?.[tgField]; return `<td class="num ${v != null ? "has" : ""}"><input type="number" step="any" min="0" data-k="${esc(s.id)}|${esc(n)}" value="${v ?? ""}" placeholder="${fmt(it[tgField], 2)}"></td>`; }).join("")}</tr>`; }).join("")}

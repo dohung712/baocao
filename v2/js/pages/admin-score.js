@@ -31,11 +31,11 @@ async function targets(el) {
       <textarea id="impText" style="margin-top:10px;min-height:140px;font:12px ui-monospace,Consolas,monospace" placeholder="=== SIÊU THỊ 933 (TGDĐ - 4 NS) ===&#10;• Doanh thu mỗi NV: 811.0 tr&#10;+ T11 - Laptop: Tổng 520.25 | %Đạt: 46.9% | Mỗi NV: 130.1&#10;…"></textarea>
       <div class="row" style="margin-top:8px"><button class="btn" id="impParse" type="button">⚡ Đọc báo cáo</button><span class="small muted" id="impMsg"></span></div><div id="impPrev"></div></details>` : ""}
     <div class="card"><div class="card-h"><h2>🎯 Target tháng ${ym.slice(5)}/${ym.slice(0, 4)}</h2><button class="btn small" id="tgFill" type="button">⚡ Tạo nhanh môn cho NV chưa có</button><button class="btn small primary" id="tgSaveRev" type="button">💾 Lưu target DT</button></div>
-    <p class="small muted">Nhập target doanh thu quy đổi tháng (${esc(unit())}) và giao môn thi đua + target tháng cho từng nhân viên. Lũy kế môn cộng từ thực đạt trong báo cáo ngày.</p>
+    <p class="small muted">Nhập target doanh thu quy đổi tháng (${esc(unit())}) và giao môn thi đua + target tháng cho từng nhân viên. <b>Nhân viên đã được giao môn sẽ báo cáo ngày đúng các môn thi đua này</b> (target ngày = target tháng ÷ số ngày làm việc); chưa giao môn thì báo cáo theo môn của bộ phận. Lũy kế môn cộng từ thực đạt trong báo cáo ngày.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Nhân viên</th><th class="num">Target DT tháng</th><th>Môn thi đua tháng (target)</th><th></th></tr></thead><tbody>
     ${visibleStaff().map((s) => { const t = by.get(s.id); return `<tr><td><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.dept)}</div></td>
       <td class="num"><input type="number" step="any" min="0" data-rev="${esc(s.id)}" value="${t?.revenue_target ?? ""}" style="width:110px;text-align:right" placeholder="—"></td>
-      <td class="small">${t?.items?.length ? t.items.map((i) => `${esc(i.name)} <b>${fmt(i.target, 2)}</b>`).join(" · ") : '<span class="neg">Chưa giao môn</span>'}</td>
+      <td class="small">${t?.items?.length ? `<span class="pill">${t.items.length} môn · ${t.work_days || defDays()} ngày làm</span> ` + t.items.map((i) => `${esc(i.name)} <b>${fmt(i.target, 2)}</b>`).join(" · ") : '<span class="neg">Chưa giao môn — báo cáo theo môn bộ phận</span>'}</td>
       <td class="num"><button class="btn small" data-items="${esc(s.id)}" type="button">Giao môn</button></td></tr>`; }).join("")}
     </tbody></table></div></div>`;
   $("#impParse")?.addEventListener("click", () => importPreview(el));
@@ -63,7 +63,7 @@ async function targets(el) {
         if (by.get(s.id)?.items?.length) continue;
         const items = staffItems(s).map((i) => ({ name: i.name, target: Math.round(i.target * Number(v.d) * 100) / 100 }));
         if (!items.length) continue;
-        await rpc("save_monthly_target", { p_staff: s.id, p_month: month(), p_revenue: by.get(s.id)?.revenue_target ?? null, p_items: items }); n++;
+        await rpc("save_monthly_target", { p_staff: s.id, p_month: month(), p_revenue: by.get(s.id)?.revenue_target ?? null, p_items: items, p_work_days: Number(v.d) }); n++;
       }
       toast(`Đã giao môn cho ${n} nhân viên — kiểm tra và chỉnh lại target từng người nếu cần`, 4500); targets(el);
     } catch (e) { err(e); }
@@ -72,22 +72,25 @@ async function targets(el) {
     const b = e.target.closest("[data-items]"); if (!b) return;
     const s = staffById(b.dataset.items), t = by.get(s.id), cur = new Map((t?.items || []).map((i) => [i.name, i.target]));
     const all = [...new Set([...staffItems(s).map((i) => i.name), ...cur.keys()])];
-    const v = await modal(`<h3>Giao môn tháng · ${esc(s.name)}</h3><p class="small muted">Tick môn cần thi đua trong tháng và nhập target tháng. Môn không tick sẽ không tính điểm.</p>
-      <form class="stack"><div class="tbl-wrap"><table><thead><tr><th></th><th>Môn</th><th class="num">Target tháng</th></tr></thead><tbody>
+    const v = await modal(`<h3>Giao môn tháng · ${esc(s.name)}</h3><p class="small muted">Tick môn cần thi đua trong tháng và nhập target tháng. Nhân viên sẽ báo cáo ngày <b>đúng các môn được tick</b>; môn không tick không báo cáo, không tính điểm.</p>
+      <form class="stack"><label>Số ngày làm việc trong tháng (target ngày = target tháng ÷ số ngày)<input type="number" id="miWd" min="1" max="31" value="${t?.work_days || defDays()}"></label>
+      <div class="tbl-wrap"><table><thead><tr><th></th><th>Môn</th><th class="num">Target tháng</th><th class="num">Target ngày</th></tr></thead><tbody>
       ${all.map((n) => { const it = S.items.find((i) => i.name === n); return `<tr><td><input type="checkbox" class="mi" value="${esc(n)}" ${cur.has(n) ? "checked" : ""}></td><td>${esc(n)}<div class="tiny muted">${it ? `target ngày ${fmt(it.target, 2)}` : ""}</div></td>
-        <td class="num"><input type="number" step="any" min="0" data-mt="${esc(n)}" value="${cur.get(n) ?? ""}" style="width:100px;text-align:right"></td></tr>`; }).join("")}
+        <td class="num"><input type="number" step="any" min="0" data-mt="${esc(n)}" value="${cur.get(n) ?? ""}" style="width:100px;text-align:right"></td><td class="num miDay" data-n="${esc(n)}"></td></tr>`; }).join("")}
       </tbody></table></div><label>Thêm môn khác (tên)<input id="miNew" placeholder="Tuỳ chọn"></label></form>
       <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn primary" data-v="ok">Lưu</button></div>`,
-      { onOpen: (box) => box.querySelector("[data-v=ok]").addEventListener("click", () => {
+      { onOpen: (box) => { const upd = () => { const d = Math.max(1, Number(box.querySelector("#miWd").value) || 1); box.querySelectorAll(".miDay").forEach((c) => { const x = Number(box.querySelector(`[data-mt="${CSS.escape(c.dataset.n)}"]`).value) || 0; c.textContent = x ? fmt(x / d, 3) : ""; }); };
+        box.addEventListener("input", upd); upd(); box.querySelector("[data-v=ok]").addEventListener("click", () => { state.wd = Number(box.querySelector("#miWd").value) || null;
         state.items = [...box.querySelectorAll(".mi:checked")].map((c) => ({ name: c.value, target: Number(box.querySelector(`[data-mt="${CSS.escape(c.value)}"]`).value) || 0 }));
         const nn = box.querySelector("#miNew").value.trim(); if (nn) state.items.push({ name: nn, target: 1 });
-      }, true) });
+      }, true); } });
     if (v !== "ok") return;
     const bad = state.items.filter((i) => !(i.target > 0)); if (bad.length) return toast("Nhập target tháng > 0 cho: " + bad.map((i) => i.name).join(", "));
-    try { await rpc("save_monthly_target", { p_staff: s.id, p_month: month(), p_revenue: t?.revenue_target ?? null, p_items: state.items }); toast("Đã lưu"); targets(el); } catch (x) { err(x); }
+    try { await rpc("save_monthly_target", { p_staff: s.id, p_month: month(), p_revenue: t?.revenue_target ?? null, p_items: state.items, p_work_days: state.wd }); toast("Đã lưu"); targets(el); } catch (x) { err(x); }
   };
 }
 const state = {};
+const defDays = () => Math.max(1, new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 0)).getUTCDate() - (Number(setting("DAYS_OFF", 4)) || 0));
 
 // ---------- Nhập target từ báo cáo ----------
 function guessDept(label) {
@@ -113,8 +116,8 @@ function importPreview(el) {
         ${b.items.map((it) => `<tr><td>${esc(it.name)}</td><td class="num">${fmt(it.total, 2)}</td><td class="num">${fmt(it.pct, 1)}%</td><td class="num"><b>${fmt(per(b, it), 2)}</b></td><td class="num impDay" data-m="${per(b, it)}"></td></tr>`).join("")}
         </tbody></table></div></div>`; }).join("")}
     <div class="stack" style="gap:6px"><label class="inline"><input type="checkbox" id="oRev" checked> Cập nhật target doanh thu QĐ tháng</label>
-      <label class="inline"><input type="checkbox" id="oItems" checked> Giao các môn trên làm môn thi đua tháng (tính điểm xếp hạng)</label>
-      <label class="inline"><input type="checkbox" id="oDaily" checked> Đổi môn báo cáo ngày của bộ phận theo danh sách này (target ngày = target tháng ÷ số ngày làm việc)</label>
+      <label class="inline"><input type="checkbox" id="oItems" checked> Giao các môn trên làm môn thi đua tháng — nhân viên báo cáo ngày đúng các môn này, tính điểm xếp hạng</label>
+      <label class="inline"><input type="checkbox" id="oDaily" checked> Cập nhật luôn danh sách môn của bộ phận theo báo cáo (dùng cho NV chưa được giao môn)</label>
       <label class="inline" style="margin-left:22px"><input type="checkbox" id="oOff" checked> Tắt các môn báo cáo ngày cũ không có trong danh sách (lịch sử vẫn giữ)</label>
       <label class="inline" style="margin-left:22px"><input type="checkbox" id="oNoPen" checked> Môn có target ngày dưới 1 (đánh dấu ⚠️): không trừ sao khi chưa đạt nhiều ngày liền — vẫn tính % thi đua tháng</label>
       <label class="inline" style="margin-left:22px"><input type="checkbox" id="oClear" checked> Bỏ “môn riêng” đang giao cho các nhân viên này</label></div>
@@ -129,7 +132,7 @@ function importPreview(el) {
       return { dept: box.querySelector(".impDept").value, staff_ids: [...box.querySelectorAll(".impSid:checked")].map((c) => c.value), revenue: b.revenue,
         items: b.items.map((it) => ({ name: it.name, month: per(b, it), day: Math.round((per(b, it) / d) * 1000) / 1000 })) }; });
     if (blocks.some((b) => !b.dept)) return toast("Chọn bộ phận cho từng siêu thị");
-    const opts = { set_revenue: $("#oRev").checked, set_items: $("#oItems").checked, set_daily: $("#oDaily").checked, deactivate_old: $("#oOff").checked, clear_assigned: $("#oClear").checked, nopen_below: $("#oNoPen").checked ? 1 : 0 };
+    const opts = { set_revenue: $("#oRev").checked, set_items: $("#oItems").checked, set_daily: $("#oDaily").checked, deactivate_old: $("#oOff").checked, clear_assigned: $("#oClear").checked, work_days: d, nopen_below: $("#oNoPen").checked ? 1 : 0 };
     if (!(await confirmBox("Áp dụng target tháng?", `Tháng <b>${month.slice(5, 7)}/${month.slice(0, 4)}</b> cho <b>${blocks.reduce((a, b) => a + b.staff_ids.length, 0)}</b> nhân viên${opts.set_daily ? ", đổi môn báo cáo ngày theo báo cáo" : ""}.`, "Áp dụng"))) return;
     e.target.disabled = true;
     try { const res = await rpc("import_month_targets", { p_month: month, p_blocks: blocks, p_opts: opts }); toast("✅ " + res.message + (res.warning ? " · " + res.warning : ""), 6000); await loadItems(); await loadStaff(); ym = month.slice(0, 7); scoreAdmin(host); }

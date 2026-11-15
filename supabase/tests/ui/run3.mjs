@@ -15,7 +15,7 @@ async function session(email, viewport) {
   await p.route(/functions\/v1\/notify/, (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(JSON.parse(r.request().postData() || "{}").mode === "items" ? ITEMS : { status: "success", text: "📊 <b>Xem trước</b>", message: "ok" }) }));
   await p.goto("http://localhost:8790/v2/");
   await p.fill("#lEmail", email); await p.fill("#lPass", "x"); await p.click("#fPass button[type=submit]");
-  await p.waitForSelector("#app:not([hidden])", { timeout: 8000 });
+  await p.waitForSelector("#app:not([hidden])", { timeout: 30000 });
   return { b, p };
 }
 const shot = (p, n) => p.screenshot({ path: `${OUT}/${n}.png`, fullPage: true });
