@@ -26,13 +26,19 @@ jobs:
           node-version: 20
       - name: Áp SQL migrations
         run: node supabase/scripts/apply-migrations.mjs
+      - name: Cập nhật khoá bí mật (AI, Google Drive)
+        run: node supabase/scripts/set-private.mjs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DRIVE_UPLOAD_URL: ${{ secrets.DRIVE_UPLOAD_URL }}
+          DRIVE_UPLOAD_SECRET: ${{ secrets.DRIVE_UPLOAD_SECRET }}
       - name: Chép quỹ cũ từ Firebase (chỉ 1 lần, chỉ in số lượng)
         run: node supabase/scripts/import-quy.mjs
         continue-on-error: true
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - name: Triển khai Edge Functions (notify, accounts, assistant)
+      - name: Triển khai Edge Functions (notify, accounts, assistant, tasks)
         run: supabase functions deploy --project-ref "$PROJECT_REF" --no-verify-jwt --yes
       - name: Kiểm tra (chỉ in số lượng)
         run: node supabase/scripts/verify.mjs

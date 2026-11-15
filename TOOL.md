@@ -77,6 +77,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | D2 | Vệ sinh: lịch + ảnh | CV → Vệ sinh | `pages/cv.js`, `js/photos.js` | `clean_*`, bucket `thidua-v2` |
 | D3 | Lịch bận/OFF + kiểm tra HRM | CV → Lịch bận | `pages/cv.js`, `js/lib-hrm.js` | `busy_*` |
 | D4 | Roadshow | CV → Roadshow | `pages/cv.js` | `rs_*` |
+| D7 | **Việc**: 🔗 Link trang tính (chỉ QL) · ⏰ Việc QL có deadline (QL bấm Hoàn thành + ghi chú) · 📢 Triển khai toàn NV / theo bộ phận (NV bấm "Đã đọc & nắm rõ") · 📌 Giao việc NV (NV bấm "Hoàn thành" + ghi chú). QL dán nội dung + ảnh/PDF (lưu Google Drive qua Apps Script) → ✨ AI tóm tắt (Gemini) → tick ⭐ Quan trọng, nhắc lại tuần / tháng / 2 tháng (mỗi kỳ NV xác nhận lại). QL xem tiến độ ai đã đọc / hoàn thành lúc nào, copy lời nhắc | CV → 📋 Việc | `pages/cv-tasks.js`, Edge function `tasks` (summarize / upload / delete), `supabase/apps-script/drive-upload.gs` | `tasks`, `task_acks`, `task_save`, `task_set_status`, `task_ack`, `_task_period`, `can_see_task`; khoá `GEMINI_API_KEY`, `DRIVE_UPLOAD_URL`, `DRIVE_UPLOAD_SECRET` (GitHub Secrets → `set-private.mjs`) |
 | D6 | **Quỹ thu chi** (thay tool quy cũ dùng Firebase): số dư, thu/chi tháng, thêm khoản (mọi thành viên), sửa/xoá (quản lý; người tạo trong 24 giờ), lọc tháng/loại/danh mục/người, thống kê, copy, CSV, nhật ký; danh mục & đối tác (chủ quản). Dữ liệu cũ chép 1 lần bằng GitHub Actions | CV → 💵 Quỹ | `pages/cv-fund.js` | `fund_tx`, `fund_save`, `fund_delete`, `fund_log`, settings `FUND_CATEGORIES`, `FUND_PARTNERS`; `supabase/scripts/import-quy.mjs` |
 | D5 | Thống kê CV theo NV | CV → Thống kê | `pages/cv.js` | (đọc các bảng trên) |
 
@@ -202,6 +203,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_member_for_staff` | function | 000600_modules.sql:125 |
 | `_require_member` | function | 000200_logic.sql:189 |
 | `_staff_items` | function | 000750_daily_target_x2.sql:15 |
+| `_task_period` | function | 000780_tasks.sql:35 |
 | `_work_days` | function | 000720_report_items_from_contest.sql:9 |
 | `add_violation` | function | 000700_scoring.sql:310 |
 | `adjust_revenue` | function | 000700_scoring.sql:229 |
@@ -211,6 +213,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `busy_delete` | function | 000600_modules.sql:262 |
 | `busy_register` | function | 000600_modules.sql:246 |
 | `can_see_staff` | function | 000100_core.sql:150 |
+| `can_see_task` | function | 000780_tasks.sql:45 |
 | `check_hot_bonus` | function | 000740_star_suggest_hot.sql:112 |
 | `clean_delete` | function | 000600_modules.sql:232 |
 | `clean_register` | function | 000600_modules.sql:206 |
@@ -238,7 +241,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `migrate_legacy` | function | 000610_update_logic.sql:221 |
 | `migrate_legacy_all` | function | 000700_scoring.sql:420 |
 | `preview_daily_report` | function | 000200_logic.sql:198 |
-| `private_setting_status` | function | 000630_private_keys.sql:12 |
+| `private_setting_status` | function | 000780_tasks.sql:153 |
 | `report_form` | function | 000730_x3_scoreboard.sql:49 |
 | `reset_stars` | function | 000700_scoring.sql:175 |
 | `reset_streak` | function | 000200_logic.sql:308 |
@@ -256,12 +259,15 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `save_revenue` | function | 000700_scoring.sql:208 |
 | `save_store_contest` | function | 000200_logic.sql:346 |
 | `score_board` | function | 000730_x3_scoreboard.sql:224 |
-| `set_private_setting` | function | 000630_private_keys.sql:2 |
+| `set_private_setting` | function | 000780_tasks.sql:143 |
 | `set_staff_total` | function | 000700_scoring.sql:141 |
 | `setting_num` | function | 000100_core.sql:160 |
 | `setting_text` | function | 000100_core.sql:170 |
 | `staff_total` | function | 000700_scoring.sql:120 |
 | `submit_daily_report` | function | 000200_logic.sql:225 |
+| `task_ack` | function | 000780_tasks.sql:120 |
+| `task_save` | function | 000780_tasks.sql:68 |
+| `task_set_status` | function | 000780_tasks.sql:99 |
 | `tiktok_due_dates` | function | 000600_modules.sql:136 |
 | `tiktok_manage` | function | 000600_modules.sql:189 |
 | `tiktok_submit` | function | 000760_tiktok_early.sql:10 |
@@ -289,6 +295,8 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `star_adjustments` | table | 000700_scoring.sql:7 |
 | `store_contest` | table | 000100_core.sql:92 |
 | `store_contest_snapshots` | table | 000100_core.sql:107 |
+| `task_acks` | table | 000780_tasks.sql:25 |
+| `tasks` | table | 000780_tasks.sql:6 |
 | `tiktok_submissions` | table | 000600_modules.sql:17 |
 | `violations` | table | 000700_scoring.sql:57 |
 | `staff_stars` | view | 000700_scoring.sql:129 |

@@ -23,6 +23,14 @@ const H = [
   ["#btnSend", "🚀 Gửi báo cáo", "Gửi khi đã nhập đủ các môn và doanh thu. Sau giờ chốt, sửa báo cáo cần quản lý duyệt."],
   ["#btnImg", "🖼️ Ảnh báo cáo", "Tạo ảnh báo cáo của ngày này để lưu hoặc gửi qua Zalo/Line."],
   ["#missing", "Chưa báo cáo hôm nay", "Bấm tên để mở nhanh báo cáo của nhân viên đó (nộp hộ hoặc nhắc).", true],
+  // Việc
+  ['#cvTabs [data-t="tasks"]', "📋 Việc", "Việc quản lý triển khai và việc được giao cho bạn. Đọc kỹ rồi bấm “Đã đọc & nắm rõ” hoặc “Hoàn thành”."],
+  ["[data-ack]", "Đã đọc & nắm rõ", "Bấm sau khi đọc hết nội dung. Quản lý xem được thời gian bạn xác nhận."],
+  ["[data-done]", "Hoàn thành", "Báo đã làm xong việc được giao, có thể ghi chú thêm."],
+  ["#tkKind", "Loại việc", "Triển khai toàn NV (đọc & nắm rõ) · Giao việc NV (hoàn thành + ghi chú) · Việc QL có deadline · Link trang tính.", true],
+  ["#tkAi", "✨ AI tóm tắt", "AI đọc nội dung dán vào + ảnh/PDF, đề xuất tiêu đề, ý chính, hạn chót. Sửa lại trước khi đăng.", true],
+  ["#tkRemind", "Nhắc lại", "Sang tuần / tháng / 2 tháng mới, việc tự hiện lại để nhân viên xác nhận đọc lại.", true],
+  [".tk-prog", "Tiến độ", "Bấm để xem ai đã đọc / hoàn thành và lúc nào; nút “Copy lời nhắc” để nhắc người chưa làm.", true],
   // Quỹ
   ['#cvTabs [data-t="fund"]', "💵 Quỹ", "Thu chi của siêu thị: số dư, thêm khoản, lịch sử, thống kê theo danh mục và người."],
   [".fund-kpi", "Số dư quỹ", "Số dư = tổng thu − tổng chi từ trước tới nay. Hai ô bên cạnh là thu, chi của tháng đang xem."],

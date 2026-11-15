@@ -400,3 +400,24 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 .m-only{display:none}
 @media (max-width:640px){.m-only{display:block}.fund-tbl th:nth-child(4),.fund-tbl td:nth-child(4),.fund-tbl th:nth-child(5),.fund-tbl td:nth-child(5){display:none}
   .fund-hist .card-h{flex-wrap:wrap}.fund-hist .card-h h2{flex-basis:100%}.fund-filter select{flex:1}}
+/* CV → Việc */
+.tk-subs{margin-bottom:10px;flex-wrap:wrap}
+.tk-list{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.tk-card{padding:14px 16px}
+.tk-card.imp{border-left:4px solid var(--bad)}
+.tk-head{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.tk-head b{font-size:16px}
+.tk-badges{display:flex;gap:4px;flex-wrap:wrap}
+.tk-sum{background:var(--bg);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:14px;line-height:1.55}
+.tk-full{margin:4px 0;font-size:13px}.tk-full div{white-space:normal;padding:8px 0;color:var(--ink)}
+.tk-files{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.tk-files .chip img{width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle}
+.tk-files .chip button{border:0;background:transparent;cursor:pointer;color:var(--bad);font:inherit}
+.tk-img img{width:150px;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block}
+.tk-act{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.tk-prog{margin-top:6px;font-size:13px}
+.tk-kinds{display:flex;flex-wrap:wrap}.tk-kinds button{flex:1 1 auto}
+.tk-links{display:flex;flex-direction:column;gap:6px}
+.tk-link{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.tk-link a{flex:1;display:flex;flex-direction:column;text-decoration:none;color:inherit}
+@media (max-width:640px){.tk-img img{width:calc(50vw - 40px);height:auto;aspect-ratio:4/3}.tk-act .btn.primary{flex:1}}

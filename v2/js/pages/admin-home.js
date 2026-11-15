@@ -29,6 +29,9 @@ export const FEATURES = [
   { c: "A3", t: "Phân quyền quản lý", w: "Quản lý → Phân quyền", k: "phân quyền quản lý email", go: { tab: "members" }, owner: true },
   { c: "E1", t: "Telegram: bật/tắt, giờ gửi từng mục", w: "Quản lý → Telegram", k: "telegram tin nhắn tóm tắt", go: { tab: "telegram" } },
   { c: "D1", t: "TikTok, vệ sinh, lịch bận, roadshow", w: "CV", k: "tiktok vệ sinh lịch bận roadshow cv", go: { page: "cv" } },
+  { c: "D7", t: "Đăng việc triển khai / giao việc cho NV (AI tóm tắt, ảnh/PDF)", w: "CV → 📋 Việc → Đăng việc", k: "việc giao việc triển khai thông báo nhắc nhở ai tóm tắt pdf ảnh", go: { page: "cv", cv: "tasks" } },
+  { c: "D7b", t: "Xem ai đã đọc / hoàn thành việc", w: "CV → 📋 Việc → Triển khai & giao việc", k: "ai đã đọc nắm rõ hoàn thành kiểm tra", go: { page: "cv", cv: "tasks" } },
+  { c: "D7c", t: "Link trang tính quản lý / việc QL có deadline", w: "CV → 📋 Việc", k: "link trang tính sheet deadline việc quản lý trưởng ca", go: { page: "cv", cv: "tasks" } },
   { c: "D6", t: "Quỹ thu chi (thêm, sửa, xoá, thống kê, CSV)", w: "CV → 💵 Quỹ", k: "quỹ thu chi tiền số dư chi phí", go: { page: "cv", cv: "fund" } },
   { c: "F6", t: "Nhật ký thao tác", w: "Quản lý → Nhật ký", k: "nhật ký audit", go: { tab: "audit" }, owner: true },
   { c: "G2", t: "Luật đang áp dụng (cho nhân viên xem)", w: "Rule", k: "rule luật quy tắc", go: { page: "rules" } },
@@ -38,6 +41,7 @@ const PLAN = [
   { id: "day", icon: "☀️", t: "Hằng ngày", steps: [
     ["Sáng: dán kết quả siêu thị → áp dụng sao để đẩy môn yếu", "F2c"],
     ["Duyệt thưởng nóng / bán thêm / yêu cầu sửa", "B5"],
+    ["Xem NV đã đọc việc triển khai, việc QL sắp tới hạn", "D7b"],
     ["Sau giờ chốt: nhắc người chưa báo cáo", "B1"]] },
   { id: "week", icon: "📅", t: "Thứ 2 hằng tuần", steps: [
     ["Nhập phục vụ tuần trước", "C6"], ["Ghi vi phạm (nếu có)", "C7"], ["Copy bảng xếp hạng tuần gửi nhóm", "C10"]] },
