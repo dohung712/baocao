@@ -2,7 +2,7 @@
 //  - mode "tick": lịch pg_cron gọi 5 phút/lần (xác thực bằng x-cron-secret), tự gửi khi tới giờ
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
-import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, busyMsg, rsMsg, serviceMsg } from "./summary2.ts";
+import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, busyMsg, rsMsg, serviceMsg } from "./summary2.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -58,13 +58,14 @@ async function buildCtx(from: string, to: string, cfg: Record<string, any>): Pro
   };
 }
 
-export const ITEMS: Record<string, { label: string; freq: string; time: string; dow?: number }> = {
+export const ITEMS: Record<string, { label: string; freq: string; time: string; dow?: number; on?: boolean }> = {
   daily: { label: "Thi đua ngày", freq: "daily", time: "22:35" },
   weekly: { label: "Tổng kết thi đua tuần", freq: "weekly", time: "22:45", dow: 0 },
   revenue: { label: "Doanh thu QĐ lũy kế", freq: "daily", time: "22:40" },
   score: { label: "Bảng điểm xếp hạng", freq: "weekly", time: "22:50", dow: 0 },
   tiktok: { label: "TikTok (ngày hạn T3, T6)", freq: "due", time: "20:00" },
-  clean: { label: "Vệ sinh", freq: "daily", time: "21:00" },
+  cleanam: { label: "Nhắc vệ sinh đầu ngày (người trực + khu vực)", freq: "daily", time: "08:30", on: true },
+  clean: { label: "Vệ sinh (cuối ngày: ảnh, khu vực chưa xong)", freq: "daily", time: "21:00" },
   busy: { label: "Lịch bận / OFF ngày mai", freq: "daily", time: "21:30" },
   rs: { label: "Roadshow", freq: "daily", time: "21:30" },
   service: { label: "Phục vụ & vi phạm", freq: "weekly", time: "09:00", dow: 1 },
@@ -77,7 +78,7 @@ function items(cfg: Record<string, any>) {
     // freq: daily (hằng ngày) · weekly (1 thứ/tuần, dow) · days (chọn nhiều thứ, dows) · due (TikTok: ngày hạn T3, T6). QL chỉnh qua save_notify_items.
     const freq = ["daily", "weekly", "days", "due"].includes(x.freq) ? x.freq : d.freq;
     const dows = (Array.isArray(x.dows) ? x.dows : []).map(Number).filter((n: number) => n >= 0 && n <= 6);
-    return { id, ...d, defFreq: d.freq, freq, on: x.on ?? (legacy as any).on ?? false, time: x.time || (legacy as any).time || d.time, dow: Number(x.dow ?? (legacy as any).dow ?? d.dow ?? 0), dows };
+    return { id, ...d, defFreq: d.freq, freq, on: x.on ?? (legacy as any).on ?? d.on ?? false, time: x.time || (legacy as any).time || d.time, dow: Number(x.dow ?? (legacy as any).dow ?? d.dow ?? 0), dows };
   });
 }
 
@@ -113,7 +114,12 @@ async function compose(kind: string, date: string, cfg: Record<string, any>): Pr
     }
     return { text: tiktokMsg(store, date, staff, subs, due, overdue), period: date };
   }
-  if (kind === "clean") return { text: cleanMsg(store, date, await rest(`cleaning?select=clean_date,staff_id,photos&clean_date=gte.${addDays(date, -7)}&clean_date=lte.${addDays(date, 1)}`), names), period: date };
+  if (kind === "clean" || kind === "cleanam") {
+    const zones = await rest("clean_zones?select=id,dept,name,staff_text,staff_ids&kind=eq.zone&order=dept,sort");
+    const done = new Set<number>((await rest(`clean_zone_checks?select=zone_id&d=eq.${date}`)).map((c: any) => c.zone_id));
+    const rows = await rest(`cleaning?select=clean_date,staff_id,photos&clean_date=gte.${addDays(date, -7)}&clean_date=lte.${addDays(date, 1)}`);
+    return { text: kind === "clean" ? cleanMsg(store, date, rows, names, zones, done) : cleanRemindMsg(store, date, rows, names, zones, done), period: date };
+  }
   if (kind === "busy") return { text: busyMsg(store, date, await rest(`busy?select=busy_date,staff_id,type,shifts&busy_date=eq.${addDays(date, 1)}`), names), period: date };
   if (kind === "rs") return { text: rsMsg(store, date, vnParts().hm, await rest(`roadshow?select=rs_date,rs_time,staff_id,photos,km,minutes&rs_date=gte.${addDays(date, -7)}&rs_date=lte.${addDays(date, 1)}`), names), period: date };
   if (kind === "service") {

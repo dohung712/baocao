@@ -12,8 +12,17 @@ const err = (x) => toast(errMsg(x), "bad");
 // NV phụ trách: ưu tiên danh sách QL đã chọn; chưa chọn thì đoán theo tên trong cột "Nhân viên" (VD "Trâm + PG Oppo")
 export function zoneStaff(z, staff = visibleStaff()) {
   if (z.staff_ids?.length) return z.staff_ids;
-  const toks = String(z.staff_text || "").split(/[+,/&]| và /i).map(low).filter((t) => t && !/^(pg|new)\b/.test(t));
-  return staff.filter((s) => s.dept === z.dept && toks.some((t) => { const n = low(s.name); return n === t || n.endsWith(" " + t); })).map((s) => s.id);
+  // "Hiếu Linh" không khớp ai thì tách từng tên (Hiếu + Linh); "PG SS" tìm trong NV bộ phận PG (VD "Diện SS")
+  const hit = (n, t) => n === t || n.endsWith(" " + t);
+  const pool = (pg) => staff.filter((s) => (pg ? /^pg$/i.test(s.dept) : s.dept === z.dept));
+  const out = new Set();
+  for (let t of String(z.staff_text || "").split(/[+,/&]| và /i).map(low).filter((t) => t && t !== "new")) {
+    const pg = /^pg\s/.test(t); if (pg) t = t.slice(3).trim();
+    const ps = pool(pg); let m = ps.filter((s) => hit(low(s.name), t));
+    if (!m.length && !pg && t.includes(" ")) m = t.split(/\s+/).flatMap((w) => ps.filter((s) => hit(low(s.name), w)));
+    if (m.length === 1 || (!pg && m.length)) m.forEach((s) => out.add(s.id));
+  }
+  return [...out];
 }
 
 export async function zones(box) {
@@ -25,7 +34,7 @@ export async function zones(box) {
   if (!box.isConnected) return;
   if (error) { box.innerHTML = `<div class="card"><p class="muted">${esc(errMsg(error))}</p></div>`; return; }
   const mgr = isManager(), myId = S.me?.staff_id;
-  const all = zs || [], ds = [...new Set([...depts(), ...all.map((z) => z.dept)])].filter((d) => all.some((z) => z.dept === d) || mgr);
+  const all = zs || [], ds = all.length ? [...new Set(all.map((z) => z.dept))] : depts();
   let dept = null; try { dept = localStorage.getItem(KEY); } catch { /* bỏ qua */ }
   if (!ds.includes(dept)) dept = ds.includes(staffById(myId)?.dept) ? staffById(myId).dept : ds[0];
   const list = all.filter((z) => z.dept === dept);
@@ -67,7 +76,7 @@ export async function zones(box) {
         staff = who.length === 1 ? who[0] : await pick(who); if (!staff) return;
       }
       c.disabled = true;
-      try { const r = await rpc("zone_check", { p_id: z.id, p_staff: staff }); toast(r.message); redraw(); } catch (x) { err(x); c.disabled = false; }
+      try { const r = await rpc("zone_check", { p_id: z.id, p_staff: staff }); toast(r.message); redraw(); document.dispatchEvent(new Event("remind:refresh")); } catch (x) { err(x); c.disabled = false; }
     }
   };
 }
@@ -90,7 +99,7 @@ async function editCrit(cur, redraw) {
 async function edit(z, dept, redraw) {
   const isNew = !z; z = z || { dept, kind: "zone", name: "", detail: "", staff_text: "", staff_ids: [], sort: null };
   const guess = zoneStaff(z);
-  const staffBox = (d) => visibleStaff().filter((s) => s.dept === d).map((s) => `<label class="chip inline tiny"><input type="checkbox" name="st_${esc(s.id)}" ${guess.includes(s.id) ? "checked" : ""}> ${esc(s.name)}</label>`).join("") || `<span class="tiny muted">Không có NV</span>`;
+  const staffBox = (d) => visibleStaff().filter((s) => s.dept === d || /^pg$/i.test(s.dept)).sort((a, b) => (a.dept !== d) - (b.dept !== d)).map((s) => `<label class="chip inline tiny"><input type="checkbox" name="st_${esc(s.id)}" ${guess.includes(s.id) ? "checked" : ""}> ${esc(s.name)}${s.dept !== d ? ` <span class="muted">(${esc(s.dept)})</span>` : ""}</label>`).join("") || `<span class="tiny muted">Không có NV</span>`;
   const v = await modal(`<h3>${isNew ? "Thêm khu vực vệ sinh" : "Sửa: " + esc(z.name)}</h3><form class="stack">
       <div class="fields"><label>Bộ phận<select name="dept">${[...new Set([...depts(), z.dept])].map((d) => `<option ${d === z.dept ? "selected" : ""}>${esc(d)}</option>`).join("")}</select></label>
         <label>Loại<select name="kind">${GROUPS.map(([k, l]) => `<option value="${k}" ${k === z.kind ? "selected" : ""}>${l.replace(/^\S+\s/, "")}</option>`).join("")}</select></label></div>

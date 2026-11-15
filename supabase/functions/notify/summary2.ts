@@ -44,16 +44,40 @@ export function tiktokMsg(store: string, date: string, staff: Staff[], subs: any
   return L.join("\n");
 }
 
-export function cleanMsg(store: string, date: string, rows: any[], names: Map<string, string>) {
+// Khu vực vệ sinh: người phụ trách (theo mã NV đã gắn, chưa gắn thì ghi như bảng) · pending = chỉ khu vực chưa báo xong hôm nay
+type Zone = { id: number; dept: string; name: string; staff_text: string; staff_ids: string[] };
+function zoneLines(zones: Zone[], done: Set<number>, names: Map<string, string>, pending: boolean) {
+  const who = (z: Zone) => (z.staff_ids || []).map((id) => names.get(id)).filter(Boolean).map((n) => short(n as string)).join(", ") || z.staff_text;
+  const list = zones.filter((z) => !pending || ((z.staff_ids || []).length && !done.has(z.id))), L: string[] = [];
+  for (const d of [...new Set(list.map((z) => z.dept))]) {
+    L.push(`<b>${esc(d)}</b>`);
+    list.filter((z) => z.dept === d).forEach((z) => L.push(`• ${esc(z.name)}${who(z) ? ` — ${esc(who(z))}` : ""}${!pending && done.has(z.id) ? " ✅" : ""}`));
+  }
+  return L;
+}
+
+// Nhắc đầu ngày: người trực vệ sinh theo lịch đăng ký + khu vực & người phụ trách
+export function cleanRemindMsg(store: string, date: string, rows: any[], names: Map<string, string>, zones: Zone[], done: Set<number>) {
+  const today = rows.find((r) => r.clean_date === date && names.has(r.staff_id)) || rows.find((r) => r.clean_date === date);
+  if (!today && !zones.length) return null;
+  const L = [`🧹 <b>NHẮC VỆ SINH · ${dow(date)} ${dm(date)}</b>`, esc(store), ""];
+  L.push(today ? `Trực vệ sinh hôm nay (lịch đăng ký): <b>${esc(names.get(today.staff_id) || today.staff_id)}</b> — làm xong nộp 3 ảnh trên tool` : "Trực vệ sinh hôm nay: ⚠️ chưa ai đăng ký");
+  if (zones.length) L.push("", "🧽 <b>Khu vực phụ trách</b> (làm xong bấm “Xong hôm nay” trên tool)", ...zoneLines(zones, done, names, false));
+  return L.join("\n");
+}
+
+export function cleanMsg(store: string, date: string, rows: any[], names: Map<string, string>, zones: Zone[] = [], done: Set<number> = new Set()) {
   const tomorrow = new Date(date + "T00:00:00Z"); tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const tm = tomorrow.toISOString().slice(0, 10);
   const today = rows.find((r) => r.clean_date === date), next = rows.find((r) => r.clean_date === tm);
   const late = rows.filter((r) => r.clean_date < date && r.photos.length < 3);
-  if (!today && !next && !late.length) return null;
+  const zp = zoneLines(zones, done, names, true);
+  if (!today && !next && !late.length && !zp.length) return null;
   const L = [`🧹 <b>VỆ SINH · ${dow(date)} ${dm(date)}</b>`, esc(store), ""];
   L.push(today ? `Hôm nay: <b>${esc(names.get(today.staff_id))}</b> — ${today.photos.length >= 3 ? "✅ đã nộp ảnh" : "⏳ chưa nộp ảnh"}` : "Hôm nay: chưa ai đăng ký");
   L.push(next ? `Ngày mai: <b>${esc(names.get(next.staff_id))}</b>` : "Ngày mai: ⚠️ còn trống — ai rảnh đăng ký nhé");
   if (late.length) L.push("", `⚠️ Quá ngày chưa nộp ảnh: ${late.map((r) => `${esc(short(names.get(r.staff_id) || ""))} (${dm(r.clean_date)})`).join(", ")}`);
+  if (zones.length) L.push("", zp.length ? "🧽 <b>Khu vực chưa báo xong hôm nay</b>" : "🧽 Khu vực vệ sinh: ✅ tất cả đã báo xong", ...zp);
   return L.join("\n");
 }
 

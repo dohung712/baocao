@@ -124,7 +124,7 @@ async function clean(body) {
   const from = ym + "-01", to = shiftMonth(ym, 1) + "-01", today = vnToday();
   D.clean = await load("cleaning", "clean_date", from, addDays(to, -1));
   const byDay = (d) => D.clean.find((c) => c.clean_date === d && !staffById(c.staff_id)?.hidden) || D.clean.find((c) => c.clean_date === d);
-  body.innerHTML = `<div id="zonesBox"></div><div class="card"><div class="card-h"><h2>🧹 Lịch vệ sinh</h2><span class="small muted">Mỗi ngày 1 người · nộp 3 ảnh khi xong · đã đăng ký thì chỉ quản lý xoá</span></div>
+  body.innerHTML = `<div id="zonesBox"></div><div class="card"><div class="card-h"><h2>🧹 Lịch vệ sinh</h2><span class="small muted">Mỗi ngày 1 người · nộp 3 ảnh khi xong · người trực được nhắc trên tool hôm trước & trong ngày · quản lý đổi người / xoá được</span></div>
     ${calNav()}
     ${monthGrid(ym, (d) => { const c = byDay(d); if (!c) return d >= today ? `<span class="free">+ Còn trống</span>` : "";
       const st = c.photos.length >= 3 ? "ok" : d < today ? "bad" : "info"; return `<span class="tag ${st}">${esc(shortName(name(c.staff_id)))}</span>${c.photos.length >= 3 ? '<span class="tag ok">✅ Đã nộp ảnh</span>' : d < today ? '<span class="tag bad">⚠️ Chưa nộp</span>' : ""}`; })}
@@ -147,6 +147,7 @@ async function clean(body) {
     await modal(`<h3>🧹 ${dow(d)} ${dmy(d)} · ${esc(name(c.staff_id))}</h3>
       <p class="small muted">Đăng ký lúc ${dmy(c.reg_date)} ${esc(c.reg_time)}${c.report_date ? ` · nộp ảnh ${dmy(c.report_date)} ${esc(c.report_time || "")}` : ""}</p>
       ${c.photos.length ? `<div class="photos" id="clPhotos"></div>` : canReport ? `<p><b>Nộp 3 ảnh báo cáo</b></p>${pickerHtml(["Ảnh 1", "Ảnh 2", "Ảnh 3"])}` : `<p class="muted">${d > today ? "Chưa tới ngày, chưa nộp ảnh được." : "Chưa nộp ảnh."}</p>`}
+      ${isManager() ? `<div class="row" style="margin-top:10px"><label class="grow">🔁 Đổi người trực${staffPicker("clSwap", c.staff_id)}</label><button class="btn" data-v="swap" type="button" style="align-self:flex-end">Đổi người</button></div>` : ""}
       <div class="modal-actions">${isManager() ? `<button class="btn danger" data-v="del">Xoá đăng ký</button>${c.photos.length ? `<button class="btn" data-v="delph">Xoá ảnh (cho nộp lại)</button>` : ""}<span class="grow"></span>` : ""}<button class="btn" data-v="cancel">Đóng</button>${canReport ? `<button class="btn primary" data-v="send">📤 Nộp ảnh</button>` : ""}</div>`,
       { onOpen: (b) => { if (c.photos.length) fillPhotos(b.querySelector("#clPhotos"), c.photos); bindPicker(b); b.addEventListener("click", (ev) => handle(ev, b)); } });
     async function handle(ev, b) {
@@ -157,7 +158,10 @@ async function clean(body) {
           const fs = files([...b.querySelectorAll("[data-ph]")]); if (fs.length !== 3) return toast("Chọn đủ 3 ảnh");
           ev.target.disabled = true; ev.target.textContent = "⏳ Đang tải ảnh…";
           const paths = await uploadAll(`clean/${d}/${c.staff_id}`, fs);
-          const r = await rpc("clean_report", { p_date: d, p_photos: paths }); toast("✅ " + r.message);
+          const r = await rpc("clean_report", { p_date: d, p_photos: paths }); toast("✅ " + r.message); document.dispatchEvent(new Event("remind:refresh"));
+        } else if (v === "swap") {
+          const to = b.querySelector("#clSwap").value; if (!to || to === c.staff_id) return toast("Chọn người khác để đổi");
+          const r = await rpc("clean_reassign", { p_date: d, p_staff: to }); toast("✅ " + r.message);
         } else if (v === "del" || v === "delph") {
           if (!(await confirmBox(v === "del" ? "Xoá đăng ký vệ sinh?" : "Xoá ảnh báo cáo?", `${esc(name(c.staff_id))} · ${dmy(d)}`, "Xoá", true))) return;
           const r = await rpc("clean_delete", { p_date: d, p_only_photos: v === "delph" }); await removeAll(r.photos); toast("Đã xoá");

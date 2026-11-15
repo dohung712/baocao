@@ -1,6 +1,7 @@
 // Khởi động ứng dụng: đăng nhập, điều hướng, đồng bộ
 import { $, esc, toast, modal, enableAutoSort } from "./ui.js";
 import { initHelp, helpOn, setHelp } from "./help.js";
+import { renderReminders } from "./reminders.js";
 import { sb, S, loadMe, loadAll, startRealtime, stopRealtime, onLive, onChange, isManager, roleLabel, errMsg, setting, SUPABASE_URL, staffEmail, isHidden } from "./store.js";
 import * as report from "./pages/report.js";
 import * as historyPage from "./pages/history.js";
@@ -69,6 +70,14 @@ async function go(id, params = {}) {
 }
 function history_replace(id) { try { history.replaceState(null, "", "#" + id); } catch { location.hash = id; } }
 
+// Nhắc việc theo lịch đăng ký (vệ sinh) — gắn sự kiện 1 lần
+let remBound = false;
+function remind() {
+  const rem = () => renderReminders(go).catch(() => {});
+  rem(); if (remBound) return; remBound = true;
+  onChange((w) => { if (w === "cv") rem(); }); document.addEventListener("remind:refresh", rem);
+}
+
 async function enterApp() {
   show("boot");
   try {
@@ -89,6 +98,7 @@ async function enterApp() {
   if (S.user?.user_metadata?.must_change) setTimeout(() => setPassword(false, true), 300);
   const id = location.hash.slice(1).split("?")[0] || (isManager() ? "report" : "report");
   go(id);
+  remind();
 }
 
 // ---------- Đăng nhập ----------

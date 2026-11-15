@@ -33,6 +33,7 @@ export const FEATURES = [
   { c: "D7b", t: "Xem ai đã đọc / hoàn thành việc", w: "CV → 📋 Việc → Triển khai & giao việc", k: "ai đã đọc nắm rõ hoàn thành kiểm tra", go: { page: "cv", cv: "tasks" } },
   { c: "D7c", t: "Link trang tính quản lý / việc QL có deadline", w: "CV → 📋 Việc", k: "link trang tính sheet deadline việc quản lý trưởng ca", go: { page: "cv", cv: "tasks" } },
   { c: "D8", t: "Khu vực vệ sinh: người phụ trách + tiêu chí, NV báo xong", w: "CV → 🧹 Vệ sinh → Khu vực vệ sinh", k: "khu vực vệ sinh tiêu chí phụ trách tủ phone đồng hồ kho", go: { page: "cv", cv: "clean" } },
+  { c: "D9", t: "Nhắc NV theo lịch đăng ký vệ sinh (trên tool + Telegram sáng)", w: "Tự động · giờ Telegram ở Quản lý → Telegram", k: "nhắc việc nhắc vệ sinh lịch đăng ký trực", go: { tab: "telegram" } },
   { c: "D6", t: "Quỹ thu chi (thêm, sửa, xoá, thống kê, CSV)", w: "CV → 💵 Quỹ", k: "quỹ thu chi tiền số dư chi phí", go: { page: "cv", cv: "fund" } },
   { c: "F6", t: "Nhật ký thao tác", w: "Quản lý → Nhật ký", k: "nhật ký audit", go: { tab: "audit" }, owner: true },
   { c: "G2", t: "Luật đang áp dụng (cho nhân viên xem)", w: "Rule", k: "rule luật quy tắc", go: { page: "rules" } },

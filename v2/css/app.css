@@ -441,3 +441,9 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 .tg-sched .itDays{display:inline-flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .tg-sched .itDays[hidden],.tg-sched select[hidden]{display:none}
 @media (max-width:560px){.zone-grid{grid-template-columns:1fr}}
+/* Nhắc việc theo lịch đăng ký */
+.remind{max-width:1240px;margin:0 auto;padding:0 20px}
+@media (max-width:640px){.remind{padding:0 12px}}
+.remind:empty{display:none}
+.remind-i{display:flex;gap:8px;align-items:center;background:var(--warn-soft);color:var(--text);border:1px solid var(--warn);border-radius:var(--radius);padding:8px 10px;margin-top:10px;font-size:13.5px}
+.remind-i .btn.ghost{padding:2px 6px}

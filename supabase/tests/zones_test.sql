@@ -11,6 +11,7 @@ do $$ declare z bigint; begin
   if not (public.zone_check(z) ->> 'done')::boolean then raise exception 'phải báo xong'; end if;
   if (select count(*) from public.clean_zone_checks where zone_id = z and staff_id = '1001') <> 1 then raise exception 'thiếu bản ghi xong'; end if;
   if (public.zone_check(z) ->> 'done')::boolean then raise exception 'bấm lần 2 phải huỷ'; end if;
+  begin perform public.clean_reassign(public.vn_today(), '1003'); raise exception 'NV không được đổi người trực'; exception when others then if sqlerrm not like '%Chỉ quản lý%' then raise; end if; end;
   begin perform public.zone_check(z, '1003'); raise exception 'NV không được báo hộ'; exception when others then if sqlerrm not like '%chính bạn%' then raise; end if; end;
 end $$;
 select set_config('request.jwt.claims', '{"email":"mgr@x.vn","role":"authenticated"}', false) \g /dev/null
@@ -25,6 +26,10 @@ do $$ declare z bigint; v jsonb; begin
   select value into v from public.settings where key = 'NOTIFY_ITEMS';
   if v -> 0 ->> 'freq' <> 'days' or v -> 0 -> 'dows' <> '[1,3,5]'::jsonb or (v -> 1 ->> 'dow')::int <> 6 then raise exception 'lưu lịch sai: %', v; end if;
   begin perform public.save_notify_items('[{"id":"clean","on":true,"time":"25:00","freq":"daily"}]'); raise exception 'giờ sai phải báo lỗi'; exception when others then if sqlerrm not like '%Giờ gửi%' then raise; end if; end;
+  perform public.clean_register('1001', public.vn_today() + 3);
+  perform public.clean_reassign(public.vn_today() + 3, '1003');
+  if (select staff_id from public.cleaning where clean_date = public.vn_today() + 3) <> '1003' then raise exception 'đổi người trực sai'; end if;
+  perform public.clean_delete(public.vn_today() + 3, false);
   begin perform public.save_notify_items('[{"id":"clean","on":true,"time":"20:00","freq":"monthly"}]'); raise exception 'tần suất sai phải báo lỗi'; exception when others then if sqlerrm not like '%Tần suất%' then raise; end if; end;
 end $$;
 reset role;
