@@ -25,7 +25,7 @@ const PAGES = [
   { id: "admin", icon: "⚙️", label: "Quản lý", mod: admin, manager: true },
 ];
 const allowed = () => PAGES.filter((p) => (!p.manager || isManager()) && !isHidden(p.id));
-let current = null, cleanup = null;
+let current = null, cleanup = null, navToken = 0;
 
 function show(id) { for (const x of ["boot", "login", "app"]) $("#" + x).hidden = x !== id; }
 
@@ -55,8 +55,15 @@ async function go(id, params = {}) {
   renderNav();
   const view = $("#view");
   view.innerHTML = `<div class="empty"><div class="spinner" style="margin:0 auto 8px"></div>Đang tải…</div>`;
-  try { cleanup = (await page.mod.render(view, params, { go })) || null; }
-  catch (e) { console.error(e); view.innerHTML = `<div class="banner bad"><div><b>Không tải được trang</b>${esc(errMsg(e))}</div></div>`; }
+  const token = ++navToken;
+  try {
+    const c = (await page.mod.render(view, params, { go })) || null;
+    if (token !== navToken) { try { c?.(); } catch { /* bỏ qua */ } return; } // đã chuyển trang khác trong lúc tải
+    cleanup = c;
+  } catch (e) {
+    if (token !== navToken) return;
+    console.error(e); view.innerHTML = `<div class="banner bad"><div><b>Không tải được trang</b>${esc(errMsg(e))}</div></div>`;
+  }
   window.scrollTo(0, 0);
 }
 function history_replace(id) { try { history.replaceState(null, "", "#" + id); } catch { location.hash = id; } }

@@ -35,7 +35,9 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | B1 | Form báo cáo ngày: môn, target, chuỗi | Báo cáo | `pages/report.js` | `report_form`, `_staff_items` |
 | B2 | Danh sách môn của NV: **= môn thi đua tháng** nếu đã giao, chưa giao thì theo bộ phận / môn riêng | (tự động) | n/a | `_staff_items`, `_work_days` |
 | B3 | Tính sao: về số/chưa về, x2, chuỗi, tăng ca, trừ sao lũy tiến, phạt nộp trễ | Báo cáo → Xem trước/Nộp | `pages/report.js` | `_compute_report`, `preview_daily_report`, `submit_daily_report`, `_item_streak`, `ITEM_RULES` |
-| B4 | Ô doanh thu QĐ trong ca (NV tự nhập) | Báo cáo (cuối form) | `pages/report.js` (#xRev) | `save_revenue`, `revenue_entries` |
+| B4 | Ô doanh thu QĐ trong ca, **bắt buộc** (không bán ghi 0; ẩn được ở F4) | Báo cáo (cuối form) | `pages/report.js` (#xRev, needRev/revFilled) | `save_revenue`, `revenue_entries` |
+| B4b | **Xuất ảnh báo cáo** (PNG) để gửi Zalo/Line: sau khi gửi + nút "🖼️ Ảnh báo cáo" | Báo cáo | `js/report-image.js` (reportPng, shareOrDownload), `pages/report.js` | n/a |
+| B4c | Giao diện điện thoại 6.1–6.9" (390–440px): ô nhập to, thanh tiến độ, thanh gửi dính đáy | Báo cáo | `css/app.css` (khối "Báo cáo: tối ưu điện thoại") | n/a |
 | B5 | Bán thêm ngoài thi đua (đề xuất), duyệt | Báo cáo / Quản lý → Duyệt | `pages/report.js`, `pages/admin.js` (approve) | `extra_proposals`, `review_proposal` |
 | B6 | Sửa / xoá báo cáo đã nộp, yêu cầu sửa và duyệt | Lịch sử / Quản lý → Duyệt | `pages/history.js`, `pages/admin.js` | `review_change`, `delete_report_day`, `delete_result` |
 | B7 | Khoá sổ ngày | Quản lý → Khoá sổ | `pages/admin.js` (lock) | `locked_dates` |
@@ -55,7 +57,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | C7 | Vi phạm (−2 điểm/lỗi) | Điểm & DT → Vi phạm | `pages/admin-score.js` | `add_violation`, `delete_violation` |
 | C8 | Cộng/trừ sao, reset sao, reset chuỗi | Điểm & DT → Sao & reset | `pages/admin-score.js` | `adjust_stars`, `reset_stars`, `reset_streaks`, `star_adjustments` |
 | C9 | Lịch sử điều chỉnh (target, DT, sao, phục vụ, vi phạm) | Điểm & DT → Lịch sử | `pages/admin-score.js` (log) | `score_log` |
-| C10 | **Bảng xếp hạng điểm** DT 40 · Thi đua 40 · Phục vụ 20 − vi phạm | Xếp hạng | `pages/score.js` | `score_board` |
+| C10 | **Bảng xếp hạng điểm** DT 40 · Thi đua 40 · Phục vụ 20 − vi phạm. NV thấy cả siêu thị (chỉ điểm; DT & chi tiết môn chỉ của mình, cài đặt `SCORE_SEE_ALL`). Bấm 1 dòng → chi tiết điểm đến từ đâu | Xếp hạng | `pages/score.js` (draw, detail) | `score_board` |
 | C11 | Trang cá nhân: điểm, lũy kế môn, DT, lịch sử | Của tôi | `pages/me.js` | `score_board`, `monthly_targets`, `daily_results` |
 
 ### D. CV (công việc)
@@ -77,7 +79,8 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | Mã | Chức năng | Trên web | File | Hàm / bảng SQL |
 |---|---|---|---|---|
 | F1 | Nhân sự (thêm, ẩn, bộ phận, môn riêng) | Quản lý → Nhân sự | `pages/admin.js` (staff) | `staff`, `set_staff_total` |
-| F2 | Môn & sao thưởng/phạt, x2 | Quản lý → Môn & sao | `pages/admin.js` (items) | `items` |
+| F2 | Môn & sao thưởng/phạt, **Nhân sao X2/X3** (chỉ môn đánh dấu) | Quản lý → Môn & sao | `pages/admin.js` (items) | `items.is_x2`, `items.is_x3`, `_compute_report` |
+| F2b | **Thưởng & trừ sao**: ngưỡng X2/X3, ngày bắt đầu trừ, tăng ca, hệ số lũy tiến + bảng xem trước | Quản lý → Cài đặt (thẻ đầu tiên) | `js/star-rules.js` (dayOutcome, starCardHtml), `pages/admin.js` | settings `STREAK_*`, `PEN_*`, `DOUBLE_/TRIPLE_BONUS_RATE` |
 | F3 | Target/sao riêng từng NV (chỉ còn tác dụng với sao khi NV đã được giao môn tháng) | Quản lý → Target NV | `pages/admin.js` (targets) | `staff_targets` |
 | F4 | Ẩn trang/chức năng theo vai trò | Cài đặt → Ẩn trang | `pages/admin.js` (FEATURES), `js/store.js` (isHidden) | setting `HIDE` |
 | F5 | Ngưỡng chuỗi/phạt, giờ chốt, trọng số điểm, quy tắc riêng từng môn, khoá AI | Quản lý → Cài đặt | `pages/admin.js` (settings) | `settings`, `private_settings` |
@@ -95,8 +98,8 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 ## 3. Luật tính
 
 **Sao ngày (B3)**: % = thực đạt ÷ target ngày.
-- Đạt ≥ 100% thì **Về số**, cộng `bonus_star` của môn. Môn x2 đạt ≥ `DOUBLE_BONUS_RATE` (150%) thì cộng gấp đôi.
-- Dưới 100% thì **Chưa về**, chuỗi ngày chưa về tăng lên:
+- Đạt ≥ 100% thì **Về số**, cộng `bonus_star` của môn. Chỉ môn đánh dấu mới nhân: môn X2 hoặc X3 đạt ≥ `DOUBLE_BONUS_RATE` (150%) → ×2; môn X3 đạt ≥ `TRIPLE_BONUS_RATE` (200%) → ×3.
+- Dưới 100% thì **Chưa về**, chuỗi ngày chưa về tăng lên (chỉnh bằng giao diện ở F2b, có bảng xem trước; "ngày thứ N" trên giao diện = chuỗi N−1 trong cài đặt; tăng ca = 99 nghĩa là không dùng):
   - chuỗi < `STREAK_OVERTIME` (3) và < `STREAK_PENALTY_STAR` (5): chỉ ghi nhận;
   - chuỗi ≥ `STREAK_OVERTIME`: tăng ca;
   - chuỗi ≥ `STREAK_PENALTY_STAR`: trừ `penalty_star` × hệ số. Hệ số là 1,5 / 2 / 5 khi chuỗi đạt `PEN_T2_MIN` / `PEN_T3_MIN` / `PEN_T4_MIN` (4 / 6 / 8). Không đủ sao thì chuyển sang tăng ca.
@@ -114,7 +117,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 - Target ngày = target tháng ÷ số ngày làm việc (mặc định số ngày trong tháng − `DAYS_OFF`).
 
 ## 4. Cài đặt (bảng `settings`)
-`STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
+`SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
 Khoá bí mật (bảng `private_settings`, không đọc được từ web): `TELEGRAM_BOT_TOKEN GEMINI_API_KEY CRON_SECRET`
 
 ---
@@ -153,7 +156,10 @@ Secret duy nhất: `SUPABASE_ACCESS_TOKEN`. Log workflow là **công khai**, nê
 - [ ] A1 NV đăng nhập bằng mã NV, đổi mật khẩu lần đầu
 - [ ] B1/B2 NV có môn thi đua tháng thì báo cáo đúng số môn và đúng target ngày
 - [ ] B3 Nộp báo cáo: sao cộng/trừ đúng, chuỗi đúng
-- [ ] B4 Ô doanh thu QĐ lưu được và cộng vào lũy kế (C5)
+- [ ] B4 Ô doanh thu QĐ bắt buộc, lưu được và cộng vào lũy kế (C5)
+- [ ] B4b Gửi báo cáo xong bấm "Lưu / gửi ảnh" → mở Zalo/Line (điện thoại) hoặc tải ảnh
+- [ ] B4c Báo cáo dễ nhập trên điện thoại 6.5–6.9"
+- [ ] F2b Đổi luật trừ sao trong Cài đặt, bảng xem trước khớp kết quả báo cáo
 - [ ] C1 Dán báo cáo target tháng: số NV, môn, target đúng
 - [ ] C6 Nhập phục vụ tuần, người cao nhất được đủ 20
 - [ ] C7 Ghi vi phạm thì tổng điểm −2
@@ -173,13 +179,13 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 
 | Tên | Loại | File:dòng (bản mới nhất) |
 |---|---|---|
-| `_compute_report` | function | 000720_report_items_from_contest.sql:120 |
+| `_compute_report` | function | 000730_x3_scoreboard.sql:71 |
 | `_ensure_contest_items` | function | 000720_report_items_from_contest.sql:59 |
 | `_item_streak` | function | 000200_logic.sql:24 |
 | `_manager_scope` | function | 000200_logic.sql:271 |
 | `_member_for_staff` | function | 000600_modules.sql:125 |
 | `_require_member` | function | 000200_logic.sql:189 |
-| `_staff_items` | function | 000720_report_items_from_contest.sql:18 |
+| `_staff_items` | function | 000730_x3_scoreboard.sql:9 |
 | `_work_days` | function | 000720_report_items_from_contest.sql:9 |
 | `add_violation` | function | 000700_scoring.sql:310 |
 | `adjust_revenue` | function | 000700_scoring.sql:229 |
@@ -212,7 +218,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `migrate_legacy_all` | function | 000700_scoring.sql:420 |
 | `preview_daily_report` | function | 000200_logic.sql:198 |
 | `private_setting_status` | function | 000630_private_keys.sql:12 |
-| `report_form` | function | 000720_report_items_from_contest.sql:98 |
+| `report_form` | function | 000730_x3_scoreboard.sql:49 |
 | `reset_stars` | function | 000700_scoring.sql:175 |
 | `reset_streak` | function | 000200_logic.sql:308 |
 | `reset_streaks` | function | 000700_scoring.sql:192 |
@@ -227,7 +233,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `save_rating` | function | 000700_scoring.sql:273 |
 | `save_revenue` | function | 000700_scoring.sql:208 |
 | `save_store_contest` | function | 000200_logic.sql:346 |
-| `score_board` | function | 000700_scoring.sql:335 |
+| `score_board` | function | 000730_x3_scoreboard.sql:224 |
 | `set_private_setting` | function | 000630_private_keys.sql:2 |
 | `set_staff_total` | function | 000700_scoring.sql:141 |
 | `setting_num` | function | 000100_core.sql:160 |

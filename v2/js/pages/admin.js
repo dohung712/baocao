@@ -1,6 +1,7 @@
 // Trang Quản lý: duyệt, khoá sổ, nhân sự, môn thi đua, cài đặt, Telegram, phân quyền
 import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml } from "../ui.js";
 import { scoreAdmin } from "./admin-score.js";
+import { starCardHtml, bindStarCard } from "../star-rules.js";
 import { sb, S, rpc, notify, callFn, onChange, isOwner, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel, visibleStaff } from "../store.js";
 
 const TABS = [
@@ -137,10 +138,10 @@ async function items(body) {
   body.innerHTML = `<div class="card"><div class="card-h"><h2>📋 Danh mục môn thi đua</h2><button class="btn small" id="itAdd" type="button">+ Thêm môn</button><button class="btn small primary" id="itSave" type="button">💾 Lưu tất cả</button></div>
     <div class="banner info"><div><b>Khai báo môn, target, sao thưởng, sao phạt</b>
       • <b>Áp dụng</b>: “Chung” = mọi bộ phận; chọn bộ phận để môn chỉ áp dụng cho bộ phận đó (trùng tên thì ưu tiên môn của bộ phận).<br>
-      • <b>Target/ngày</b>: số cần đạt mỗi ngày để <i>Về số</i>. • <b>Sao thưởng</b>: cộng khi về số (môn tick <b>X2</b> đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% target được nhân đôi).<br>
-      • <b>Sao phạt</b>: số sao trừ khi chuỗi chưa về đủ ngưỡng (nhân hệ số lũy tiến ở tab Cài đặt).<br>
+      • <b>Target/ngày</b>: số cần đạt mỗi ngày để <i>Về số</i>. • <b>Sao thưởng</b>: cộng khi đạt ≥ 100% target. <b>Nhân sao</b>: môn X2 đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% → ×2; môn X3 đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% → ×2, ≥ ${fmt(setting("TRIPLE_BONUS_RATE", 200))}% → ×3.<br>
+      • <b>Sao phạt</b>: số sao trừ khi chưa đạt nhiều ngày liền (mốc bắt đầu trừ, tăng ca, hệ số lũy tiến: <b>Cài đặt → Thưởng & trừ sao</b>).<br>
       • Target/sao <b>riêng từng nhân viên</b>: tab <b>Target NV</b>. Giao môn riêng cho nhân viên: tab <b>Nhân sự</b> → Sửa → Môn riêng.</div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Thứ tự</th><th>Áp dụng</th><th>Tên môn</th><th class="num">Target/ngày</th><th class="num">Sao thưởng</th><th class="num">Sao phạt</th><th>X2</th><th>Bật</th><th></th></tr></thead><tbody id="itRows">
+    <div class="tbl-wrap"><table><thead><tr><th>Thứ tự</th><th>Áp dụng</th><th>Tên môn</th><th class="num">Target/ngày</th><th class="num">Sao thưởng</th><th class="num">Sao phạt</th><th>Nhân sao</th><th>Bật</th><th></th></tr></thead><tbody id="itRows">
     ${S.items.map((i) => row(i)).join("")}</tbody></table></div></div>`;
   function row(i) {
     return `<tr data-id="${i.id || ""}"><td><input type="number" name="sort" value="${i.sort}" style="width:64px"></td>
@@ -149,10 +150,10 @@ async function items(body) {
       <td><input type="number" name="target" min="0.01" step="any" value="${i.target}" style="width:90px;text-align:right"></td>
       <td><input type="number" name="bonus_star" step="10" value="${i.bonus_star}" style="width:90px;text-align:right"></td>
       <td><input type="number" name="penalty_star" step="10" value="${i.penalty_star}" style="width:90px;text-align:right"></td>
-      <td><input type="checkbox" name="is_x2" ${i.is_x2 ? "checked" : ""}></td><td><input type="checkbox" name="active" ${i.active !== false ? "checked" : ""}></td>
+      <td><select name="mult" style="width:auto"><option value="">—</option><option value="x2" ${i.is_x2 && !i.is_x3 ? "selected" : ""}>X2</option><option value="x3" ${i.is_x3 ? "selected" : ""}>X3</option></select></td><td><input type="checkbox" name="active" ${i.active !== false ? "checked" : ""}></td>
       <td><button class="btn small ghost danger" data-del type="button">🗑️</button></td></tr>`;
   }
-  $("#itAdd").onclick = () => { $("#itRows").insertAdjacentHTML("beforeend", row({ id: "", store: "Chung", name: "", target: 1, bonus_star: 200, penalty_star: 100, is_x2: false, active: true, sort: S.items.length + 1 })); $("#itRows tr:last-child input[name=name]").focus(); };
+  $("#itAdd").onclick = () => { $("#itRows").insertAdjacentHTML("beforeend", row({ id: "", store: "Chung", name: "", target: 1, bonus_star: 200, penalty_star: 100, is_x2: false, is_x3: false, active: true, sort: S.items.length + 1 })); $("#itRows tr:last-child input[name=name]").focus(); };
   body.onclick = async (e) => {
     const d = e.target.closest("[data-del]"); if (!d) return;
     const tr = d.closest("tr"), id = tr.dataset.id;
@@ -165,7 +166,7 @@ async function items(body) {
     const rows = $$("#itRows tr").map((tr) => {
       const g = (n) => tr.querySelector(`[name=${n}]`);
       return { id: tr.dataset.id ? Number(tr.dataset.id) : null, sort: Number(g("sort").value) || 0, store: g("store").value, name: g("name").value.trim(), target: Number(g("target").value) || 1,
-        bonus_star: Math.round(Number(g("bonus_star").value) || 0), penalty_star: Math.round(Number(g("penalty_star").value) || 0), is_x2: g("is_x2").checked, active: g("active").checked };
+        bonus_star: Math.round(Number(g("bonus_star").value) || 0), penalty_star: Math.round(Number(g("penalty_star").value) || 0), is_x2: g("mult").value !== "", is_x3: g("mult").value === "x3", active: g("active").checked };
     }).filter((r) => r.name);
     const keys = rows.map((r) => r.store + "|" + r.name);
     if (new Set(keys).size !== keys.length) return toast("Có môn bị trùng tên trong cùng nhóm áp dụng");
@@ -254,12 +255,7 @@ async function accounts(body) {
 
 // ---------- Cài đặt ----------
 const NUM_SETTINGS = [
-  ["STREAK_OVERTIME", "Chuỗi ngày được TĂNG CA", "Chuỗi ≥ số này mới được chọn tăng ca"],
-  ["STREAK_PENALTY_STAR", "Chuỗi ngày bị TRỪ SAO", "Chuỗi ≥ số này mới trừ sao (nếu còn quỹ sao)"],
-  ["DOUBLE_BONUS_RATE", "% target thưởng X2", "Môn có đánh dấu X2 đạt ≥ % này được nhân đôi sao"],
   ["LATE_STEP", "Sao phạt nộp trễ mỗi lần", "Lần N trong tháng bị trừ N × số này"],
-  ["PEN_T2_MIN", "Bậc 2 từ chuỗi", ""], ["PEN_M2", "Hệ số bậc 2", ""], ["PEN_T3_MIN", "Bậc 3 từ chuỗi", ""], ["PEN_M3", "Hệ số bậc 3", ""],
-  ["PEN_T4_MIN", "Bậc 4 từ chuỗi", ""], ["PEN_M4", "Hệ số bậc 4", ""], ["PEN_M1", "Hệ số bậc 1", "Chuỗi nhỏ hơn bậc 2"],
   ["TIKTOK_REWARD", "TikTok: sao thưởng đúng hạn", ""], ["TIKTOK_PENALTY", "TikTok: sao phạt mỗi ngày trễ", ""], ["TIKTOK_MIN_LINKS", "TikTok: số link tối thiểu", ""], ["TIKTOK_FB_MIN", "TikTok: số link Facebook tối thiểu", ""],
   ["BUSY_MAX_WEEKDAY", "Lịch bận: tối đa người/ngày (T2–T6)", ""], ["RS_MIN_KM", "Roadshow: km tối thiểu", ""], ["RS_MIN_MIN", "Roadshow: phút tối thiểu", ""],
   ["W_REVENUE", "Xếp hạng: trọng số Doanh thu", "Điểm tối đa phần doanh thu"], ["W_CONTEST", "Xếp hạng: trọng số Thi đua", ""], ["W_SERVICE", "Xếp hạng: trọng số Phục vụ", ""], ["VIOLATION_POINTS", "Xếp hạng: điểm trừ mỗi lỗi", ""],
@@ -273,14 +269,15 @@ async function settings(body) {
   const aiStatus = await rpc("private_setting_status").catch(() => ({}));
   const rules = Array.isArray(setting("ITEM_RULES", [])) ? setting("ITEM_RULES", []) : [];
   const itemNames = [...new Set(S.items.map((i) => i.name))];
-  body.innerHTML = `
-    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>⚙️ Ngưỡng tăng ca, chế tài, phạt lũy tiến</h2><button class="btn small primary" id="stSave" type="button">💾 Lưu</button></div>
+  body.innerHTML = `${starCardHtml()}
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>⚙️ Cài đặt chung</h2><button class="btn small primary" id="stSave" type="button">💾 Lưu</button></div>
       <div class="fields">
         <label>Tên siêu thị<input id="st_STORE_NAME" value="${esc(setting("STORE_NAME", ""))}"></label>
         <label>Giờ chốt báo cáo<input id="st_CUTOFF_TIME" type="time" value="${esc(setting("CUTOFF_TIME", "22:20"))}"></label>
         ${NUM_SETTINGS.map(([k, l, h]) => `<label title="${esc(h)}">${esc(l)}<input id="st_${k}" type="number" step="any" min="0" value="${esc(setting(k, ""))}"></label>`).join("")}
         <label>Tự động tính chuỗi<select id="st_AUTO_STREAK_ENABLED"><option value="ON">Bật</option><option value="OFF" ${setting("AUTO_STREAK_ENABLED", "ON") === "OFF" ? "selected" : ""}>Tắt</option></select></label>
-        <label>Nhân viên xem BXH toàn siêu thị<select id="st_EMPLOYEE_SEE_LEADERBOARD"><option value="false">Không (chỉ xem của mình)</option><option value="true" ${setting("EMPLOYEE_SEE_LEADERBOARD", false) === true ? "selected" : ""}>Có</option></select></label>
+        <label>NV xem BXH sao toàn siêu thị<select id="st_EMPLOYEE_SEE_LEADERBOARD"><option value="false">Không (chỉ xem của mình)</option><option value="true" ${setting("EMPLOYEE_SEE_LEADERBOARD", false) === true ? "selected" : ""}>Có</option></select></label>
+        <label>NV xem bảng xếp hạng điểm<select id="st_SCORE_SEE_ALL"><option value="true">Cả siêu thị (chỉ điểm, DT chi tiết của mình)</option><option value="false" ${setting("SCORE_SEE_ALL", true) === false ? "selected" : ""}>Chỉ của mình</option></select></label>
         <label>TikTok: bắt đầu tính từ ngày<input id="st_TIKTOK_START_DATE" type="date" value="${esc(String(setting("TIKTOK_START_DATE", "")).slice(0, 10))}"></label>
       </div>
       <div class="fields" style="margin-top:10px"><label>Đơn vị doanh thu QĐ<input id="st_REVENUE_UNIT" value="${esc(setting("REVENUE_UNIT", "triệu đ"))}"></label>
@@ -318,9 +315,10 @@ async function settings(body) {
     const rows = pairs.map(([key, value]) => ({ key, value, updated_by: S.me.email, updated_at: new Date().toISOString() }));
     const { error } = await sb.from("settings").upsert(rows); if (error) throw error; await loadSettings();
   };
+  bindStarCard(save);
   $("#stSave").onclick = async () => {
     const pairs = [["STORE_NAME", $("#st_STORE_NAME").value.trim()], ["CUTOFF_TIME", $("#st_CUTOFF_TIME").value || "22:20"], ["AUTO_STREAK_ENABLED", $("#st_AUTO_STREAK_ENABLED").value],
-      ["EMPLOYEE_SEE_LEADERBOARD", $("#st_EMPLOYEE_SEE_LEADERBOARD").value === "true"], ["REVENUE_UNIT", $("#st_REVENUE_UNIT").value.trim()],
+      ["EMPLOYEE_SEE_LEADERBOARD", $("#st_EMPLOYEE_SEE_LEADERBOARD").value === "true"], ["SCORE_SEE_ALL", $("#st_SCORE_SEE_ALL").value === "true"], ["REVENUE_UNIT", $("#st_REVENUE_UNIT").value.trim()],
       ["RATING_DEDUCT", Object.fromEntries($$(".rd").map((i) => [i.dataset.k, Number(i.value) || 0]))],
       ["VIOLATION_TYPES", $("#st_VIOLATION_TYPES").value.split("\n").map((x) => x.trim()).filter(Boolean)]];
     if ($("#st_TIKTOK_START_DATE").value) pairs.push(["TIKTOK_START_DATE", $("#st_TIKTOK_START_DATE").value]);

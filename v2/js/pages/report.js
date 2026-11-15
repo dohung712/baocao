@@ -1,6 +1,8 @@
 // Trang Báo cáo ca ngày
-import { $, $$, esc, fmt, sign, starHtml, initials, toast, modal, vnToday, vnHM, dmy, dow, debounce, copyText, shortName } from "../ui.js";
+import { $, $$, esc, fmt, sign, starHtml, initials, toast, modal, vnToday, vnHM, dmy, dm, dow, debounce, copyText, shortName } from "../ui.js";
 import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg, isHidden } from "../store.js";
+import { reportPng, shareOrDownload } from "../report-image.js";
+import { multLabel } from "../star-rules.js";
 
 const LS_STAFF = "thidua-v2-staff";
 let st = null;
@@ -16,11 +18,11 @@ export async function render(view) {
     return;
   }
   view.innerHTML = `
-    <div class="page-h"><div><h1>Báo cáo ca ngày</h1><p>Nộp trước <b>${esc(setting("CUTOFF_TIME", "22:20"))}</b> mỗi ngày · số liệu tính sao ở máy chủ, giống quy tắc bản cũ</p></div></div>
+    <div class="page-h"><div><h1>Báo cáo ca ngày</h1><p>Nộp trước <b>${esc(setting("CUTOFF_TIME", "22:20"))}</b> mỗi ngày<span class="hide-m"> · số liệu tính sao ở máy chủ</span></p></div></div>
     <div id="missing"></div>
-    <div class="report-head">
+    <div class="report-head ${isManager() ? "" : "solo"}">
       <label>Ngày làm việc<input type="date" id="rDate" max="${vnToday()}" value="${st.date}"></label>
-      <label>Nhân viên${isManager() ? staffSelect(staffId) : `<input value="${esc(staffById(staffId)?.name || staffId)}" disabled>`}</label>
+      ${isManager() ? `<label>Nhân viên${staffSelect(staffId)}</label>` : ""}
     </div>
     <div id="rBody"></div>`;
   $("#rDate").onchange = (e) => { st.date = e.target.value || vnToday(); load(); };
@@ -56,7 +58,7 @@ async function refreshQuiet() {
 }
 
 async function load() {
-  const body = $("#rBody");
+  const body = $("#rBody"); if (!body) return;
   body.innerHTML = `<div class="empty">Đang tải bảng môn…</div>`;
   try { st.form = await rpc("report_form", { p_staff: st.staffId, p_date: st.date }); }
   catch (e) { body.innerHTML = `<div class="banner bad"><div><b>Không tải được</b>${esc(errMsg(e))}</div></div>`; return; }
@@ -67,6 +69,7 @@ async function load() {
   st.extra = p?.content || ""; st.extraStars = p ? String(p.stars) : "";
   const { data: rv } = await sb.from("revenue_entries").select("amount").eq("staff_id", st.staffId).eq("entry_date", st.date).eq("kind", "daily");
   st.revenueOld = rv?.[0]?.amount ?? null; st.revenue = st.revenueOld == null ? "" : String(+st.revenueOld);
+  if (!$("#rBody")) return; // đã rời trang
   drawBody();
   if (ex.length) runPreview();
 }
@@ -91,7 +94,20 @@ function drawHead() {
         <div><small>Số môn</small><b>${f.items.length}</b></div>
         <div><small>Trạng thái</small><b>${ex.length ? '<span class="pill ok">Đã nộp</span>' : '<span class="pill mute">Chưa nộp</span>'}</b></div>
       </div>
+      ${ex.length ? `<button class="btn small" id="btnImg" type="button">🖼️ Ảnh báo cáo</button>` : ""}
     </div>`;
+  $("#btnImg")?.addEventListener("click", async (e) => {
+    e.target.disabled = true;
+    try {
+      const rows = ex.filter((r) => !["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)).map((r) => {
+        const it = f.items.find((i) => i.name === r.item_name), rate = Number(r.rate_pct);
+        return { name: r.item_name, actual: Number(r.actual), target: rate > 0 ? Number(r.actual) * 100 / rate : Number(it?.target || 0), rate: Math.round(rate || 0), star: r.star_change, status: r.status, comp: r.compensation };
+      });
+      const late = ex.filter((r) => ["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)).map((r) => ({ name: r.item_name, star: r.star_change }));
+      await exportImage(rows, late, ex.reduce((a, r) => a + r.star_change, 0), f.total_star);
+    } catch (x) { toast(errMsg(x)); }
+    e.target.disabled = false;
+  });
 }
 
 function drawBody() {
@@ -103,8 +119,9 @@ function drawBody() {
       <thead><tr><th>#</th><th>Môn thi đua</th><th class="num">Thực đạt</th><th>Target · Chuỗi</th><th>Kết quả</th></tr></thead>
       <tbody id="rRows"></tbody>
     </table></div>
-    ${isHidden("report.revenue") ? "" : `<div class="card" style="margin-top:12px"><div class="card-h"><h3>💰 Doanh thu quy đổi trong ca</h3><span class="small muted">Tính vào điểm xếp hạng (lũy kế tháng)</span></div>
-      <div class="fields"><label>DT QĐ ngày ${dmy(st.date)} (${esc(setting("REVENUE_UNIT", ""))})<input id="xRev" type="number" step="any" min="0" inputmode="decimal" value="${esc(st.revenue)}" placeholder="VD: 25.5"></label></div></div>`}
+    ${needRev() ? `<div class="card rev-card" style="margin-top:12px" id="revCard"><div class="card-h"><h3>💰 Doanh thu quy đổi trong ca <span class="req">* bắt buộc</span></h3></div>
+      <label class="rev-in"><span>DT QĐ ngày ${dm(st.date)} <span class="muted">(${esc(setting("REVENUE_UNIT", ""))})</span></span><input id="xRev" type="number" step="any" min="0" inputmode="decimal" enterkeyhint="done" value="${esc(st.revenue)}" placeholder="Nhập số, không bán được ghi 0"></label>
+      <p class="tiny muted" style="margin:6px 0 0">Tính vào điểm xếp hạng (lũy kế tháng).</p></div>` : ""}
     <div class="card" style="margin-top:12px" ${isHidden("report.extra") ? "hidden" : ""}>
       <div class="card-h"><h3>🎁 Bán thêm ngoài danh mục thi đua <span class="muted small">(chờ quản lý duyệt)</span></h3></div>
       <div class="fields"><label style="grid-column:span 2">Sản phẩm / nội dung<input id="xItem" value="${esc(st.extra)}" placeholder="VD: Bán thêm 1 tủ lạnh Inverter"></label>
@@ -128,17 +145,20 @@ function drawBody() {
     if (e.key === "Enter" && e.target.matches("input.actual")) { e.preventDefault(); const all = $$("input.actual", rows); const i = all.indexOf(e.target); (all[i + 1] || $("#btnSend"))?.focus(); }
   });
   $("#xItem").oninput = (e) => { st.extra = e.target.value; };
-  $("#xRev")?.addEventListener("input", (e) => { st.revenue = e.target.value; });
+  $("#xRev")?.addEventListener("input", (e) => { st.revenue = e.target.value; $("#revCard")?.classList.remove("miss"); drawSum(); });
   $("#xStars").oninput = (e) => { st.extraStars = e.target.value; };
 }
 
 const schedule = debounce(() => runPreview(), 350);
-const filled = () => st.form.items.every((i) => st.inputs[i.name] !== undefined && st.inputs[i.name] !== "" && Number(st.inputs[i.name]) >= 0);
+const itemsFilled = () => st.form.items.every((i) => st.inputs[i.name] !== undefined && st.inputs[i.name] !== "" && Number(st.inputs[i.name]) >= 0);
+const needRev = () => !isHidden("report.revenue");
+const revFilled = () => !needRev() || (st.revenue !== "" && Number(st.revenue) >= 0);
+const filled = () => itemsFilled() && revFilled();
 const payload = () => st.form.items.map((i) => ({ itemName: i.name, actual: Number(st.inputs[i.name]), compensation: st.comps[i.name] || "DUNG_SAO" }));
 
 async function runPreview() {
   if (!$("#rRows")) return; // đã rời trang
-  if (!filled()) { st.preview = null; drawRows(); drawSum(); return; }
+  if (!itemsFilled()) { st.preview = null; drawRows(); drawSum(); return; }
   const key = JSON.stringify(payload());
   try {
     const res = await rpc("preview_daily_report", { p_staff: st.staffId, p_date: st.date, p_reports: payload() });
@@ -153,7 +173,7 @@ function resultCell(item, pr) {
   const rate = Math.round(Number(v) / (Number(item.target) || 1) * 100);
   if (!pr) return rate >= 100 ? `<span class="pill ok">Về số ${rate}%</span>` : `<span class="pill mute">${rate}%</span>`;
   const chooser = `<span class="choice"><button type="button" data-item="${esc(item.name)}" data-comp="DUNG_SAO" class="${(st.comps[item.name] || "DUNG_SAO") === "DUNG_SAO" ? "on" : ""}">Dùng sao</button><button type="button" data-item="${esc(item.name)}" data-comp="TANG_CA" class="${st.comps[item.name] === "TANG_CA" ? "on" : ""}">Tăng ca</button></span>`;
-  if (pr.status === "Về số") return `<span class="pill ok">Về số ${pr.rate}%</span> ${starHtml(pr.starChange)}${item.isX2 && pr.starChange >= 2 * item.bonus ? ' <span class="pill star">X2</span>' : ""}`;
+  if (pr.status === "Về số") { const k = item.bonus ? Math.round(pr.starChange / item.bonus) : 1; return `<span class="pill ok">Về số ${pr.rate}%</span> ${starHtml(pr.starChange)}${k >= 2 ? ` <span class="pill star">X${k}</span>` : ""}`; }
   let label;
   if (pr.compensation === "GHI_NHAN") label = `<span class="pill mute">Ghi nhận chuỗi</span>`;
   else if (pr.compensation === "TANG_CA") label = `<span class="pill info">Tăng ca ⏰</span>`;
@@ -170,11 +190,12 @@ function drawRows() {
     const pr = byName[it.name];
     const done = pr ? pr.status === "Về số" : Number(st.inputs[it.name]) >= Number(it.target);
     const streak = pr?.streak ?? it.streak;
-    return `<tr class="${done && st.inputs[it.name] !== undefined && st.inputs[it.name] !== "" ? "done" : ""}" data-row="${esc(it.name)}">
+    const v = st.inputs[it.name], has = v !== undefined && v !== "", pct = has ? Math.min(100, Math.round(Number(v) / (Number(it.target) || 1) * 100)) : 0, ml = multLabel(it);
+    return `<tr class="${done && has ? "done" : ""}" data-row="${esc(it.name)}">
       <td class="c-no muted">${i + 1}</td>
-      <td class="item"><b>${esc(it.name)}</b><small>+${fmt(it.bonus)} / −${fmt(it.penalty)}⭐${it.isX2 ? " · X2" : ""}</small></td>
-      <td class="c-act num"><input class="actual" inputmode="decimal" type="number" min="0" step="any" data-item="${esc(it.name)}" value="${esc(st.inputs[it.name] ?? "")}" placeholder="0" aria-label="Thực đạt ${esc(it.name)}"></td>
-      <td class="c-meta small">Target <b>${fmt(it.target, 2)}</b> · Chuỗi <span class="streak ${streak >= 3 ? "hot" : ""}">${streak}</span></td>
+      <td class="item"><b>${esc(it.name)}${ml ? ` <span class="pill star">${ml}</span>` : ""}</b><small>+${fmt(it.bonus)} / −${fmt(it.penalty)}⭐</small></td>
+      <td class="c-act num"><input class="actual" inputmode="decimal" enterkeyhint="next" type="number" min="0" step="any" data-item="${esc(it.name)}" value="${esc(v ?? "")}" placeholder="0" aria-label="Thực đạt ${esc(it.name)}"></td>
+      <td class="c-meta small">Target <b>${fmt(it.target, 2)}</b> · Chuỗi <span class="streak ${streak >= 3 ? "hot" : ""}">${streak}</span><span class="mbar"><i style="width:${pct}%"></i></span></td>
       <td class="c-res" data-res="${esc(it.name)}">${resultCell(it, pr)}</td></tr>`;
   }).join("") + (prev.filter((r) => r.compensation === "PHAT_TRE").map((r) => `<tr class="late"><td class="c-no">!</td><td class="item" colspan="3"><b>${esc(r.itemName)}</b></td><td class="c-res">${starHtml(r.starChange)}</td></tr>`).join(""));
   if (focused) { const el = $(`input.actual[data-item="${CSS.escape(focused)}"]`); if (el) { el.focus(); const v = el.value; el.value = ""; el.value = v; } }
@@ -197,12 +218,15 @@ function drawSum() {
       <div><small>Sao ca này</small><b>${day === null ? "—" : `<span class="${day >= 0 ? "pos" : "neg"}">${sign(day)}⭐</span>`}</b></div>
       <div><small>Tổng sau ca</small><b class="star">${after === null ? "—" : fmt(after) + "⭐"}</b></div>
     </div>
-    <button class="btn primary big" id="btnSend" type="button" ${filled() ? "" : "disabled"}>🚀 ${st.form.existing?.length ? "Cập nhật báo cáo" : "Gửi báo cáo"}</button>`;
-  $("#btnSend").onclick = submit;
+    <button class="btn primary big" id="btnSend" type="button">🚀 ${st.form.existing?.length ? "Cập nhật" : "Gửi báo cáo"}</button>
+    ${filled() ? "" : `<div class="miss-hint">Còn thiếu: ${[items.length - nFilled ? `${items.length - nFilled} môn` : "", revFilled() ? "" : "doanh thu QĐ"].filter(Boolean).join(", ")}</div>`}`;
+  $("#btnSend").classList.toggle("dim", !filled());
+  $("#btnSend").onclick = () => submit();
 }
 
 async function submit(reason = null) {
-  if (!filled()) return toast("Nhập đủ số liệu tất cả các môn");
+  if (!itemsFilled()) { const miss = st.form.items.find((i) => st.inputs[i.name] === undefined || st.inputs[i.name] === ""); const el = miss && $(`input.actual[data-item="${CSS.escape(miss.name)}"]`); el?.scrollIntoView({ block: "center", behavior: "smooth" }); el?.focus(); return toast("Nhập đủ số liệu tất cả các môn"); }
+  if (!revFilled()) { const c = $("#revCard"); c?.classList.add("miss"); c?.scrollIntoView({ block: "center", behavior: "smooth" }); $("#xRev")?.focus(); return toast("Nhập doanh thu QĐ trong ca (không bán được ghi 0)"); }
   const btn = $("#btnSend"); btn.disabled = true; st.busy = true;
   try {
     const res = await rpc("submit_daily_report", {
@@ -239,13 +263,30 @@ async function showDone(res) {
     `📝 BÁO CÁO THI ĐUA ${dmy(st.date)} – ${s.name || st.staffId}`,
     `✅ Về số ${ok.length}/${items.length} môn · Sao ca: ${sign(res.day_change)}⭐ · Tổng: ${fmt(res.total_star)}⭐`,
     ...items.map((r) => `${r.status === "Về số" ? "✅" : r.compensation === "TANG_CA" ? "⏰" : r.compensation === "GHI_NHAN" ? "▫️" : "❌"} ${r.itemName}: ${fmt(r.actual, 2)}/${fmt(r.target, 2)} (${r.rate}%)${r.starChange ? " " + sign(r.starChange) + "⭐" : ""}`),
-    ...res.rows.filter((r) => r.compensation === "PHAT_TRE").map((r) => `⚠️ ${r.itemName}: ${sign(r.starChange)}⭐`),
+    ...res.rows.filter((r) => ["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)).map((r) => `⚠️ ${r.itemName}: ${sign(r.starChange)}⭐`),
     st.revenue !== "" ? `💰 DT QĐ: ${fmt(Number(st.revenue), 2)} ${setting("REVENUE_UNIT", "")}` : "",
     st.extra.trim() ? `🎁 Bán thêm: ${st.extra.trim()} (đề xuất ${fmt(Number(st.extraStars) || 0)}⭐)` : "",
   ].filter(Boolean).join("\n");
+  const imgRows = items.map((r) => ({ name: r.itemName, actual: r.actual, target: r.target, rate: r.rate, star: r.starChange, status: r.status, comp: r.compensation }));
+  const late = res.rows.filter((r) => ["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)).map((r) => ({ name: r.itemName, star: r.starChange }));
+  let blob = null; const ready = imageBlob(imgRows, late, res.day_change, res.total_star).then((b) => (blob = b)).catch(() => null);
   const v = await modal(`<h3>✅ Đã gửi báo cáo</h3>
     <div class="kpis" style="margin-bottom:10px"><div><small>Về số</small><b class="pos">${ok.length}/${items.length}</b></div><div><small>Sao ca này</small><b class="${res.day_change >= 0 ? "pos" : "neg"}">${sign(res.day_change)}⭐</b></div><div><small>Tổng sao</small><b class="star">${fmt(res.total_star)}⭐</b></div></div>
     <pre class="preview">${esc(text)}</pre>
-    <div class="modal-actions"><button class="btn" data-v="copy">📋 Copy để gửi nhóm</button><button class="btn primary" data-v="ok">Xong</button></div>`);
+    <div class="modal-actions wrap"><button class="btn primary" id="doneImg" type="button">🖼️ Lưu / gửi ảnh (Zalo, Line)</button><button class="btn" data-v="copy">📋 Copy chữ</button><button class="btn" data-v="ok">Xong</button></div>`,
+    { onOpen: (box) => box.querySelector("#doneImg").addEventListener("click", async () => { await ready; if (blob) shareOrDownload(blob, imgName()); else toast("Không tạo được ảnh"); }) });
   if (v === "copy") toast((await copyText(text)) ? "Đã copy" : "Không copy được");
+}
+
+// ---------- Ảnh báo cáo ----------
+const imgName = () => `bao-cao_${st.staffId}_${st.date}.png`;
+function imageBlob(rows, late, dayChange, total) {
+  const s = staffById(st.staffId) || {};
+  return reportPng({ store: setting("STORE_NAME", "") || "Thi Đua & BXH", name: s.name || st.staffId, id: st.staffId, dept: s.dept || "", dateLabel: `${dow(st.date)} ${dmy(st.date)}`,
+    rows, late, dayChange, total, okCount: rows.filter((r) => r.status === "Về số").length,
+    revenue: st.revenue !== "" ? Number(st.revenue) : null, unit: setting("REVENUE_UNIT", ""), extra: st.extra.trim() });
+}
+async function exportImage(rows, late, dayChange, total) {
+  const blob = await imageBlob(rows, late, dayChange, total);
+  await shareOrDownload(blob, imgName());
 }

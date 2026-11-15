@@ -12,11 +12,11 @@ echo "▶ JS syntax";  for f in ../../v2/js/*.js ../../v2/js/pages/*.js; do node
 echo "▶ DB dựng lại + migrations"; bash reset_local.sh 2>&1 | grep -E "ERROR|ready" || true
 echo "▶ So với luật bản cũ"; node compare_legacy.mjs | tail -1
 P="psql -h /tmp -p 5433 -U postgres -d t1 -q -v ON_ERROR_STOP=1"
-for t in rls_test.sql modules_test.sql scoring_test.sql; do
+for t in rls_test.sql modules_test.sql scoring_test.sql x3_test.sql; do
   if $P -f $t > /tmp/$t.out 2>&1; then echo "  ✓ $t"; else echo "  ✗ $t"; tail -5 /tmp/$t.out; exit 1; fi
 done
 if [ "$1" = "--ui" ]; then
   echo "▶ Giao diện"; cd ui; pkill -f "node server.mjs" || true; (node server.mjs > /tmp/uiserver.log 2>&1 &); sleep 1
-  for r in run3.mjs run4.mjs; do timeout 240 node $r 2>&1 | grep -E "error|ERROR|Timeout|toast|no browser" | head -5; done
+  for r in run3.mjs run4.mjs run5.mjs mobile.mjs; do timeout 240 node $r 2>&1 | grep -E "error|ERROR|Timeout|toast|no browser|overflow|ảnh" | head -8; done
 fi
 echo "✅ OK"
