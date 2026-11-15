@@ -26,7 +26,7 @@ export const FEATURES = [
   { c: "F5", t: "Trọng số điểm, giờ chốt, phạt trễ, TikTok…", w: "Cài đặt → Cài đặt chung", k: "trọng số giờ chốt trễ tiktok roadshow", go: { tab: "settings", focus: "#genCard" }, owner: true },
   { c: "F1", t: "Thêm / ẩn nhân viên, đổi bộ phận", w: "Quản lý → Nhân sự", k: "nhân viên thêm ẩn bộ phận", go: { tab: "staff" } },
   { c: "A2", t: "Cấp / đặt lại mật khẩu nhân viên", w: "Quản lý → Tài khoản NV", k: "mật khẩu tài khoản đăng nhập", go: { tab: "accounts" }, owner: true },
-  { c: "A3", t: "Phân quyền quản lý", w: "Quản lý → Phân quyền", k: "phân quyền quản lý email", go: { tab: "members" }, owner: true },
+  { c: "A3", t: "Phân quyền quản lý, đặt mật khẩu cho quản lý", w: "Quản lý → Phân quyền", k: "phân quyền quản lý email mật khẩu trưởng ca", go: { tab: "members" }, owner: true },
   { c: "E1", t: "Telegram: bật/tắt, giờ gửi từng mục", w: "Quản lý → Telegram", k: "telegram tin nhắn tóm tắt", go: { tab: "telegram" } },
   { c: "D1", t: "TikTok, vệ sinh, lịch bận, roadshow", w: "CV", k: "tiktok vệ sinh lịch bận roadshow cv", go: { page: "cv" } },
   { c: "D7", t: "Đăng việc triển khai / giao việc cho NV (AI tóm tắt, ảnh/PDF)", w: "CV → 📋 Việc → Đăng việc", k: "việc giao việc triển khai thông báo nhắc nhở ai tóm tắt pdf ảnh", go: { page: "cv", cv: "tasks" } },

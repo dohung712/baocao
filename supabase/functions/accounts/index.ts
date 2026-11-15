@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
     const m = await member(req);
-    if (m.role !== "owner") throw new Error("Chỉ chủ quản được quản lý tài khoản nhân viên.");
+    if (m.role !== "owner") throw new Error("Chỉ chủ quản được quản lý tài khoản.");
     const body = await req.json().catch(() => ({}));
     const staffAll = await rest("staff?select=id,name,dept,hidden&order=sort,id");
     if (body.mode === "list") {
@@ -55,6 +55,17 @@ Deno.serve(async (req) => {
       if (!s) throw new Error("Không tìm thấy nhân viên.");
       const email = await ensureLogin(s, pw, users);
       return json({ status: "success", message: `Đã đặt mật khẩu cho ${s.name}. Đăng nhập bằng ${email.endsWith("@thidua351.vn") ? "Mã NV " + s.id : email}.` });
+    }
+    if (body.mode === "set_member_password") {   // chủ quản đặt mật khẩu cho tài khoản email (quản lý) trong Phân quyền
+      const email = String(body.email || "").trim().toLowerCase();
+      const mem = (await rest("memberships?select=email,role,staff_id&email=eq." + encodeURIComponent(email)))[0];
+      if (!mem) throw new Error("Email chưa có trong Phân quyền.");
+      if (email === m.email) throw new Error("Đổi mật khẩu của chính bạn ở nút 👤 → Đổi mật khẩu.");
+      const must = body.must_change !== false, u = users.find((x) => String(x.email || "").toLowerCase() === email);
+      if (u) await authAdmin("users/" + u.id, { method: "PUT", body: JSON.stringify({ password: pw, email_confirm: true, user_metadata: { ...(u.user_metadata || {}), must_change: must } }) });
+      else await authAdmin("users", { method: "POST", body: JSON.stringify({ email, password: pw, email_confirm: true, user_metadata: { must_change: must } }) });
+      await rest("audit_log", { method: "POST", body: JSON.stringify({ actor: m.email, action: "SET_MEMBER_PASSWORD", target: email, details: { must_change: must } }) });
+      return json({ status: "success", message: `Đã đặt mật khẩu cho ${email}. Đăng nhập bằng email + mật khẩu này${must ? " (lần đầu sẽ được yêu cầu đổi)" : ""}.` });
     }
     if (body.mode === "bulk") {
       const mems = await rest("memberships?select=staff_id&active=eq.true");

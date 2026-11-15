@@ -1,0 +1,22 @@
+// Kiểm thử: Phân quyền → 🔑 Đặt mật khẩu cho quản lý
+import { createRequire } from "node:module";
+const { chromium } = createRequire(import.meta.url)("playwright");
+import { readFileSync } from "node:fs";
+const fake = readFileSync(new URL("./fake-supabase.js", import.meta.url), "utf8");
+const errors = [], sent = [];
+const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 1360, height: 900 } })).newPage();
+p.on("pageerror", (e) => errors.push("pageerror: " + e.message));
+await p.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
+await p.route(/cdn\.jsdelivr\.net\/npm\/@supabase/, (r) => r.fulfill({ contentType: "text/javascript", body: fake }));
+await p.route(/functions\/v1\/accounts/, (r) => { sent.push(JSON.parse(r.request().postData())); r.fulfill({ contentType: "application/json", body: '{"status":"success","message":"Đã đặt mật khẩu cho mgr@x.vn."}' }); });
+await p.route(/functions\/v1\/(notify|assistant|tasks)/, (r) => r.fulfill({ contentType: "application/json", body: '{"status":"success","items":[]}' }));
+await p.goto("http://localhost:8790/v2/");
+await p.fill("#lEmail", "dohung712@gmail.com"); await p.fill("#lPass", "x"); await p.click("#fPass button[type=submit]");
+await p.waitForSelector("#app:not([hidden])", { timeout: 30000 }); await p.waitForTimeout(800);
+await p.evaluate(() => document.querySelector('[data-page="admin"]').click()); await p.waitForTimeout(1000);
+await p.click('#aTabs [data-t="members"]'); await p.waitForTimeout(1000);
+console.log("nút đặt mật khẩu:", await p.$$eval("[data-pw]", (x) => x.map((y) => y.dataset.pw).join(", ")));
+await p.click('[data-pw="mgr@x.vn"]'); await p.waitForTimeout(300); await p.fill('#modalBody input[name=pw]', "Ql123456"); await p.click('#modalBody [data-v=submit]'); await p.waitForTimeout(1000);
+console.log("gửi:", JSON.stringify(sent[0]), "| toast:", await p.textContent("#toast"));
+await b.close();
+console.log(errors.length ? errors.join("\n") : "no browser errors");

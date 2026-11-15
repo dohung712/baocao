@@ -423,10 +423,10 @@ async function members(body) {
   const { data, error } = await sb.from("memberships").select("*").order("role").order("email");
   if (error) throw error;
   body.innerHTML = `<div class="card"><div class="card-h"><h2>🔐 Phân quyền</h2><button class="btn small primary" id="mbAdd" type="button">+ Thêm tài khoản</button></div>
-    <p class="small muted">Người được thêm đăng nhập bằng email: mục “Quên mật khẩu / đăng nhập bằng email” ở màn hình đăng nhập, sau đó tự đặt mật khẩu. Quản lý chỉ thấy nhân viên thuộc bộ phận được giao; nhân viên chỉ thấy số liệu của mình.</p>
+    <p class="small muted">Người được thêm đăng nhập bằng email: bấm <b>🔑 Đặt mật khẩu</b> để cấp mật khẩu (vào ngay bằng email + mật khẩu), hoặc để họ dùng mục “Quên mật khẩu / đăng nhập bằng email” ở màn hình đăng nhập. Quản lý chỉ thấy nhân viên thuộc bộ phận được giao; nhân viên chỉ thấy số liệu của mình.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Email</th><th>Vai trò</th><th>Mã NV</th><th>Bộ phận</th><th>Trạng thái</th><th></th></tr></thead><tbody>
     ${data.map((m) => `<tr><td>${esc(m.email)}</td><td>${roleLabel(m.role)}</td><td>${esc(m.staff_id || "")} <span class="tiny muted">${esc(staffById(m.staff_id)?.name || "")}</span></td><td class="small">${esc((m.stores || []).join(", "))}</td>
-      <td>${m.active ? '<span class="pill ok">Hoạt động</span>' : '<span class="pill mute">Khoá</span>'}</td><td class="num">${m.email === S.me.email ? "" : `<button class="btn small" data-mb="${esc(m.email)}" type="button">Sửa</button>`}</td></tr>`).join("")}
+      <td>${m.active ? '<span class="pill ok">Hoạt động</span>' : '<span class="pill mute">Khoá</span>'}</td><td class="num">${m.email === S.me.email ? "" : `${m.email.endsWith("@thidua351.vn") ? "" : `<button class="btn small" data-pw="${esc(m.email)}" type="button">🔑 Đặt mật khẩu</button> `}<button class="btn small" data-mb="${esc(m.email)}" type="button">Sửa</button>`}</td></tr>`).join("")}
     </tbody></table></div></div>`;
   const edit = async (m) => {
     const isNew = !m; m = m || { email: "", role: "employee", staff_id: "", stores: [], active: true };
@@ -449,7 +449,16 @@ async function members(body) {
     } catch (x) { err(x); }
   };
   $("#mbAdd").onclick = () => edit(null);
-  body.onclick = (e) => { const b = e.target.closest("[data-mb]"); if (b) edit(data.find((m) => m.email === b.dataset.mb)); };
+  body.onclick = (e) => { const p = e.target.closest("[data-pw]"); if (p) return setPw(p.dataset.pw); const b = e.target.closest("[data-mb]"); if (b) edit(data.find((m) => m.email === b.dataset.mb)); };
+  const setPw = async (email) => {
+    const v = await modal(`<h3>🔑 Đặt mật khẩu</h3><p class="small muted">Cho <b>${esc(email)}</b>. Gửi mật khẩu này cho người đó; họ đăng nhập bằng <b>email + mật khẩu</b>, không cần chờ email.</p>
+      <form class="stack"><label>Mật khẩu mới (ít nhất 6 ký tự)<input name="pw" type="text" minlength="6" required autocomplete="off"></label>
+      <label class="inline"><input type="checkbox" name="must" checked> Bắt đổi mật khẩu ở lần đăng nhập đầu</label></form>
+      <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn primary" data-v="submit">Đặt mật khẩu</button></div>`);
+    if (!v) return;
+    if (String(v.pw || "").length < 6) return toast("Mật khẩu ít nhất 6 ký tự");
+    try { const r = await callFn("accounts", { mode: "set_member_password", email, password: v.pw, must_change: v.must === "on" }); toast(r.message, 6000); } catch (x) { err(x); }
+  };
 }
 
 // ---------- Nhật ký ----------
