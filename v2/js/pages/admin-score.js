@@ -5,7 +5,7 @@ import { parseTargetReport } from "../lib-targets.js";
 import { openCum, MEASURE, measureTag } from "../cumulative.js";
 import { dailyTarget, dailyPct, dailyMin } from "../star-rules.js";
 
-const SUBS = [["targets", "🎯 Target tháng"], ["cum", "📈 Lũy kế tuần"], ["media", "📣 Truyền thông"], ["revenue", "💰 Doanh thu"], ["service", "🤝 Phục vụ"], ["violations", "⚠️ Vi phạm"], ["stars", "⭐ Sao & reset"], ["log", "🧾 Lịch sử"]];
+const SUBS = [["targets", "🎯 Target tháng"], ["cum", "📈 Lũy kế tuần"], ["media", "📣 Truyền thông"], ["rank", "🏆 Thưởng hạng"], ["revenue", "💰 Doanh thu"], ["service", "🤝 Phục vụ"], ["violations", "⚠️ Vi phạm"], ["stars", "⭐ Sao & reset"], ["log", "🧾 Lịch sử"]];
 let sub = "targets", ym = vnToday().slice(0, 7), host;
 export const setScoreSub = (s) => { sub = s; };
 const err = (e) => toast(errMsg(e), 4500);
@@ -19,7 +19,7 @@ export async function scoreAdmin(body) {
   $("#asSub").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) { sub = b.dataset.s; scoreAdmin(host); } };
   $("#asNav").onclick = (e) => { const b = e.target.closest("[data-mm]"); if (b) { ym = shiftMonth(ym, Number(b.dataset.mm)); scoreAdmin(host); } };
   const el = $("#asBody"); el.onclick = null;
-  try { await ({ targets, cum, media, revenue, service, violations, stars, log })[sub](el); } catch (e) { el.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
+  try { await ({ targets, cum, media, rank, revenue, service, violations, stars, log })[sub](el); } catch (e) { el.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const month = () => ym + "-01";
 const monthEnd = () => addDays(shiftMonth(ym, 1) + "-01", -1);
@@ -79,6 +79,24 @@ async function media(el) {
       return `<tr><td><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.dept)}</div></td><td class="num">${m.length}</td><td class="num"><b>${tp}</b></td><td class="num"><b>${tl}</b></td><td class="num">${m.length ? fmt(tp / m.length, 1) : "—"}</td>
         <td class="small">${days.slice(-7).map((d) => { const r = m.find((x) => x.report_date === d); return `<span class="pill ${r ? "info" : "mute"}" title="${dmy(d)}">${dm(d)} ${r ? `${r.posts}/${r.line_reports}` : "–"}</span>`; }).join(" ")}</td></tr>`; }).join("")}
     </tbody></table></div></div>`;
+}
+
+// ---------- Thưởng hạng tháng (C13): xếp riêng từng bộ phận, top 5 → 4000/3500/3000/2500/2000⭐, QL chốt mới cộng ----------
+async function rank(el) {
+  const rows = await rpc("rank_reward_preview", { p_month: month() });
+  const rw = setting("RANK_REWARDS", [4000, 3500, 3000, 2500, 2000]);
+  const by = new Map(); for (const r of rows) { if (!by.has(r.dept)) by.set(r.dept, []); by.get(r.dept).push(r); }
+  const pend = rows.filter((r) => r.stars > 0 && !r.closed), total = pend.reduce((a, r) => a + r.stars, 0);
+  el.innerHTML = `<div class="card"><div class="card-h"><h2>🏆 Thưởng hạng tháng ${ym.slice(5)}/${ym.slice(0, 4)}</h2>
+      <button class="btn primary" id="rkClose" type="button" ${pend.length ? "" : "disabled"}>✅ Chốt & cộng ${fmt(total)}⭐ (${pend.length} NV)</button></div>
+    <p class="small muted">Xếp hạng theo <b>bảng điểm xếp hạng</b> (DT + Thi đua + Phục vụ − vi phạm), <b>mỗi bộ phận xếp riêng</b>. Top ${rw.length}: ${rw.map((v, i) => `hạng ${i + 1} = <b>${fmt(v)}⭐</b>`).join(" · ")}. Người 0 điểm không được thưởng; bằng điểm thì cùng hạng. Tháng đang chạy chỉ là <b>đề xuất tạm</b>; bấm Chốt mới cộng sao (mỗi NV một lần cho mỗi tháng, ghi vào Lịch sử).</p></div>
+    ${[...by.entries()].map(([d, list]) => `<div class="card"><div class="card-h"><h2>${esc(d)}</h2></div><div class="tbl-wrap"><table><thead><tr><th>Hạng</th><th>Nhân viên</th><th class="num">Điểm</th><th class="num">Thưởng</th><th>Trạng thái</th></tr></thead><tbody>
+      ${list.map((r) => `<tr><td><b>${r.rank}</b></td><td>${esc(r.name)}</td><td class="num">${fmt(r.total, 2)}</td><td class="num">${r.stars ? `<b>+${fmt(r.stars)}⭐</b>` : "—"}</td><td>${r.stars ? (r.closed ? '<span class="pill ok">✅ Đã cộng</span>' : '<span class="pill warn">Đề xuất</span>') : ""}</td></tr>`).join("")}
+      </tbody></table></div></div>`).join("") || '<div class="banner info"><div>Chưa có dữ liệu điểm cho tháng này.</div></div>'}`;
+  $("#rkClose")?.addEventListener("click", async () => {
+    if (!(await confirmBox("Chốt thưởng hạng?", `Cộng sao cho <b>${pend.length}</b> nhân viên, tổng <b>${fmt(total)}⭐</b>. Mỗi NV chỉ được cộng một lần cho tháng ${ym.slice(5)}/${ym.slice(0, 4)}.`, "Chốt & cộng"))) return;
+    try { const r = await rpc("rank_reward_close", { p_month: month() }); toast(r.message, 4500); rank(el); } catch (x) { err(x); }
+  });
 }
 
 // ---------- Target tháng ----------

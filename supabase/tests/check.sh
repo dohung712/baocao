@@ -12,7 +12,7 @@ echo "▶ JS syntax";  for f in ../../v2/js/*.js ../../v2/js/pages/*.js; do node
 echo "▶ DB dựng lại + migrations"; bash reset_local.sh 2>&1 | grep -E "ERROR|ready" || true
 echo "▶ So với luật bản cũ"; node compare_legacy.mjs | tail -1
 P="psql -h /tmp -p 5433 -U postgres -d t1 -q -v ON_ERROR_STOP=1"
-for t in rls_test.sql modules_test.sql scoring_test.sql x3_test.sql hot_test.sql tiktok_test.sql fund_test.sql tasks_test.sql zones_test.sql cum_test.sql todo_test.sql; do
+for t in rls_test.sql modules_test.sql scoring_test.sql x3_test.sql hot_test.sql tiktok_test.sql fund_test.sql tasks_test.sql zones_test.sql cum_test.sql todo_test.sql rank_test.sql; do
   if $P -f $t > /tmp/$t.out 2>&1; then echo "  ✓ $t"; else echo "  ✗ $t"; tail -5 /tmp/$t.out; exit 1; fi
 done
 echo "▶ Khuôn tóm tắt công việc (AI)"; node --experimental-strip-types --no-warnings ai_summary_test.mjs

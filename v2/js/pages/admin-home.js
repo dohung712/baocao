@@ -35,6 +35,7 @@ export const FEATURES = [
   { c: "D8", t: "Khu vực vệ sinh: người phụ trách + tiêu chí, NV báo xong", w: "CV → 🧹 Vệ sinh → Khu vực vệ sinh", k: "khu vực vệ sinh tiêu chí phụ trách tủ phone đồng hồ kho", go: { page: "cv", cv: "clean" } },
   { c: "D9", t: "Nhắc NV theo lịch đăng ký vệ sinh (trên tool + Telegram sáng)", w: "Tự động · giờ Telegram ở Quản lý → Telegram", k: "nhắc việc nhắc vệ sinh lịch đăng ký trực", go: { tab: "telegram" } },
   { c: "C12", t: "Cập nhật lũy kế tuần (thứ 2 / mở khoá), loại tính từng môn", w: "Quản lý → Điểm & DT → 📈 Lũy kế tuần", k: "lũy kế cập nhật thứ 2 mở khoá số lượng doanh thu thực quy đổi loại môn", go: { tab: "score", sub: "cum" } },
+  { c: "C13", t: "Thưởng sao theo hạng tháng, xếp riêng TGDĐ / Topzone (4000-3500-3000-2500-2000)", w: "Quản lý → Điểm & DT → 🏆 Thưởng hạng", k: "thưởng hạng top 5 xếp hạng tháng sao 4000 3500 3000 2500 2000 chốt", go: { tab: "score", sub: "rank" } },
   { c: "B14", t: "Việc cần làm trong báo cáo cuối ngày (TikTok, vệ sinh, roadshow, CV, thứ 2, bận T6…)", w: "Báo cáo (tự động)", k: "việc cần làm nhắc nhân viên báo cáo cuối ngày tiktok vệ sinh roadshow", go: { page: "report" } },
   { c: "B13", t: "Báo cáo truyền thông ngày (tổng tháng từng NV)", w: "Quản lý → Điểm & DT → 📣 Truyền thông", k: "truyền thông line báo cáo truyền thông", go: { tab: "score", sub: "media" } },
   { c: "D3b", t: "Khoá đăng ký bận/OFF sau 22h thứ 6", w: "CV → Lịch bận · Cài đặt BUSY_DEADLINE_HM", k: "đăng ký bận off hạn 22h thứ 6 khoá", go: { page: "cv", cv: "busy" } },
@@ -50,7 +51,7 @@ const PLAN = [
     ["Xem NV đã đọc việc triển khai, việc QL sắp tới hạn", "D7b"],
     ["Sau giờ chốt: nhắc người chưa báo cáo", "B1"]] },
   { id: "week", icon: "📅", t: "Thứ 2 hằng tuần", steps: [
-    ["Nhắc / kiểm tra NV cập nhật lũy kế DT + môn (đúng loại)", "C12"], ["Nhập phục vụ tuần trước", "C6"], ["Ghi vi phạm (nếu có)", "C7"], ["Copy bảng xếp hạng tuần gửi nhóm", "C10"]] },
+    ["Nhắc / kiểm tra NV cập nhật lũy kế DT + môn (đúng loại)", "C12"], ["Nhập phục vụ tuần trước", "C6"], ["Ghi vi phạm (nếu có)", "C7"], ["Copy bảng xếp hạng tuần gửi nhóm", "C10"], ["Cuối tháng: xem & chốt thưởng hạng (top 5 mỗi bộ phận)", "C13"]] },
   { id: "mstart", icon: "🚀", t: "Đầu tháng", steps: [
     ["Dán báo cáo target tháng (DT + môn thi đua)", "C1"], ["Tick môn Tập trung / Target thấp, áp dụng sao", "F2c"],
     ["Kiểm tra số ngày làm, giao môn riêng nếu cần", "C2"], ["Reset sao / chuỗi (nếu áp dụng kỳ mới)", "C8"]] },

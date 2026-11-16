@@ -28,6 +28,7 @@ const H = [
   ["[data-ack]", "Đã đọc & nắm rõ", "Bấm sau khi đọc hết nội dung. Quản lý xem được thời gian bạn xác nhận."],
   ["[data-done]", "Hoàn thành", "Báo đã làm xong việc được giao, có thể ghi chú thêm."],
   ["#remind", "🔔 Nhắc việc", "Nhắc theo lịch bạn đã đăng ký: trực vệ sinh hôm nay/ngày mai, khu vực vệ sinh chưa báo xong. Bấm Mở để làm, ✕ để ẩn trong ngày."],
+  ["#asSub [data-s=rank]", "🏆 Thưởng hạng", "Xếp hạng điểm tháng RIÊNG từng bộ phận, top 5 nhận 4000/3500/3000/2500/2000⭐. Xem đề xuất, bấm Chốt để cộng sao (mỗi NV một lần/tháng).", true],
   [".cum-form", "📈 Cập nhật lũy kế", "Nhập lũy kế THÁNG đến hết hôm qua lấy từ báo cáo công ty. Xem nhãn từng môn: 🔢 Số lượng (số máy/hồ sơ) · 💰 DT quy đổi · 💵 DT thực. Ô trống = giữ nguyên.", true],
   ["#mediaCard", "📣 Báo cáo truyền thông", "Chọn số lần truyền thông và số lần báo cáo Line truyền thông trong ngày (0, 1, 2, 3 hoặc gõ số khác). Có trong ảnh báo cáo."],
   ["#todoCard", "📌 Việc cần làm", "Việc còn thiếu và lịch sắp tới của bạn: TikTok, vệ sinh, roadshow, CV, thứ 2 cập nhật số + phục vụ, đăng ký bận trước 22h T6… Bấm vào để mở đúng chỗ."],
