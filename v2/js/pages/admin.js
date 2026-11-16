@@ -157,12 +157,20 @@ async function staff(body) {
 // ---------- Môn thi đua ----------
 async function items(body) {
   const stores = ["Chung", ...depts()];
-  body.innerHTML = `${suggestHtml()}<div class="card"><div class="card-h"><h2>📋 Danh mục môn thi đua</h2><button class="btn small" id="itAdd" type="button">+ Thêm môn</button><button class="btn small primary" id="itSave" type="button">💾 Lưu tất cả</button></div>
+  let F = { ch: "", st: "", q: "" }; try { F = { ...F, ...JSON.parse(localStorage.getItem("thidua-v2-itfilter") || "{}") }; } catch { /* bỏ qua */ }
+  const chans = [...new Set([...stores, ...S.items.map((i) => i.store)])];
+  if (F.ch && !chans.includes(F.ch)) F.ch = "";
+  body.innerHTML = `${suggestHtml()}<div class="card"><div class="card-h"><h2>📋 Danh mục môn thi đua</h2>
+      <div class="row it-filter"><select id="itCh" style="width:auto" title="Lọc theo kênh / bộ phận áp dụng"><option value="">🔎 Tất cả kênh</option>${chans.map((c) => `<option value="${esc(c)}" ${c === F.ch ? "selected" : ""}>${esc(c)} (${S.items.filter((i) => i.store === c).length})</option>`).join("")}</select>
+        <select id="itSt" style="width:auto"><option value="">Bật + tắt</option><option value="on" ${F.st === "on" ? "selected" : ""}>Đang bật</option><option value="off" ${F.st === "off" ? "selected" : ""}>Đang tắt</option></select>
+        <input id="itQ" placeholder="Tìm tên môn…" value="${esc(F.q)}" style="width:150px"></div>
+      <button class="btn small" id="itAdd" type="button">+ Thêm môn</button><button class="btn small primary" id="itSave" type="button">💾 Lưu tất cả</button></div>
     <div class="banner info"><div><b>Khai báo môn, target, sao thưởng, sao phạt</b>
       • <b>Áp dụng</b>: “Chung” = mọi bộ phận; chọn bộ phận để môn chỉ áp dụng cho bộ phận đó (trùng tên thì ưu tiên môn của bộ phận).<br>
       • <b>Target/ngày</b>: số cần đạt mỗi ngày để <i>Về số</i>. • <b>Sao thưởng</b>: cộng khi đạt ≥ 100% target. <b>Nhân sao</b>: môn X2 đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% → ×2; môn X3 đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% → ×2, ≥ ${fmt(setting("TRIPLE_BONUS_RATE", 200))}% → ×3.<br>
       • <b>Sao phạt</b>: số sao trừ khi chưa đạt nhiều ngày liền (mốc bắt đầu trừ, tăng ca, hệ số lũy tiến: <b>Cài đặt → Thưởng & trừ sao</b>).<br>
       • Target/sao <b>riêng từng nhân viên</b>: tab <b>Target NV</b>. Giao môn riêng cho nhân viên: tab <b>Nhân sự</b> → Sửa → Môn riêng.</div></div>
+    <div class="row it-bulk"><span class="small muted" id="itCount"></span><span class="grow"></span><button class="btn small" id="itAllOn" type="button">☑️ Bật tất cả đang hiện</button><button class="btn small" id="itAllOff" type="button">⬜ Tắt tất cả đang hiện</button></div>
     <div class="tbl-wrap"><table><thead><tr><th>Thứ tự</th><th>Áp dụng</th><th>Tên môn</th><th class="num">Target/ngày</th><th class="num">Sao thưởng</th><th class="num">Sao phạt</th><th>Nhân sao</th><th>Bật</th><th></th></tr></thead><tbody id="itRows">
     ${S.items.map((i) => row(i)).join("")}</tbody></table></div></div>`;
   function row(i) {
@@ -176,7 +184,25 @@ async function items(body) {
       <td><button class="btn small ghost danger" data-del type="button">🗑️</button></td></tr>`;
   }
   bindSuggest(() => items(body));
-  $("#itAdd").onclick = () => { $("#itRows").insertAdjacentHTML("beforeend", row({ id: "", store: "Chung", name: "", target: 1, bonus_star: 200, penalty_star: 100, is_x2: false, is_x3: false, active: true, sort: S.items.length + 1 })); $("#itRows tr:last-child input[name=name]").focus(); };
+  // Lọc theo kênh / trạng thái / tên: chỉ ẩn dòng, "Lưu tất cả" vẫn lưu mọi môn
+  const applyFilter = () => {
+    const q = F.q.trim().toLowerCase(); let n = 0;
+    $$("#itRows tr").forEach((tr) => {
+      const ch = tr.querySelector("[name=store]").value, on = tr.querySelector("[name=active]").checked, nm = tr.querySelector("[name=name]").value.toLowerCase();
+      const show = !tr.dataset.id || ((!F.ch || ch === F.ch) && (!F.st || (F.st === "on") === on) && (!q || nm.includes(q)));
+      tr.hidden = !show; if (show) n++;
+    });
+    $("#itCount").textContent = `Đang hiện ${n}/${$$("#itRows tr").length} môn${F.ch ? ` · kênh ${F.ch}` : ""}${F.st ? ` · ${F.st === "on" ? "đang bật" : "đang tắt"}` : ""} — sửa xong bấm 💾 Lưu tất cả`;
+    try { localStorage.setItem("thidua-v2-itfilter", JSON.stringify(F)); } catch { /* bỏ qua */ }
+  };
+  $("#itCh").onchange = (e) => { F.ch = e.target.value; applyFilter(); };
+  $("#itSt").onchange = (e) => { F.st = e.target.value; applyFilter(); };
+  $("#itQ").oninput = (e) => { F.q = e.target.value; applyFilter(); };
+  const bulk = (on) => { $$("#itRows tr:not([hidden]) [name=active]").forEach((c) => { c.checked = on; c.closest("tr").classList.add("dirty"); }); toast(`${on ? "Đã tick bật" : "Đã bỏ tick"} các môn đang hiện — bấm 💾 Lưu tất cả để lưu`); };
+  $("#itAllOn").onclick = () => bulk(true); $("#itAllOff").onclick = () => bulk(false);
+  $("#itRows").addEventListener("change", (e) => { e.target.closest("tr")?.classList.add("dirty"); });
+  applyFilter();
+  $("#itAdd").onclick = () => { $("#itRows").insertAdjacentHTML("beforeend", row({ id: "", store: F.ch || "Chung", name: "", target: 1, bonus_star: 200, penalty_star: 100, is_x2: false, is_x3: false, active: true, sort: S.items.length + 1 })); $("#itRows tr:last-child input[name=name]").focus(); };
   body.onclick = async (e) => {
     const d = e.target.closest("[data-del]"); if (!d) return;
     const tr = d.closest("tr"), id = tr.dataset.id;
