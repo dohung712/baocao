@@ -34,3 +34,12 @@ do $$ declare z bigint; v jsonb; begin
 end $$;
 reset role;
 select 'zones_test OK';
+-- A3: luôn còn ít nhất 1 chủ quản
+do $$ begin
+  set constraints all immediate;
+  begin
+    update public.memberships set role = 'manager', stores = '{Topzone}' where role = 'owner';
+    raise exception 'phải chặn bỏ hết chủ quản';
+  exception when others then if sqlerrm not like '%ít nhất 1 chủ quản%' then raise; end if; end;
+end $$;
+select 'owner_guard OK';

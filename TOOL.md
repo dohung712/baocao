@@ -36,7 +36,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 |---|---|---|---|---|
 | A1 | Đăng nhập bằng mã NV / email, bắt đổi mật khẩu lần đầu | Màn hình đăng nhập | `js/app.js`, `js/store.js` (staffEmail) | `memberships`, `app_member` |
 | A2 | Tạo / đặt lại mật khẩu tài khoản NV | Quản lý → Tài khoản NV | `pages/admin.js` (accounts) | Edge function `accounts` |
-| A3 | Phân quyền quản lý theo bộ phận; **🔑 Đặt mật khẩu** cho tài khoản email (quản lý vào ngay bằng email + mật khẩu, tuỳ chọn bắt đổi lần đầu) | Quản lý → Phân quyền | `pages/admin.js` (members, setPw) | `memberships`, RLS `is_manager`, `can_see_staff`; Edge function `accounts` (set_member_password) |
+| A3 | Phân quyền: **Chủ quản — toàn quyền** (nhiều người được; 16/11/2026: mọi quản lý đang hoạt động đã được nâng lên, migration 0830; luôn còn ≥ 1 chủ quản, trigger `memberships_keep_owner`) hoặc quản lý theo bộ phận; **🔑 Đặt mật khẩu** cho tài khoản email (quản lý vào ngay bằng email + mật khẩu, tuỳ chọn bắt đổi lần đầu) | Quản lý → Phân quyền | `pages/admin.js` (members, setPw) | `memberships`, RLS `is_manager`, `can_see_staff`; Edge function `accounts` (set_member_password) |
 
 ### B. Báo cáo ngày và sao
 | Mã | Chức năng | Trên web | File giao diện | Hàm / bảng SQL |

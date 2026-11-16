@@ -6,6 +6,8 @@ const counts = await sql(`select (select count(*) from public.staff) staff, (sel
   (select count(*) from public.daily_results) results, (select count(*) from public.extra_proposals) proposals,
   (select count(*) from public.store_contest) contest, (select count(*) from public.memberships where active) members`);
 console.log("Số dòng:", JSON.stringify(counts[0]));
+const roles = await sql("select role, count(*) n from public.memberships where active group by role order by role");
+console.log("Vai trò (số tài khoản):", JSON.stringify(roles));
 try {
   const job = await sql("select jobname, schedule, active from cron.job where jobname = 'thidua-notify'");
   console.log("Lịch tự động:", JSON.stringify(job));
