@@ -31,3 +31,13 @@ end $$;
 reset role;
 delete from busy where staff_id = '1001' and busy_date >= public.vn_today(); delete from cleaning where clean_date = public.vn_today() + 1; delete from media_reports where staff_id = '1001';
 select 'todo_test OK';
+-- B2: môn tháng bị bỏ tích "Bật" thì không còn trong báo cáo ngày
+insert into monthly_targets(staff_id, month, revenue_target, items) values ('1003', date_trunc('month', public.vn_today())::date, 100, '[{"name":"Sim","target":60},{"name":"Bảo hiểm","target":40}]')
+on conflict (staff_id, month) do update set items = excluded.items;
+update items set active = false where name = 'Bảo hiểm';
+do $$ declare n text; begin
+  select string_agg(name, ',') into n from public._staff_items('1003', public.vn_today());
+  if n like '%Bảo hiểm%' or n not like '%Sim%' then raise exception 'môn tắt vẫn hiện: %', n; end if;
+end $$;
+update items set active = true where name = 'Bảo hiểm';
+select 'items_active OK';

@@ -42,7 +42,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | Mã | Chức năng | Trên web | File giao diện | Hàm / bảng SQL |
 |---|---|---|---|---|
 | B1 | Form báo cáo ngày: môn, target, chuỗi. **Môn để trống = 0** (không bắt buộc nhập) | Báo cáo | `pages/report.js` (itemsFilled, payload) | `report_form`, `_staff_items` |
-| B2 | Danh sách môn của NV: **= môn thi đua tháng** nếu đã giao, chưa giao thì theo bộ phận / môn riêng | (tự động) | n/a | `_staff_items`, `_work_days` |
+| B2 | Danh sách môn của NV: **= môn thi đua tháng** nếu đã giao (trừ môn bị bỏ tích **Bật** ở Môn & Sao — chọn dòng môn của bộ phận NV trước, rồi Chung), chưa giao thì theo bộ phận / môn riêng | (tự động) | n/a | `_staff_items`, `_work_days` |
 | B3 | Tính sao: về số/chưa về, x2, chuỗi, tăng ca, trừ sao lũy tiến, phạt nộp trễ | Báo cáo → Xem trước/Nộp | `pages/report.js` | `_compute_report`, `preview_daily_report`, `submit_daily_report`, `_item_streak`, `ITEM_RULES` |
 | B4 | Ô doanh thu QĐ trong ca, **bắt buộc** (không bán ghi 0; ẩn được ở F4) | Báo cáo (cuối form) | `pages/report.js` (#xRev, needRev/revFilled) | `save_revenue`, `revenue_entries` |
 | B4b | **Xuất ảnh báo cáo** (PNG) kiểu "BÁO CÁO CHỐT THI ĐUA CA NGÀY": target, thực đạt, %, sao ±, H.QUA (lần báo cáo trước), chuỗi, bù/tăng ca, kỷ luật, bán thêm, DT, tổng kết. Sau khi gửi + nút "🖼️ Ảnh báo cáo" | Báo cáo | `js/report-image.js` (reportPng, shareOrDownload), `pages/report.js` (imageBlob) | n/a |
