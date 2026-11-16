@@ -2,7 +2,7 @@
 //  - mode "tick": lịch pg_cron gọi 5 phút/lần (xác thực bằng x-cron-secret), tự gửi khi tới giờ
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
-import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, busyMsg, rsMsg, serviceMsg } from "./summary2.ts";
+import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyMsg, rsMsg, serviceMsg } from "./summary2.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -64,6 +64,7 @@ export const ITEMS: Record<string, { label: string; freq: string; time: string; 
   revenue: { label: "Doanh thu QĐ lũy kế", freq: "daily", time: "22:40" },
   score: { label: "Bảng điểm xếp hạng", freq: "weekly", time: "22:50", dow: 0 },
   tiktok: { label: "TikTok (ngày hạn T3, T6)", freq: "due", time: "20:00" },
+  cum: { label: "Nhắc cập nhật lũy kế tuần (thứ 2)", freq: "weekly", time: "10:00", dow: 1, on: true },
   cleanam: { label: "Nhắc vệ sinh đầu ngày (người trực + khu vực)", freq: "daily", time: "08:30", on: true },
   clean: { label: "Vệ sinh (cuối ngày: ảnh, khu vực chưa xong)", freq: "daily", time: "21:00" },
   busy: { label: "Lịch bận / OFF ngày mai", freq: "daily", time: "21:30" },
@@ -113,6 +114,13 @@ async function compose(kind: string, date: string, cfg: Record<string, any>): Pr
       overdue.set(x.name, list);
     }
     return { text: tiktokMsg(store, date, staff, subs, due, overdue), period: date };
+  }
+  if (kind === "cum") {
+    const asof = addDays(date, -1), month = asof.slice(0, 8) + "01";
+    const need = new Set((await rest(`monthly_targets?select=staff_id&month=eq.${month}`)).map((t: any) => t.staff_id));
+    const since = new Date(date + "T00:00:00+07:00").toISOString();
+    const done = new Set((await rest(`score_log?select=staff_id&kind=eq.cumulative&at=gte.${encodeURIComponent(since)}`)).map((l: any) => l.staff_id));
+    return { text: cumMsg(store, date, asof, staff.filter((x) => need.has(x.id)), done), period: date };
   }
   if (kind === "clean" || kind === "cleanam") {
     const zones = await rest("clean_zones?select=id,dept,name,staff_text,staff_ids&kind=eq.zone&order=dept,sort");

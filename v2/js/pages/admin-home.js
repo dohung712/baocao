@@ -34,6 +34,7 @@ export const FEATURES = [
   { c: "D7c", t: "Link trang tính quản lý / việc QL có deadline", w: "CV → 📋 Việc", k: "link trang tính sheet deadline việc quản lý trưởng ca", go: { page: "cv", cv: "tasks" } },
   { c: "D8", t: "Khu vực vệ sinh: người phụ trách + tiêu chí, NV báo xong", w: "CV → 🧹 Vệ sinh → Khu vực vệ sinh", k: "khu vực vệ sinh tiêu chí phụ trách tủ phone đồng hồ kho", go: { page: "cv", cv: "clean" } },
   { c: "D9", t: "Nhắc NV theo lịch đăng ký vệ sinh (trên tool + Telegram sáng)", w: "Tự động · giờ Telegram ở Quản lý → Telegram", k: "nhắc việc nhắc vệ sinh lịch đăng ký trực", go: { tab: "telegram" } },
+  { c: "C12", t: "Cập nhật lũy kế tuần (thứ 2 / mở khoá), loại tính từng môn", w: "Quản lý → Điểm & DT → 📈 Lũy kế tuần", k: "lũy kế cập nhật thứ 2 mở khoá số lượng doanh thu thực quy đổi loại môn", go: { tab: "score", sub: "cum" } },
   { c: "D6", t: "Quỹ thu chi (thêm, sửa, xoá, thống kê, CSV)", w: "CV → 💵 Quỹ", k: "quỹ thu chi tiền số dư chi phí", go: { page: "cv", cv: "fund" } },
   { c: "F6", t: "Nhật ký thao tác", w: "Quản lý → Nhật ký", k: "nhật ký audit", go: { tab: "audit" }, owner: true },
   { c: "G2", t: "Luật đang áp dụng (cho nhân viên xem)", w: "Rule", k: "rule luật quy tắc", go: { page: "rules" } },
@@ -46,7 +47,7 @@ const PLAN = [
     ["Xem NV đã đọc việc triển khai, việc QL sắp tới hạn", "D7b"],
     ["Sau giờ chốt: nhắc người chưa báo cáo", "B1"]] },
   { id: "week", icon: "📅", t: "Thứ 2 hằng tuần", steps: [
-    ["Nhập phục vụ tuần trước", "C6"], ["Ghi vi phạm (nếu có)", "C7"], ["Copy bảng xếp hạng tuần gửi nhóm", "C10"]] },
+    ["Nhắc / kiểm tra NV cập nhật lũy kế DT + môn (đúng loại)", "C12"], ["Nhập phục vụ tuần trước", "C6"], ["Ghi vi phạm (nếu có)", "C7"], ["Copy bảng xếp hạng tuần gửi nhóm", "C10"]] },
   { id: "mstart", icon: "🚀", t: "Đầu tháng", steps: [
     ["Dán báo cáo target tháng (DT + môn thi đua)", "C1"], ["Tick môn Tập trung / Target thấp, áp dụng sao", "F2c"],
     ["Kiểm tra số ngày làm, giao môn riêng nếu cần", "C2"], ["Reset sao / chuỗi (nếu áp dụng kỳ mới)", "C8"]] },

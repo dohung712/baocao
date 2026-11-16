@@ -100,7 +100,7 @@ export function startRealtime() {
     tasks: () => emit("cv"), task_acks: () => emit("cv"),
     tiktok_submissions: () => { loadStaff(); emit("cv"); }, cleaning: () => emit("cv"), clean_zones: () => emit("cv"), clean_zone_checks: () => emit("cv"), busy: () => emit("cv"), roadshow: () => emit("cv"),
     staff_targets: () => emit("targets"),
-    star_adjustments: () => { loadStaff(); emit("score"); }, revenue_entries: () => emit("score"), monthly_targets: () => emit("score"),
+    star_adjustments: () => { loadStaff(); emit("score"); }, revenue_entries: () => emit("score"), item_adjustments: () => emit("score"), monthly_targets: () => emit("score"),
     ratings: () => emit("score"), violations: () => emit("score"),
   };
   const timers = {};

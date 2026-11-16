@@ -113,3 +113,14 @@ export function serviceMsg(store: string, from: string, to: string, board: any[]
   else L.push("", "✅ Không có vi phạm.");
   return L.join("\n");
 }
+
+// Thứ 2: nhắc NV cập nhật lũy kế tháng (DT QĐ + từng môn đúng loại) — liệt kê người chưa cập nhật
+export function cumMsg(store: string, date: string, asof: string, staff: Staff[], done: Set<string>) {
+  if (!staff.length) return null;
+  const todo = staff.filter((x) => !done.has(x.id));
+  const L = [`📈 <b>CẬP NHẬT LŨY KẾ TUẦN · ${dow(date)} ${dm(date)}</b>`, esc(store), "",
+    `Nhập <b>lũy kế tháng đến hết ${dow(asof)} ${dm(asof)}</b> trên tool (dải nhắc đầu trang hoặc Của tôi → 📈 Cập nhật lũy kế):`,
+    "• Doanh thu QĐ", "• Từng môn ĐÚNG LOẠI: 🔢 Số lượng · 💰 DT quy đổi · 💵 DT thực (xem nhãn từng môn)", ""];
+  L.push(todo.length ? `⏳ Chưa cập nhật (${todo.length}/${staff.length}): ${todo.map((x) => esc(short(x.name))).join(", ")}` : `✅ Tất cả ${staff.length} NV đã cập nhật`);
+  return L.join("\n");
+}

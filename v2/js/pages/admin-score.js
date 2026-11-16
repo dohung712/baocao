@@ -1,10 +1,11 @@
 // Quản lý → Điểm & DT: target tháng, doanh thu, phục vụ, vi phạm, chỉnh sao / reset, lịch sử điều chỉnh
 import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, addDays, weekStart, monthStart, dmy, dm, dow, shiftMonth, monthLabel } from "../ui.js";
-import { sb, S, rpc, isOwner, visibleStaff, staffById, setting, errMsg, loadStaff, loadItems, depts } from "../store.js";
+import { sb, S, rpc, isOwner, visibleStaff, staffById, setting, errMsg, loadStaff, loadItems, loadSettings, depts } from "../store.js";
 import { parseTargetReport } from "../lib-targets.js";
+import { openCum, MEASURE, measureTag } from "../cumulative.js";
 import { dailyTarget, dailyPct, dailyMin } from "../star-rules.js";
 
-const SUBS = [["targets", "🎯 Target tháng"], ["revenue", "💰 Doanh thu"], ["service", "🤝 Phục vụ"], ["violations", "⚠️ Vi phạm"], ["stars", "⭐ Sao & reset"], ["log", "🧾 Lịch sử"]];
+const SUBS = [["targets", "🎯 Target tháng"], ["cum", "📈 Lũy kế tuần"], ["revenue", "💰 Doanh thu"], ["service", "🤝 Phục vụ"], ["violations", "⚠️ Vi phạm"], ["stars", "⭐ Sao & reset"], ["log", "🧾 Lịch sử"]];
 let sub = "targets", ym = vnToday().slice(0, 7), host;
 export const setScoreSub = (s) => { sub = s; };
 const err = (e) => toast(errMsg(e), 4500);
@@ -18,12 +19,55 @@ export async function scoreAdmin(body) {
   $("#asSub").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) { sub = b.dataset.s; scoreAdmin(host); } };
   $("#asNav").onclick = (e) => { const b = e.target.closest("[data-mm]"); if (b) { ym = shiftMonth(ym, Number(b.dataset.mm)); scoreAdmin(host); } };
   const el = $("#asBody"); el.onclick = null;
-  try { await ({ targets, revenue, service, violations, stars, log })[sub](el); } catch (e) { el.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
+  try { await ({ targets, cum, revenue, service, violations, stars, log })[sub](el); } catch (e) { el.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const month = () => ym + "-01";
 const monthEnd = () => addDays(shiftMonth(ym, 1) + "-01", -1);
 const staffItems = (s) => { const list = S.items.filter((i) => i.active && (s.assigned_items?.length ? s.assigned_items.includes(i.name) : i.store === "Chung" || i.store.toLowerCase() === (s.dept || "").toLowerCase()));
   const m = new Map(); for (const i of list) if (!m.has(i.name) || i.store === s.dept) m.set(i.name, i); return [...m.values()]; };
+
+// ---------- Lũy kế tuần (C12): mở khoá, loại đo từng môn, ai đã cập nhật ----------
+const guessMeasure = (t) => (Number.isInteger(Number(t)) && Number(t) <= 200 ? "sl" : "dtqd");
+async function cum(el) {
+  const today = vnToday(), mon = weekStart(today);
+  const [tg, logs, ms] = await Promise.all([q(sb.from("monthly_targets").select("staff_id,items").eq("month", month())),
+    q(sb.from("score_log").select("staff_id,at,actor,detail").eq("kind", "cumulative").gte("at", addDays(mon, -7) + "T00:00:00+07:00").order("at", { ascending: false })), q(sb.from("item_measures").select("name,measure"))]);
+  const u = setting("CUM_UNLOCK", null), unlocked = u && new Date(u.until) > new Date(), uStaff = u?.staff || [];
+  const names = new Map(); for (const t of tg) for (const i of t.items || []) if (!names.has(i.name)) names.set(i.name, Number(i.target));
+  const eff = (n) => { const it = ms.find((i) => i.name === n); return it ? { m: it.measure, g: false } : { m: guessMeasure(names.get(n)), g: true }; };
+  const people = visibleStaff().filter((s) => tg.some((t) => t.staff_id === s.id));
+  const last = (sid) => logs.find((l) => l.staff_id === sid);
+  const isMon = new Date(today + "T00:00:00Z").getUTCDay() === 1;
+  el.innerHTML = `<div class="card" style="margin-bottom:14px"><div class="card-h"><h2>📈 Cập nhật lũy kế tuần</h2>
+      <span class="pill ${isMon || unlocked ? "ok" : "mute"}">${isMon ? "Hôm nay thứ 2 — NV đang cập nhật" : unlocked ? `Đang mở khoá đến ${new Date(u.until).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}${uStaff.length ? ` · ${uStaff.length} NV` : " · tất cả NV"}` : "Đang khoá (tự mở thứ 2)"}</span></div>
+    <p class="small muted">NV nhập <b>lũy kế tháng đến hết hôm qua</b> (DT QĐ + từng môn theo đúng loại) vào <b>thứ 2 hằng tuần</b>. Tool tự ghi phần chênh lệch nên bảng điểm, Của tôi, Telegram dùng số đúng. Ngày khác muốn NV sửa lại thì <b>mở khoá</b> bên dưới; quản lý luôn cập nhật hộ được.</p>
+    <div class="row" style="flex-wrap:wrap;gap:8px;align-items:flex-end"><label>Mở khoá đến<input type="datetime-local" id="cuUntil" value="${today}T23:59" style="width:auto"></label>
+      <details class="grow"><summary class="small">Chỉ mở cho một số NV (để trống = tất cả)</summary><div class="chips" id="cuStaff">${people.map((s) => `<label class="chip inline tiny"><input type="checkbox" value="${esc(s.id)}" ${uStaff.includes(s.id) ? "checked" : ""}> ${esc(s.name)}</label>`).join("")}</div></details>
+      <button class="btn primary" id="cuOpen" type="button">🔓 Mở khoá</button>${unlocked ? `<button class="btn" id="cuClose" type="button">🔒 Khoá lại</button>` : ""}</div></div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🏷️ Loại tính của từng môn</h2><span class="small muted">NV sẽ thấy nhãn này khi nhập</span></div>
+      <p class="small muted">${Object.values(MEASURE).map((x) => `<b>${x.icon} ${x.label}</b>: ${esc(x.hint)}`).join("<br>")}<br>Nhãn có dấu <b>?</b> là tool đang đoán — chọn lại cho đúng.</p>
+      ${names.size ? `<div class="tbl-wrap"><table><thead><tr><th>Môn tháng ${ym.slice(5)}</th><th>Loại tính</th></tr></thead><tbody>${[...names.keys()].map((n) => { const e = eff(n);
+        return `<tr><td><b>${esc(n)}</b> ${measureTag(e.m, e.g)}</td><td><select data-ms="${esc(n)}" style="width:auto">${Object.entries(MEASURE).map(([k, x]) => `<option value="${k}" ${k === e.m ? "selected" : ""}>${x.icon} ${x.label}</option>`).join("")}</select></td></tr>`; }).join("")}</tbody></table></div>` : `<p class="muted">Chưa có môn thi đua tháng này.</p>`}</div>
+    <div class="card"><div class="card-h"><h2>👥 Ai đã cập nhật</h2><span class="small muted">Tuần từ thứ 2 ${dmy(mon)}</span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Nhân viên</th><th>Lần gần nhất</th><th>Đã chỉnh</th><th></th></tr></thead><tbody>
+      ${people.map((s) => { const l = last(s.id), ok = l && new Date(l.at) >= new Date(mon + "T00:00:00+07:00");
+        return `<tr><td><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.dept)}</div></td><td>${l ? `${ok ? '<span class="pill ok">✅ Tuần này</span>' : '<span class="pill warn">Tuần trước</span>'} <span class="tiny muted">${new Date(l.at).toLocaleString("vi-VN")}${l.actor && !l.actor.startsWith("nv") ? " · " + esc(l.actor) : ""}</span>` : '<span class="pill bad">⏳ Chưa cập nhật</span>'}</td>
+          <td class="small">${l ? `${l.detail?.changed ?? 0} mục` : ""}</td><td class="num"><button class="btn small" data-cu="${esc(s.id)}" type="button">Cập nhật hộ</button></td></tr>`; }).join("") || `<tr><td colspan="4" class="empty">Chưa giao target tháng.</td></tr>`}</tbody></table></div></div>`;
+  el.onclick = async (e) => {
+    const b = e.target.closest("[data-cu]");
+    if (b) return openCum(b.dataset.cu, () => cum(el));
+    if (e.target.closest("#cuOpen")) {
+      const until = new Date($("#cuUntil").value); if (!(until > new Date())) return toast("Chọn thời hạn ở tương lai");
+      const staff = $$("#cuStaff input:checked").map((x) => x.value);
+      try { const r = await rpc("cum_unlock", { p_until: until.toISOString(), p_staff: staff }); await loadSettings(); toast(r.message); cum(el); } catch (x) { err(x); }
+    }
+    if (e.target.closest("#cuClose")) { try { const r = await rpc("cum_unlock", { p_until: null, p_staff: [] }); await loadSettings(); toast(r.message); cum(el); } catch (x) { err(x); } }
+  };
+  el.onchange = async (e) => {
+    const sel = e.target.closest("[data-ms]"); if (!sel) return;
+    try { await rpc("set_item_measure", { p_name: sel.dataset.ms, p_measure: sel.value }); toast("Đã lưu loại môn"); cum(el); } catch (x) { err(x); }
+  };
+}
 
 // ---------- Target tháng ----------
 async function targets(el) {
@@ -255,7 +299,7 @@ async function stars(el) {
 // ---------- Lịch sử ----------
 async function log(el) {
   const rows = await q(sb.from("score_log").select("*").gte("at", month() + "T00:00:00+07:00").lte("at", monthEnd() + "T23:59:59+07:00").order("at", { ascending: false }).limit(500));
-  const K = { revenue: "Doanh thu", target: "Target", rating: "Phục vụ", violation: "Vi phạm", star: "Sao", streak: "Chuỗi" };
+  const K = { cumulative: "Lũy kế tuần", revenue: "Doanh thu", target: "Target", rating: "Phục vụ", violation: "Vi phạm", star: "Sao", streak: "Chuỗi" };
   el.innerHTML = `<div class="card"><div class="card-h"><h2>🧾 Lịch sử điều chỉnh tháng ${ym.slice(5)}</h2><select id="lgK" style="width:auto"><option value="">Tất cả</option>${Object.entries(K).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></div>
     <div class="tbl-wrap"><table><thead><tr><th>Thời gian</th><th>Người làm</th><th>Nhân viên</th><th>Mục</th><th>Chi tiết</th><th>Lý do</th></tr></thead><tbody id="lgB"></tbody></table></div></div>`;
   const draw = () => { const k = $("#lgK").value; $("#lgB").innerHTML = rows.filter((r) => !k || r.kind === k).map((r) => `<tr><td class="small">${new Date(r.at).toLocaleString("vi-VN")}</td><td class="small">${esc(r.actor || "")}</td><td>${esc(staffById(r.staff_id)?.name || r.staff_id || "")}</td><td>${K[r.kind] || esc(r.kind)} · ${esc(r.action)}</td><td class="tiny muted">${esc(JSON.stringify(r.detail))}</td><td class="small">${esc(r.reason || "")}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Chưa có.</td></tr>`; };

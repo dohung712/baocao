@@ -447,3 +447,14 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 .remind:empty{display:none}
 .remind-i{display:flex;gap:8px;align-items:center;background:var(--warn-soft);color:var(--text);border:1px solid var(--warn);border-radius:var(--radius);padding:8px 10px;margin-top:10px;font-size:13.5px}
 .remind-i .btn.ghost{padding:2px 6px}
+/* C12 Cập nhật lũy kế tuần */
+.mtag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap;vertical-align:middle}
+.mtag.m-sl{background:var(--info-soft);color:var(--info)}
+.mtag.m-qd{background:var(--warn-soft);color:var(--warn)}
+.mtag.m-dtt{background:var(--ok-soft);color:var(--ok)}
+.cum-warn .mtag{margin:2px 0}
+.cum-row{display:flex;gap:10px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 0}
+.cum-row:last-of-type{border-bottom:0}
+.cum-n{flex:1;min-width:0}
+.cum-row input{width:130px;flex:0 0 130px;font-size:16px;text-align:right}
+@media (max-width:480px){.cum-row input{width:110px;flex-basis:110px}}
