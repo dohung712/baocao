@@ -47,9 +47,6 @@ jobs:
       - name: Chép quỹ cũ từ Firebase (chỉ 1 lần, chỉ in số lượng)
         run: node supabase/scripts/import-quy.mjs
         continue-on-error: true
-      - name: Báo cáo niêm phong (mã hoá, không đọc được trên log)
-        run: node supabase/scripts/sealed-report.mjs
-        continue-on-error: true
       - uses: supabase/setup-cli@v1
         with:
           version: latest

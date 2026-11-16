@@ -17,6 +17,8 @@ await p.fill("#lEmail", "dohung712@gmail.com"); await p.fill("#lPass", "x"); awa
 await p.waitForSelector("#app:not([hidden])", { timeout: 30000 }); await p.waitForTimeout(800);
 await p.evaluate(() => document.querySelector('[data-page="admin"]').click()); await p.waitForTimeout(1000);
 await p.click('#aTabs [data-t="items"]'); await p.waitForTimeout(1000);
+console.log("môn tháng:", await p.$$eval("#itRows tr[data-month='1'] input[name=name]", (x) => x.map((y) => y.value).join(", ")), "| NV báo cáo:", await p.$$eval("#itRows tr[data-month='1'] .tiny.muted b", (x) => x.map((y) => y.textContent).join(", ")), "| ngoài tháng:", await p.$$eval("#itRows tr[data-month='0']", (x) => x.length));
+await p.selectOption("#itSt", "month"); await p.waitForTimeout(100); console.log("lọc môn tháng:", await p.$$eval("#itRows tr:not([hidden])", (x) => x.length)); await p.selectOption("#itSt", ""); 
 const ch = psql("select store from items where store <> 'Chung' group by store order by count(*) desc limit 1");
 const before = psql(`select count(*) filter (where active) || '/' || count(*) from items where store = '${ch}'`);
 await p.selectOption("#itCh", ch); await p.waitForTimeout(200);

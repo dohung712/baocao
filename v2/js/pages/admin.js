@@ -2,7 +2,7 @@
 import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml } from "../ui.js";
 import { scoreAdmin, setScoreSub } from "./admin-score.js";
 import { home } from "./admin-home.js";
-import { starCardHtml, bindStarCard } from "../star-rules.js";
+import { starCardHtml, bindStarCard, dailyTarget, dailyPct, dailyMin } from "../star-rules.js";
 import { suggestHtml, bindSuggest } from "./admin-suggest.js";
 import { sb, S, rpc, notify, callFn, onChange, isOwner, isManager, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel, visibleStaff } from "../store.js";
 
@@ -159,25 +159,37 @@ async function items(body) {
   const stores = ["Chung", ...depts()];
   let F = { ch: "", st: "", q: "" }; try { F = { ...F, ...JSON.parse(localStorage.getItem("thidua-v2-itfilter") || "{}") }; } catch { /* bỏ qua */ }
   const chans = [...new Set([...stores, ...S.items.map((i) => i.store)])];
+  // Môn thi đua tháng này: NV báo cáo theo target tháng (÷ số ngày làm × DAILY_TARGET_PCT), không theo ô Target/ngày
+  const ym = vnToday().slice(0, 7), mts = (await sb.from("monthly_targets").select("staff_id,items,work_days").eq("month", ym + "-01")).data || [];
+  const dim = new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 0)).getUTCDate(), defWd = Math.max(1, dim - Number(setting("DAYS_OFF", 4)));
+  const staffMt = new Map(mts.filter((t) => (t.items || []).length).map((t) => [t.staff_id, t]));
+  const monthInfo = (it) => {
+    const people = S.staff.filter((x) => !x.hidden && staffMt.has(x.id) && (x.dept === it.store || (it.store === "Chung" && !S.items.some((o) => o.name === it.name && o.store === x.dept))));
+    const hit = people.map((x) => { const t = staffMt.get(x.id), e = t.items.find((y) => y.name === it.name); return e ? dailyTarget(Number(e.target) / (t.work_days || defWd)) : null; }).filter((v) => v != null);
+    if (hit.length) return { m: 1, lo: Math.min(...hit), hi: Math.max(...hit), n: hit.length };
+    return people.length ? { m: 0 } : { m: "" };   // m: 1 môn tháng · 0 ngoài môn tháng (NV không báo cáo) · "" bộ phận chưa giao môn tháng
+  };
   if (F.ch && !chans.includes(F.ch)) F.ch = "";
   body.innerHTML = `${suggestHtml()}<div class="card"><div class="card-h"><h2>📋 Danh mục môn thi đua</h2>
       <div class="row it-filter"><select id="itCh" style="width:auto" title="Lọc theo kênh / bộ phận áp dụng"><option value="">🔎 Tất cả kênh</option>${chans.map((c) => `<option value="${esc(c)}" ${c === F.ch ? "selected" : ""}>${esc(c)} (${S.items.filter((i) => i.store === c).length})</option>`).join("")}</select>
-        <select id="itSt" style="width:auto"><option value="">Bật + tắt</option><option value="on" ${F.st === "on" ? "selected" : ""}>Đang bật</option><option value="off" ${F.st === "off" ? "selected" : ""}>Đang tắt</option></select>
+        <select id="itSt" style="width:auto"><option value="">Bật + tắt</option><option value="on" ${F.st === "on" ? "selected" : ""}>Đang bật</option><option value="off" ${F.st === "off" ? "selected" : ""}>Đang tắt</option><option value="month" ${F.st === "month" ? "selected" : ""}>📅 Môn tháng này</option><option value="out" ${F.st === "out" ? "selected" : ""}>Ngoài môn tháng</option></select>
         <input id="itQ" placeholder="Tìm tên môn…" value="${esc(F.q)}" style="width:150px"></div>
       <button class="btn small" id="itAdd" type="button">+ Thêm môn</button><button class="btn small primary" id="itSave" type="button">💾 Lưu tất cả</button></div>
     <div class="banner info"><div><b>Khai báo môn, target, sao thưởng, sao phạt</b>
       • <b>Áp dụng</b>: “Chung” = mọi bộ phận; chọn bộ phận để môn chỉ áp dụng cho bộ phận đó (trùng tên thì ưu tiên môn của bộ phận).<br>
       • <b>Target/ngày</b>: số cần đạt mỗi ngày để <i>Về số</i>. • <b>Sao thưởng</b>: cộng khi đạt ≥ 100% target. <b>Nhân sao</b>: môn X2 đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% → ×2; môn X3 đạt ≥ ${fmt(setting("DOUBLE_BONUS_RATE", 150))}% → ×2, ≥ ${fmt(setting("TRIPLE_BONUS_RATE", 200))}% → ×3.<br>
       • <b>Sao phạt</b>: số sao trừ khi chưa đạt nhiều ngày liền (mốc bắt đầu trừ, tăng ca, hệ số lũy tiến: <b>Cài đặt → Thưởng & trừ sao</b>).<br>
+      • <b>📅 Môn tháng</b> (đã dán / giao target tháng): NV báo cáo theo <b>target tháng ÷ số ngày làm × ${dailyPct()}%</b> (tối thiểu ${dailyMin()}) — ô Target/ngày chỉ để tham khảo; sao thưởng/phạt và ô <b>Bật</b> vẫn theo bảng này. Môn <b>“Ngoài môn tháng”</b> thì NV không báo cáo dù đang Bật.<br>
       • Target/sao <b>riêng từng nhân viên</b>: tab <b>Target NV</b>. Giao môn riêng cho nhân viên: tab <b>Nhân sự</b> → Sửa → Môn riêng.</div></div>
     <div class="row it-bulk"><span class="small muted" id="itCount"></span><span class="grow"></span><button class="btn small" id="itAllOn" type="button">☑️ Bật tất cả đang hiện</button><button class="btn small" id="itAllOff" type="button">⬜ Tắt tất cả đang hiện</button></div>
     <div class="tbl-wrap"><table><thead><tr><th>Thứ tự</th><th>Áp dụng</th><th>Tên môn</th><th class="num">Target/ngày</th><th class="num">Sao thưởng</th><th class="num">Sao phạt</th><th>Nhân sao</th><th>Bật</th><th></th></tr></thead><tbody id="itRows">
     ${S.items.map((i) => row(i)).join("")}</tbody></table></div></div>`;
   function row(i) {
-    return `<tr data-id="${i.id || ""}"><td><input type="number" name="sort" value="${i.sort}" style="width:64px"></td>
+    const mi = i.id ? monthInfo(i) : { m: "" };
+    return `<tr data-id="${i.id || ""}" data-month="${mi.m}"><td><input type="number" name="sort" value="${i.sort}" style="width:64px"></td>
       <td><select name="store">${[...new Set([...stores, i.store])].map((s) => `<option ${s === i.store ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></td>
-      <td><input name="name" value="${esc(i.name)}" required style="min-width:180px"></td>
-      <td><input type="number" name="target" min="0.01" step="any" value="${i.target}" style="width:90px;text-align:right"></td>
+      <td><input name="name" value="${esc(i.name)}" required style="min-width:180px">${mi.m === 1 ? `<div class="tiny"><span class="pill info">📅 Môn tháng ${ym.slice(5)}</span> ${mi.n} NV</div>` : mi.m === 0 ? `<div class="tiny"><span class="pill mute" title="Bộ phận đã có môn thi đua tháng; môn này không nằm trong đó nên NV không báo cáo dù đang Bật">Ngoài môn tháng — NV không báo cáo</span></div>` : ""}</td>
+      <td><input type="number" name="target" min="0.01" step="any" value="${i.target}" style="width:90px;text-align:right" ${mi.m === 1 ? `readonly class="ro" title="Môn tháng: target báo cáo ngày = target tháng ÷ số ngày làm × ${dailyPct()}% (tối thiểu ${dailyMin()}). Sửa ở Điểm & DT → Target tháng"` : ""}>${mi.m === 1 ? `<div class="tiny muted" style="text-align:right">NV báo cáo: <b>${mi.lo === mi.hi ? fmt(mi.lo, 2) : `${fmt(mi.lo, 2)}–${fmt(mi.hi, 2)}`}</b>/ngày</div>` : ""}</td>
       <td><input type="number" name="bonus_star" step="10" value="${i.bonus_star}" style="width:90px;text-align:right"></td>
       <td><input type="number" name="penalty_star" step="10" value="${i.penalty_star}" style="width:90px;text-align:right"></td>
       <td><select name="mult" style="width:auto"><option value="">—</option><option value="x2" ${i.is_x2 && !i.is_x3 ? "selected" : ""}>X2</option><option value="x3" ${i.is_x3 ? "selected" : ""}>X3</option></select></td><td><input type="checkbox" name="active" ${i.active !== false ? "checked" : ""}></td>
@@ -189,10 +201,11 @@ async function items(body) {
     const q = F.q.trim().toLowerCase(); let n = 0;
     $$("#itRows tr").forEach((tr) => {
       const ch = tr.querySelector("[name=store]").value, on = tr.querySelector("[name=active]").checked, nm = tr.querySelector("[name=name]").value.toLowerCase();
-      const show = !tr.dataset.id || ((!F.ch || ch === F.ch) && (!F.st || (F.st === "on") === on) && (!q || nm.includes(q)));
+      const mo = tr.dataset.month, stOk = !F.st || (F.st === "on" && on) || (F.st === "off" && !on) || (F.st === "month" && mo === "1") || (F.st === "out" && mo === "0");
+      const show = !tr.dataset.id || ((!F.ch || ch === F.ch) && stOk && (!q || nm.includes(q)));
       tr.hidden = !show; if (show) n++;
     });
-    $("#itCount").textContent = `Đang hiện ${n}/${$$("#itRows tr").length} môn${F.ch ? ` · kênh ${F.ch}` : ""}${F.st ? ` · ${F.st === "on" ? "đang bật" : "đang tắt"}` : ""} — sửa xong bấm 💾 Lưu tất cả`;
+    $("#itCount").textContent = `Đang hiện ${n}/${$$("#itRows tr").length} môn${F.ch ? ` · kênh ${F.ch}` : ""}${F.st ? ` · ${{ on: "đang bật", off: "đang tắt", month: "môn tháng này", out: "ngoài môn tháng" }[F.st]}` : ""} — sửa xong bấm 💾 Lưu tất cả`;
     try { localStorage.setItem("thidua-v2-itfilter", JSON.stringify(F)); } catch { /* bỏ qua */ }
   };
   $("#itCh").onchange = (e) => { F.ch = e.target.value; applyFilter(); };

@@ -480,3 +480,4 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 .it-filter{gap:6px;flex-wrap:wrap;margin-left:auto}
 .it-bulk{gap:6px;flex-wrap:wrap;margin:6px 0 8px}
 #itRows tr.dirty td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+#itRows input.ro{background:var(--bg);color:var(--muted)}
