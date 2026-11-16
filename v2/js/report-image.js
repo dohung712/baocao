@@ -29,7 +29,8 @@ export async function reportPng(d) {
     d = { ...d, late: [...other, { name: `[Kỷ Luật] TikTok trễ hạn ${tk.length} kỳ (${dates[0]} → ${dates[dates.length - 1]})`, star: tk.reduce((a, l) => a + (Number(l.star) || 0), 0) }] }; }
   const probe = document.createElement("canvas").getContext("2d"); probe.font = "700 23px " + FONT;
   const rowH = d.rows.map((r) => (wrap(probe, r.name, COLS[1][1] - 16).length > 1 ? 74 : 58));
-  const headH = 190, thH = 58, lateH = (d.late?.length || 0) * 46, extraH = 64, footH = 128;
+  const todo = (d.todo || []).slice(0, 8), todoH = todo.length ? 54 + todo.length * 40 + 12 : 0, mediaH = d.media ? 50 : 0;
+  const headH = 190, thH = 58, lateH = (d.late?.length || 0) * 46, extraH = 64 + mediaH + todoH, footH = 128;
   const H = PAD + headH + 20 + thH + rowH.reduce((a, b) => a + b, 0) + 12 + lateH + extraH + 16 + footH + PAD + 34;
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d");
@@ -105,6 +106,28 @@ export async function reportPng(d) {
   ctx.font = "500 21px " + FONT; txt(ctx, wrap(ctx, ext, 560, 1)[0], PAD + 300, y + 33, "l", "500 21px " + FONT, C.muted);
   txt(ctx, `💰 DT QĐ: ${d.revenue == null ? "—" : fmt(d.revenue, 2)}${d.unit ? " " + d.unit : ""}`, W - PAD - 16, y + 33, "r", "800 22px " + FONT, C.ink);
   y += 52 + 16;
+  // ----- Truyền thông -----
+  if (d.media) {
+    ctx.fillStyle = C.infoBg; rr(ctx, PAD, y - 8, W - PAD * 2, 42, 10); ctx.fill();
+    txt(ctx, `📣 Truyền thông trong ngày: ${fmt(d.media.posts)} lần`, PAD + 16, y + 21, "l", "700 21px " + FONT, C.info);
+    txt(ctx, `💬 Báo cáo Line truyền thông: ${fmt(d.media.line)} lần`, W - PAD - 16, y + 21, "r", "700 21px " + FONT, C.info);
+    y += mediaH;
+  }
+  // ----- Việc cần làm / lịch sắp tới -----
+  if (todo.length) {
+    const COL = { bad: [C.bad, C.badBg], warn: ["#8a5a00", "#fff3d6"], info: [C.info, C.infoBg] };
+    ctx.fillStyle = C.white; rr(ctx, PAD, y - 8, W - PAD * 2, todoH - 12, 12); ctx.fill(); ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.stroke();
+    txt(ctx, "📌 VIỆC CẦN LÀM & LỊCH SẮP TỚI", PAD + 16, y + 26, "l", "800 21px " + FONT, C.ink); y += 46;
+    for (const t of todo) {
+      const [fg, bg] = COL[t.lv] || COL.info;
+      ctx.fillStyle = bg; rr(ctx, PAD + 12, y - 4, W - PAD * 2 - 24, 34, 8); ctx.fill();
+      ctx.font = "700 19px " + FONT; const head = `${t.icon || "•"} ${t.t}`; txt(ctx, head, PAD + 24, y + 19, "l", "700 19px " + FONT, fg);
+      const hw = ctx.measureText(head).width; ctx.font = "500 18px " + FONT;
+      if (t.d) txt(ctx, wrap(ctx, "— " + t.d, W - PAD * 2 - 60 - hw, 1)[0], PAD + 34 + hw, y + 19, "l", "500 18px " + FONT, C.muted);
+      y += 40;
+    }
+    y += 12;
+  }
 
   // ----- Tổng kết -----
   ctx.fillStyle = C.navy; rr(ctx, PAD, y, W - PAD * 2, footH, 18); ctx.fill();

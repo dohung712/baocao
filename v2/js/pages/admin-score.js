@@ -5,7 +5,7 @@ import { parseTargetReport } from "../lib-targets.js";
 import { openCum, MEASURE, measureTag } from "../cumulative.js";
 import { dailyTarget, dailyPct, dailyMin } from "../star-rules.js";
 
-const SUBS = [["targets", "🎯 Target tháng"], ["cum", "📈 Lũy kế tuần"], ["revenue", "💰 Doanh thu"], ["service", "🤝 Phục vụ"], ["violations", "⚠️ Vi phạm"], ["stars", "⭐ Sao & reset"], ["log", "🧾 Lịch sử"]];
+const SUBS = [["targets", "🎯 Target tháng"], ["cum", "📈 Lũy kế tuần"], ["media", "📣 Truyền thông"], ["revenue", "💰 Doanh thu"], ["service", "🤝 Phục vụ"], ["violations", "⚠️ Vi phạm"], ["stars", "⭐ Sao & reset"], ["log", "🧾 Lịch sử"]];
 let sub = "targets", ym = vnToday().slice(0, 7), host;
 export const setScoreSub = (s) => { sub = s; };
 const err = (e) => toast(errMsg(e), 4500);
@@ -19,7 +19,7 @@ export async function scoreAdmin(body) {
   $("#asSub").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) { sub = b.dataset.s; scoreAdmin(host); } };
   $("#asNav").onclick = (e) => { const b = e.target.closest("[data-mm]"); if (b) { ym = shiftMonth(ym, Number(b.dataset.mm)); scoreAdmin(host); } };
   const el = $("#asBody"); el.onclick = null;
-  try { await ({ targets, cum, revenue, service, violations, stars, log })[sub](el); } catch (e) { el.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
+  try { await ({ targets, cum, media, revenue, service, violations, stars, log })[sub](el); } catch (e) { el.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const month = () => ym + "-01";
 const monthEnd = () => addDays(shiftMonth(ym, 1) + "-01", -1);
@@ -67,6 +67,18 @@ async function cum(el) {
     const sel = e.target.closest("[data-ms]"); if (!sel) return;
     try { await rpc("set_item_measure", { p_name: sel.dataset.ms, p_measure: sel.value }); toast("Đã lưu loại môn"); cum(el); } catch (x) { err(x); }
   };
+}
+
+// ---------- Truyền thông ngày (B13) ----------
+async function media(el) {
+  const rows = await q(sb.from("media_reports").select("*").gte("report_date", month()).lte("report_date", monthEnd()));
+  const days = [...new Set(rows.map((r) => r.report_date))].sort();
+  el.innerHTML = `<div class="card"><div class="card-h"><h2>📣 Báo cáo truyền thông tháng ${ym.slice(5)}/${ym.slice(0, 4)}</h2><span class="small muted">NV chọn trong báo cáo cuối ngày · chỉ ghi nhận</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Nhân viên</th><th class="num">Số ngày báo cáo</th><th class="num">Tổng lần truyền thông</th><th class="num">Tổng báo cáo Line</th><th class="num">TB/ngày</th><th>7 ngày gần nhất (TT/Line)</th></tr></thead><tbody>
+    ${visibleStaff().map((s) => { const m = rows.filter((r) => r.staff_id === s.id), tp = m.reduce((a, r) => a + r.posts, 0), tl = m.reduce((a, r) => a + r.line_reports, 0);
+      return `<tr><td><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.dept)}</div></td><td class="num">${m.length}</td><td class="num"><b>${tp}</b></td><td class="num"><b>${tl}</b></td><td class="num">${m.length ? fmt(tp / m.length, 1) : "—"}</td>
+        <td class="small">${days.slice(-7).map((d) => { const r = m.find((x) => x.report_date === d); return `<span class="pill ${r ? "info" : "mute"}" title="${dmy(d)}">${dm(d)} ${r ? `${r.posts}/${r.line_reports}` : "–"}</span>`; }).join(" ")}</td></tr>`; }).join("")}
+    </tbody></table></div></div>`;
 }
 
 // ---------- Target tháng ----------

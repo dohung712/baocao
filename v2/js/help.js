@@ -29,6 +29,8 @@ const H = [
   ["[data-done]", "Hoàn thành", "Báo đã làm xong việc được giao, có thể ghi chú thêm."],
   ["#remind", "🔔 Nhắc việc", "Nhắc theo lịch bạn đã đăng ký: trực vệ sinh hôm nay/ngày mai, khu vực vệ sinh chưa báo xong. Bấm Mở để làm, ✕ để ẩn trong ngày."],
   [".cum-form", "📈 Cập nhật lũy kế", "Nhập lũy kế THÁNG đến hết hôm qua lấy từ báo cáo công ty. Xem nhãn từng môn: 🔢 Số lượng (số máy/hồ sơ) · 💰 DT quy đổi · 💵 DT thực. Ô trống = giữ nguyên.", true],
+  ["#mediaCard", "📣 Báo cáo truyền thông", "Chọn số lần truyền thông và số lần báo cáo Line truyền thông trong ngày (0, 1, 2, 3 hoặc gõ số khác). Có trong ảnh báo cáo."],
+  ["#todoCard", "📌 Việc cần làm", "Việc còn thiếu và lịch sắp tới của bạn: TikTok, vệ sinh, roadshow, CV, thứ 2 cập nhật số + phục vụ, đăng ký bận trước 22h T6… Bấm vào để mở đúng chỗ."],
   [".zones-card", "🧽 Khu vực vệ sinh", "Khu vực, người phụ trách và tiêu chí của từng bộ phận. Khu vực của bạn có viền xanh: làm xong bấm ✅ Xong hôm nay. Quản lý bấm ✏️ để sửa, + Thêm để thêm."],
   [".tg-sched", "🗓️ Lịch gửi Telegram", "Mỗi đầu mục: tick Gửi, chọn Hằng ngày / Hằng tuần / Chọn thứ, đặt giờ rồi bấm 💾 Lưu lịch gửi. Quản lý chỉnh được.", true],
   ["#tkKind", "Loại việc", "Triển khai toàn NV (đọc & nắm rõ) · Giao việc NV (hoàn thành + ghi chú) · Việc QL có deadline · Link trang tính.", true],

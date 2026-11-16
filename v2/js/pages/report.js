@@ -3,15 +3,19 @@ import { $, $$, esc, fmt, sign, starHtml, initials, toast, modal, vnToday, vnHM,
 import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg, isHidden } from "../store.js";
 import { reportPng, shareOrDownload } from "../report-image.js";
 import { multLabel } from "../star-rules.js";
+import { openCum } from "../cumulative.js";
 
 const LS_STAFF = "thidua-v2-staff";
-let st = null;
+let st = null, nav = null;
+const MEDIA = [["posts", "📣 Số lần truyền thông trong ngày"], ["line", "💬 Số lần báo cáo Line truyền thông"]];
+const needMedia = () => !isHidden("report.media");
 
-export async function render(view) {
+export async function render(view, params, ctx) {
+  nav = ctx?.go || null;
   const own = S.me.staff_id;
   let staffId = isManager() ? (localStorage.getItem(LS_STAFF) || own || visibleStaff()[0]?.id) : own;
   if (isManager() && staffId && !staffById(staffId)) staffId = visibleStaff()[0]?.id;
-  st = { date: vnToday(), staffId, form: null, inputs: {}, comps: {}, preview: null, busy: false, extra: "", extraStars: "", revenue: "", revenueOld: null };
+  st = { date: vnToday(), staffId, form: null, inputs: {}, comps: {}, preview: null, busy: false, extra: "", extraStars: "", revenue: "", revenueOld: null, media: { posts: "", line: "" }, mediaOld: null, todo: [] };
 
   if (!staffId) {
     view.innerHTML = `<div class="banner warn"><div><b>Tài khoản chưa gắn mã nhân viên</b>Nhờ chủ quản gắn mã NV cho email ${esc(S.me.email)} trong Quản lý → Phân quyền.</div></div>`;
@@ -29,7 +33,7 @@ export async function render(view) {
   $("#rStaff")?.addEventListener("change", (e) => { st.staffId = e.target.value; localStorage.setItem(LS_STAFF, st.staffId); load(); });
   await load();
   if (isManager()) loadMissing();
-  const off = onChange((what) => { if (what === "results") { if (!st.busy) refreshQuiet(); if (isManager()) loadMissing(); } if (what === "locked") refreshQuiet(); });
+  const off = onChange((what) => { if (what === "results") { if (!st.busy) refreshQuiet(); if (isManager()) loadMissing(); } if (what === "locked") refreshQuiet(); if (what === "cv" || what === "score") refreshTodo(); });
   return () => off();
 }
 
@@ -57,6 +61,11 @@ async function refreshQuiet() {
   try { st.form = await rpc("report_form", { p_staff: st.staffId, p_date: st.date }); drawHead(); } catch { /* bỏ qua */ }
 }
 
+async function refreshTodo() {
+  if (!$("#todoCard") || st.busy) return;
+  try { st.todo = await rpc("todo_list", { p_staff: st.staffId, p_date: st.date }); drawTodo(); } catch { /* bỏ qua */ }
+}
+
 async function load() {
   const body = $("#rBody"); if (!body) return;
   body.innerHTML = `<div class="empty">Đang tải bảng môn…</div>`;
@@ -69,6 +78,13 @@ async function load() {
   st.extra = p?.content || ""; st.extraStars = p ? String(p.stars) : "";
   const { data: rv } = await sb.from("revenue_entries").select("amount").eq("staff_id", st.staffId).eq("entry_date", st.date).eq("kind", "daily");
   st.revenueOld = rv?.[0]?.amount ?? null; st.revenue = st.revenueOld == null ? "" : String(+st.revenueOld);
+  const [md, td] = await Promise.all([
+    sb.from("media_reports").select("posts,line_reports").eq("staff_id", st.staffId).eq("report_date", st.date).then((r) => r.data || []).catch(() => []),
+    rpc("todo_list", { p_staff: st.staffId, p_date: st.date }).catch(() => []),
+  ]);
+  st.mediaOld = md[0] ? { posts: md[0].posts, line: md[0].line_reports } : null;
+  st.media = st.mediaOld ? { posts: String(st.mediaOld.posts), line: String(st.mediaOld.line) } : { posts: "", line: "" };
+  st.todo = Array.isArray(td) ? td : [];
   if (!$("#rBody")) return; // đã rời trang
   drawBody();
   if (ex.length) runPreview();
@@ -122,6 +138,10 @@ function drawBody() {
     ${needRev() ? `<div class="card rev-card" style="margin-top:12px" id="revCard"><div class="card-h"><h3>💰 Doanh thu quy đổi trong ca <span class="req">* bắt buộc</span></h3></div>
       <label class="rev-in"><span>DT QĐ ngày ${dm(st.date)} <span class="muted">(${esc(setting("REVENUE_UNIT", ""))})</span></span><input id="xRev" type="number" step="any" min="0" inputmode="decimal" enterkeyhint="done" value="${esc(st.revenue)}" placeholder="Nhập số, không bán được ghi 0"></label>
       <p class="tiny muted" style="margin:6px 0 0">Tính vào điểm xếp hạng (lũy kế tháng).</p></div>` : ""}
+    ${needMedia() ? `<div class="card media-card" style="margin-top:12px" id="mediaCard"><div class="card-h"><h3>📣 Báo cáo truyền thông ngày</h3><span class="tiny muted">chọn số, không có chọn 0</span></div>
+      ${MEDIA.map(([k, l]) => `<div class="media-row"><span>${l}</span><div class="media-pick" data-mk="${k}">${[0, 1, 2, 3].map((n) => `<button type="button" data-mv="${n}" class="${st.media[k] === String(n) ? "on" : ""}">${n}</button>`).join("")}
+        <input type="number" min="0" max="99" step="1" inputmode="numeric" data-mi="${k}" placeholder="Khác" value="${Number(st.media[k]) > 3 ? esc(st.media[k]) : ""}" class="${Number(st.media[k]) > 3 ? "on" : ""}"></div></div>`).join("")}</div>` : ""}
+    <div id="todoCard"></div>
     <div class="card" style="margin-top:12px" ${isHidden("report.extra") ? "hidden" : ""}>
       <div class="card-h"><h3>🎁 Bán thêm ngoài danh mục thi đua <span class="muted small">(chờ quản lý duyệt)</span></h3></div>
       <div class="fields"><label style="grid-column:span 2">Sản phẩm / nội dung<input id="xItem" value="${esc(st.extra)}" placeholder="VD: Bán thêm 1 tủ lạnh Inverter"></label>
@@ -129,7 +149,7 @@ function drawBody() {
       ${f.proposal && f.proposal.status !== "Chờ duyệt" ? `<p class="small muted" style="margin:8px 0 0">Đề xuất ngày này đã được xử lý: <b>${esc(f.proposal.status)}</b> (${fmt(f.proposal.stars)}⭐).</p>` : ""}
     </div>
     <div class="sumbar" id="rSum"></div>` : `<div class="banner warn"><div><b>Nhân viên chưa có môn thi đua</b>Chủ quản thêm môn trong Quản lý → Môn thi đua.</div></div>`}`;
-  drawHead();
+  drawHead(); drawTodo();
   if (!f.items.length) return;
   drawRows(); drawSum();
   const rows = $("#rRows");
@@ -147,6 +167,35 @@ function drawBody() {
   $("#xItem").oninput = (e) => { st.extra = e.target.value; };
   $("#xRev")?.addEventListener("input", (e) => { st.revenue = e.target.value; $("#revCard")?.classList.remove("miss"); drawSum(); });
   $("#xStars").oninput = (e) => { st.extraStars = e.target.value; };
+  $("#mediaCard")?.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-mv]"); if (!b) return; const k = b.closest("[data-mk]").dataset.mk;
+    st.media[k] = b.dataset.mv; drawMedia(k);
+  });
+  $("#mediaCard")?.addEventListener("input", (e) => {
+    const i = e.target.closest("[data-mi]"); if (!i) return; const k = i.dataset.mi;
+    st.media[k] = i.value === "" ? "" : String(Math.max(0, Math.floor(Number(i.value) || 0))); drawMedia(k, true);
+  });
+}
+function drawMedia(k, typing = false) {
+  const box = $(`#mediaCard [data-mk="${k}"]`); if (!box) return;
+  box.querySelectorAll("[data-mv]").forEach((b) => b.classList.toggle("on", b.dataset.mv === st.media[k]));
+  const inp = box.querySelector("[data-mi]"); inp.classList.toggle("on", Number(st.media[k]) > 3);
+  if (!typing && Number(st.media[k]) <= 3) inp.value = "";
+}
+// Việc cần làm / sắp tới (todo_list) — bấm để mở đúng chỗ
+const LV = { bad: 0, warn: 1, info: 2 };
+function drawTodo() {
+  const el = $("#todoCard"); if (!el) return;
+  const list = [...(st.todo || [])].sort((a, b) => (LV[a.lv] ?? 3) - (LV[b.lv] ?? 3));
+  el.innerHTML = `<div class="card todo-card" style="margin-top:12px"><div class="card-h"><h3>📌 Việc cần làm & lịch sắp tới</h3>${list.length ? `<span class="pill ${list.some((t) => t.lv === "bad") ? "bad" : list.some((t) => t.lv === "warn") ? "warn" : "info"}">${list.length}</span>` : ""}</div>
+    ${list.length ? `<div class="todo-list">${list.map((t, i) => `<button type="button" class="todo-i ${esc(t.lv)}" data-td="${i}" ${t.go ? "" : "disabled"}><span class="todo-ic">${esc(t.icon)}</span><span class="grow"><b>${esc(t.t)}</b>${t.d ? `<small>${esc(t.d)}</small>` : ""}</span>${t.go ? "<span class=\"todo-go\">›</span>" : ""}</button>`).join("")}</div>`
+      : `<p class="small ok-t" style="margin:0">✅ Không còn việc nào cần làm — tốt lắm!</p>`}</div>`;
+  el.onclick = (e) => {
+    const b = e.target.closest("[data-td]"); if (!b) return; const t = list[Number(b.dataset.td)]; if (!t?.go) return;
+    if (t.go === "cum") return openCum(st.staffId, () => load());
+    if (t.go.startsWith("cv:")) { try { localStorage.setItem("thidua-v2-cv", t.go.slice(3)); } catch { /* bỏ qua */ } return nav?.("cv"); }
+    nav?.(t.go);
+  };
 }
 
 const schedule = debounce(() => runPreview(), 350);
@@ -243,7 +292,7 @@ async function submit(reason = null) {
       if (v?.reason) return submit(v.reason);
       btn.disabled = false; return;
     }
-    await saveRevenue();
+    await saveRevenue(); await saveMedia();
     if (res.status === "pending") { toast("✅ " + res.message, 4000); st.busy = false; btn.disabled = false; return; }
     st.busy = false;
     const hot = await rpc("check_hot_bonus", { p_staff: st.staffId, p_date: st.date }).catch(() => null);
@@ -259,6 +308,16 @@ async function saveRevenue() {
   catch (e) { toast("Chưa lưu được doanh thu: " + errMsg(e), 4500); }
 }
 
+async function saveMedia() {
+  if (!needMedia() || (st.media.posts === "" && st.media.line === "")) return;
+  const p = Number(st.media.posts) || 0, l = Number(st.media.line) || 0;
+  if (st.mediaOld && st.mediaOld.posts === p && st.mediaOld.line === l) return;
+  try { await rpc("save_media", { p_staff: st.staffId, p_date: st.date, p_posts: p, p_line: l }); st.mediaOld = { posts: p, line: l }; }
+  catch (e) { toast("Chưa lưu được báo cáo truyền thông: " + errMsg(e), 4500); }
+}
+const mediaText = () => (st.media.posts !== "" || st.media.line !== "" ? `📣 Truyền thông: ${Number(st.media.posts) || 0} lần · Báo cáo Line: ${Number(st.media.line) || 0} lần` : "");
+const todoText = () => (st.todo || []).filter((t) => t.lv !== "info").map((t) => `📌 ${t.t}${t.d ? ` (${t.d})` : ""}`);
+
 async function showDone(res) {
   const s = staffById(st.staffId) || {};
   const items = res.rows.filter((r) => !["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation));
@@ -270,6 +329,7 @@ async function showDone(res) {
     ...res.rows.filter((r) => ["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)).map((r) => `⚠️ ${r.itemName}: ${sign(r.starChange)}⭐`),
     st.revenue !== "" ? `💰 DT QĐ: ${fmt(Number(st.revenue), 2)} ${setting("REVENUE_UNIT", "")}` : "",
     st.extra.trim() ? `🎁 Bán thêm: ${st.extra.trim()} (đề xuất ${fmt(Number(st.extraStars) || 0)}⭐)` : "",
+    mediaText(), ...todoText(),
   ].filter(Boolean).join("\n");
   const imgRows = items.map((r) => ({ name: r.itemName, actual: r.actual, target: r.target, rate: r.rate, star: r.starChange, status: r.status, comp: r.compensation, streak: r.streak, needed: r.needed }));
   const late = res.rows.filter((r) => ["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)).map((r) => ({ name: r.itemName, star: r.starChange }));
@@ -295,7 +355,9 @@ async function imageBlob(rows, late, dayChange, total, fresh = false) {
   return reportPng({ store: setting("STORE_NAME", "") || "Thi Đua & BXH", name: s.name || st.staffId, id: st.staffId, dept: s.dept || "", date: st.date, dateLabel: `${dow(st.date)} ${dmy(st.date)}`,
     updatedAt: !fresh && ex ? new Date(ex.submitted_at) : new Date(), prevDay: lastDay || null,
     rows, late, dayChange, total, totalBefore: total - dayChange, okCount: rows.filter((r) => r.status === "Về số").length,
-    revenue: st.revenue !== "" ? Number(st.revenue) : null, unit: setting("REVENUE_UNIT", ""), extra: st.extra.trim(), extraStars: Number(st.extraStars) || 0 });
+    revenue: st.revenue !== "" ? Number(st.revenue) : null, unit: setting("REVENUE_UNIT", ""), extra: st.extra.trim(), extraStars: Number(st.extraStars) || 0,
+    media: needMedia() && (st.media.posts !== "" || st.media.line !== "") ? { posts: Number(st.media.posts) || 0, line: Number(st.media.line) || 0 } : null,
+    todo: (st.todo || []).slice().sort((a, b) => (LV[a.lv] ?? 3) - (LV[b.lv] ?? 3)) });
 }
 async function exportImage(rows, late, dayChange, total) {
   const blob = await imageBlob(rows, late, dayChange, total);

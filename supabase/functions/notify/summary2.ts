@@ -124,3 +124,14 @@ export function cumMsg(store: string, date: string, asof: string, staff: Staff[]
   L.push(todo.length ? `⏳ Chưa cập nhật (${todo.length}/${staff.length}): ${todo.map((x) => esc(short(x.name))).join(", ")}` : `✅ Tất cả ${staff.length} NV đã cập nhật`);
   return L.join("\n");
 }
+
+// Thứ 6: nhắc hạn đăng ký bận/OFF tuần sau (sau giờ hạn NV không tự đăng ký được)
+export function busyDeadlineMsg(store: string, date: string, mon: string, hm: string, rows: any[], names: Map<string, string>) {
+  const L = [`🗓️ <b>HẠN ĐĂNG KÝ BẬN / OFF TUẦN SAU · ${hm} hôm nay (${dow(date)} ${dm(date)})</b>`, esc(store), "",
+    `Tuần ${dm(mon)} → ${dm(new Date(Date.parse(mon + "T00:00:00Z") + 6 * 864e5).toISOString().slice(0, 10))}: ai bận / OFF đăng ký trên tool (CV → Lịch bận) trước ${hm}. Sau hạn phải nhờ quản lý.`];
+  const by = new Map<string, string[]>();
+  for (const r of rows) { const n = names.get(r.staff_id); if (!n) continue; const k = r.busy_date; by.set(k, [...(by.get(k) || []), `${short(n)}${r.type === "OFF" ? " (OFF)" : ""}`]); }
+  if (by.size) { L.push("", "<b>Đã đăng ký:</b>"); [...by.keys()].sort().forEach((d) => L.push(`• ${dow(d)} ${dm(d)}: ${esc(by.get(d)!.join(", "))}`)); }
+  else L.push("", "Chưa ai đăng ký ngày nào.");
+  return L.join("\n");
+}

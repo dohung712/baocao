@@ -2,7 +2,7 @@
 //  - mode "tick": lịch pg_cron gọi 5 phút/lần (xác thực bằng x-cron-secret), tự gửi khi tới giờ
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
-import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyMsg, rsMsg, serviceMsg } from "./summary2.ts";
+import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyDeadlineMsg, busyMsg, rsMsg, serviceMsg } from "./summary2.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -64,6 +64,7 @@ export const ITEMS: Record<string, { label: string; freq: string; time: string; 
   revenue: { label: "Doanh thu QĐ lũy kế", freq: "daily", time: "22:40" },
   score: { label: "Bảng điểm xếp hạng", freq: "weekly", time: "22:50", dow: 0 },
   tiktok: { label: "TikTok (ngày hạn T3, T6)", freq: "due", time: "20:00" },
+  busydl: { label: "Nhắc hạn đăng ký bận/OFF tuần sau (T6)", freq: "weekly", time: "20:00", dow: 5, on: true },
   cum: { label: "Nhắc cập nhật lũy kế tuần (thứ 2)", freq: "weekly", time: "10:00", dow: 1, on: true },
   cleanam: { label: "Nhắc vệ sinh đầu ngày (người trực + khu vực)", freq: "daily", time: "08:30", on: true },
   clean: { label: "Vệ sinh (cuối ngày: ảnh, khu vực chưa xong)", freq: "daily", time: "21:00" },
@@ -114,6 +115,11 @@ async function compose(kind: string, date: string, cfg: Record<string, any>): Pr
       overdue.set(x.name, list);
     }
     return { text: tiktokMsg(store, date, staff, subs, due, overdue), period: date };
+  }
+  if (kind === "busydl") {
+    const mon = addDays(date, 8 - (new Date(date + "T00:00:00Z").getUTCDay() || 7));
+    const rows = await rest(`busy?select=busy_date,staff_id,type&busy_date=gte.${mon}&busy_date=lte.${addDays(mon, 6)}`);
+    return { text: busyDeadlineMsg(store, date, mon, String(cfg.BUSY_DEADLINE_HM || "22:00"), rows, names), period: date };
   }
   if (kind === "cum") {
     const asof = addDays(date, -1), month = asof.slice(0, 8) + "01";

@@ -1,5 +1,5 @@
 // Trang CV: TikTok, Vệ sinh, Lịch bận, Roadshow, Thống kê
-import { $, $$, esc, fmt, toast, modal, confirmBox, vnToday, vnHM, addDays, dmy, dm, dow, monthGrid, ymOf, shiftMonth, monthLabel, shortName, norm, copyText, download, csv } from "../ui.js";
+import { $, $$, esc, fmt, toast, modal, confirmBox, vnToday, vnHM, addDays, weekStart, dmy, dm, dow, monthGrid, ymOf, shiftMonth, monthLabel, shortName, norm, copyText, download, csv } from "../ui.js";
 import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg, isHidden } from "../store.js";
 import { uploadAll, removeAll, fillPhotos } from "../photos.js";
 import { parseSchedule } from "../lib-hrm.js";
@@ -184,6 +184,8 @@ async function busy(body) {
   const bz = $("#bzBody");
   if (busySub === "hrm") return busyHrm(bz);
   bz.innerHTML = `<div class="card"><div class="card-h"><h2>📅 Lịch bận việc / OFF</h2><span class="small muted">Thứ 2–6 tối đa ${max} người/ngày · Thứ 7, CN không giới hạn · chỉ quản lý xoá</span></div>
+    ${setting("BUSY_LOCK_ENABLED", true) === true || setting("BUSY_LOCK_ENABLED", true) === "true" ? (() => { const hm = setting("BUSY_DEADLINE_HM", "22:00"), mon = weekStart(today), fri = addDays(mon, 4), passed = today > fri || (today === fri && vnHM() >= hm), dl = passed ? addDays(fri, 7) : fri;
+      return `<div class="banner ${passed ? "info" : "warn"}"><div><b>⏰ Hạn đăng ký bận/OFF tuần ${dmy(addDays(dl, 3)).slice(0, 5)}–${dmy(addDays(dl, 9)).slice(0, 5)}: ${esc(hm)} thứ 6 ${dmy(dl).slice(0, 5)}</b>Sau hạn nhân viên không tự đăng ký được cho tuần đó — nhờ quản lý đăng ký hộ.</div></div>`; })() : ""}
     ${calNav()}
     ${monthGrid(ym, (d) => { const l = on(d); return l.map((b) => `<span class="tag ${b.type === "OFF" ? "bad" : "warn"}">${b.type === "OFF" ? "OFF" : "B"} ${esc(shortName(name(b.staff_id)))}${b.shifts?.length ? " · C" + b.shifts.join(",") : ""}</span>`).join("") + (isWk(d) && l.length >= max ? `<span class="tag bad">🔒 Đủ ${max}</span>` : d >= today ? `<span class="free">+ Còn trống</span>` : ""); }, { cls: (d) => isWk(d) && on(d).length >= max ? "full" : "" })}
     <div class="legend"><span>B = Bận việc (C = ca bận)</span><span>OFF = Nghỉ</span><span>🔒 Đủ người</span></div></div>`;
