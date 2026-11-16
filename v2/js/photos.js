@@ -1,13 +1,26 @@
 // Ảnh báo cáo: nén trên máy trước khi tải lên, lấy link xem cho ảnh mới (Supabase), ảnh bản PRO (cf_…) và ảnh Google Drive bản cũ
 import { sb } from "./store.js";
 
+// Giải mã ảnh: ưu tiên createImageBitmap (đúng chiều ảnh, ít tốn RAM), dự phòng thẻ <img>
+async function decode(file) {
+  if (window.createImageBitmap) { try { return { src: await createImageBitmap(file, { imageOrientation: "from-image" }), done() {} }; } catch { /* thử cách khác */ } }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Không đọc được ảnh")); i.src = url; });
+    return { src: img, done() { URL.revokeObjectURL(url); } };
+  } catch (e) { URL.revokeObjectURL(url); throw e; }
+}
 export async function compress(file, max = 1600, quality = 0.82) {
-  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Không đọc được ảnh")); i.src = URL.createObjectURL(file); });
-  const k = Math.min(1, max / Math.max(img.width, img.height));
-  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-  URL.revokeObjectURL(img.src);
-  return await new Promise((res) => c.toBlob(res, "image/jpeg", quality));
+  if (file && file.ready) return file;            // đã nén sẵn lúc chọn ảnh
+  const { src, done } = await decode(file);
+  const w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+  const k = Math.min(1, max / Math.max(w, h));
+  const c = document.createElement("canvas"); c.width = Math.round(w * k); c.height = Math.round(h * k);
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  src.close?.(); done();
+  const blob = await new Promise((res) => c.toBlob(res, "image/jpeg", quality));
+  if (!blob) throw new Error("Không nén được ảnh");
+  blob.ready = true; return blob;
 }
 
 // Tải nhiều ảnh lên, trả về mã ảnh dạng "v2:<đường dẫn>"

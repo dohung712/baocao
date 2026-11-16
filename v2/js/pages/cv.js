@@ -1,7 +1,7 @@
 // Trang CV: TikTok, Vệ sinh, Lịch bận, Roadshow, Thống kê
 import { $, $$, esc, fmt, toast, modal, confirmBox, vnToday, vnHM, addDays, weekStart, dmy, dm, dow, monthGrid, ymOf, shiftMonth, monthLabel, shortName, norm, copyText, download, csv } from "../ui.js";
 import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg, isHidden } from "../store.js";
-import { uploadAll, removeAll, fillPhotos } from "../photos.js";
+import { uploadAll, removeAll, fillPhotos, compress } from "../photos.js";
 import { parseSchedule } from "../lib-hrm.js";
 import { fund } from "./cv-fund.js";
 import { tasks, pendingCount } from "./cv-tasks.js";
@@ -49,9 +49,19 @@ async function draw(quiet = false) {
 }
 const err = (e) => toast(errMsg(e), 4500);
 function tabBadge() { const b = $('#cvTabs [data-t="tasks"]'), n = pendingCount(); if (b) b.innerHTML = "📋 Việc" + (n ? ` <b class="badge">${n}</b>` : ""); }
-const files = (inputs) => inputs.map((i) => i.files?.[0]).filter(Boolean);
+const files = (inputs) => inputs.map((i) => i._blob || i.files?.[0]).filter(Boolean);
 function pickerHtml(labels, name = "ph") { return `<div class="pick">${labels.map((l, i) => `<label>${esc(l)}<input type="file" accept="image/*" capture="environment" data-${name}="${i}"></label>`).join("")}</div>`; }
-function bindPicker(box) { box.querySelectorAll('.pick input[type=file]').forEach((inp) => inp.onchange = () => { const f = inp.files[0]; const lb = inp.closest("label"); lb.querySelector("img")?.remove(); if (f) { const im = document.createElement("img"); im.src = URL.createObjectURL(f); lb.appendChild(im); } }); }
+// Chọn ảnh xong là đọc + nén NGAY vào bộ nhớ (điện thoại Android hay làm mất file tạm của ô chụp ảnh nếu để lâu mới đọc)
+function bindPicker(box) {
+  box.querySelectorAll('.pick input[type=file]').forEach((inp) => inp.onchange = async () => {
+    const f = inp.files[0], lb = inp.closest("label"); inp._blob = null; lb.querySelector("img")?.remove();
+    if (!f) return;
+    try {
+      const blob = await compress(f); inp._blob = blob;
+      const im = document.createElement("img"); im.src = URL.createObjectURL(blob); lb.appendChild(im);
+    } catch (x) { inp.value = ""; toast("Ảnh này không đọc được, hãy chụp / chọn lại", 4500); }
+  });
+}
 
 // =================== TikTok ===================
 const dueDates = (from, to) => { const o = []; if (!from || !to || from > to) return o; for (let d = from; d <= to; d = addDays(d, 1)) { const w = new Date(d + "T00:00:00Z").getUTCDay(); if (w === 2 || w === 5) o.push(d); } return o; };
