@@ -481,3 +481,59 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 .it-bulk{gap:6px;flex-wrap:wrap;margin:6px 0 8px}
 #itRows tr.dirty td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
 #itRows input.ro{background:var(--bg);color:var(--muted)}
+
+/* F2q ⚡ Môn & sao — chỉnh nhanh theo bộ phận */
+.it-view{margin-bottom:12px}
+.qtbl th.qh{text-align:center;min-width:156px;vertical-align:top}
+.qh-act{display:flex;gap:4px;justify-content:center;margin-top:5px}
+.qh-act .btn.small{padding:2px 8px;font-size:11px;font-weight:500}
+.qtbl th.qn,.qtbl td.qn{position:sticky;left:0;z-index:1;background:var(--card);min-width:140px;max-width:220px}
+.qtbl td.qn b{font-weight:600}
+.qtbl td.qc{vertical-align:top;min-width:156px;transition:background .15s}
+.qc-top{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;min-height:24px}
+.qv{display:flex;align-items:center;gap:3px}
+.qv input{width:66px;text-align:right;padding:5px 6px;font-variant-numeric:tabular-nums}
+.qv .pos,.banner b.pos{color:var(--ok);font-weight:700}
+.qv .neg,.banner b.neg{color:var(--bad);font-weight:700}
+.qc-note{min-height:15px;margin-top:3px;color:var(--muted)}
+.qtbl td.qc.inh .qv input{font-style:italic;color:var(--muted);border-style:dashed}
+.qtbl td.qc.zero .qc-note{color:var(--info);font-weight:600}
+.qtbl td.qc.zero .qv input[data-f=penalty]{color:var(--info);font-weight:600}
+.qtbl td.qc.off,.qtbl td.qc.na{background:var(--bg)}
+.qtbl td.qc.off .qv,.qtbl td.qc.off .qc-note{opacity:.45}
+.qtbl td.qc.dirty{box-shadow:inset 0 0 0 2px var(--warn)}
+.qreset{border:0;background:none;cursor:pointer;color:var(--info);font-size:16px;line-height:1;padding:2px 4px;border-radius:6px}
+.qreset:hover{background:var(--info-soft)}
+#qState{font-weight:500}
+/* công tắc Bật/Tắt */
+.sw{position:relative;display:inline-block;width:40px;height:22px;flex:none}
+.sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+.sw span{position:absolute;inset:0;border-radius:999px;background:var(--line2);transition:background .15s}
+.sw span::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.sw input:checked+span{background:var(--ok)}
+.sw input:checked+span::after{transform:translateX(18px)}
+.sw input:focus-visible+span{outline:2px solid var(--info);outline-offset:2px}
+
+/* B1 môn không trừ sao: cuối form báo cáo, nền xanh dương nhạt */
+.items-tbl tr.nopen:not(.done) td{background:color-mix(in srgb,var(--info-soft) 75%,transparent)}
+.items-tbl tr.nopen td.item b{color:var(--info)}
+.nopen-tag{color:var(--info);font-weight:600}
+.items-tbl tr.nopen-sep td{background:var(--bg);color:var(--info);font-size:12px;font-weight:600;padding:8px 12px;border-top:2px dashed color-mix(in srgb,var(--info) 45%,transparent)}
+@media (max-width:640px){
+  .items-tbl tr.nopen:not(.done){background:color-mix(in srgb,var(--info-soft) 75%,transparent)}
+  .items-tbl tr.nopen-sep{display:block;padding:8px 12px;background:var(--bg);border-top:2px dashed color-mix(in srgb,var(--info) 45%,transparent)}
+  .items-tbl tr.nopen-sep td{display:block;padding:0;color:var(--info);font-size:12px;font-weight:600}
+}
+
+/* D10 📄 Biên bản vi phạm */
+#vbSum tr.vb-pick{cursor:pointer}
+#vbSum tr.vb-pick:hover td{background:var(--bg)}
+#vbSum tr.sel td{background:var(--bad-soft)}
+.vb-list{display:flex;flex-direction:column;gap:10px}
+.vb-item{border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.vb-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vb-f{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.vb-form{position:relative}
+.vb-prev .ph{position:relative}
+.vb-x{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:12px;line-height:24px;padding:0}
+.vb-req{position:absolute;left:12px;bottom:0;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none}

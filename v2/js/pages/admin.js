@@ -1,5 +1,5 @@
 // Trang Quản lý: duyệt, khoá sổ, nhân sự, môn thi đua, cài đặt, Telegram, phân quyền
-import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml } from "../ui.js";
+import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml, norm, debounce } from "../ui.js";
 import { scoreAdmin, setScoreSub } from "./admin-score.js";
 import { home } from "./admin-home.js";
 import { starCardHtml, bindStarCard, dailyTarget, dailyPct, dailyMin } from "../star-rules.js";
@@ -8,7 +8,7 @@ import { sb, S, rpc, notify, callFn, onChange, isOwner, isManager, loadStaff, lo
 
 const TABS = [
   { id: "home", label: "🏠 Tổng quan" }, { id: "approve", label: "Duyệt" }, { id: "score", label: "Điểm & DT" }, { id: "lock", label: "Khoá sổ" }, { id: "staff", label: "Nhân sự" },
-  { id: "items", label: "Môn & sao thưởng/phạt", owner: true }, { id: "targets", label: "Target NV", owner: true },
+  { id: "items", label: "Môn & sao thưởng/phạt" }, { id: "targets", label: "Target NV", owner: true },
   { id: "accounts", label: "Tài khoản NV", owner: true }, { id: "settings", label: "Cài đặt", owner: true },
   { id: "telegram", label: "Telegram" }, { id: "members", label: "Phân quyền", owner: true }, { id: "audit", label: "Nhật ký", owner: true },
 ];
@@ -155,7 +155,18 @@ async function staff(body) {
 }
 
 // ---------- Môn thi đua ----------
+// Chủ quản chọn giữa ⚡ Chỉnh nhanh (mặc định) và 📋 Bảng chi tiết; quản lý chỉ có Chỉnh nhanh cho bộ phận mình phụ trách
+const viewSwitch = (cur) => isOwner() ? `<div class="subtabs it-view" id="itView"><button type="button" data-iv="quick" class="${cur === "quick" ? "on" : ""}">⚡ Chỉnh nhanh theo bộ phận</button><button type="button" data-iv="detail" class="${cur === "detail" ? "on" : ""}">📋 Bảng chi tiết (thêm/xoá môn, target, X2/X3)</button></div>` : "";
+function bindViewSwitch(body) {
+  $("#itView")?.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-iv]"); if (!b) return;
+    try { localStorage.setItem("thidua-v2-itview", b.dataset.iv); } catch { /* bỏ qua */ }
+    items(body);
+  });
+}
 async function items(body) {
+  let view = "quick"; try { view = localStorage.getItem("thidua-v2-itview") || "quick"; } catch { /* bỏ qua */ }
+  if (!isOwner() || view !== "detail") return itemsQuick(body);
   const stores = ["Chung", ...depts()];
   let F = { ch: "", st: "", q: "" }; try { F = { ...F, ...JSON.parse(localStorage.getItem("thidua-v2-itfilter") || "{}") }; } catch { /* bỏ qua */ }
   const chans = [...new Set([...stores, ...S.items.map((i) => i.store)])];
@@ -170,7 +181,7 @@ async function items(body) {
     return people.length ? { m: 0 } : { m: "" };   // m: 1 môn tháng · 0 ngoài môn tháng (NV không báo cáo) · "" bộ phận chưa giao môn tháng
   };
   if (F.ch && !chans.includes(F.ch)) F.ch = "";
-  body.innerHTML = `${suggestHtml()}<div class="card"><div class="card-h"><h2>📋 Danh mục môn thi đua</h2>
+  body.innerHTML = `${viewSwitch("detail")}${suggestHtml()}<div class="card"><div class="card-h"><h2>📋 Danh mục môn thi đua</h2>
       <div class="row it-filter"><select id="itCh" style="width:auto" title="Lọc theo kênh / bộ phận áp dụng"><option value="">🔎 Tất cả kênh</option>${chans.map((c) => `<option value="${esc(c)}" ${c === F.ch ? "selected" : ""}>${esc(c)} (${S.items.filter((i) => i.store === c).length})</option>`).join("")}</select>
         <select id="itSt" style="width:auto"><option value="">Bật + tắt</option><option value="on" ${F.st === "on" ? "selected" : ""}>Đang bật</option><option value="off" ${F.st === "off" ? "selected" : ""}>Đang tắt</option><option value="month" ${F.st === "month" ? "selected" : ""}>📅 Môn tháng này</option><option value="out" ${F.st === "out" ? "selected" : ""}>Ngoài môn tháng</option></select>
         <input id="itQ" placeholder="Tìm tên môn…" value="${esc(F.q)}" style="width:150px"></div>
@@ -195,7 +206,7 @@ async function items(body) {
       <td><select name="mult" style="width:auto"><option value="">—</option><option value="x2" ${i.is_x2 && !i.is_x3 ? "selected" : ""}>X2</option><option value="x3" ${i.is_x3 ? "selected" : ""}>X3</option></select></td><td><input type="checkbox" name="active" ${i.active !== false ? "checked" : ""}></td>
       <td><button class="btn small ghost danger" data-del type="button">🗑️</button></td></tr>`;
   }
-  bindSuggest(() => items(body));
+  bindSuggest(() => items(body)); bindViewSwitch(body);
   // Lọc theo kênh / trạng thái / tên: chỉ ẩn dòng, "Lưu tất cả" vẫn lưu mọi môn
   const applyFilter = () => {
     const q = F.q.trim().toLowerCase(); let n = 0;
@@ -240,6 +251,103 @@ async function items(body) {
       }
       toast("Đã lưu danh mục môn"); await loadItems(); items(body);
     } catch (x) { err(x); }
+  };
+}
+
+// ⚡ Chỉnh nhanh: mỗi môn 1 dòng, mỗi bộ phận 1 cột (+sao / −sao / Bật). Sửa là tự lưu qua items_quick_save.
+// Ô "theo Chung" = bộ phận chưa có mức riêng; sửa ô đó sẽ tạo mức riêng (↺ để bỏ). Ô "Chưa áp dụng" = bộ phận không có môn này.
+async function itemsQuick(body) {
+  const own = isOwner(), mine = own ? null : (S.me?.stores || []);
+  const hasChung = S.items.some((i) => i.store === "Chung");
+  const deptCols = [...new Set([...depts(), ...(own ? S.items.map((i) => i.store).filter((s) => s !== "Chung") : [])])].sort((a, b) => a.localeCompare(b, "vi"));
+  const cols = [...(own && hasChung ? ["Chung"] : []), ...deptCols.filter((d) => own || mine.includes(d))];
+  let q = ""; try { q = localStorage.getItem("thidua-v2-itq") || ""; } catch { /* bỏ qua */ }
+  const names = () => [...new Map([...S.items].sort((a, b) => a.sort - b.sort || a.id - b.id).map((i) => [i.name, 1])).keys()];
+  const row = (s, n) => S.items.find((i) => i.store === s && i.name === n);
+  const cell = (s, n) => { const r = row(s, n); if (r) return { ...r, src: "own" }; const c = s !== "Chung" && row("Chung", n); return c ? { ...c, src: "inh" } : null; };
+  const sel = (s, n) => `td.qc[data-s="${CSS.escape(s)}"][data-n="${CSS.escape(n)}"]`;
+  const cellHtml = (s, n) => {
+    const c = cell(s, n), off = !c || c.active === false, zero = !!c && Number(c.penalty_star) <= 0;
+    return `<td class="qc ${c ? c.src : "na"}${off ? " off" : ""}${zero ? " zero" : ""}" data-s="${esc(s)}" data-n="${esc(n)}">
+      <div class="qc-top"><label class="sw" title="Bật/Tắt môn này cho ${esc(s)}"><input type="checkbox" data-f="active" ${off ? "" : "checked"} aria-label="Bật ${esc(n)} cho ${esc(s)}"><span></span></label>
+        ${c?.src === "own" && s !== "Chung" && row("Chung", n) ? `<button type="button" class="qreset" data-reset title="Bỏ mức riêng của ${esc(s)}, dùng lại mức Chung">↺</button>` : ""}</div>
+      ${c ? `<div class="qv"><span class="pos">+</span><input type="number" data-f="bonus" min="0" step="10" inputmode="numeric" value="${esc(c.bonus_star)}" aria-label="Sao thưởng ${esc(n)} ${esc(s)}"><span class="neg">−</span><input type="number" data-f="penalty" min="0" step="10" inputmode="numeric" value="${esc(c.penalty_star)}" aria-label="Sao phạt ${esc(n)} ${esc(s)}"></div>
+      <div class="tiny qc-note">${c.src === "inh" ? "theo Chung" : zero ? "không trừ sao" : ""}</div>` : `<div class="tiny muted">Chưa áp dụng · bật để thêm</div>`}</td>`;
+  };
+  body.innerHTML = `${viewSwitch("quick")}${own ? suggestHtml() : ""}<div class="card"><div class="card-h"><h2>⚡ Môn & sao: chỉnh nhanh</h2>
+      <div class="row it-filter"><input id="qQ" placeholder="Tìm tên môn…" value="${esc(q)}" style="width:170px"></div></div>
+    <div class="banner info"><div><b>Sửa là tự lưu.</b> Mỗi cột là 1 bộ phận: <b class="pos">+</b> sao thưởng · <b class="neg">−</b> sao phạt · công tắc <b>Bật/Tắt</b> (tắt = môn không hiện trong báo cáo của bộ phận đó).<br>
+      • Sao phạt <b>0</b> = <b>không trừ sao</b>: môn nằm cuối form báo cáo, tô màu xanh.${hasChung ? "<br>• Ô chữ nghiêng “theo Chung” = bộ phận đang dùng mức của cột Chung; sửa ô đó sẽ tạo mức riêng, bấm ↺ để quay về mức Chung." : ""}
+      ${own ? "<br>• Thêm/xoá môn, target, X2/X3, thứ tự: chuyển sang <b>📋 Bảng chi tiết</b>." : `<br>• Bạn chỉnh được: <b>${esc(cols.join(", ") || "chưa được giao bộ phận nào")}</b>.`}</div></div>
+    ${cols.length ? `<div class="row it-bulk"><span class="small muted" id="qCount"></span><span class="grow"></span><span class="small" id="qState"></span></div>
+    <div class="tbl-wrap"><table class="qtbl nosort"><thead><tr><th class="qn">Môn</th>${cols.map((s) => `<th class="qh">${esc(s)}<div class="qh-act"><button type="button" class="btn small" data-col="${esc(s)}" data-on="1">Bật hết</button><button type="button" class="btn small ghost" data-col="${esc(s)}" data-on="0">Tắt hết</button></div></th>`).join("")}</tr></thead>
+      <tbody id="qRows"></tbody></table></div>` : `<div class="banner warn"><div>Tài khoản của bạn chưa được giao bộ phận nào. Nhờ chủ quản cấp ở Quản lý → Phân quyền.</div></div>`}</div>`;
+  if (own) bindSuggest(() => items(body));
+  bindViewSwitch(body);
+  if (!cols.length) return;
+  const setState = (t) => { const el = $("#qState"); if (el) el.textContent = t; };
+  const drawRows = () => {
+    const f = norm(q), all = names(), list = all.filter((n) => !f || norm(n).includes(f));
+    $("#qRows").innerHTML = list.map((n) => { const a = S.items.find((i) => i.name === n);
+      return `<tr><td class="qn"><b>${esc(n)}</b>${a?.is_x3 ? ' <span class="pill star">X3</span>' : a?.is_x2 ? ' <span class="pill star">X2</span>' : ""}</td>${cols.map((s) => cellHtml(s, n)).join("")}</tr>`; }).join("")
+      || `<tr><td colspan="${cols.length + 1}" class="muted">Không có môn phù hợp.</td></tr>`;
+    $("#qCount").textContent = `Đang hiện ${list.length}/${all.length} môn`;
+  };
+  // Hàng chờ lưu: gom các ô vừa sửa, lưu 1 lần; ô đang gõ không bị vẽ lại để không mất chữ
+  const pending = new Map(); let saving = false;
+  const refreshCell = (s, n) => {
+    const td = $(sel(s, n)); if (!td) return;
+    const a = document.activeElement, typing = td.contains(a) && a.matches("input[type=number]");
+    if (typing) { const c = cell(s, n); td.classList.remove("dirty", "inh", "na", "own"); td.classList.add(c ? c.src : "na"); td.classList.toggle("zero", !!c && Number(c.penalty_star) <= 0); return; }
+    const refocus = td.contains(a) ? a.dataset.f : null;
+    td.outerHTML = cellHtml(s, n);
+    if (refocus) $(sel(s, n))?.querySelector(`[data-f=${refocus}]`)?.focus();
+  };
+  const flush = async () => {
+    if (saving || !pending.size) return;
+    saving = true; const changes = [...pending.values()]; pending.clear(); setState("⏳ Đang lưu…");
+    try {
+      const r = await rpc("items_quick_save", { p_changes: changes });
+      await loadItems(); if (!$("#qRows")) return;
+      changes.forEach((c) => refreshCell(c.store, c.name)); setState("✅ " + r.message);
+    } catch (e) {
+      err(e); await loadItems().catch(() => {}); if (!$("#qRows")) return;
+      changes.forEach((c) => refreshCell(c.store, c.name)); setState("⚠️ Chưa lưu được, đã hiện lại số cũ");
+    } finally { saving = false; if (pending.size) flush(); }
+  };
+  const later = debounce(flush, 700);
+  const queue = (td) => {
+    const g = (f) => td.querySelector(`[data-f=${f}]`), ch = { store: td.dataset.s, name: td.dataset.n, active: g("active").checked };
+    const b = g("bonus"), p = g("penalty");
+    if (b && b.value !== "" && Number(b.value) >= 0) ch.bonus = Math.round(Number(b.value));
+    if (p && p.value !== "" && Number(p.value) >= 0) ch.penalty = Math.round(Number(p.value));
+    pending.set(ch.store + "|" + ch.name, ch); td.classList.add("dirty"); setState("✏️ Chưa lưu…");
+  };
+  drawRows();
+  $("#qQ").oninput = debounce((e) => { q = e.target.value; try { localStorage.setItem("thidua-v2-itq", q); } catch { /* bỏ qua */ } drawRows(); }, 200);
+  const rows = $("#qRows");
+  rows.addEventListener("input", (e) => { const td = e.target.closest("td.qc"); if (td && e.target.matches("input[type=number]")) { queue(td); later(); } });
+  // Rời ô đã lưu xong → vẽ lại ô (cập nhật ghi chú "theo Chung"/"không trừ sao", nút ↺)
+  rows.addEventListener("focusout", (e) => {
+    const td = e.target.closest("td.qc"); if (!td) return;
+    setTimeout(() => { if (td.isConnected && !td.contains(document.activeElement) && !pending.has(td.dataset.s + "|" + td.dataset.n) && !saving) refreshCell(td.dataset.s, td.dataset.n); }, 0);
+  });
+  rows.addEventListener("change", (e) => {
+    const td = e.target.closest("td.qc"); if (!td || !e.target.matches("[data-f=active]")) return;
+    td.classList.toggle("off", !e.target.checked); queue(td); flush();
+  });
+  rows.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-reset]"); if (!b) return; const td = b.closest("td.qc");
+    pending.set(td.dataset.s + "|" + td.dataset.n, { store: td.dataset.s, name: td.dataset.n, reset: true }); flush();
+  });
+  body.querySelector(".qtbl thead").onclick = (e) => {
+    const b = e.target.closest("[data-col]"); if (!b) return; const on = b.dataset.on === "1"; let n = 0;
+    // "Bật hết" chỉ bật môn bộ phận đang có (không tự thêm môn "Chưa áp dụng")
+    $$(`#qRows td.qc:not(.na)[data-s="${CSS.escape(b.dataset.col)}"]`).forEach((td) => {
+      const c = td.querySelector("[data-f=active]"); if (c.checked === on) return;
+      c.checked = on; td.classList.toggle("off", !on); queue(td); n++;
+    });
+    if (n) flush(); else toast(on ? "Các môn đang hiện đã bật hết" : "Các môn đang hiện đã tắt hết");
   };
 }
 
@@ -327,7 +435,7 @@ const NUM_SETTINGS = [
 ];
 export const FEATURES = [
   ["report", "📝 Báo cáo"], ["report.revenue", "· Ô doanh thu QĐ trong báo cáo"], ["report.media", "· Báo cáo truyền thông ngày"], ["report.extra", "· Bán thêm ngoài thi đua"],
-  ["cv", "🗂️ CV"], ["cv.tasks", "· Việc (triển khai, giao việc)"], ["cv.tiktok", "· TikTok"], ["cv.clean", "· Vệ sinh"], ["cv.busy", "· Lịch bận"], ["cv.rs", "· Roadshow"], ["cv.fund", "· Quỹ thu chi"], ["cv.stats", "· Thống kê"],
+  ["cv", "🗂️ CV"], ["cv.tasks", "· Việc (triển khai, giao việc)"], ["cv.tiktok", "· TikTok"], ["cv.clean", "· Vệ sinh"], ["cv.busy", "· Lịch bận"], ["cv.rs", "· Roadshow"], ["cv.vio", "· Biên bản vi phạm"], ["cv.fund", "· Quỹ thu chi"], ["cv.stats", "· Thống kê"],
   ["score", "🏅 Xếp hạng điểm"], ["me", "👤 Của tôi"], ["ranking", "🏆 BXH sao"], ["history", "🕒 Lịch sử"], ["store", "🏢 Siêu thị"], ["assistant", "🤖 Trợ lý"], ["rules", "📖 Rule"], ["admin", "⚙️ Quản lý (với quản lý)"],
 ];
 async function settings(body) {

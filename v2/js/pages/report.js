@@ -56,9 +56,13 @@ async function loadMissing() {
   $$("[data-pick]", el).forEach((b) => b.onclick = () => { st.staffId = b.dataset.pick; st.date = today; $("#rDate").value = today; const s = $("#rStaff"); if (s) s.value = st.staffId; localStorage.setItem(LS_STAFF, st.staffId); load(); });
 }
 
+// Môn không trừ sao (sao phạt 0 hoặc quy tắc "Không trừ sao") xuống cuối, các môn khác giữ nguyên thứ tự.
+// Máy chủ ghép kết quả theo tên môn nên đổi thứ tự hiển thị không ảnh hưởng cách tính.
+const orderItems = (f) => { f?.items?.sort((a, b) => (a.noPen ? 1 : 0) - (b.noPen ? 1 : 0)); return f; };
+
 async function refreshQuiet() {
   if (!$("#rHead")) return;
-  try { st.form = await rpc("report_form", { p_staff: st.staffId, p_date: st.date }); drawHead(); } catch { /* bỏ qua */ }
+  try { st.form = orderItems(await rpc("report_form", { p_staff: st.staffId, p_date: st.date })); drawHead(); } catch { /* bỏ qua */ }
 }
 
 async function refreshTodo() {
@@ -69,7 +73,7 @@ async function refreshTodo() {
 async function load() {
   const body = $("#rBody"); if (!body) return;
   body.innerHTML = `<div class="empty">Đang tải bảng môn…</div>`;
-  try { st.form = await rpc("report_form", { p_staff: st.staffId, p_date: st.date }); }
+  try { st.form = orderItems(await rpc("report_form", { p_staff: st.staffId, p_date: st.date })); }
   catch (e) { body.innerHTML = `<div class="banner bad"><div><b>Không tải được</b>${esc(errMsg(e))}</div></div>`; return; }
   st.inputs = {}; st.comps = {}; st.preview = null;
   const ex = st.form.existing || [];
@@ -237,14 +241,15 @@ function drawRows() {
   const prev = st.preview?.rows || [];
   const byName = Object.fromEntries(prev.map((r) => [r.itemName, r]));
   const focused = document.activeElement?.dataset?.item;
+  const firstNoPen = st.form.items.findIndex((x) => x.noPen), anyPen = st.form.items.some((x) => !x.noPen);
   $("#rRows").innerHTML = st.form.items.map((it, i) => {
     const pr = byName[it.name];
     const done = pr ? pr.status === "Về số" : Number(st.inputs[it.name]) >= Number(it.target);
     const streak = pr?.streak ?? it.streak;
     const v = st.inputs[it.name], has = v !== undefined && v !== "", pct = has ? Math.min(100, Math.round(Number(v) / (Number(it.target) || 1) * 100)) : 0, ml = multLabel(it);
-    return `<tr class="${done && has ? "done" : ""}" data-row="${esc(it.name)}">
+    return `${i === firstNoPen && anyPen ? `<tr class="nopen-sep"><td colspan="5">🛡️ Môn không trừ sao</td></tr>` : ""}<tr class="${done && has ? "done" : ""}${it.noPen ? " nopen" : ""}" data-row="${esc(it.name)}">
       <td class="c-no muted">${i + 1}</td>
-      <td class="item"><b>${esc(it.name)}${ml ? ` <span class="pill star">${ml}</span>` : ""}</b><small>+${fmt(it.bonus)} / −${fmt(it.penalty)}⭐</small></td>
+      <td class="item"><b>${esc(it.name)}${ml ? ` <span class="pill star">${ml}</span>` : ""}</b><small>${it.noPen ? `+${fmt(it.bonus)}⭐ · <span class="nopen-tag">không trừ sao</span>` : `+${fmt(it.bonus)} / −${fmt(it.penalty)}⭐`}</small></td>
       <td class="c-act num"><input class="actual" inputmode="decimal" enterkeyhint="next" type="number" min="0" step="any" data-item="${esc(it.name)}" value="${esc(v ?? "")}" placeholder="0" aria-label="Thực đạt ${esc(it.name)}"></td>
       <td class="c-meta small">Target <b>${fmt(it.target, 2)}</b> · Chuỗi <span class="streak ${streak >= 3 ? "hot" : ""}">${streak}</span><span class="mbar"><i style="width:${pct}%"></i></span></td>
       <td class="c-res" data-res="${esc(it.name)}">${resultCell(it, pr)}</td></tr>`;

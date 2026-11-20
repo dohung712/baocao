@@ -41,8 +41,8 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 ### B. Báo cáo ngày và sao
 | Mã | Chức năng | Trên web | File giao diện | Hàm / bảng SQL |
 |---|---|---|---|---|
-| B1 | Form báo cáo ngày: môn, target, chuỗi. **Môn để trống = 0** (không bắt buộc nhập) | Báo cáo | `pages/report.js` (itemsFilled, payload) | `report_form`, `_staff_items` |
-| B2 | Danh sách môn của NV: **= môn thi đua tháng** nếu đã giao (trừ môn bị bỏ tích **Bật** ở Môn & Sao — chọn dòng môn của bộ phận NV trước, rồi Chung), chưa giao thì theo bộ phận / môn riêng | (tự động) | n/a | `_staff_items`, `_work_days` |
+| B1 | Form báo cáo ngày: môn, target, chuỗi. **Môn để trống = 0** (không bắt buộc nhập). **Môn không trừ sao** (sao phạt 0 hoặc quy tắc `noPen` ở ITEM_RULES) nằm **cuối form**, nền xanh dương, dòng ngăn "🛡️ Môn không trừ sao" (máy chủ ghép theo tên môn nên đổi thứ tự không ảnh hưởng tính sao) | Báo cáo | `pages/report.js` (orderItems, drawRows, itemsFilled, payload) | `report_form` (cờ `noPen`), `_item_no_pen`, `_staff_items` |
+| B2 | Danh sách môn của NV: **= môn thi đua tháng** nếu đã giao (trừ môn bị bỏ tích **Bật** ở Môn & Sao — chọn dòng môn của bộ phận NV trước, rồi Chung; dòng được chọn tắt thì ẩn, migration 0890 sửa cả nhánh chưa giao môn tháng), chưa giao thì theo bộ phận / môn riêng | (tự động) | n/a | `_staff_items`, `_work_days` |
 | B3 | Tính sao: về số/chưa về, x2, chuỗi, tăng ca, trừ sao lũy tiến, phạt nộp trễ | Báo cáo → Xem trước/Nộp | `pages/report.js` | `_compute_report`, `preview_daily_report`, `submit_daily_report`, `_item_streak`, `ITEM_RULES` |
 | B4 | Ô doanh thu QĐ trong ca, **bắt buộc** (không bán ghi 0; ẩn được ở F4) | Báo cáo (cuối form) | `pages/report.js` (#xRev, needRev/revFilled) | `save_revenue`, `revenue_entries` |
 | B4b | **Xuất ảnh báo cáo** (PNG) kiểu "BÁO CÁO CHỐT THI ĐUA CA NGÀY": target, thực đạt, %, sao ±, H.QUA (lần báo cáo trước), chuỗi, bù/tăng ca, kỷ luật, bán thêm, DT, tổng kết. Sau khi gửi + nút "🖼️ Ảnh báo cáo" | Báo cáo | `js/report-image.js` (reportPng, shareOrDownload), `pages/report.js` (imageBlob) | n/a |
@@ -66,7 +66,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | C4 | Môn target ngày < 1 thì không trừ sao chuỗi | Tick khi dán target | `pages/admin-score.js` | `import_month_targets` → `ITEM_RULES` (noPen) |
 | C5 | Doanh thu QĐ lũy kế + điều chỉnh có lịch sử | Điểm & DT → Doanh thu | `pages/admin-score.js` (revenue) | `adjust_revenue`, `delete_revenue_adjust` |
 | C6 | Phục vụ (lượt 5★…1★, khiếu nại) | Điểm & DT → Phục vụ; NV tự nhập ở Của tôi | `pages/admin-score.js`, `pages/me.js` | `save_rating`, `delete_rating`, `ratings` |
-| C7 | Vi phạm (−2 điểm/lỗi) | Điểm & DT → Vi phạm | `pages/admin-score.js` | `add_violation`, `delete_violation` |
+| C7 | Vi phạm (−2 điểm/lỗi), hiện giờ + số ảnh biên bản (úp biên bản có ảnh ở D10) | Điểm & DT → Vi phạm | `pages/admin-score.js` | `add_violation` (thêm `p_time`, `p_photos`), `delete_violation` (trả `photos` để dọn Drive) |
 | C8 | Cộng/trừ sao, reset sao, reset chuỗi | Điểm & DT → Sao & reset | `pages/admin-score.js` | `adjust_stars`, `reset_stars`, `reset_streaks`, `star_adjustments` |
 | C9 | Lịch sử điều chỉnh (target, DT, sao, phục vụ, vi phạm) | Điểm & DT → Lịch sử | `pages/admin-score.js` (log) | `score_log` |
 | C10 | **Bảng xếp hạng điểm** DT 40 · Thi đua 40 · Phục vụ 20 − vi phạm. NV thấy cả siêu thị (chỉ điểm; DT & chi tiết môn chỉ của mình, cài đặt `SCORE_SEE_ALL`). Bấm 1 dòng → chi tiết điểm đến từ đâu | Xếp hạng | `pages/score.js` (draw, detail) | `score_board` |
@@ -84,6 +84,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | D8 | Khu vực vệ sinh theo bộ phận (khu vực + người phụ trách / việc theo ca / vị trí & tiêu chí), **chữ đậm**, NV báo "Xong hôm nay", QL thêm/sửa/xoá, chủ quản sửa tiêu chí chung | CV → Vệ sinh (trên lịch) | `pages/cv-zones.js` | bảng `clean_zones`, `clean_zone_checks`; `zone_save`, `zone_delete`, `zone_check`; setting `CLEAN_CRITERIA`. NV gắn theo mã (`staff_ids`, migration 0810); chưa gắn thì đoán theo tên, "Hiếu Linh" tự tách 2 người, "PG SS" tìm trong bộ phận PG |
 | D3 | Lịch bận/OFF + kiểm tra HRM | CV → Lịch bận | `pages/cv.js`, `js/lib-hrm.js` | `busy_*` |
 | D4 | Roadshow | CV → Roadshow | `pages/cv.js` | `rs_*` |
+| D10 | **📄 Biên bản vi phạm**: QL úp biên bản (NV, ngày, giờ, loại lỗi, ghi chú, chụp/chọn 1–10 ảnh, bắt buộc ≥ 1 ảnh khi đã nối Drive) → ảnh nén rồi tải lên Google Drive (thư mục `Bien ban YYYY-MM`) → ghi 1 vi phạm (trừ `VIOLATION_POINTS`). Bảng **số lần vi phạm** theo NV trong tháng (điểm trừ, lần gần nhất có giờ), bấm NV để lọc; danh sách biên bản có ảnh, người lập, thời gian. QL xoá (ghi lý do, ảnh Drive vào thùng rác). Ai thấy gì theo RLS `violations` (`can_see_staff`): chủ quản tất cả, QL theo bộ phận, NV chỉ của mình | CV → 📄 Biên bản | `pages/cv-vio.js`, Edge function `tasks` (upload / delete), `js/photos.js` (compress, fillPhotos) | `violations.v_time`, `violations.photos`, `add_violation`, `delete_violation`; ẩn được ở F4 (`cv.vio`) |
 | D7 | **Việc**: 🔗 Link trang tính (chỉ QL) · ⏰ Việc QL có deadline (QL bấm Hoàn thành + ghi chú) · 📢 Triển khai toàn NV / theo bộ phận (NV bấm "Đã đọc & nắm rõ") · 📌 Giao việc NV (NV bấm "Hoàn thành" + ghi chú). QL dán nội dung + đính kèm ảnh, PDF, Excel, Word, PowerPoint, file nén ≤ 10MB/file (lưu Google Drive qua Apps Script; chữ trong Word/Excel/PowerPoint được đọc bằng `js/lib-office.js` để AI tóm tắt) → ✨ AI tóm tắt (Gemini, lời nhắc + khuôn JSON trong `supabase/functions/tasks/prompt.ts`): **tiêu đề, hạn hoàn tất (+giờ), thời gian áp dụng, nội dung chính (đủ mọi mức %/điều kiện), lưu ý, người hỗ trợ, gợi ý lặp lại / lâu dài**; mẫu chuẩn `supabase/tests/fixtures/task-unipass.*` kiểm tra mỗi lần deploy (`ai_summary_test.mjs`); link trong nội dung hiện thành nút → cảnh báo nếu chọn nhắc lại chưa đúng (cả khi không dùng AI, dò chữ "hằng tuần, quy định…") → tick ⭐ Quan trọng, nhắc lại tuần / tháng / 2 tháng (mỗi kỳ NV xác nhận lại), 📌 Lâu dài. **Việc thời vụ tự ẩn** với NV sau hạn + `TASK_HIDE_GRACE_DAYS` (3) ngày, không có hạn thì sau `TASK_AUTO_HIDE_DAYS` (30) ngày; QL tìm lại bằng ô 🔎. QL xem tiến độ ai đã đọc / hoàn thành lúc nào, copy lời nhắc | CV → 📋 Việc | `pages/cv-tasks.js`, Edge function `tasks` (summarize / upload / delete), `supabase/apps-script/drive-upload.gs` | `tasks`, `task_acks`, `task_save`, `task_set_status`, `task_ack`, `_task_period`, `_task_hide_after`, `can_see_task`; khoá `GEMINI_API_KEY`, `DRIVE_UPLOAD_URL`, `DRIVE_UPLOAD_SECRET` (GitHub Secrets → `set-private.mjs`) |
 | D6 | **Quỹ thu chi** (thay tool quy cũ dùng Firebase): số dư, thu/chi tháng, thêm khoản (mọi thành viên), sửa/xoá (quản lý; người tạo trong 24 giờ), lọc tháng/loại/danh mục/người, thống kê, copy, CSV, nhật ký; danh mục & đối tác (chủ quản). Dữ liệu cũ chép 1 lần bằng GitHub Actions | CV → 💵 Quỹ | `pages/cv-fund.js` | `fund_tx`, `fund_save`, `fund_delete`, `fund_log`, settings `FUND_CATEGORIES`, `FUND_PARTNERS`; `supabase/scripts/import-quy.mjs` |
 | D5 | Thống kê CV theo NV | CV → Thống kê | `pages/cv.js` | (đọc các bảng trên) |
@@ -99,6 +100,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 |---|---|---|---|---|
 | F1 | Nhân sự (thêm, ẩn, bộ phận, môn riêng) | Quản lý → Nhân sự | `pages/admin.js` (staff) | `staff`, `set_staff_total` |
 | F2 | Môn & sao thưởng/phạt, **Nhân sao X2/X3** (chỉ môn đánh dấu). **Lọc theo kênh** (Chung / PG / TGDĐ / Topzone), trạng thái bật/tắt, tên; Bật/Tắt tất cả đang hiện (nhớ bộ lọc, lưu vẫn lưu mọi môn). Nhãn **📅 Môn tháng** (ô Target/ngày khoá, hiện "NV báo cáo: x/ngày" = target tháng ÷ ngày làm × 200%) và **Ngoài môn tháng — NV không báo cáo**; lọc theo 2 nhãn này | Quản lý → Môn & sao | `pages/admin.js` (items) | `items.is_x2`, `items.is_x3`, `_compute_report` |
+| F2q | **⚡ Chỉnh nhanh môn & sao theo bộ phận** (mặc định khi mở Môn & sao): mỗi môn 1 dòng, mỗi bộ phận 1 cột: **+** sao thưởng, **−** sao phạt, công tắc **Bật/Tắt**; sửa là tự lưu (gom 0,7 giây). Ô "theo Chung" (chữ nghiêng) = đang dùng dòng Chung, sửa sẽ tạo mức riêng; ↺ bỏ mức riêng. "Chưa áp dụng" = bộ phận chưa có môn, bật để thêm (chép từ dòng gốc). Bật hết / Tắt hết từng cột (không tự thêm môn chưa áp dụng). Sao phạt 0 = không trừ sao (B1). **Quản lý** dùng được cho bộ phận trong `memberships.stores`; chủ quản thêm cột Chung + chuyển sang **📋 Bảng chi tiết** (F2) | Quản lý → Môn & sao | `pages/admin.js` (itemsQuick, viewSwitch) | `items_quick_save` (ghi `audit_log` ITEMS_QUICK), `items` |
 | F2c | **Gợi ý sao theo kết quả siêu thị**: dán báo cáo (Tổng / %Đạt) → nhóm 🎯 Tập trung 5đ · 🌱 Target thấp 3đ · ⚡ Gần về số (dự kiến 70–100%) 2đ · môn khác 1đ · ✅ Đã về số lũy kế 0 sao, không trừ; 1đ = +100/−50 (sửa được) → Áp dụng / Copy gửi nhóm | Quản lý → Môn & sao (khung đầu) | `pages/admin-suggest.js` | `apply_star_suggestions`, `items.focus/low_target/store_target/store_pct`, setting `STAR_POINTS` |
 | F2b | **Thưởng & trừ sao**: ngưỡng X2/X3, ngày bắt đầu trừ, tăng ca, hệ số lũy tiến + bảng xem trước | Quản lý → Cài đặt (thẻ đầu tiên) | `js/star-rules.js` (dayOutcome, starCardHtml), `pages/admin.js` | settings `STREAK_*`, `PEN_*`, `DOUBLE_/TRIPLE_BONUS_RATE` |
 | F3 | Target/sao riêng từng NV (chỉ còn tác dụng với sao khi NV đã được giao môn tháng) | Quản lý → Target NV | `pages/admin.js` (targets) | `staff_targets` |
@@ -203,43 +205,55 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | Tên | Loại | File:dòng (bản mới nhất) |
 |---|---|---|
 | `_compute_report` | function | 000730_x3_scoreboard.sql:71 |
+| `_cum_tool` | function | 000820_cumulative.sql:62 |
+| `_cum_window` | function | 000820_cumulative.sql:46 |
 | `_daily_target` | function | 000750_daily_target_x2.sql:8 |
 | `_ensure_contest_items` | function | 000720_report_items_from_contest.sql:59 |
+| `_item_measure` | function | 000820_cumulative.sql:38 |
+| `_item_no_pen` | function | 000890_items_quick_violation_docs.sql:51 |
 | `_item_streak` | function | 000200_logic.sql:24 |
+| `_keep_one_owner` | function | 000830_manager_owner.sql:8 |
 | `_manager_scope` | function | 000200_logic.sql:271 |
 | `_member_for_staff` | function | 000600_modules.sql:125 |
 | `_require_member` | function | 000200_logic.sql:189 |
-| `_staff_items` | function | 000750_daily_target_x2.sql:15 |
+| `_staff_items` | function | 000890_items_quick_violation_docs.sql:7 |
 | `_task_hide_after` | function | 000790_tasks_notes_autohide.sql:12 |
 | `_task_period` | function | 000780_tasks.sql:35 |
 | `_work_days` | function | 000720_report_items_from_contest.sql:9 |
-| `add_violation` | function | 000700_scoring.sql:310 |
+| `add_violation` | function | 000890_items_quick_violation_docs.sql:140 |
 | `adjust_revenue` | function | 000700_scoring.sql:229 |
 | `adjust_stars` | function | 000700_scoring.sql:157 |
 | `app_member` | function | 000100_core.sql:139 |
 | `apply_star_suggestions` | function | 000740_star_suggest_hot.sql:57 |
+| `busy_deadline` | function | 000840_report_todo_media.sql:41 |
 | `busy_delete` | function | 000600_modules.sql:262 |
-| `busy_register` | function | 000600_modules.sql:246 |
+| `busy_register` | function | 000840_report_todo_media.sql:47 |
 | `can_see_staff` | function | 000100_core.sql:150 |
 | `can_see_task` | function | 000790_tasks_notes_autohide.sql:22 |
 | `check_hot_bonus` | function | 000740_star_suggest_hot.sql:112 |
 | `clean_delete` | function | 000600_modules.sql:232 |
+| `clean_reassign` | function | 000810_zone_staff_map.sql:26 |
 | `clean_register` | function | 000600_modules.sql:206 |
 | `clean_report` | function | 000600_modules.sql:218 |
+| `cum_form` | function | 000820_cumulative.sql:70 |
+| `cum_submit` | function | 000820_cumulative.sql:91 |
+| `cum_unlock` | function | 000820_cumulative.sql:133 |
 | `current_streaks` | function | 000400_notify.sql:6 |
 | `delete_rating` | function | 000700_scoring.sql:297 |
 | `delete_report_day` | function | 000200_logic.sql:284 |
 | `delete_result` | function | 000200_logic.sql:296 |
 | `delete_revenue_adjust` | function | 000700_scoring.sql:241 |
-| `delete_violation` | function | 000700_scoring.sql:321 |
+| `delete_violation` | function | 000890_items_quick_violation_docs.sql:162 |
 | `fund_delete` | function | 000770_fund.sql:62 |
 | `fund_log` | function | 000770_fund.sql:79 |
 | `fund_save` | function | 000770_fund.sql:32 |
+| `hook_before_user_created` | function | 000880_security_hardening.sql:7 |
 | `import_month_targets` | function | 000720_report_items_from_contest.sql:274 |
 | `is_after_cutoff` | function | 000100_core.sql:175 |
 | `is_manager` | function | 000100_core.sql:146 |
 | `is_member` | function | 000100_core.sql:148 |
 | `is_owner` | function | 000100_core.sql:144 |
+| `items_quick_save` | function | 000890_items_quick_violation_docs.sql:93 |
 | `leaderboard` | function | 000200_logic.sql:368 |
 | `legacy_date` | function | 000300_migrate.sql:8 |
 | `legacy_hm` | function | 000610_update_logic.sql:6 |
@@ -250,7 +264,9 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `migrate_legacy_all` | function | 000700_scoring.sql:420 |
 | `preview_daily_report` | function | 000200_logic.sql:198 |
 | `private_setting_status` | function | 000780_tasks.sql:153 |
-| `report_form` | function | 000730_x3_scoreboard.sql:49 |
+| `rank_reward_close` | function | 000870_rank_reward.sql:50 |
+| `rank_reward_preview` | function | 000870_rank_reward.sql:23 |
+| `report_form` | function | 000890_items_quick_violation_docs.sql:69 |
 | `reset_stars` | function | 000700_scoring.sql:175 |
 | `reset_streak` | function | 000200_logic.sql:308 |
 | `reset_streaks` | function | 000700_scoring.sql:192 |
@@ -262,11 +278,14 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `rs_register` | function | 000600_modules.sql:278 |
 | `rs_report` | function | 000600_modules.sql:306 |
 | `rs_valid_time` | function | 000600_modules.sql:273 |
+| `save_media` | function | 000840_report_todo_media.sql:26 |
 | `save_monthly_target` | function | 000720_report_items_from_contest.sql:75 |
+| `save_notify_items` | function | 000800_clean_zones_notify.sql:97 |
 | `save_rating` | function | 000700_scoring.sql:273 |
 | `save_revenue` | function | 000700_scoring.sql:208 |
 | `save_store_contest` | function | 000200_logic.sql:346 |
-| `score_board` | function | 000730_x3_scoreboard.sql:224 |
+| `score_board` | function | 000820_cumulative.sql:173 |
+| `set_item_measure` | function | 000820_cumulative.sql:149 |
 | `set_private_setting` | function | 000780_tasks.sql:143 |
 | `set_staff_total` | function | 000700_scoring.sql:141 |
 | `setting_num` | function | 000100_core.sql:160 |
@@ -279,20 +298,30 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `tiktok_due_dates` | function | 000600_modules.sql:136 |
 | `tiktok_manage` | function | 000600_modules.sql:189 |
 | `tiktok_submit` | function | 000760_tiktok_early.sql:10 |
+| `todo_list` | function | 000840_report_todo_media.sql:71 |
 | `vn_hm` | function | 000600_modules.sql:122 |
 | `vn_now` | function | 000100_core.sql:7 |
 | `vn_today` | function | 000100_core.sql:9 |
+| `zone_check` | function | 000800_clean_zones_notify.sql:78 |
+| `zone_delete` | function | 000800_clean_zones_notify.sql:67 |
+| `zone_save` | function | 000800_clean_zones_notify.sql:45 |
 | `busy` | table | 000600_modules.sql:47 |
+| `clean_zone_checks` | table | 000800_clean_zones_notify.sql:16 |
+| `clean_zones` | table | 000800_clean_zones_notify.sql:5 |
 | `cleaning` | table | 000600_modules.sql:33 |
 | `daily_results` | table | 000100_core.sql:40 |
 | `extra_proposals` | table | 000100_core.sql:58 |
 | `fund_tx` | table | 000770_fund.sql:5 |
 | `hot_bonuses` | table | 000740_star_suggest_hot.sql:91 |
+| `item_adjustments` | table | 000820_cumulative.sql:19 |
+| `item_measures` | table | 000820_cumulative.sql:7 |
 | `items` | table | 000100_core.sql:26 |
 | `locked_dates` | table | 000100_core.sql:86 |
+| `media_reports` | table | 000840_report_todo_media.sql:7 |
 | `monthly_targets` | table | 000700_scoring.sql:32 |
 | `notify_log` | table | 000100_core.sql:114 |
 | `private_settings` | table | 000100_core.sql:80 |
+| `rank_rewards` | table | 000870_rank_reward.sql:8 |
 | `ratings` | table | 000700_scoring.sql:42 |
 | `revenue_entries` | table | 000700_scoring.sql:18 |
 | `roadshow` | table | 000600_modules.sql:59 |
@@ -308,8 +337,6 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `tiktok_submissions` | table | 000600_modules.sql:17 |
 | `violations` | table | 000700_scoring.sql:57 |
 | `staff_stars` | view | 000700_scoring.sql:129 |
-
----
 
 ## 9. Mẫu yêu cầu sửa (nhanh và ít token nhất)
 ```

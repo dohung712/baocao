@@ -1,6 +1,6 @@
 // Quản lý → Điểm & DT: target tháng, doanh thu, phục vụ, vi phạm, chỉnh sao / reset, lịch sử điều chỉnh
 import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, addDays, weekStart, monthStart, dmy, dm, dow, shiftMonth, monthLabel } from "../ui.js";
-import { sb, S, rpc, isOwner, visibleStaff, staffById, setting, errMsg, loadStaff, loadItems, loadSettings, depts } from "../store.js";
+import { sb, S, rpc, callFn, isOwner, visibleStaff, staffById, setting, errMsg, loadStaff, loadItems, loadSettings, depts } from "../store.js";
 import { parseTargetReport } from "../lib-targets.js";
 import { openCum, MEASURE, measureTag } from "../cumulative.js";
 import { dailyTarget, dailyPct, dailyMin } from "../star-rules.js";
@@ -291,12 +291,18 @@ async function violations(el) {
       <form id="vf" class="fields"><label>Nhân viên<select name="s">${visibleStaff().map((s) => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("")}</select></label>
       <label>Ngày<input name="d" type="date" value="${vnToday()}" max="${vnToday()}"></label><label>Loại lỗi<select name="t">${types.map((t) => `<option>${esc(t)}</option>`).join("")}</select></label>
       <label>Ghi chú<input name="n" placeholder="Mô tả ngắn"></label><div style="align-self:end"><button class="btn primary" type="submit">Ghi lỗi</button></div></form></div>
-    <div class="card"><div class="card-h"><h3>Vi phạm tháng ${ym.slice(5)} (${rows.length})</h3></div>${rows.length ? `<div class="tbl-wrap"><table><tbody>${rows.map((v) => `<tr><td>${dmy(v.v_date)}</td><td><b>${esc(staffById(v.staff_id)?.name || v.staff_id)}</b></td><td>${esc(v.type)}${v.note ? `<div class="tiny muted">${esc(v.note)}</div>` : ""}</td><td class="num neg">−${fmt(v.points)}</td><td class="tiny muted">${esc(v.created_by || "")}</td><td class="num"><button class="btn small ghost danger" data-del="${v.id}" type="button">Xoá</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Không có vi phạm.</p>`}</div>`;
+    <div class="card"><div class="card-h"><h3>Vi phạm tháng ${ym.slice(5)} (${rows.length})</h3></div>${rows.length ? `<div class="tbl-wrap"><table><tbody>${rows.map((v) => `<tr><td>${dmy(v.v_date)}${v.v_time ? ` <span class="tiny muted">${esc(String(v.v_time).slice(0, 5))}</span>` : ""}</td><td><b>${esc(staffById(v.staff_id)?.name || v.staff_id)}</b></td><td>${esc(v.type)}${v.note ? `<div class="tiny muted">${esc(v.note)}</div>` : ""}${(v.photos || []).length ? `<div class="tiny">📷 ${v.photos.length} ảnh biên bản · xem ở CV → 📄 Biên bản</div>` : ""}</td><td class="num neg">−${fmt(v.points)}</td><td class="tiny muted">${esc(v.created_by || "")}</td><td class="num"><button class="btn small ghost danger" data-del="${v.id}" type="button">Xoá</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Không có vi phạm.</p>`}</div>`;
   $("#vf").onsubmit = async (e) => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); try { const r = await rpc("add_violation", { p_staff: f.s, p_date: f.d, p_type: f.t, p_note: f.n }); toast(r.message); violations(el); } catch (x) { err(x); } };
   el.onclick = async (e) => {
     const x = e.target.closest("[data-del]"); if (!x) return;
     const v = await modal(`<h3>Xoá lỗi vi phạm?</h3><form><label>Lý do xoá<input name="r" required minlength="3"></label></form><div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn danger" data-v="submit">Xoá</button></div>`);
-    if (!v) return; try { await rpc("delete_violation", { p_id: Number(x.dataset.del), p_reason: v.r }); toast("Đã xoá"); violations(el); } catch (z) { err(z); }
+    if (!v) return;
+    try {
+      const r = await rpc("delete_violation", { p_id: Number(x.dataset.del), p_reason: v.r });
+      const ids = (r?.photos || []).filter((t) => /^[\w-]{20,}$/.test(t));   // ảnh biên bản trên Drive → thùng rác
+      if (ids.length) callFn("tasks", { mode: "delete", ids }).catch(() => {});
+      toast("Đã xoá"); violations(el);
+    } catch (z) { err(z); }
   };
 }
 

@@ -1,4 +1,4 @@
-// Trang CV: TikTok, Vệ sinh, Lịch bận, Roadshow, Thống kê
+// Trang CV: Việc, TikTok, Vệ sinh, Lịch bận, Roadshow, Biên bản vi phạm (cv-vio.js), Quỹ, Thống kê
 import { $, $$, esc, fmt, toast, modal, confirmBox, vnToday, vnHM, addDays, weekStart, dmy, dm, dow, monthGrid, ymOf, shiftMonth, monthLabel, shortName, norm, copyText, download, csv } from "../ui.js";
 import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg, isHidden } from "../store.js";
 import { uploadAll, removeAll, fillPhotos, compress } from "../photos.js";
@@ -6,8 +6,9 @@ import { parseSchedule } from "../lib-hrm.js";
 import { fund } from "./cv-fund.js";
 import { tasks, pendingCount } from "./cv-tasks.js";
 import { zones } from "./cv-zones.js";
+import { violationDocs } from "./cv-vio.js";
 
-const TABS = [["tasks", "📋 Việc"], ["tiktok", "📱 TikTok"], ["clean", "🧹 Vệ sinh"], ["busy", "📅 Lịch bận"], ["rs", "🏃 Roadshow"], ["fund", "💵 Quỹ"], ["stats", "📊 Thống kê"]];
+const TABS = [["tasks", "📋 Việc"], ["tiktok", "📱 TikTok"], ["clean", "🧹 Vệ sinh"], ["busy", "📅 Lịch bận"], ["rs", "🏃 Roadshow"], ["vio", "📄 Biên bản"], ["fund", "💵 Quỹ"], ["stats", "📊 Thống kê"]];
 const RS_TIMES = (() => { const o = []; const add = (a, b) => { for (let t = a; t <= b; t += 30) o.push(String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0")); }; add(360, 630); add(900, 1080); return o; })();
 let tab = localStorage.getItem("thidua-v2-cv") || "tasks", ym = ymOf(vnToday()), root;
 const D = { tiktok: [], clean: [], busy: [], rs: [] };
@@ -44,7 +45,7 @@ async function draw(quiet = false) {
   $("#cvTabs").innerHTML = tabs.map(([id, l]) => `<button type="button" data-t="${id}" class="${id === tab ? "on" : ""}">${l}</button>`).join("");
   const body = $("#cvBody"); body.onclick = null;
   if (!quiet) body.innerHTML = `<div class="empty">Đang tải…</div>`;
-  try { await ({ tiktok, clean, busy, rs, stats, fund: (b) => fund(b, quiet), tasks: (b) => tasks(b, quiet) })[tab](body); if (tab === "tasks") tabBadge(); }
+  try { await ({ tiktok, clean, busy, rs, stats, vio: violationDocs, fund: (b) => fund(b, quiet), tasks: (b) => tasks(b, quiet) })[tab](body); if (tab === "tasks") tabBadge(); }
   catch (e) { body.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const err = (e) => toast(errMsg(e), 4500);
