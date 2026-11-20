@@ -595,7 +595,9 @@ async function telegram(body) {
         <td class="num"><button class="btn small" data-pv="${it.id}" type="button">Xem trước</button> <button class="btn small" data-sd="${it.id}" type="button">Gửi ngay</button></td></tr>`; }).join("")}
       </tbody></table></div><p class="small muted" style="margin-top:8px">Mỗi đầu mục gửi 1 tin riêng vào nhóm, đúng giờ đã đặt (chậm tối đa ~5 phút). Quản lý đổi được giờ, tần suất (hằng ngày / hằng tuần / chọn thứ) rồi bấm <b>Lưu lịch gửi</b>. Máy chủ kiểm tra 5 phút/lần, không cần mở web; đầu mục không có nội dung trong ngày sẽ tự bỏ qua.</p></div>
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>👀 Xem trước & gửi ngay</h2></div>
-      <div class="row"><select id="tgKind" style="width:auto">${items.map((it) => `<option value="${it.id}">${esc(it.label)}</option>`).join("")}</select><input type="date" id="tgDate" value="${vnToday()}" max="${vnToday()}" style="width:auto">
+      <div class="row"><select id="tgKind" style="width:auto">${items.map((it) => `<option value="${it.id}">${esc(it.label)}</option>`).join("")}</select>
+        <label class="inline small" id="tgFromWrap" hidden title="Bỏ trống = từ lần gửi báo cáo quỹ trước">Từ ngày <input type="date" id="tgFrom" max="${vnToday()}" style="width:auto"></label>
+        <span class="small muted" id="tgToLbl" hidden>đến</span><input type="date" id="tgDate" value="${vnToday()}" max="${vnToday()}" style="width:auto">
         <button class="btn" id="tgPreview" type="button">Xem trước</button><button class="btn primary" id="tgSend" type="button">📤 Gửi ngay</button>${own ? `<button class="btn" id="tgTest" type="button">Gửi tin thử</button>` : ""}</div>
       <div id="tgOut" style="margin-top:10px"></div></div>
     <div class="card"><div class="card-h"><h3>Nhật ký gửi</h3></div>${logs?.length ? `<div class="tbl-wrap"><table><tbody>${logs.map((l) => `<tr><td class="small">${new Date(l.sent_at).toLocaleString("vi-VN")}</td><td>${esc(l.kind)}</td><td>${esc(l.period)}</td><td>${l.ok ? '<span class="pill ok">OK</span>' : '<span class="pill bad">Lỗi</span>'}</td><td class="small muted">${esc(l.detail || "")}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Chưa gửi lần nào.</p>`}</div>`;
@@ -628,9 +630,12 @@ async function telegram(body) {
     }
     await loadSettings(); toast("Đã lưu lịch gửi Telegram");
   }));
-  const html2text = (h) => h.replace(/<\/?b>/g, "");
-  $("#tgPreview").onclick = (e) => run(e.target, async () => { const r = await notify({ mode: "preview", kind: $("#tgKind").value, date: $("#tgDate").value }); $("#tgOut").innerHTML = `<pre class="preview">${esc(html2text(r.text))}</pre>`; });
-  $("#tgSend").onclick = (e) => run(e.target, async () => { if (!(await confirmBox("Gửi ngay?", "Gửi tóm tắt tới các nơi nhận đã cài.", "Gửi"))) return; const r = await notify({ mode: "send", kind: $("#tgKind").value, date: $("#tgDate").value }); toast(r.message); telegram(body); });
+  const html2text = (h) => String(h || "").replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");   // bỏ thẻ Telegram (b, i) và giải mã ký tự
+  // Quỹ thu chi: chọn khoảng ngày (Từ ngày bỏ trống = từ lần gửi quỹ trước)
+  const fundOpt = () => ($("#tgKind").value === "fund" ? { from: $("#tgFrom").value || "" } : {});
+  $("#tgKind").onchange = () => { const f = $("#tgKind").value === "fund"; $("#tgFromWrap").hidden = !f; $("#tgToLbl").hidden = !f; };
+  $("#tgPreview").onclick = (e) => run(e.target, async () => { const r = await notify({ mode: "preview", kind: $("#tgKind").value, date: $("#tgDate").value, ...fundOpt() }); $("#tgOut").innerHTML = `<pre class="preview">${esc(html2text(r.text))}</pre>`; });
+  $("#tgSend").onclick = (e) => run(e.target, async () => { if (!(await confirmBox("Gửi ngay?", "Gửi tóm tắt tới các nơi nhận đã cài.", "Gửi"))) return; const r = await notify({ mode: "send", kind: $("#tgKind").value, date: $("#tgDate").value, ...fundOpt() }); toast(r.message); telegram(body); });
   body.addEventListener("click", (e) => {
     const pv = e.target.closest("[data-pv]"), sd = e.target.closest("[data-sd]");
     if (pv) run(pv, async () => { const r = await notify({ mode: "preview", kind: pv.dataset.pv, date: vnToday() }); $("#tgOut").innerHTML = `<pre class="preview">${esc(html2text(r.text))}</pre>`; $("#tgOut").scrollIntoView({ behavior: "smooth", block: "center" }); });

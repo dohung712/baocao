@@ -19,6 +19,7 @@ export const FEATURES = [
   { c: "C10", t: "Bảng xếp hạng điểm (copy gửi nhóm)", w: "Xếp hạng", k: "xếp hạng điểm bxh copy", go: { page: "score" } },
   { c: "C11", t: "Xem số liệu của 1 nhân viên", w: "Của tôi → chọn nhân viên", k: "cá nhân nhân viên chi tiết", go: { page: "me" } },
   { c: "F2c", t: "Dán kết quả siêu thị → gợi ý sao từng môn", w: "Môn & sao → khung Gợi ý", k: "gợi ý sao kết quả siêu thị tập trung target thấp gần về số push", go: { tab: "items", focus: "#sgBox" }, owner: true },
+  { c: "E3", t: "Báo cáo quỹ thu chi qua Telegram (lịch tự động / chọn khoảng ngày)", w: "Quản lý → Telegram (đầu mục Quỹ) · CV → 💵 Quỹ → 📤 Báo cáo Telegram", k: "quỹ thu chi telegram báo cáo tuần số dư chi tiêu", go: { page: "cv", cv: "fund" } },
   { c: "B15", t: "Báo cáo PG: số lượng, doanh thu, bán kèm, lũy kế (PG không tính sao)", w: "Báo cáo → chọn NV PG · Tổng quan → 📦 PG tháng · Cài đặt → món bán kèm PG", k: "pg báo cáo số lượng doanh thu bán kèm vas bảo hiểm psdp tai nghe sim lũy kế", go: { page: "report" } },
   { c: "H1b", t: "Tổng quan tháng: báo cáo hôm nay, DT so target từng bộ phận, vi phạm, âm sao, dẫn đầu / cần hỗ trợ", w: "Quản lý → 🏠 Tổng quan (khung đầu)", k: "tổng quan kpi doanh thu tiến độ bộ phận dẫn đầu cần hỗ trợ âm sao dashboard", go: { tab: "home", focus: ".hm-kpi" } },
   { c: "F1b", t: "Hồ sơ 360° nhân viên: báo cáo, nộp trễ, vi phạm, tài khoản, lịch OFF", w: "Quản lý → Nhân sự → bấm tên", k: "hồ sơ nhân viên 360 nhân sự báo cáo nộp trễ vi phạm tài khoản âm sao", go: { tab: "staff" } },

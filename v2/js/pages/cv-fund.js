@@ -1,6 +1,6 @@
 // CV → 💵 Quỹ: thu chi của siêu thị (thay tool quỹ cũ dùng Firebase). Mọi thành viên xem & thêm; quản lý sửa/xoá (người tạo được sửa trong 24 giờ).
 import { $, $$, esc, toast, modal, confirmBox, vnToday, dmy, dm, ymOf, shiftMonth, monthLabel, download, csv, copyText } from "../ui.js";
-import { sb, S, rpc, isManager, isOwner, visibleStaff, staffById, setting, errMsg } from "../store.js";
+import { sb, S, rpc, notify, isManager, isOwner, visibleStaff, staffById, setting, errMsg } from "../store.js";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 const short = (n) => { const v = Math.abs(Number(n) || 0), s = n < 0 ? "−" : ""; return v >= 1e9 ? s + (v / 1e9).toLocaleString("vi-VN", { maximumFractionDigits: 2 }) + " tỷ" : v >= 1e6 ? s + (v / 1e6).toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + " tr" : s + v.toLocaleString("vi-VN") + "đ"; };
@@ -24,6 +24,7 @@ function draw(body) {
   const mon = all.filter((r) => r.tx_date.slice(0, 7) === F.ym), mThu = sum(mon, "thu"), mChi = sum(mon, "chi");
   const meName = staffById(S.me.staff_id)?.name || "";
   body.innerHTML = `
+    ${isManager() ? `<div class="row fund-tele"><span class="small muted grow">Telegram tự gửi báo cáo quỹ theo lịch ở Quản lý → Telegram (mặc định thứ 2, 09:00).</span><button class="btn small" id="fTele" type="button">📤 Báo cáo Telegram</button></div>` : ""}
     <div class="fund-kpi">
       <div class="fk du"><small>Số dư quỹ</small><b>${money(thu - chi)}</b><span>Thu ${short(thu)} · Chi ${short(chi)}</span></div>
       <div class="fk thu"><small>Thu ${monthLabel(F.ym)}</small><b>+${short(mThu)}</b></div>
@@ -65,6 +66,7 @@ function draw(body) {
   $("#fDate").value = e?.tx_date || vnToday(); $("#fCat").value = e?.category || ""; $("#fPerson").value = e ? e.person : meName; $("#fNote").value = e?.note || "";
   if (e?.category && !cats().includes(e.category)) $("#fCat").insertAdjacentHTML("beforeend", `<option selected>${esc(e.category)}</option>`);
   $("#fKind").onclick = (ev) => { const b = ev.target.closest("[data-k]"); if (b) setKind(b.dataset.k); };
+  $("#fTele")?.addEventListener("click", () => teleReport());
   $("#fAmt").oninput = (ev) => { const d = ev.target.value.replace(/\D/g, ""); ev.target.value = d ? Number(d).toLocaleString("vi-VN") : ""; };
   $$(".fund-quick [data-amt]").forEach((b) => b.onclick = () => { $("#fAmt").value = Number(b.dataset.amt).toLocaleString("vi-VN"); });
   $("#fCancel")?.addEventListener("click", () => { F.edit = null; draw(body); });
@@ -139,3 +141,29 @@ function months12(all) {
   return `<div class="fund-bars">${out.filter(([, a, b]) => a || b).map(([m, a, b]) => `<div class="fb"><span class="fb-n">${m.slice(5)}/${m.slice(0, 4)}</span><span class="fb-b two"><i class="thu" style="width:${(a / max) * 100}%"></i><i class="chi" style="width:${(b / max) * 100}%"></i></span><b><span class="pos">+${short(a)}</span> <span class="neg">−${short(b)}</span></b></div>`).join("") || '<p class="muted small">Chưa có.</p>'}</div>`;
 }
 function addDaysStr(d, n) { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); }
+
+// 📤 Báo cáo quỹ qua Telegram (quản lý): chọn khoảng ngày → xem trước → gửi vào nhóm (Edge Function notify, đầu mục "fund")
+async function teleReport() {
+  const today = vnToday(); let ref = {};
+  const v = await modal(`<h3>📤 Báo cáo quỹ qua Telegram</h3>
+    <p class="small muted" style="margin:-4px 0 10px">Chi tiết từng khoản thu / chi, tổng thu, tổng chi, số dư. <b>Từ ngày</b> bỏ trống = từ lần gửi báo cáo quỹ trước.</p>
+    <div class="fields"><label>Từ ngày<input type="date" id="ftFrom" max="${today}"></label><label>Đến ngày<input type="date" id="ftTo" value="${today}" max="${today}"></label></div>
+    <div class="row" style="gap:6px;margin-top:8px"><button type="button" class="chip" data-ft="7">7 ngày</button><button type="button" class="chip" data-ft="m">Từ đầu tháng</button><button type="button" class="chip" data-ft="">Từ lần gửi trước</button></div>
+    <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn primary" data-v="preview">👀 Xem trước</button></div>`, {
+    onOpen(box) {
+      ref = { from: box.querySelector("#ftFrom"), to: box.querySelector("#ftTo") };
+      box.querySelectorAll("[data-ft]").forEach((b) => b.onclick = () => { const to = ref.to.value || today, k = b.dataset.ft;
+        ref.from.value = k === "7" ? addDaysStr(to, -6) : k === "m" ? to.slice(0, 8) + "01" : ""; });
+    },
+  });
+  if (v !== "preview") return;
+  const args = { kind: "fund", date: ref.to.value || today, from: ref.from.value || "" };
+  try {
+    const r = await notify({ mode: "preview", ...args });
+    const text = String(r.text || "").replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+    const go = await modal(`<h3>👀 Xem trước báo cáo quỹ</h3><pre class="preview" style="max-height:55vh;overflow:auto;white-space:pre-wrap">${esc(text)}</pre>
+      <div class="modal-actions"><button class="btn" data-v="cancel">Đóng</button><button class="btn primary" data-v="send">📤 Gửi vào nhóm Telegram</button></div>`);
+    if (go !== "send") return;
+    toast((await notify({ mode: "send", ...args })).message || "Đã gửi");
+  } catch (x) { toast(errMsg(x), 5000); }
+}

@@ -30,6 +30,7 @@ const H = [
   ["#remind", "🔔 Nhắc việc", "Nhắc theo lịch bạn đã đăng ký: trực vệ sinh hôm nay/ngày mai, khu vực vệ sinh chưa báo xong. Bấm Mở để làm, ✕ để ẩn trong ngày."],
   ["#asSub [data-s=rank]", "🏆 Thưởng hạng", "Xếp hạng điểm tháng RIÊNG từng bộ phận, top 5 nhận 4000/3500/3000/2500/2000⭐. Xem đề xuất, bấm Chốt để cộng sao (mỗi NV một lần/tháng).", true],
   [".cum-form", "📈 Cập nhật lũy kế", "Nhập lũy kế THÁNG đến hết hôm qua lấy từ báo cáo công ty. Xem nhãn từng môn: 🔢 Số lượng (số máy/hồ sơ) · 💰 DT quy đổi · 💵 DT thực. Ô trống = giữ nguyên.", true],
+  ["#fTele", "📤 Báo cáo quỹ qua Telegram", "Chọn khoảng ngày (7 ngày, từ đầu tháng, hoặc từ lần gửi trước) → xem trước → gửi chi tiết thu / chi và số dư vào nhóm Telegram. Lịch tự động chỉnh ở Quản lý → Telegram.", true],
   ["#pgChips", "📦 Bán kèm", "Bấm món đã bán kèm (VAS, Bảo hiểm, PSDP, Tai nghe, Sim…) để hiện ô nhập số lượng và doanh thu của món đó. Bấm lại hoặc ✕ để bỏ."],
   [".pg-cum", "📦 Lũy kế tháng", "Tool tự cộng: số đầu kỳ (nếu có) + các ngày đã báo cáo + số đang nhập hôm nay."],
   ["#pgCopy", "📋 Copy tin", "Copy tin báo cáo PG (hôm nay, lũy kế, bán kèm) để dán vào nhóm Zalo."],

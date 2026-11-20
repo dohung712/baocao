@@ -2,7 +2,7 @@
 //  - mode "tick": lịch pg_cron gọi 5 phút/lần (xác thực bằng x-cron-secret), tự gửi khi tới giờ
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
-import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyDeadlineMsg, busyMsg, rsMsg, serviceMsg } from "./summary2.ts";
+import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyDeadlineMsg, busyMsg, rsMsg, serviceMsg, fundMsg } from "./summary2.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -71,6 +71,7 @@ export const ITEMS: Record<string, { label: string; freq: string; time: string; 
   busy: { label: "Lịch bận / OFF ngày mai", freq: "daily", time: "21:30" },
   rs: { label: "Roadshow", freq: "daily", time: "21:30" },
   service: { label: "Phục vụ & vi phạm", freq: "weekly", time: "09:00", dow: 1 },
+  fund: { label: "Quỹ thu chi (chi tiết thu, chi, số dư)", freq: "weekly", time: "09:00", dow: 1, on: true },
 };
 function items(cfg: Record<string, any>) {
   const saved: any[] = Array.isArray(cfg.NOTIFY_ITEMS) ? cfg.NOTIFY_ITEMS : [];
@@ -84,7 +85,7 @@ function items(cfg: Record<string, any>) {
   });
 }
 
-async function compose(kind: string, date: string, cfg: Record<string, any>): Promise<{ text: string | null; period: string }> {
+async function compose(kind: string, date: string, cfg: Record<string, any>, opt: { from?: string } = {}): Promise<{ text: string | null; period: string }> {
   const store = String(cfg.STORE_NAME || "");
   const monthStart = date.slice(0, 8) + "01";
   const wstart = addDays(date, -((new Date(date + "T00:00:00Z").getUTCDay() + 6) % 7));
@@ -93,6 +94,27 @@ async function compose(kind: string, date: string, cfg: Record<string, any>): Pr
     return { text: weeklySummary(ctx, wstart, date, ((new Date(date + "T00:00:00Z").getUTCDay() + 6) % 7) + 1), period: isoWeek(date) };
   }
   if (kind === "daily") { const ctx = await buildCtx(date, date, cfg); return { text: dailySummary(ctx, date), period: date }; }
+  if (kind === "fund") {
+    // Kỳ báo cáo: QL chọn "từ ngày", hoặc từ ngày sau lần gửi quỹ gần nhất (tự động / gửi tay), lần đầu: 7 ngày gần nhất.
+    // Khoản ngày cũ nhưng mới nhập sau lần gửi trước → kèm vào, đánh dấu "ghi bổ sung".
+    let from = /^\d{4}-\d{2}-\d{2}$/.test(String(opt.from || "")) ? String(opt.from) : "", lastAt: string | null = null;
+    if (!from) {
+      const last: any[] = await rest("notify_log?select=sent_at&ok=eq.true&or=" + encodeURIComponent("(kind.eq.fund,and(kind.eq.manual,period.like.fund*))") + "&order=sent_at.desc&limit=1");
+      lastAt = last[0]?.sent_at ?? null;
+      from = lastAt ? addDays(vnParts(new Date(lastAt)).date, 1) : addDays(date, -6);
+    }
+    if (from > date) from = date;
+    if (from < addDays(date, -92)) from = addDays(date, -92);
+    const sel = "id,kind,title,amount,tx_date,category,person,note";
+    const [inRange, late, sum] = await Promise.all([
+      rest(`fund_tx?select=${sel}&tx_date=gte.${from}&tx_date=lte.${date}&order=tx_date,id&limit=3000`),
+      lastAt ? rest(`fund_tx?select=${sel}&tx_date=lt.${from}&created_at=gt.${encodeURIComponent(lastAt)}&order=tx_date,id&limit=500`) : Promise.resolve([]),
+      rpc("fund_summary", { p_from: from, p_to: date }),
+    ]);
+    const days = Math.round((Date.parse(date) - Date.parse(from)) / 864e5) + 1;
+    if (!inRange.length && !late.length && days < 7) return { text: null, period: `${from}..${date}` };   // gửi dày (hằng ngày) mà không có khoản nào → bỏ qua
+    return { text: fundMsg(store, from, date, [...late, ...inRange], new Set(late.map((t: any) => t.id)), sum, APP_URL), period: `${from}..${date}` };
+  }
   const staff: any[] = await rest("staff?select=id,name&hidden=eq.false&order=sort,id");
   const names = new Map(staff.map((x) => [x.id, x.name]));
   if (kind === "revenue") {
@@ -214,9 +236,10 @@ Deno.serve(async (req) => {
     const kind = ITEMS[String(body.kind)] ? String(body.kind) : "daily";
     const date = /^\d{4}-\d{2}-\d{2}$/.test(String(body.date || "")) ? String(body.date) : vnParts().date;
     if (mode === "items") return json({ status: "success", items: items(cfg) });
-    if (mode === "preview") { const m = await compose(kind, date, cfg); return json({ status: "success", ...m, text: m.text || "(Không có nội dung cần gửi cho đầu mục này hôm nay)" }); }
+    const opt = { from: String(body.from || "") };   // Quỹ: QL chọn "từ ngày" (bỏ trống = từ lần gửi trước)
+    if (mode === "preview") { const m = await compose(kind, date, cfg, opt); return json({ status: "success", ...m, text: m.text || "(Không có nội dung cần gửi cho đầu mục này hôm nay)" }); }
     if (mode === "send") {
-      const msg = await compose(kind, date, cfg); if (!msg.text) throw new Error("Đầu mục này hôm nay không có nội dung để gửi."); const n = await sendAll(msg.text, cfg);
+      const msg = await compose(kind, date, cfg, opt); if (!msg.text) throw new Error("Đầu mục này hôm nay không có nội dung để gửi."); const n = await sendAll(msg.text, cfg);
       await log("manual", kind + " " + msg.period, true, m.email);
       return json({ status: "success", message: `Đã gửi tới ${n} nơi nhận.` });
     }

@@ -95,6 +95,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | Mã | Chức năng | Trên web | File | Ghi chú |
 |---|---|---|---|---|
 | E1 | Bật/tắt + giờ + tần suất từng đầu mục (daily, weekly, revenue, score, tiktok, clean, busy, rs, service): Hằng ngày / Hằng tuần (1 thứ) / Chọn thứ (`dows`) / Ngày hạn T3-T6 (tiktok). QL chỉnh được lịch; token, nơi nhận, bật chung chỉ chủ quản | Quản lý → Telegram | `pages/admin.js` (telegram), `supabase/functions/notify/index.ts` (`items`, `tick`) | `save_notify_items` (setting `NOTIFY_ITEMS`); pg_cron `thidua-notify` gọi 5 phút/lần, chống gửi trùng bằng `notify_log` |
+| E3 | **💵 Quỹ thu chi qua Telegram** (đầu mục `fund`, mặc định **bật, thứ 2 09:00**; QL đổi tần suất / thứ / giờ ở bảng lịch như mọi đầu mục): kỳ báo cáo = **từ ngày sau lần gửi quỹ trước** (tự động hoặc gửi tay) đến ngày gửi, lần đầu 7 ngày; khoản ngày cũ mới nhập sau lần gửi trước kèm nhãn "⤴ ghi bổ sung". Nội dung: tổng thu, tổng chi, chênh lệch, **số dư** (tính ở máy chủ), chi tiết từng khoản (ngày, danh mục, tên, số tiền, người, ghi chú), chi theo danh mục, tổng tháng. Gửi dày (< 7 ngày) mà không có khoản nào thì bỏ qua. QL chọn **khoảng ngày bất kỳ**: Telegram → Xem trước & gửi ngay (đầu mục Quỹ hiện ô "Từ ngày") hoặc CV → 💵 Quỹ → **📤 Báo cáo Telegram** (7 ngày / từ đầu tháng / từ lần gửi trước → xem trước → gửi) | Quản lý → Telegram · CV → 💵 Quỹ | `functions/notify/index.ts` (ITEMS.fund, compose opt.from), `functions/notify/summary2.ts` (fundMsg), `pages/admin.js` (telegram: tgFrom), `pages/cv-fund.js` (teleReport) | `fund_summary` (chỉ service_role), `fund_tx`, `notify_log` |
 | E2 | Nội dung tin | n/a | `functions/notify/summary.ts`, `summary2.ts` | `current_streaks` |
 
 ### F. Quản lý / cài đặt
@@ -252,6 +253,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `fund_delete` | function | 000770_fund.sql:62 |
 | `fund_log` | function | 000770_fund.sql:79 |
 | `fund_save` | function | 000770_fund.sql:32 |
+| `fund_summary` | function | 000920_fund_notify.sql:3 |
 | `hook_before_user_created` | function | 000880_security_hardening.sql:7 |
 | `import_month_targets` | function | 000720_report_items_from_contest.sql:274 |
 | `is_after_cutoff` | function | 000100_core.sql:175 |

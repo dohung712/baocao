@@ -591,6 +591,9 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 @media (max-width:640px){.kpi-tile b{font-size:20px}.krank{grid-template-columns:1fr}.kdept{grid-template-columns:70px minmax(0,1fr) auto}
   .hm-kpi .card-h{flex-wrap:wrap;row-gap:2px}.hm-kpi .card-h > span{flex-basis:100%}}
 
+/* E3 💵 Báo cáo quỹ qua Telegram */
+.fund-tele{gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+
 /* B15 📦 Báo cáo PG */
 .pg-h{font-size:15px;margin:14px 0 8px}
 .pg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}

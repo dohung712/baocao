@@ -114,6 +114,29 @@ export function serviceMsg(store: string, from: string, to: string, board: any[]
   return L.join("\n");
 }
 
+// 💵 Quỹ thu chi: chi tiết từng khoản thu / chi trong kỳ (từ lần gửi trước, hoặc khoảng ngày QL chọn), số dư, theo danh mục.
+// list gồm cả khoản "ghi bổ sung" (ngày cũ nhưng mới nhập sau lần gửi trước) — đánh dấu ⤴.
+const money = (n: number) => (Number(n) || 0).toLocaleString("vi-VN") + " đ";
+const shortMoney = (n: number) => { const v = Math.abs(Number(n) || 0); return v >= 1e6 ? num(v / 1e6, 1) + "tr" : v >= 1e3 ? num(v / 1e3, 0) + "k" : num(v, 0) + "đ"; };
+export function fundMsg(store: string, from: string, to: string, list: any[], lateIds: Set<number>, sum: any, appUrl: string) {
+  list = [...list].sort((a, b) => (a.tx_date < b.tx_date ? -1 : a.tx_date > b.tx_date ? 1 : a.id - b.id));
+  const thu = list.filter((t) => t.kind === "thu"), chi = list.filter((t) => t.kind === "chi");
+  const tThu = thu.reduce((a, t) => a + Number(t.amount || 0), 0), tChi = chi.reduce((a, t) => a + Number(t.amount || 0), 0), diff = tThu - tChi;
+  const L = [`💵 <b>QUỸ THU CHI · ${dm(from)} → ${dm(to)}</b>`, esc(store), ""];
+  if (!list.length) L.push("Không có khoản thu / chi mới trong kỳ.");
+  else L.push(`➕ Thu: <b>${money(tThu)}</b> (${thu.length} khoản)`, `➖ Chi: <b>${money(tChi)}</b> (${chi.length} khoản)`, `↔️ Chênh lệch: <b>${diff < 0 ? "−" : "+"}${money(Math.abs(diff))}</b>`);
+  L.push(`💰 Số dư quỹ đến ${dm(to)}: <b>${money(sum?.balance)}</b>`);
+  const line = (t: any) => `• ${dm(t.tx_date)} ${t.category ? esc(t.category) + " · " : ""}${esc(t.title)}: <b>${money(t.amount)}</b>${t.person ? ` — ${esc(t.person)}` : ""}${t.note ? ` <i>(${esc(t.note)})</i>` : ""}${lateIds.has(t.id) ? " ⤴ ghi bổ sung" : ""}`;
+  if (chi.length) { L.push("", `➖ <b>CHI (${chi.length})</b>`); chi.forEach((t) => L.push(line(t))); }
+  if (thu.length) { L.push("", `➕ <b>THU (${thu.length})</b>`); thu.forEach((t) => L.push(line(t))); }
+  if (chi.length > 1) {
+    const by = new Map<string, number>(); for (const t of chi) by.set(t.category || "Khác", (by.get(t.category || "Khác") || 0) + Number(t.amount || 0));
+    L.push("", "📊 <b>Chi theo danh mục:</b> " + [...by].sort((a, b) => b[1] - a[1]).map(([c, v]) => `${esc(c)} ${shortMoney(v)}`).join(" · "));
+  }
+  L.push("", `📅 Tháng ${to.slice(5, 7)}: Thu ${money(sum?.month_thu)} · Chi ${money(sum?.month_chi)}`, `🔗 Chi tiết: ${appUrl}#cv`);
+  return L.join("\n");
+}
+
 // Thứ 2: nhắc NV cập nhật lũy kế tháng (DT QĐ + từng môn đúng loại) — liệt kê người chưa cập nhật
 export function cumMsg(store: string, date: string, asof: string, staff: Staff[], done: Set<string>) {
   if (!staff.length) return null;
