@@ -4,6 +4,7 @@ import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errM
 import { reportPng, shareOrDownload } from "../report-image.js";
 import { multLabel } from "../star-rules.js";
 import { openCum } from "../cumulative.js";
+import { pgReport, isPgStaff } from "./report-pg.js";
 
 const LS_STAFF = "thidua-v2-staff";
 let st = null, nav = null;
@@ -73,6 +74,7 @@ async function refreshTodo() {
 
 async function load() {
   const body = $("#rBody"); if (!body) return;
+  if (isPgStaff(st.staffId)) { st.form = null; return pgReport(body, st.staffId, st.date); }   // B15: PG báo cáo số, không tính sao
   body.innerHTML = `<div class="empty">Đang tải bảng môn…</div>`;
   try { st.form = orderItems(await rpc("report_form", { p_staff: st.staffId, p_date: st.date })); }
   catch (e) { body.innerHTML = `<div class="banner bad"><div><b>Không tải được</b>${esc(errMsg(e))}</div></div>`; return; }

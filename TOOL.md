@@ -44,6 +44,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 |---|---|---|---|---|
 | B1 | Form báo cáo ngày: môn, target, chuỗi. **Môn để trống = 0** (không bắt buộc nhập). **Môn không trừ sao** (sao phạt 0 hoặc quy tắc `noPen` ở ITEM_RULES) nằm **cuối form**, nền xanh dương, nhóm **thu gọn mặc định** (nút "🛡️ N môn không trừ sao · đã nhập x", tự mở khi đang sửa báo cáo có số; Enter bỏ qua môn đang ẩn). Mỗi môn hiện **Tháng lũy kế/target tháng** (đến hết hôm qua). Dòng gọn: bỏ chữ "Bỏ trống = 0" từng dòng (ghi 1 lần đầu bảng). Quản lý mở trang luôn chọn NV có trong danh sách (mã NV của tài khoản đang ẩn không còn làm lệch ô chọn) | Báo cáo | `pages/report.js` (orderItems, nopenOpen, drawRows, itemsFilled, payload) | `report_form` (cờ `noPen`, `monthTarget`, `monthDone`), `_item_no_pen`, `_staff_items`, `_cum_tool` |
 | B2 | Danh sách môn của NV: **= môn thi đua tháng** nếu đã giao (trừ môn bị bỏ tích **Bật** ở Môn & Sao — chọn dòng môn của bộ phận NV trước, rồi Chung; dòng được chọn tắt thì ẩn, migration 0890 sửa cả nhánh chưa giao môn tháng), chưa giao thì theo bộ phận / môn riêng | (tự động) | n/a | `_staff_items`, `_work_days` |
+| B15 | **📦 Báo cáo PG** (NV thuộc `PG_DEPTS`, mặc định "PG"; **không tính sao**): Hôm nay **Số lượng + Doanh thu** (bắt buộc, không bán ghi 0) · **Bán kèm được gì?** chip `PG_ADDONS` (VAS, Bảo hiểm, PSDP, Tai nghe, Sim; chủ quản sửa ở Cài đặt), chọn món → ô **SL + DT** món đó · **Lũy kế tháng** tool tự cộng = số đầu kỳ (kind `opening`, nhập 1 lần khi bắt đầu giữa tháng, banner nhắc) + các ngày + hôm nay · danh sách các ngày trong tháng · 📋 Copy tin gửi Zalo. Gửi → `pg_reports` + 1 dòng đánh dấu `daily_results` ("📦 Báo cáo PG", 0 sao, status `Báo cáo PG`, compensation `PG`) để mọi chỗ "đã/chưa báo cáo" (Báo cáo, Tổng quan, Telegram, Trợ lý, Nhân sự) tính đúng mà không đụng sao / tỉ lệ về số. Quản lý: chọn NV PG ở Báo cáo để nộp hộ; Tổng quan → bảng 📦 PG tháng | Báo cáo (chọn NV PG) · Quản lý → 🏠 Tổng quan | `pages/report-pg.js` (pgReport, openingModal, isPgStaff), `pages/report.js` (load), `pages/admin-home.js` (kpiHtml → PG), `pages/admin.js` (settings) | `pg_reports`, `pg_report_form`, `pg_report_save`, `_pg_cum`, `_is_pg`, settings `PG_DEPTS`, `PG_ADDONS` |
 | B3 | Tính sao: về số/chưa về, x2, chuỗi, tăng ca, trừ sao lũy tiến, phạt nộp trễ | Báo cáo → Xem trước/Nộp | `pages/report.js` | `_compute_report`, `preview_daily_report`, `submit_daily_report`, `_item_streak`, `ITEM_RULES` |
 | B4 | Ô doanh thu QĐ trong ca, **bắt buộc** (không bán ghi 0; ẩn được ở F4) | Báo cáo (cuối form) | `pages/report.js` (#xRev, needRev/revFilled) | `save_revenue`, `revenue_entries` |
 | B4b | **Xuất ảnh báo cáo** (PNG) kiểu "BÁO CÁO CHỐT THI ĐUA CA NGÀY": target, thực đạt, %, sao ±, H.QUA (lần báo cáo trước), chuỗi, bù/tăng ca, kỷ luật, bán thêm, DT, tổng kết. Sau khi gửi + nút "🖼️ Ảnh báo cáo" | Báo cáo | `js/report-image.js` (reportPng, shareOrDownload), `pages/report.js` (imageBlob) | n/a |
@@ -142,7 +143,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 - Target báo cáo ngày = 200% × target tháng ÷ số ngày làm việc (mặc định số ngày trong tháng − `DAYS_OFF`), làm tròn lên, tối thiểu 0,5. Điểm thi đua xếp hạng vẫn so với target tháng.
 
 ## 4. Cài đặt (bảng `settings`)
-`TASK_HIDE_GRACE_DAYS TASK_AUTO_HIDE_DAYS FUND_CATEGORIES FUND_PARTNERS FUND_IMPORTED_AT HELP_DELAY_S DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
+`PG_DEPTS PG_ADDONS TASK_HIDE_GRACE_DAYS TASK_AUTO_HIDE_DAYS FUND_CATEGORIES FUND_PARTNERS FUND_IMPORTED_AT HELP_DELAY_S DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
 Khoá bí mật (bảng `private_settings`, không đọc được từ web): `TELEGRAM_BOT_TOKEN GEMINI_API_KEY CRON_SECRET`
 
 ---
@@ -211,12 +212,14 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_cum_window` | function | 000820_cumulative.sql:46 |
 | `_daily_target` | function | 000750_daily_target_x2.sql:8 |
 | `_ensure_contest_items` | function | 000720_report_items_from_contest.sql:59 |
+| `_is_pg` | function | 000910_pg_reports.sql:35 |
 | `_item_measure` | function | 000820_cumulative.sql:38 |
 | `_item_no_pen` | function | 000890_items_quick_violation_docs.sql:51 |
 | `_item_streak` | function | 000200_logic.sql:24 |
 | `_keep_one_owner` | function | 000830_manager_owner.sql:8 |
 | `_manager_scope` | function | 000200_logic.sql:271 |
 | `_member_for_staff` | function | 000600_modules.sql:125 |
+| `_pg_cum` | function | 000910_pg_reports.sql:43 |
 | `_require_member` | function | 000200_logic.sql:189 |
 | `_staff_items` | function | 000890_items_quick_violation_docs.sql:7 |
 | `_task_hide_after` | function | 000790_tasks_notes_autohide.sql:12 |
@@ -264,6 +267,8 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `migrate_check` | function | 000610_update_logic.sql:441 |
 | `migrate_legacy` | function | 000610_update_logic.sql:221 |
 | `migrate_legacy_all` | function | 000700_scoring.sql:420 |
+| `pg_report_form` | function | 000910_pg_reports.sql:59 |
+| `pg_report_save` | function | 000910_pg_reports.sql:79 |
 | `preview_daily_report` | function | 000200_logic.sql:198 |
 | `private_setting_status` | function | 000780_tasks.sql:153 |
 | `rank_reward_close` | function | 000870_rank_reward.sql:50 |
@@ -323,6 +328,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `media_reports` | table | 000840_report_todo_media.sql:7 |
 | `monthly_targets` | table | 000700_scoring.sql:32 |
 | `notify_log` | table | 000100_core.sql:114 |
+| `pg_reports` | table | 000910_pg_reports.sql:13 |
 | `private_settings` | table | 000100_core.sql:80 |
 | `rank_rewards` | table | 000870_rank_reward.sql:8 |
 | `ratings` | table | 000700_scoring.sql:42 |

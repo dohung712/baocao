@@ -591,6 +591,41 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 @media (max-width:640px){.kpi-tile b{font-size:20px}.krank{grid-template-columns:1fr}.kdept{grid-template-columns:70px minmax(0,1fr) auto}
   .hm-kpi .card-h{flex-wrap:wrap;row-gap:2px}.hm-kpi .card-h > span{flex-basis:100%}}
 
+/* B15 📦 Báo cáo PG */
+.pg-h{font-size:15px;margin:14px 0 8px}
+.pg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pg-in{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.pg-in input{height:52px;font-size:22px;font-weight:600;text-align:right;border-radius:12px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.pg-chips{display:flex;flex-wrap:wrap;gap:8px}
+.pg-chip{font:inherit;font-size:14px;font-weight:600;min-height:40px;padding:6px 16px;border-radius:999px;border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer}
+.pg-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.pg-chip.on::before{content:"✓ "}
+@media (prefers-color-scheme:dark){.pg-chip.on{color:#0e1412}}
+.pg-add-rows{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.pg-add-row{display:grid;grid-template-columns:minmax(70px,1fr) 1fr 1fr auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.pg-add-row label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.pg-add-row input{height:40px;text-align:right;font-size:16px;font-weight:600;min-width:0}
+.pg-x{border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:8px}
+.pg-x:hover{background:var(--bad-soft);color:var(--bad)}
+.modal .pg-add-row{grid-template-columns:minmax(70px,1fr) 1fr 1fr}
+.pg-cum{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pg-cum div{border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column}
+.pg-cum small{font-size:12px;color:var(--muted)}
+.pg-cum b{font-size:22px;font-variant-numeric:tabular-nums}
+.pg-cum-add{margin-top:6px}
+.pg-sum .kpis b{font-size:15px}
+.kpg{margin-top:14px}
+.kpg h3{font-size:14px;margin:0 0 6px}
+@media (max-width:640px){
+  .pg-add-row{grid-template-columns:1fr 1fr auto;grid-template-areas:"n n x" "q v v"}
+  .pg-add-row > b{grid-area:n}.pg-add-row > .pg-x{grid-area:x}
+  .pg-add-row > label:nth-of-type(1){grid-area:q}.pg-add-row > label:nth-of-type(2){grid-area:v}
+  .modal .pg-add-row{grid-template-columns:1fr 1fr;grid-template-areas:"n n" "q v"}
+  .sumbar.pg-sum{display:flex;align-items:center;gap:8px}
+  .pg-sum .kpis{display:none}
+  .pg-sum #pgSend{flex:1}
+}
+
 /* F1b Nhân sự 360° */
 .linkish{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
 .linkish b{border-bottom:1px dashed var(--line2)}

@@ -19,6 +19,7 @@ export const FEATURES = [
   { c: "C10", t: "Bảng xếp hạng điểm (copy gửi nhóm)", w: "Xếp hạng", k: "xếp hạng điểm bxh copy", go: { page: "score" } },
   { c: "C11", t: "Xem số liệu của 1 nhân viên", w: "Của tôi → chọn nhân viên", k: "cá nhân nhân viên chi tiết", go: { page: "me" } },
   { c: "F2c", t: "Dán kết quả siêu thị → gợi ý sao từng môn", w: "Môn & sao → khung Gợi ý", k: "gợi ý sao kết quả siêu thị tập trung target thấp gần về số push", go: { tab: "items", focus: "#sgBox" }, owner: true },
+  { c: "B15", t: "Báo cáo PG: số lượng, doanh thu, bán kèm, lũy kế (PG không tính sao)", w: "Báo cáo → chọn NV PG · Tổng quan → 📦 PG tháng · Cài đặt → món bán kèm PG", k: "pg báo cáo số lượng doanh thu bán kèm vas bảo hiểm psdp tai nghe sim lũy kế", go: { page: "report" } },
   { c: "H1b", t: "Tổng quan tháng: báo cáo hôm nay, DT so target từng bộ phận, vi phạm, âm sao, dẫn đầu / cần hỗ trợ", w: "Quản lý → 🏠 Tổng quan (khung đầu)", k: "tổng quan kpi doanh thu tiến độ bộ phận dẫn đầu cần hỗ trợ âm sao dashboard", go: { tab: "home", focus: ".hm-kpi" } },
   { c: "F1b", t: "Hồ sơ 360° nhân viên: báo cáo, nộp trễ, vi phạm, tài khoản, lịch OFF", w: "Quản lý → Nhân sự → bấm tên", k: "hồ sơ nhân viên 360 nhân sự báo cáo nộp trễ vi phạm tài khoản âm sao", go: { tab: "staff" } },
   { c: "F2q", t: "Chỉnh nhanh +/− sao, Bật/Tắt môn từng bộ phận", w: "Quản lý → Môn & sao → ⚡ Chỉnh nhanh", k: "chỉnh nhanh sao thưởng phạt bật tắt môn bộ phận không trừ sao", go: { tab: "items" } },
@@ -72,8 +73,16 @@ const allowed = (f) => f && (!f.owner || isOwner());
 
 // 📊 Tổng quan tháng (H1b): hàng chỉ số + doanh thu từng bộ phận so target (vạch = tiến độ chuẩn hôm nay) + dẫn đầu / cần hỗ trợ.
 // Số liệu lấy từ score_board (đã lọc phạm vi xem ở máy chủ: quản lý chỉ thấy doanh thu bộ phận mình).
-function kpiHtml(t, staff, done, board) {
+function kpiHtml(t, staff, done, board, pgRows = []) {
   const vis = new Set(staff.map((s) => s.id)), rows = board.filter((r) => vis.has(r.staff_id));
+  // 📦 PG (B15): tổng tháng (số đầu kỳ + các ngày) và số hôm nay của từng PG
+  const pgDepts = setting("PG_DEPTS", ["PG"]) || ["PG"], pgStaff = staff.filter((s) => pgDepts.includes(s.dept));
+  const pgSum = (id) => pgRows.filter((r) => r.staff_id === id).reduce((a, r) => ({ q: a.q + (Number(r.qty) || 0), r: a.r + (Number(r.revenue) || 0) }), { q: 0, r: 0 });
+  const pgToday = (id) => pgRows.find((r) => r.staff_id === id && r.kind === "day" && r.report_date === t);
+  const pgHtml = pgStaff.length ? `<div class="kpg"><h3>📦 PG tháng ${t.slice(5, 7)}</h3><div class="tbl-wrap"><table class="nosort"><thead><tr><th>PG</th><th class="num">SL tháng</th><th class="num">DT tháng</th><th>Hôm nay</th></tr></thead><tbody>
+    ${pgStaff.map((s) => { const m = pgSum(s.id), d = pgToday(s.id);
+      return `<tr><td><b>${esc(s.name)}</b></td><td class="num">${fmt(m.q, 2)}</td><td class="num">${fmt(m.r, 2)}</td><td class="small">${d ? `✅ SL ${fmt(d.qty, 2)} · DT ${fmt(d.revenue, 2)}` : '<span class="neg">⚠️ chưa báo cáo</span>'}</td></tr>`; }).join("")}
+    </tbody></table></div></div>` : "";
   const dim = new Date(Date.UTC(+t.slice(0, 4), +t.slice(5, 7), 0)).getUTCDate(), pace = Math.min(1, Number(t.slice(8, 10)) / dim);
   const unit = setting("REVENUE_UNIT", "");
   const n = staff.length, repPct = n ? Math.round(done.size / n * 100) : 0;
@@ -107,18 +116,21 @@ function kpiHtml(t, staff, done, board) {
       <p class="tiny muted" style="margin:4px 0 0">Thanh = doanh thu QĐ lũy kế / target tháng của bộ phận · vạch đứng = mức cần đạt tính đến hôm nay.</p></div>` : ""}
     ${ranked.length ? `<div class="krank"><div><h3>🏆 Dẫn đầu</h3><ol>${top.map(person).join("")}</ol></div>${bottom.length ? `<div><h3>🆘 Cần hỗ trợ</h3><ol>${bottom.map(person).join("")}</ol></div>` : ""}
       <button class="btn small ghost" data-go="C10" type="button">Xem bảng xếp hạng →</button></div>` : ""}
+    ${pgHtml}
   </div>`;
 }
 
 export async function home(body, nav) {
   const t = vnToday(), month = t.slice(0, 8) + "01", lastWs = addDays(weekStart(t), -7), staff = visibleStaff();
+  let pgRows = [];
   body.innerHTML = `<div class="empty">Đang tải…</div>`;
   const [rep, tg, rat, board] = await Promise.all([
     sb.from("daily_results").select("staff_id").eq("report_date", t),
     sb.from("monthly_targets").select("staff_id,revenue_target,items").eq("month", month),
     sb.from("ratings").select("staff_id").lte("period_start", addDays(lastWs, 6)).gte("period_end", lastWs),
     rpc("score_board", { p_from: month, p_to: t, p_full: false }).catch(() => []),
-  ]);
+    sb.from("pg_reports").select("staff_id,kind,report_date,qty,revenue").gte("report_date", month).lte("report_date", t),
+  ]).then((r) => { pgRows = r[4]?.data || []; return r; });
   if (!body.isConnected) return;
   const done = new Set((rep.data || []).map((r) => r.staff_id)), miss = staff.filter((s) => !done.has(s.id));
   const tgm = new Map((tg.data || []).map((r) => [r.staff_id, r])), noTarget = staff.filter((s) => !tgm.get(s.id)?.items?.length || tgm.get(s.id)?.revenue_target == null);
@@ -129,7 +141,7 @@ export async function home(body, nav) {
   const tele = setting("NOTIFY_ENABLED", false) === true;
   const card = (ok, icon, title, val, sub, c, label = "Mở") => `<div class="hm-card ${ok ? "ok" : "todo"}"><div class="hm-ic">${icon}</div><div class="hm-tx"><small>${title}</small><b>${val}</b>${sub ? `<span class="tiny muted">${sub}</span>` : ""}</div>${allowed(feat(c)) ? `<button class="btn small" data-go="${c}" type="button">${label}</button>` : ""}</div>`;
   const ticks = readTicks();
-  body.innerHTML = `${kpiHtml(t, staff, done, board || [])}
+  body.innerHTML = `${kpiHtml(t, staff, done, board || [], pgRows)}
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>⚡ Việc cần làm ngay</h2><span class="small muted">${dmy(t)}</span></div>
       <div class="hm-grid">
         ${card(!pend, "📥", "Chờ duyệt", pend ? `${pend} mục` : "Không có", pend ? `thưởng nóng ${S.pending.hot || 0} · bán thêm ${S.pending.proposals || 0} · sửa ${S.pending.changes || 0}` : "", "B5", "Duyệt")}

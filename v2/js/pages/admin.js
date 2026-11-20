@@ -513,6 +513,8 @@ async function settings(body) {
       <div class="fields" style="margin-top:10px"><label>Đơn vị doanh thu QĐ<input id="st_REVENUE_UNIT" value="${esc(setting("REVENUE_UNIT", "triệu đ"))}"></label>
         ${["s4", "s3", "s2", "s1", "complaints"].map((k) => `<label>Phục vụ: trừ mỗi ${k === "complaints" ? "khiếu nại" : k.slice(1) + "★"}<input type="number" step="any" min="0" class="rd" data-k="${k}" value="${esc((setting("RATING_DEDUCT", {}) || {})[k] ?? "")}"></label>`).join("")}</div>
       <label style="margin-top:10px">Các loại lỗi vi phạm (mỗi dòng 1 loại)<textarea id="st_VIOLATION_TYPES">${esc((setting("VIOLATION_TYPES", []) || []).join("\n"))}</textarea></label>
+      <div class="fields" style="margin-top:10px"><label>📦 Bộ phận báo cáo kiểu PG (không tính sao; cách nhau dấu phẩy)<input id="st_PG_DEPTS" value="${esc((setting("PG_DEPTS", ["PG"]) || []).join(", "))}"></label>
+        <label>📦 Món bán kèm của PG (mỗi dòng 1 món)<textarea id="st_PG_ADDONS" rows="5">${esc((setting("PG_ADDONS", ["VAS", "Bảo hiểm", "PSDP", "Tai nghe", "Sim"]) || []).join("\n"))}</textarea></label></div>
       <p class="small muted" style="margin-top:10px">Số sao trừ = sao phạt của môn × hệ số theo chuỗi (chuỗi tính các ngày trước ngày báo cáo). Chuỗi nhỏ hơn cả hai ngưỡng: chỉ ghi nhận chuỗi.</p></div>
     <div class="card" style="margin-bottom:14px" id="hideCard"><div class="card-h"><h2>🙈 Ẩn trang / chức năng</h2><button class="btn small primary" id="hdSave" type="button">💾 Lưu</button></div>
       <p class="small muted">Tick để ẩn với từng vai trò. Chủ quản luôn thấy tất cả.</p>
@@ -550,7 +552,9 @@ async function settings(body) {
     const pairs = [["STORE_NAME", $("#st_STORE_NAME").value.trim()], ["CUTOFF_TIME", $("#st_CUTOFF_TIME").value || "22:20"], ["AUTO_STREAK_ENABLED", $("#st_AUTO_STREAK_ENABLED").value],
       ["EMPLOYEE_SEE_LEADERBOARD", $("#st_EMPLOYEE_SEE_LEADERBOARD").value === "true"], ["SCORE_SEE_ALL", $("#st_SCORE_SEE_ALL").value === "true"], ["REVENUE_UNIT", $("#st_REVENUE_UNIT").value.trim()],
       ["RATING_DEDUCT", Object.fromEntries($$(".rd").map((i) => [i.dataset.k, Number(i.value) || 0]))],
-      ["VIOLATION_TYPES", $("#st_VIOLATION_TYPES").value.split("\n").map((x) => x.trim()).filter(Boolean)]];
+      ["VIOLATION_TYPES", $("#st_VIOLATION_TYPES").value.split("\n").map((x) => x.trim()).filter(Boolean)],
+      ["PG_DEPTS", [...new Set($("#st_PG_DEPTS").value.split(",").map((x) => x.trim()).filter(Boolean))]],
+      ["PG_ADDONS", [...new Set($("#st_PG_ADDONS").value.split("\n").map((x) => x.trim()).filter(Boolean))]]];
     if ($("#st_TIKTOK_START_DATE").value) pairs.push(["TIKTOK_START_DATE", $("#st_TIKTOK_START_DATE").value]);
     for (const [k] of NUM_SETTINGS) { const v = $("#st_" + k).value; if (v !== "") pairs.push([k, Number(v)]); }
     try { await save(pairs); toast("Đã lưu cài đặt"); } catch (x) { err(x); }
