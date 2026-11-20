@@ -5,12 +5,16 @@ import { openCum } from "../cumulative.js";
 
 let st;
 export async function render(view) {
-  const sid = S.me.staff_id && staffById(S.me.staff_id) ? S.me.staff_id : isManager() ? visibleStaff()[0]?.id : null;
+  // Quản lý có ô chọn NV: mã của chính tài khoản phải nằm trong danh sách đang hiện, không thì chọn người đầu (tránh ô chọn và số liệu lệch nhau)
+  const mineOk = S.me.staff_id && (isManager() ? visibleStaff().some((s) => s.id === S.me.staff_id) : staffById(S.me.staff_id));
+  // Mở từ hồ sơ 360° (Quản lý → Nhân sự): dùng NV được chọn 1 lần
+  let pick = null; try { pick = localStorage.getItem("thidua-v2-me-staff"); localStorage.removeItem("thidua-v2-me-staff"); } catch { /* bỏ qua */ }
+  const sid = isManager() && pick && visibleStaff().some((s) => s.id === pick) ? pick : mineOk ? S.me.staff_id : isManager() ? visibleStaff()[0]?.id : null;
   if (!sid) { view.innerHTML = `<div class="banner warn"><div><b>Tài khoản chưa gắn mã nhân viên</b>Nhờ chủ quản gắn mã NV trong Quản lý → Phân quyền.</div></div>`; return; }
   st = { sid, ym: vnToday().slice(0, 7) };
   view.innerHTML = `<div class="page-h"><div><h1>Của tôi</h1><p>Sao, điểm xếp hạng, doanh thu, môn thi đua, phục vụ, vi phạm và lịch sử điều chỉnh</p></div>
     <div class="row">${isManager() ? `<select id="meStaff" style="width:auto">${visibleStaff().map((s) => `<option value="${esc(s.id)}" ${s.id === sid ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>` : ""}
-      <button class="btn small" data-mm="-1" type="button">‹</button><b id="meMonth"></b><button class="btn small" data-mm="1" type="button">›</button></div></div>
+      <span class="mnav"><button class="btn small" data-mm="-1" type="button" aria-label="Tháng trước">‹</button><b id="meMonth"></b><button class="btn small" data-mm="1" type="button" aria-label="Tháng sau">›</button></span></div></div>
     <div id="meBody"></div>`;
   $("#meStaff")?.addEventListener("change", (e) => { st.sid = e.target.value; load(); });
   view.querySelectorAll("[data-mm]").forEach((b) => b.onclick = () => { st.ym = shiftMonth(st.ym, Number(b.dataset.mm)); load(); });

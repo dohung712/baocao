@@ -25,6 +25,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 ### 0. Bắt đầu ở đâu
 | Mã | Chức năng | Trên web | File |
 |---|---|---|---|
+| H1b | **📊 Tổng quan tháng** (khung đầu của Tổng quan): stat tile Đã báo cáo hôm nay · Doanh thu QĐ tháng % target (✅/⚠️/🔴 so tiến độ chuẩn = ngày ÷ số ngày trong tháng) · Vi phạm tháng · NV âm sao; meter doanh thu từng bộ phận (thanh = lũy kế / target tháng, vạch đứng = tiến độ chuẩn hôm nay); 🏆 top 3 / 🆘 3 người cần hỗ trợ (không trùng). Quản lý chỉ thấy bộ phận mình | Quản lý → 🏠 Tổng quan | `pages/admin-home.js` (kpiHtml) — số liệu `score_board` (p_full = false, target nhân lại theo tiến độ) |
 | H1 | **🏠 Tổng quan** (tab đầu của Quản lý): Việc cần làm ngay (chờ duyệt, chưa báo cáo, thiếu target, lần dán kết quả siêu thị, phục vụ tuần trước, Telegram) · Lịch quản lý ngày/tuần/tháng có tick · Tìm chức năng (gõ chữ → nút mở đúng chỗ) · Tuỳ chỉnh nhanh | Quản lý → 🏠 Tổng quan | `pages/admin-home.js` (FEATURES = danh mục chức năng, PLAN = lịch) |
 
 | H2 | **Gợi ý tự hiện**: rê chuột lên một mục `HELP_DELAY_S` giây (mặc định 15) hoặc nhấn giữ 0,8 giây trên điện thoại → bong bóng giải thích; mỗi người bật/tắt ở nút tài khoản | Mọi trang | `js/help.js` (mảng H: selector → tiêu đề, nội dung) |
@@ -41,7 +42,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 ### B. Báo cáo ngày và sao
 | Mã | Chức năng | Trên web | File giao diện | Hàm / bảng SQL |
 |---|---|---|---|---|
-| B1 | Form báo cáo ngày: môn, target, chuỗi. **Môn để trống = 0** (không bắt buộc nhập). **Môn không trừ sao** (sao phạt 0 hoặc quy tắc `noPen` ở ITEM_RULES) nằm **cuối form**, nền xanh dương, dòng ngăn "🛡️ Môn không trừ sao" (máy chủ ghép theo tên môn nên đổi thứ tự không ảnh hưởng tính sao) | Báo cáo | `pages/report.js` (orderItems, drawRows, itemsFilled, payload) | `report_form` (cờ `noPen`), `_item_no_pen`, `_staff_items` |
+| B1 | Form báo cáo ngày: môn, target, chuỗi. **Môn để trống = 0** (không bắt buộc nhập). **Môn không trừ sao** (sao phạt 0 hoặc quy tắc `noPen` ở ITEM_RULES) nằm **cuối form**, nền xanh dương, nhóm **thu gọn mặc định** (nút "🛡️ N môn không trừ sao · đã nhập x", tự mở khi đang sửa báo cáo có số; Enter bỏ qua môn đang ẩn). Mỗi môn hiện **Tháng lũy kế/target tháng** (đến hết hôm qua). Dòng gọn: bỏ chữ "Bỏ trống = 0" từng dòng (ghi 1 lần đầu bảng). Quản lý mở trang luôn chọn NV có trong danh sách (mã NV của tài khoản đang ẩn không còn làm lệch ô chọn) | Báo cáo | `pages/report.js` (orderItems, nopenOpen, drawRows, itemsFilled, payload) | `report_form` (cờ `noPen`, `monthTarget`, `monthDone`), `_item_no_pen`, `_staff_items`, `_cum_tool` |
 | B2 | Danh sách môn của NV: **= môn thi đua tháng** nếu đã giao (trừ môn bị bỏ tích **Bật** ở Môn & Sao — chọn dòng môn của bộ phận NV trước, rồi Chung; dòng được chọn tắt thì ẩn, migration 0890 sửa cả nhánh chưa giao môn tháng), chưa giao thì theo bộ phận / môn riêng | (tự động) | n/a | `_staff_items`, `_work_days` |
 | B3 | Tính sao: về số/chưa về, x2, chuỗi, tăng ca, trừ sao lũy tiến, phạt nộp trễ | Báo cáo → Xem trước/Nộp | `pages/report.js` | `_compute_report`, `preview_daily_report`, `submit_daily_report`, `_item_streak`, `ITEM_RULES` |
 | B4 | Ô doanh thu QĐ trong ca, **bắt buộc** (không bán ghi 0; ẩn được ở F4) | Báo cáo (cuối form) | `pages/report.js` (#xRev, needRev/revFilled) | `save_revenue`, `revenue_entries` |
@@ -99,6 +100,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | Mã | Chức năng | Trên web | File | Hàm / bảng SQL |
 |---|---|---|---|---|
 | F1 | Nhân sự (thêm, ẩn, bộ phận, môn riêng) | Quản lý → Nhân sự | `pages/admin.js` (staff) | `staff`, `set_staff_total` |
+| F1b | **👥 Nhân sự 360°**: cột Báo cáo tháng (số ngày, OFF, ✅ hôm nay / ⚠️ quá 1 ngày chưa báo cáo), Nộp trễ, Vi phạm, Tài khoản (có membership đang bật), dòng đỏ = âm sao; bấm tên → **hồ sơ**: tổng sao, điểm & hạng tháng, báo cáo, nộp trễ · vi phạm, danh sách vi phạm tháng, bận/OFF 7 ngày tới, nút mở Trang cá nhân / Báo cáo / Biên bản (chọn sẵn NV qua localStorage `thidua-v2-me-staff`, `thidua-v2-staff`, `thidua-v2-vio-who`) | Quản lý → Nhân sự | `pages/admin.js` (staff, profile), `pages/me.js`, `pages/cv-vio.js` | `staff_overview`, `score_board`, `violations`, `busy` |
 | F2 | Môn & sao thưởng/phạt, **Nhân sao X2/X3** (chỉ môn đánh dấu). **Lọc theo kênh** (Chung / PG / TGDĐ / Topzone), trạng thái bật/tắt, tên; Bật/Tắt tất cả đang hiện (nhớ bộ lọc, lưu vẫn lưu mọi môn). Nhãn **📅 Môn tháng** (ô Target/ngày khoá, hiện "NV báo cáo: x/ngày" = target tháng ÷ ngày làm × 200%) và **Ngoài môn tháng — NV không báo cáo**; lọc theo 2 nhãn này | Quản lý → Môn & sao | `pages/admin.js` (items) | `items.is_x2`, `items.is_x3`, `_compute_report` |
 | F2q | **⚡ Chỉnh nhanh môn & sao theo bộ phận** (mặc định khi mở Môn & sao): mỗi môn 1 dòng, mỗi bộ phận 1 cột: **+** sao thưởng, **−** sao phạt, công tắc **Bật/Tắt**; sửa là tự lưu (gom 0,7 giây). Ô "theo Chung" (chữ nghiêng) = đang dùng dòng Chung, sửa sẽ tạo mức riêng; ↺ bỏ mức riêng. "Chưa áp dụng" = bộ phận chưa có môn, bật để thêm (chép từ dòng gốc). Bật hết / Tắt hết từng cột (không tự thêm môn chưa áp dụng). Sao phạt 0 = không trừ sao (B1). **Quản lý** dùng được cho bộ phận trong `memberships.stores`; chủ quản thêm cột Chung + chuyển sang **📋 Bảng chi tiết** (F2) | Quản lý → Môn & sao | `pages/admin.js` (itemsQuick, viewSwitch) | `items_quick_save` (ghi `audit_log` ITEMS_QUICK), `items` |
 | F2c | **Gợi ý sao theo kết quả siêu thị**: dán báo cáo (Tổng / %Đạt) → nhóm 🎯 Tập trung 5đ · 🌱 Target thấp 3đ · ⚡ Gần về số (dự kiến 70–100%) 2đ · môn khác 1đ · ✅ Đã về số lũy kế 0 sao, không trừ; 1đ = +100/−50 (sửa được) → Áp dụng / Copy gửi nhóm | Quản lý → Môn & sao (khung đầu) | `pages/admin-suggest.js` | `apply_star_suggestions`, `items.focus/low_target/store_target/store_pct`, setting `STAR_POINTS` |
@@ -113,7 +115,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 |---|---|---|---|
 | G1 | Trợ lý AI (Gemini) | Trợ lý | `pages/assistant.js`, `functions/assistant/index.ts` (cần `GEMINI_API_KEY` ở Cài đặt) |
 | G2 | Trang luật | Rule | `pages/rules.js` |
-| G3 | Giao diện chung, menu, tabbar mobile | n/a | `v2/index.html`, `v2/css/app.css`, `js/ui.js`, `js/app.js` |
+| G3 | Giao diện chung, menu, tabbar mobile. **Điện thoại** (≤ 640px): dải tab con (`.subtabs`, `.seg`) cuộn ngang 1 hàng, tab đang chọn tự vào giữa (`centerTab`); lịch tháng (`monthGrid`) thành **danh sách theo ngày**, tháng hiện tại ẩn các tuần đã qua (nút "↑ Xem các tuần trước"); tiêu đề app không xuống dòng; chip / nút nhỏ cao ≥ 36px | n/a | `v2/index.html`, `v2/css/app.css`, `js/ui.js` (monthGrid, centerTab), `js/app.js` |
 | G4 | **Sắp xếp mọi bảng**: bấm tiêu đề cột → giảm/tăng (số, ngày, chữ tiếng Việt), nhớ khi bảng vẽ lại; bỏ qua bảng/cột có class `nosort`. Xếp hạng điểm trên điện thoại có ô chọn sắp xếp | Mọi trang | `js/ui.js` (enableAutoSort), `pages/score.js` | n/a |
 
 ---
@@ -266,7 +268,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `private_setting_status` | function | 000780_tasks.sql:153 |
 | `rank_reward_close` | function | 000870_rank_reward.sql:50 |
 | `rank_reward_preview` | function | 000870_rank_reward.sql:23 |
-| `report_form` | function | 000890_items_quick_violation_docs.sql:69 |
+| `report_form` | function | 000900_report_month_staff_overview.sql:5 |
 | `reset_stars` | function | 000700_scoring.sql:175 |
 | `reset_streak` | function | 000200_logic.sql:308 |
 | `reset_streaks` | function | 000700_scoring.sql:192 |
@@ -290,6 +292,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `set_staff_total` | function | 000700_scoring.sql:141 |
 | `setting_num` | function | 000100_core.sql:160 |
 | `setting_text` | function | 000100_core.sql:170 |
+| `staff_overview` | function | 000900_report_month_staff_overview.sql:33 |
 | `staff_total` | function | 000700_scoring.sql:120 |
 | `submit_daily_report` | function | 000200_logic.sql:225 |
 | `task_ack` | function | 000780_tasks.sql:120 |

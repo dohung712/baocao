@@ -1,5 +1,5 @@
 // Quản lý → Điểm & DT: target tháng, doanh thu, phục vụ, vi phạm, chỉnh sao / reset, lịch sử điều chỉnh
-import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, addDays, weekStart, monthStart, dmy, dm, dow, shiftMonth, monthLabel } from "../ui.js";
+import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, addDays, weekStart, monthStart, dmy, dm, dow, shiftMonth, monthLabel, centerTab } from "../ui.js";
 import { sb, S, rpc, callFn, isOwner, visibleStaff, staffById, setting, errMsg, loadStaff, loadItems, loadSettings, depts } from "../store.js";
 import { parseTargetReport } from "../lib-targets.js";
 import { openCum, MEASURE, measureTag } from "../cumulative.js";
@@ -17,6 +17,7 @@ export async function scoreAdmin(body) {
   body.innerHTML = `<div class="row" style="margin-bottom:12px"><div class="seg" id="asSub">${SUBS.map(([k, l]) => `<button type="button" data-s="${k}" class="${k === sub ? "on" : ""}">${l}</button>`).join("")}</div>
     <span class="row" style="gap:4px" id="asNav"><button class="btn small" data-mm="-1" type="button">‹</button><b>${monthLabel(ym)}</b><button class="btn small" data-mm="1" type="button">›</button></span></div><div id="asBody"></div>`;
   $("#asSub").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) { sub = b.dataset.s; scoreAdmin(host); } };
+  centerTab($("#asSub"));
   $("#asNav").onclick = (e) => { const b = e.target.closest("[data-mm]"); if (b) { ym = shiftMonth(ym, Number(b.dataset.mm)); scoreAdmin(host); } };
   const el = $("#asBody"); el.onclick = null;
   try { await ({ targets, cum, media, rank, revenue, service, violations, stars, log })[sub](el); } catch (e) { el.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }

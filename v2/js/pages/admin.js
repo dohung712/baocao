@@ -1,5 +1,5 @@
 // Trang Quản lý: duyệt, khoá sổ, nhân sự, môn thi đua, cài đặt, Telegram, phân quyền
-import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml, norm, debounce } from "../ui.js";
+import { $, $$, esc, fmt, sign, toast, modal, confirmBox, vnToday, dmy, dow, starHtml, norm, debounce, centerTab } from "../ui.js";
 import { scoreAdmin, setScoreSub } from "./admin-score.js";
 import { home } from "./admin-home.js";
 import { starCardHtml, bindStarCard, dailyTarget, dailyPct, dailyMin } from "../star-rules.js";
@@ -30,6 +30,7 @@ export async function render(view) {
 function drawTabs() {
   const n = (S.pending.proposals || 0) + (S.pending.changes || 0) + (S.pending.hot || 0);
   $("#aTabs").innerHTML = TABS.filter((t) => !t.owner || isOwner()).map((t) => `<button type="button" data-t="${t.id}" class="${t.id === tab ? "on" : ""}">${t.label}${t.id === "approve" && n ? ` <b class="badge">${n}</b>` : ""}</button>`).join("");
+  centerTab($("#aTabs"));
 }
 async function draw() {
   if (!TABS.some((t) => t.id === tab && (!t.owner || isOwner()))) tab = "home";
@@ -112,13 +113,31 @@ async function lock(body) {
 
 // ---------- Nhân sự ----------
 async function staff(body) {
-  const own = isOwner(), itemNames = [...new Set(S.items.map((i) => i.name))];
+  const own = isOwner(), itemNames = [...new Set(S.items.map((i) => i.name))], today = vnToday();
+  // F1b Nhân sự 360°: số liệu tháng từ staff_overview (báo cáo, nộp trễ, vi phạm, quyền vào tool)
+  const ov = new Map(((await rpc("staff_overview", {}).catch(() => [])) || []).map((r) => [r.staff_id, r]));
+  if (!body.isConnected) return;
+  const yday = addDaysISO(today, -1);
+  const repCell = (s, o) => {
+    if (!o) return '<span class="muted">—</span>';
+    if (s.hidden) return `<span class="muted">${o.report_days} ngày</span>`;   // NV đã ẩn (nghỉ): không cảnh báo
+    const stale = !o.last_report || o.last_report < yday;   // quá 1 ngày chưa báo cáo
+    return `<b>${o.report_days}</b> ngày${o.off_days ? ` <span class="tiny muted">· OFF ${o.off_days}</span>` : ""}<div class="tiny ${stale ? "neg" : "muted"}">${o.last_report === today ? "✅ hôm nay" : o.last_report ? `${stale ? "⚠️ " : ""}gần nhất ${dmy(o.last_report).slice(0, 5)}` : "⚠️ chưa báo cáo"}</div>`;
+  };
+  const list = [...S.staff].sort((a, b) => (a.hidden - b.hidden) || (a.dept || "").localeCompare(b.dept || "", "vi") || (a.sort || 0) - (b.sort || 0));
   body.innerHTML = `<div class="card"><div class="card-h"><h2>👥 Nhân sự & quỹ sao</h2>${own ? `<button class="btn small primary" id="sfAdd" type="button">+ Thêm nhân viên</button>` : ""}</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Mã NV</th><th>Họ tên</th><th>Bộ phận</th><th class="num">Tổng sao</th><th>Môn riêng</th><th>Reset chuỗi</th><th>Trạng thái</th><th></th></tr></thead><tbody>
-    ${S.staff.map((s) => `<tr class="${s.hidden ? "muted" : ""}"><td>${esc(s.id)}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.dept)}</td><td class="num star">${fmt(s.total_star)}</td>
-      <td class="small">${s.assigned_items?.length ? esc(s.assigned_items.join(", ")) : '<span class="muted">Theo bộ phận</span>'}</td>
-      <td class="small">${s.reset_date ? dmy(s.reset_date) : "—"}</td><td>${s.hidden ? '<span class="pill mute">Đang ẩn</span>' : '<span class="pill ok">Hoạt động</span>'}</td>
-      <td class="num"><button class="btn small" data-edit="${esc(s.id)}" type="button">${own ? "Sửa" : "Thao tác"}</button></td></tr>`).join("")}
+    <p class="small muted" style="margin:0 0 10px">Bấm tên để xem <b>hồ sơ 360°</b>. Số liệu tháng ${today.slice(5, 7)}: số ngày đã báo cáo, nộp trễ, vi phạm. Dòng đỏ = âm sao.</p>
+    <div class="tbl-wrap"><table class="staff-tbl"><thead><tr><th>Mã NV</th><th>Họ tên</th><th>Bộ phận</th><th class="num">Tổng sao</th><th>Báo cáo tháng</th><th class="num">Nộp trễ</th><th class="num">Vi phạm</th><th>Tài khoản</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    ${list.map((s) => { const o = ov.get(s.id), negStar = Number(s.total_star) < 0;
+      return `<tr class="${s.hidden ? "muted" : ""}${negStar ? " neg-row" : ""}"><td>${esc(s.id)}</td>
+      <td><button type="button" class="linkish" data-prof="${esc(s.id)}"><b>${esc(s.name)}</b></button>${s.assigned_items?.length ? `<div class="tiny muted">Môn riêng: ${esc(s.assigned_items.length)} môn</div>` : ""}</td><td>${esc(s.dept)}</td>
+      <td class="num ${negStar ? "neg" : "star"}">${negStar ? "⚠️ " : ""}${fmt(s.total_star)}</td>
+      <td class="small">${repCell(s, o)}</td>
+      <td class="num">${o ? (o.late ? `<span class="pill warn">${o.late}</span>` : "0") : "—"}</td>
+      <td class="num">${o ? (o.violations ? `<span class="pill bad">${o.violations}</span>` : "0") : "—"}</td>
+      <td class="small">${o ? (o.has_access ? "✅ Có" : '<span class="neg">⛔ Chưa có</span>') : "—"}</td>
+      <td>${s.hidden ? '<span class="pill mute">Đang ẩn</span>' : '<span class="pill ok">Hoạt động</span>'}</td>
+      <td class="num"><button class="btn small" data-edit="${esc(s.id)}" type="button">${own ? "Sửa" : "Thao tác"}</button></td></tr>`; }).join("")}
     </tbody></table></div></div>`;
   const edit = async (s) => {
     const isNew = !s;
@@ -151,7 +170,45 @@ async function staff(body) {
     } catch (x) { err(x); }
   };
   $("#sfAdd")?.addEventListener("click", () => edit(null));
-  body.onclick = (e) => { const b = e.target.closest("[data-edit]"); if (b) edit(staffById(b.dataset.edit)); };
+  body.onclick = (e) => {
+    const p = e.target.closest("[data-prof]"); if (p) return profile(staffById(p.dataset.prof), ov.get(p.dataset.prof), edit);
+    const b = e.target.closest("[data-edit]"); if (b) edit(staffById(b.dataset.edit));
+  };
+}
+const addDaysISO = (d, n) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+
+// Hồ sơ 360° một nhân viên: sao, điểm xếp hạng tháng, báo cáo, vi phạm, lịch bận sắp tới → mở nhanh trang liên quan
+async function profile(s, o, edit) {
+  if (!s) return;
+  const today = vnToday(), month = today.slice(0, 8) + "01", in7 = addDaysISO(today, 7);
+  const [board, vio, busy] = await Promise.all([
+    rpc("score_board", { p_from: month, p_to: today, p_full: false }).catch(() => []),
+    sb.from("violations").select("v_date,v_time,type,note,points,photos").eq("staff_id", s.id).gte("v_date", month).order("v_date", { ascending: false }),
+    sb.from("busy").select("busy_date,type,shifts").eq("staff_id", s.id).gte("busy_date", today).lte("busy_date", in7).order("busy_date"),
+  ]);
+  const r = (board || []).find((x) => x.staff_id === s.id), vl = vio.data || [], bl = busy.data || [];
+  const tile = (l, v, sub = "") => `<div class="kpi-tile"><small>${l}</small><b>${v}</b>${sub ? `<span class="tiny muted">${sub}</span>` : ""}</div>`;
+  const v = await modal(`<h3>👤 ${esc(s.name)}</h3>
+    <p class="small muted" style="margin:-4px 0 12px">${esc(s.dept || "")} · Mã ${esc(s.id)} · ${s.hidden ? "Đang ẩn" : "Hoạt động"}${o ? ` · ${o.has_access ? "đã có quyền vào tool" : "⛔ chưa có quyền vào tool"}` : ""}</p>
+    <div class="kpi-row prof-kpi">
+      ${tile("Tổng sao", `${Number(s.total_star) < 0 ? "⚠️ " : ""}${fmt(s.total_star)}⭐`)}
+      ${tile("Điểm xếp hạng tháng", r ? fmt(r.total, 1) : "—", r ? `hạng ${r.rank ?? "—"} · DT ${r.rev_pct != null ? Math.round(r.rev_pct) + "% so tiến độ" : "—"}` : "")}
+      ${tile("Báo cáo tháng", o ? `${o.report_days} ngày` : "—", o ? `${o.last_report ? "gần nhất " + dmy(o.last_report).slice(0, 5) : "chưa báo cáo"}${o.off_days ? ` · OFF ${o.off_days}` : ""}` : "")}
+      ${tile("Nộp trễ · Vi phạm", o ? `${o.late} · ${o.violations}` : "—", o && o.vio_points ? `−${fmt(o.vio_points, 1)} điểm` : "")}
+    </div>
+    <h4 style="margin:14px 0 6px">⚠️ Vi phạm tháng này (${vl.length})</h4>
+    ${vl.length ? `<ul class="prof-list">${vl.slice(0, 5).map((x) => `<li><b>${dmy(x.v_date).slice(0, 5)}${x.v_time ? " " + String(x.v_time).slice(0, 5) : ""}</b> · ${esc(x.type)}${x.note ? ` <span class="muted">: ${esc(x.note)}</span>` : ""}${(x.photos || []).length ? " 📷" : ""}</li>`).join("")}</ul>` : `<p class="small muted">✅ Không có vi phạm.</p>`}
+    <h4 style="margin:14px 0 6px">📅 Bận / OFF 7 ngày tới (${bl.length})</h4>
+    ${bl.length ? `<ul class="prof-list">${bl.map((x) => `<li><b>${dmy(x.busy_date).slice(0, 5)}</b> · ${x.type === "OFF" ? "OFF" : "Bận ca " + (x.shifts || []).join(",")}</li>`).join("")}</ul>` : `<p class="small muted">Không đăng ký.</p>`}
+    <p class="tiny muted" style="margin:10px 0 0">Môn: ${s.assigned_items?.length ? esc(s.assigned_items.join(", ")) : "theo bộ phận"} · Reset chuỗi: ${s.reset_date ? dmy(s.reset_date) : "—"}</p>
+    <div class="modal-actions wrap"><button class="btn" data-v="me">📈 Trang cá nhân</button><button class="btn" data-v="report">📝 Báo cáo</button><button class="btn" data-v="vio">📄 Biên bản</button><button class="btn" data-v="edit">✏️ Sửa</button><span class="grow"></span><button class="btn" data-v="cancel">Đóng</button></div>`);
+  const go = (page) => document.querySelector(`#nav [data-page="${page}"]`)?.click();
+  try {
+    if (v === "me") { localStorage.setItem("thidua-v2-me-staff", s.id); go("me"); }
+    if (v === "report") { localStorage.setItem("thidua-v2-staff", s.id); go("report"); }
+    if (v === "vio") { localStorage.setItem("thidua-v2-cv", "vio"); localStorage.setItem("thidua-v2-vio-who", s.id); go("cv"); }
+  } catch { /* bỏ qua */ }
+  if (v === "edit") edit(s);
 }
 
 // ---------- Môn thi đua ----------

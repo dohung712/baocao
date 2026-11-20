@@ -1,5 +1,5 @@
 // Trang CV: Việc, TikTok, Vệ sinh, Lịch bận, Roadshow, Biên bản vi phạm (cv-vio.js), Quỹ, Thống kê
-import { $, $$, esc, fmt, toast, modal, confirmBox, vnToday, vnHM, addDays, weekStart, dmy, dm, dow, monthGrid, ymOf, shiftMonth, monthLabel, shortName, norm, copyText, download, csv } from "../ui.js";
+import { $, $$, esc, fmt, toast, modal, confirmBox, vnToday, vnHM, addDays, weekStart, dmy, dm, dow, monthGrid, ymOf, shiftMonth, monthLabel, shortName, norm, copyText, download, csv, centerTab } from "../ui.js";
 import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg, isHidden } from "../store.js";
 import { uploadAll, removeAll, fillPhotos, compress } from "../photos.js";
 import { parseSchedule } from "../lib-hrm.js";
@@ -43,6 +43,7 @@ async function draw(quiet = false) {
   if (!tabs.length) { $("#cvBody").innerHTML = `<div class="empty">Không có chức năng nào đang mở.</div>`; return; }
   if (!tabs.some(([id]) => id === tab)) tab = tabs[0][0];
   $("#cvTabs").innerHTML = tabs.map(([id, l]) => `<button type="button" data-t="${id}" class="${id === tab ? "on" : ""}">${l}</button>`).join("");
+  centerTab($("#cvTabs"));
   const body = $("#cvBody"); body.onclick = null;
   if (!quiet) body.innerHTML = `<div class="empty">Đang tải…</div>`;
   try { await ({ tiktok, clean, busy, rs, stats, vio: violationDocs, fund: (b) => fund(b, quiet), tasks: (b) => tasks(b, quiet) })[tab](body); if (tab === "tasks") tabBadge(); }

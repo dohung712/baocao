@@ -14,7 +14,8 @@ export async function render(view, params, ctx) {
   nav = ctx?.go || null;
   const own = S.me.staff_id;
   let staffId = isManager() ? (localStorage.getItem(LS_STAFF) || own || visibleStaff()[0]?.id) : own;
-  if (isManager() && staffId && !staffById(staffId)) staffId = visibleStaff()[0]?.id;
+  // Quản lý: chỉ chọn người có trong danh sách (mã NV của chính tài khoản có thể đang bị ẩn → ô chọn hiện người khác, form lại của người ẩn)
+  if (isManager() && !visibleStaff().some((s) => s.id === staffId)) staffId = visibleStaff()[0]?.id;
   st = { date: vnToday(), staffId, form: null, inputs: {}, comps: {}, preview: null, busy: false, extra: "", extraStars: "", revenue: "", revenueOld: null, media: { posts: "", line: "" }, mediaOld: null, todo: [] };
 
   if (!staffId) {
@@ -75,7 +76,7 @@ async function load() {
   body.innerHTML = `<div class="empty">Đang tải bảng môn…</div>`;
   try { st.form = orderItems(await rpc("report_form", { p_staff: st.staffId, p_date: st.date })); }
   catch (e) { body.innerHTML = `<div class="banner bad"><div><b>Không tải được</b>${esc(errMsg(e))}</div></div>`; return; }
-  st.inputs = {}; st.comps = {}; st.preview = null;
+  st.inputs = {}; st.comps = {}; st.preview = null; st.nopenOpen = null;
   const ex = st.form.existing || [];
   for (const r of ex) { if (["PHAT_TRE", "TIKTOK_PHAT"].includes(r.compensation)) continue; st.inputs[r.item_name] = String(+r.actual); st.comps[r.item_name] = r.compensation === "TANG_CA" ? "TANG_CA" : "DUNG_SAO"; }
   const p = st.form.proposal;
@@ -135,6 +136,7 @@ function drawBody() {
   $("#rBody").innerHTML = `
     <div id="rHead" class="stack" style="margin-bottom:12px"></div>
     ${f.items.length ? `
+    <p class="tiny muted rows-hint">Chỉ cần nhập môn có bán, môn bỏ trống tính là 0. “Tháng” = lũy kế đến hết hôm qua / target tháng.</p>
     <div class="tbl-wrap"><table class="items-tbl nosort">
       <thead><tr><th>#</th><th>Môn thi đua</th><th class="num">Thực đạt</th><th>Target · Chuỗi</th><th>Kết quả</th></tr></thead>
       <tbody id="rRows"></tbody>
@@ -162,11 +164,13 @@ function drawBody() {
     st.inputs[inp.dataset.item] = inp.value; drawRowLocal(inp.dataset.item); schedule();
   });
   rows.addEventListener("click", (e) => {
+    if (e.target.closest("[data-nopen]")) { st.nopenOpen = !nopenOpen(); drawRows(); return; }   // mở / thu gọn nhóm môn không trừ sao
     const b = e.target.closest("[data-comp]"); if (!b) return;
     st.comps[b.dataset.item] = b.dataset.comp; drawRows(); schedule();
   });
   rows.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && e.target.matches("input.actual")) { e.preventDefault(); const all = $$("input.actual", rows); const i = all.indexOf(e.target); (all[i + 1] || $("#btnSend"))?.focus(); }
+    // Enter → ô kế tiếp đang hiện (bỏ qua môn trong nhóm đang thu gọn)
+    if (e.key === "Enter" && e.target.matches("input.actual")) { e.preventDefault(); const all = $$("input.actual", rows).filter((x) => x.offsetParent); const i = all.indexOf(e.target); (all[i + 1] || $("#btnSend"))?.focus(); }
   });
   $("#xItem").oninput = (e) => { st.extra = e.target.value; };
   $("#xRev")?.addEventListener("input", (e) => { st.revenue = e.target.value; $("#revCard")?.classList.remove("miss"); drawSum(); });
@@ -222,9 +226,12 @@ async function runPreview() {
   } catch (e) { toast(errMsg(e)); }
 }
 
+// Nhóm "môn không trừ sao": mặc định thu gọn, tự mở nếu đã có số (đang sửa báo cáo đã nộp)
+const nopenOpen = () => st.nopenOpen ?? st.form.items.some((x) => x.noPen && st.inputs[x.name] !== undefined && st.inputs[x.name] !== "");
+
 function resultCell(item, pr) {
   const v = st.inputs[item.name];
-  if ((v === undefined || v === "") && !pr) return `<span class="muted small">Bỏ trống = 0</span>`;
+  if ((v === undefined || v === "") && !pr) return "";   // bỏ trống = 0 (ghi 1 lần ở đầu bảng thay vì lặp từng dòng)
   const rate = Math.round((Number(v) || 0) / (Number(item.target) || 1) * 100);
   if (!pr) return rate >= 100 ? `<span class="pill ok">Về số ${rate}%</span>` : `<span class="pill mute">${rate}%</span>`;
   const chooser = `<span class="choice"><button type="button" data-item="${esc(item.name)}" data-comp="DUNG_SAO" class="${(st.comps[item.name] || "DUNG_SAO") === "DUNG_SAO" ? "on" : ""}">Dùng sao</button><button type="button" data-item="${esc(item.name)}" data-comp="TANG_CA" class="${st.comps[item.name] === "TANG_CA" ? "on" : ""}">Tăng ca</button></span>`;
@@ -242,16 +249,20 @@ function drawRows() {
   const byName = Object.fromEntries(prev.map((r) => [r.itemName, r]));
   const focused = document.activeElement?.dataset?.item;
   const firstNoPen = st.form.items.findIndex((x) => x.noPen), anyPen = st.form.items.some((x) => !x.noPen);
+  const nop = st.form.items.filter((x) => x.noPen), open = !anyPen || nopenOpen();
+  const nopFilled = nop.filter((x) => st.inputs[x.name] !== undefined && st.inputs[x.name] !== "").length;
   $("#rRows").innerHTML = st.form.items.map((it, i) => {
     const pr = byName[it.name];
     const done = pr ? pr.status === "Về số" : Number(st.inputs[it.name]) >= Number(it.target);
     const streak = pr?.streak ?? it.streak;
     const v = st.inputs[it.name], has = v !== undefined && v !== "", pct = has ? Math.min(100, Math.round(Number(v) / (Number(it.target) || 1) * 100)) : 0, ml = multLabel(it);
-    return `${i === firstNoPen && anyPen ? `<tr class="nopen-sep"><td colspan="5">🛡️ Môn không trừ sao</td></tr>` : ""}<tr class="${done && has ? "done" : ""}${it.noPen ? " nopen" : ""}" data-row="${esc(it.name)}">
+    const mt = it.monthTarget != null ? Number(it.monthTarget) : null, md = Number(it.monthDone) || 0;
+    const month = mt ? ` · <span class="mth ${md >= mt ? "ok-t" : ""}" title="Lũy kế tháng đến hết hôm qua / target tháng">Tháng <b>${fmt(md, 2)}/${fmt(mt, 2)}</b></span>` : "";
+    return `${i === firstNoPen && anyPen ? `<tr class="nopen-sep"><td colspan="5"><button type="button" class="nopen-btn" data-nopen aria-expanded="${open}">🛡️ ${nop.length} môn không trừ sao${nopFilled ? ` · đã nhập ${nopFilled}` : ""}<span>${open ? "▲ Thu gọn" : "▼ Bấm để mở"}</span></button></td></tr>` : ""}<tr class="${done && has ? "done" : ""}${it.noPen ? " nopen" : ""}${it.noPen && !open ? " nopen-hide" : ""}" data-row="${esc(it.name)}">
       <td class="c-no muted">${i + 1}</td>
       <td class="item"><b>${esc(it.name)}${ml ? ` <span class="pill star">${ml}</span>` : ""}</b><small>${it.noPen ? `+${fmt(it.bonus)}⭐ · <span class="nopen-tag">không trừ sao</span>` : `+${fmt(it.bonus)} / −${fmt(it.penalty)}⭐`}</small></td>
       <td class="c-act num"><input class="actual" inputmode="decimal" enterkeyhint="next" type="number" min="0" step="any" data-item="${esc(it.name)}" value="${esc(v ?? "")}" placeholder="0" aria-label="Thực đạt ${esc(it.name)}"></td>
-      <td class="c-meta small">Target <b>${fmt(it.target, 2)}</b> · Chuỗi <span class="streak ${streak >= 3 ? "hot" : ""}">${streak}</span><span class="mbar"><i style="width:${pct}%"></i></span></td>
+      <td class="c-meta small">Target <b>${fmt(it.target, 2)}</b> · Chuỗi <span class="streak ${streak >= 3 ? "hot" : ""}">${streak}</span>${month}<span class="mbar"><i style="width:${pct}%"></i></span></td>
       <td class="c-res" data-res="${esc(it.name)}">${resultCell(it, pr)}</td></tr>`;
   }).join("") + (prev.filter((r) => r.compensation === "PHAT_TRE").map((r) => `<tr class="late"><td class="c-no">!</td><td class="item" colspan="3"><b>${esc(r.itemName)}</b></td><td class="c-res">${starHtml(r.starChange)}</td></tr>`).join(""));
   if (focused) { const el = $(`input.actual[data-item="${CSS.escape(focused)}"]`); if (el) { el.focus(); const v = el.value; el.value = ""; el.value = v; } }

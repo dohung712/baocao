@@ -522,7 +522,7 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 @media (max-width:640px){
   .items-tbl tr.nopen:not(.done){background:color-mix(in srgb,var(--info-soft) 75%,transparent)}
   .items-tbl tr.nopen-sep{display:block;padding:8px 12px;background:var(--bg);border-top:2px dashed color-mix(in srgb,var(--info) 45%,transparent)}
-  .items-tbl tr.nopen-sep td{display:block;padding:0;color:var(--info);font-size:12px;font-weight:600}
+  .items-tbl tr.nopen-sep td{display:block;padding:0;border:0;color:var(--info);font-size:12px;font-weight:600}
 }
 
 /* D10 📄 Biên bản vi phạm */
@@ -537,3 +537,85 @@ th.sorted-desc::after{content:" ▼";font-size:10px;color:var(--brand2)}
 .vb-prev .ph{position:relative}
 .vb-x{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:12px;line-height:24px;padding:0}
 .vb-req{position:absolute;left:12px;bottom:0;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none}
+
+/* B1 form báo cáo gọn: nhóm không trừ sao thu gọn, lũy kế tháng */
+.rows-hint{margin:0 0 6px}
+.items-tbl tr.nopen-hide{display:none}
+.nopen-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:36px;border:0;background:none;padding:2px 0;font:inherit;font-size:13px;font-weight:600;color:var(--info);cursor:pointer;text-align:left}
+.nopen-btn span{font-size:12px;font-weight:500;white-space:nowrap}
+.mth b{font-weight:600}
+@media (max-width:640px){
+  .items-tbl tr{padding:9px 12px;gap:3px 10px}
+  .items-tbl td.c-res:empty{display:none}
+  .items-tbl input.actual{width:104px;height:46px;font-size:20px}
+  .items-tbl .mbar{margin-top:4px;height:5px}
+}
+
+/* G3 điều hướng gọn trên điện thoại: tab con cuộn ngang 1 hàng, tiêu đề không xuống dòng, nút / chip dễ bấm */
+@media (max-width:640px){
+  .subtabs{flex-wrap:nowrap;overflow-x:auto;position:relative;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px;scroll-snap-type:x proximity}
+  .subtabs::-webkit-scrollbar{display:none}
+  .subtabs button{flex:none;white-space:nowrap;min-height:40px;scroll-snap-align:start}
+  .seg{max-width:100%;overflow-x:auto;position:relative;scrollbar-width:none}
+  .seg::-webkit-scrollbar{display:none}
+  .seg button{flex:none;white-space:nowrap;min-height:36px}
+  .brand b{font-size:15px;white-space:nowrap}
+  #btnMe{max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip{min-height:38px;padding:6px 12px;font-size:14px}
+  .btn.small{min-height:36px}
+}
+
+/* H1b 📊 Tổng quan tháng: hàng chỉ số, doanh thu bộ phận so target, dẫn đầu / cần hỗ trợ */
+.kpi-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kpi-tile{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.kpi-tile small{color:var(--muted);font-size:12px}
+.kpi-tile b{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);line-height:1.15}
+.kmeter{position:relative;display:block;height:8px;border-radius:999px;background:var(--info-soft)}
+.kmeter i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--info)}
+.kmeter.good{background:var(--ok-soft)}.kmeter.good i{background:var(--ok)}
+.kmeter.warn{background:var(--warn-soft)}.kmeter.warn i{background:var(--warn)}
+.kmeter.bad{background:var(--bad-soft)}.kmeter.bad i{background:var(--bad)}
+.kmeter em{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink);border-radius:1px}
+.kmeter.flat{margin:2px 0}
+.kdepts{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.kdept{display:grid;grid-template-columns:90px minmax(0,1fr) auto;grid-template-areas:"n m f" ". s s";align-items:center;column-gap:12px;row-gap:2px}
+.kd-name{grid-area:n;font-weight:600}.kdept .kmeter{grid-area:m}.kd-fig{grid-area:f;white-space:nowrap;font-variant-numeric:tabular-nums}
+.kd-st{grid-area:s;color:var(--muted)}
+.krank{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.krank h3{font-size:14px;margin:0 0 6px}
+.krank ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.krank li{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:var(--bg)}
+.kr-n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--card);border:1px solid var(--line2)}
+.krank > .btn{grid-column:1/-1;justify-self:start}
+@media (max-width:860px){.kpi-row{grid-template-columns:1fr 1fr}}
+@media (max-width:640px){.kpi-tile b{font-size:20px}.krank{grid-template-columns:1fr}.kdept{grid-template-columns:70px minmax(0,1fr) auto}
+  .hm-kpi .card-h{flex-wrap:wrap;row-gap:2px}.hm-kpi .card-h > span{flex-basis:100%}}
+
+/* F1b Nhân sự 360° */
+.linkish{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.linkish b{border-bottom:1px dashed var(--line2)}
+.linkish:hover b{color:var(--brand2);border-bottom-color:var(--brand2)}
+.staff-tbl tr.neg-row td{background:color-mix(in srgb,var(--bad-soft) 55%,transparent)}
+.prof-kpi{grid-template-columns:1fr 1fr}
+.prof-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.mnav{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+
+/* Lịch tháng → danh sách theo ngày trên điện thoại (tháng hiện tại: ẩn các tuần đã qua, bấm để xem) */
+.cal-old{display:none}
+@media (max-width:640px){
+  .cal-h{display:none}
+  .cal-g{display:flex;flex-direction:column}
+  .cal-c{display:grid;grid-template-columns:48px minmax(0,1fr);column-gap:10px;row-gap:0;align-items:start;align-content:start;min-height:48px;padding:8px 12px;border-right:0}
+  .cal-c.empty{display:none}
+  .cal-c > *{grid-column:2;margin-bottom:3px}
+  .cal-c > i{grid-column:1;grid-row:1 / span 20;font-size:16px;line-height:1.15;color:var(--ink)}
+  .cal-c > i::before{content:attr(data-dow);display:block;font-size:11px;font-weight:600;color:var(--muted)}
+  .cal-c.wkend > i, .cal-c.wkend > i::before{color:var(--bad)}
+  .cal-c.today{box-shadow:inset 4px 0 0 var(--brand2)}
+  .cal-c .tag{font-size:13px;padding:3px 8px;white-space:normal}
+  .cal-c .free{font-size:13px;align-self:center}
+  .cal-c:not(:has(.tag)):not(:has(.free)){min-height:38px}
+  .cal-c.oldweek{display:none}
+  .cal.show-old .cal-c.oldweek{display:grid}
+  .cal-old{display:block;width:100%;border:0;border-bottom:1px solid var(--line);background:var(--bg);padding:10px;font:inherit;font-size:13px;font-weight:600;color:var(--info);cursor:pointer}
+}

@@ -15,6 +15,8 @@ const err = (e) => toast(errMsg(e), 4500);
 
 export async function violationDocs(body) {
   const mgr = isManager();
+  // Mở từ hồ sơ 360° (Quản lý → Nhân sự): lọc sẵn theo NV đó, 1 lần
+  try { const w = localStorage.getItem("thidua-v2-vio-who"); if (w) { who = w; ym = ymOf(vnToday()); localStorage.removeItem("thidua-v2-vio-who"); } } catch { /* bỏ qua */ }
   if (mgr && drive === null) drive = await rpc("private_setting_status").then((s) => !!s?.DRIVE).catch(() => false);
   const { data, error } = await sb.from("violations").select("*").gte("v_date", ym + "-01").lte("v_date", monthEnd(ym))
     .order("v_date", { ascending: false }).order("v_time", { ascending: false, nullsFirst: false }).order("id", { ascending: false });
