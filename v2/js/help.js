@@ -41,6 +41,8 @@ const H = [
   ["#itView", "⚡ Chỉnh nhanh / 📋 Bảng chi tiết", "Chỉnh nhanh: sửa +/− sao và Bật/Tắt từng môn theo bộ phận, tự lưu. Bảng chi tiết: thêm/xoá môn, target, X2/X3, thứ tự.", true],
   [".qtbl", "⚡ Môn & sao theo bộ phận", "Mỗi cột 1 bộ phận: + sao thưởng, − sao phạt, công tắc Bật/Tắt (tắt = môn không hiện trong báo cáo bộ phận đó). Sửa là tự lưu. Sao phạt 0 = không trừ sao. ↺ = bỏ mức riêng, dùng lại mức Chung.", true],
   [".nopen-sep", "🛡️ Môn không trừ sao", "Các môn này chưa về số cũng không bị trừ sao (sao phạt 0 hoặc quy tắc riêng). Vẫn nhập thực đạt để được cộng sao khi về số."],
+  ["#cvTabs [data-t=flyer]", "📄 Tờ rơi", "Lịch phát tờ rơi: tuyến, bản đồ, số tờ, người cùng phát, hạn báo cáo. Phát xong tạo album trên nhóm, chụp màn hình album rồi bấm 📸 Báo cáo hoàn tất. Quản lý: nhập số tờ → ⚡ Tạo danh sách phát, bấm ✏️ để đổi người."],
+  ["#flGen", "⚡ Tạo đợt phát tờ rơi", "Nhập số tờ (bắt buộc), chọn ngày bắt đầu, số ngày (tự động hoặc 1–4), giờ hạn. Tool chọn tuyến lâu chưa phát, chia đều người (bỏ tick người không phát). Sửa lại người / ngày ở từng tuyến sau khi tạo.", true],
   ["#cvTabs [data-t=vio]", "📄 Biên bản", "Biên bản vi phạm kèm ảnh (lưu Google Drive). Mỗi biên bản = 1 lần vi phạm, trừ điểm xếp hạng. Nhân viên chỉ thấy số lần, thời gian và ảnh của mình."],
   ["#vbAdd", "+ Úp biên bản", "Chọn nhân viên, ngày giờ, loại lỗi, chụp hoặc chọn ảnh biên bản rồi Lưu. Ảnh tự tải lên Drive.", true],
   ["#mediaCard", "📣 Báo cáo truyền thông", "Chọn số lần truyền thông và số lần báo cáo Line truyền thông trong ngày (0, 1, 2, 3 hoặc gõ số khác). Có trong ảnh báo cáo."],

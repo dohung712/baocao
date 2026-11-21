@@ -67,9 +67,12 @@ async function refreshQuiet() {
   try { st.form = orderItems(await rpc("report_form", { p_staff: st.staffId, p_date: st.date })); drawHead(); } catch { /* bỏ qua */ }
 }
 
+// Việc cần làm = todo_list + việc phát tờ rơi (D11)
+const todoAll = () => Promise.all([rpc("todo_list", { p_staff: st.staffId, p_date: st.date }).catch(() => []), rpc("flyer_todo", { p_staff: st.staffId, p_date: st.date }).catch(() => [])])
+  .then(([a, b]) => [...(Array.isArray(b) ? b : []), ...(Array.isArray(a) ? a : [])]);
 async function refreshTodo() {
   if (!$("#todoCard") || st.busy) return;
-  try { st.todo = await rpc("todo_list", { p_staff: st.staffId, p_date: st.date }); drawTodo(); } catch { /* bỏ qua */ }
+  try { st.todo = await todoAll(); drawTodo(); } catch { /* bỏ qua */ }
 }
 
 async function load() {
@@ -87,7 +90,7 @@ async function load() {
   st.revenueOld = rv?.[0]?.amount ?? null; st.revenue = st.revenueOld == null ? "" : String(+st.revenueOld);
   const [md, td] = await Promise.all([
     sb.from("media_reports").select("posts,line_reports").eq("staff_id", st.staffId).eq("report_date", st.date).then((r) => r.data || []).catch(() => []),
-    rpc("todo_list", { p_staff: st.staffId, p_date: st.date }).catch(() => []),
+    todoAll(),
   ]);
   st.mediaOld = md[0] ? { posts: md[0].posts, line: md[0].line_reports } : null;
   st.media = st.mediaOld ? { posts: String(st.mediaOld.posts), line: String(st.mediaOld.line) } : { posts: "", line: "" };

@@ -158,3 +158,25 @@ export function busyDeadlineMsg(store: string, date: string, mon: string, hm: st
   else L.push("", "Chưa ai đăng ký ngày nào.");
   return L.join("\n");
 }
+
+// Phát tờ rơi: tới giờ hạn → báo QL / chủ sở hữu tuyến nào đã nộp ảnh album, ai chưa
+export function flyerMsg(store: string, date: string, tasks: any[], assigns: any[], names: Map<string, string>, camps: Map<number, string>, appUrl: string) {
+  if (!tasks.length) return null;
+  const by = new Map<number, any[]>(); for (const a of assigns) by.set(a.task_id, [...(by.get(a.task_id) || []), a]);
+  const late: string[] = [], ok: string[] = [];
+  let need = 0, done = 0;
+  for (const t of tasks) {
+    const list = by.get(t.id) || [];
+    need += list.length; done += list.filter((a) => a.done_at).length;
+    const who = list.map((a) => `${a.done_at ? "✅" : "❌"} ${esc(short(names.get(a.staff_id) || a.staff_id))} (${a.qty})`).join(", ") || "chưa có người";
+    const line = `• <b>${esc(t.route_name)}</b> · ${t.qty} tờ · hạn ${esc(t.due_hm)} ${t.due_date !== date ? dm(t.due_date) : ""}\n   ${who}`;
+    (list.length && list.every((a) => a.done_at) ? ok : late).push(line);
+  }
+  const cs = [...new Set(tasks.map((t) => camps.get(t.campaign_id)).filter(Boolean))];
+  const L = [`📄 <b>HẠN PHÁT TỜ RƠI · ${dow(date)} ${dm(date)}</b>`, esc(store), cs.length ? esc(cs.join(" · ")) : "", "",
+    `Đã báo cáo: <b>${done}/${need}</b> lượt nhân sự`];
+  if (late.length) L.push("", `❌ <b>Chưa hoàn tất (${late.length} tuyến)</b>`, ...late);
+  if (ok.length) L.push("", `✅ <b>Đã hoàn tất (${ok.length} tuyến)</b>`, ...ok);
+  L.push("", `Xem ảnh album: ${appUrl} → CV → 📄 Tờ rơi`);
+  return L.filter((x, i) => !(x === "" && L[i - 1] === "")).join("\n");
+}

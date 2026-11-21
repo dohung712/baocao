@@ -6,9 +6,10 @@ import { parseSchedule } from "../lib-hrm.js";
 import { fund } from "./cv-fund.js";
 import { tasks, pendingCount } from "./cv-tasks.js";
 import { zones } from "./cv-zones.js";
+import { flyer } from "./cv-flyer.js";
 import { violationDocs } from "./cv-vio.js";
 
-const TABS = [["tasks", "📋 Việc"], ["tiktok", "📱 TikTok"], ["clean", "🧹 Vệ sinh"], ["busy", "📅 Lịch bận"], ["rs", "🏃 Roadshow"], ["vio", "📄 Biên bản"], ["fund", "💵 Quỹ"], ["stats", "📊 Thống kê"]];
+const TABS = [["tasks", "📋 Việc"], ["tiktok", "📱 TikTok"], ["clean", "🧹 Vệ sinh"], ["busy", "📅 Lịch bận"], ["rs", "🏃 Roadshow"], ["flyer", "📄 Tờ rơi"], ["vio", "📄 Biên bản"], ["fund", "💵 Quỹ"], ["stats", "📊 Thống kê"]];
 const RS_TIMES = (() => { const o = []; const add = (a, b) => { for (let t = a; t <= b; t += 30) o.push(String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0")); }; add(360, 630); add(900, 1080); return o; })();
 let tab = localStorage.getItem("thidua-v2-cv") || "tasks", ym = ymOf(vnToday()), root;
 const D = { tiktok: [], clean: [], busy: [], rs: [] };
@@ -16,7 +17,7 @@ const D = { tiktok: [], clean: [], busy: [], rs: [] };
 export async function render(view) {
   root = view;
   try { tab = localStorage.getItem("thidua-v2-cv") || tab; } catch { /* bỏ qua */ }
-  view.innerHTML = `<div class="page-h"><div><h1>Công việc (CV)</h1><p>Việc cần làm, TikTok, lịch vệ sinh, lịch bận/OFF, roadshow, quỹ thu chi và thống kê</p></div></div>
+  view.innerHTML = `<div class="page-h"><div><h1>Công việc (CV)</h1><p>Việc cần làm, TikTok, lịch vệ sinh, lịch bận/OFF, roadshow, phát tờ rơi, quỹ thu chi và thống kê</p></div></div>
     <div class="subtabs" id="cvTabs"></div><div id="cvBody"></div>`;
   $("#cvTabs").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) { tab = b.dataset.t; localStorage.setItem("thidua-v2-cv", tab); draw(); } };
   await draw();
@@ -46,7 +47,7 @@ async function draw(quiet = false) {
   centerTab($("#cvTabs"));
   const body = $("#cvBody"); body.onclick = null;
   if (!quiet) body.innerHTML = `<div class="empty">Đang tải…</div>`;
-  try { await ({ tiktok, clean, busy, rs, stats, vio: violationDocs, fund: (b) => fund(b, quiet), tasks: (b) => tasks(b, quiet) })[tab](body); if (tab === "tasks") tabBadge(); }
+  try { await ({ tiktok, clean, busy, rs, flyer, stats, vio: violationDocs, fund: (b) => fund(b, quiet), tasks: (b) => tasks(b, quiet) })[tab](body); if (tab === "tasks") tabBadge(); }
   catch (e) { body.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const err = (e) => toast(errMsg(e), 4500);
