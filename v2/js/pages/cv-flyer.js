@@ -1,7 +1,7 @@
 // D11 Phát tờ rơi: QL / chủ sở hữu nhập số tờ → tool tự chia tuyến, ngày, nhân sự (NV + PG); sửa nhân sự sau khi tạo.
 // NV / PG xem lịch, phát xong nộp ảnh chụp màn hình album đã tạo trên nhóm (Room). Tới giờ hạn tool báo Telegram cho QL.
 import { esc, fmt, toast, modal, confirmBox, vnToday, vnHM, addDays, dmy, dm, dow, shortName, copyText } from "../ui.js";
-import { S, rpc, isManager, visibleStaff, staffById, errMsg } from "../store.js";
+import { S, rpc, isManager, visibleStaff, staffById, errMsg, setting } from "../store.js";
 import { uploadAll, removeAll, fillPhotos, compress } from "../photos.js";
 
 let B = null, host = null;
@@ -46,6 +46,7 @@ function createCard() {
       </div>
       <details><summary class="small">👥 Nhân sự tham gia (${visibleStaff().length} người NV + PG — bỏ tick người không phát đợt này)</summary>
         <div class="chips" style="margin-top:6px">${visibleStaff().map((s) => `<label class="chip inline"><input type="checkbox" name="fl_st" value="${esc(s.id)}" checked> ${esc(s.name)} <span class="tiny muted">${esc(s.dept || "")}</span></label>`).join("")}</div></details>
+      <p class="tiny muted">🔔 Tạo xong: Telegram báo lịch đợt mới vào nhóm (trong ~5 phút), NV / PG thấy dải nhắc khi mở app; trước giờ hạn ${esc(String(setting("FLYER_REMIND_BEFORE_MIN", 120)))} phút nhắc người chưa nộp ảnh; đúng giờ hạn báo QL ✅/❌.</p>
       <p class="tiny muted">Tool chọn tuyến lâu chưa phát trước cho tới khi đủ số tờ (đang bật ${active.length} tuyến · ${fmt(cap)} tờ). Tuyến / chợ cần nhiều người (2–4) chỉnh ở <b>🗺️ Danh mục tuyến</b> bên dưới. Ưu tiên người không đăng ký bận / OFF ngày đó; chia đều số lượt giữa mọi người.</p>
       <div><button class="btn primary" type="submit">⚡ Tạo danh sách phát</button></div>
     </form></details>`;
@@ -107,7 +108,7 @@ async function generate(f) {
     const r = await rpc("flyer_generate", { p_qty: Number(v.qty), p_start: v.start || null, p_days: v.days ? Number(v.days) : null, p_deadline_hm: v.hm || null,
       p_exclude: all.filter((x) => !x.checked).map((x) => x.value), p_name: v.name || null });
     try { localStorage.setItem(KEY, String(r.campaign_id)); } catch { /* bỏ qua */ }
-    toast("✅ " + r.message, 5000); flyer(host);
+    toast("✅ " + r.message + " · Telegram báo nhóm trong vài phút, NV thấy nhắc khi mở app", 6500); flyer(host);
   } catch (e) { err(e); btn.disabled = false; }
 }
 

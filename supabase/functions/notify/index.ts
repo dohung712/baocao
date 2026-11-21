@@ -2,7 +2,7 @@
 //  - mode "tick": lịch pg_cron gọi 5 phút/lần (xác thực bằng x-cron-secret), tự gửi khi tới giờ
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
-import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyDeadlineMsg, flyerMsg, busyMsg, rsMsg, serviceMsg, fundMsg } from "./summary2.ts";
+import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyDeadlineMsg, flyerMsg, flyerNewMsg, busyMsg, rsMsg, serviceMsg, fundMsg } from "./summary2.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -70,7 +70,9 @@ export const ITEMS: Record<string, { label: string; freq: string; time: string; 
   clean: { label: "Vệ sinh (cuối ngày: ảnh, khu vực chưa xong)", freq: "daily", time: "21:00" },
   busy: { label: "Lịch bận / OFF ngày mai", freq: "daily", time: "21:30" },
   rs: { label: "Roadshow", freq: "daily", time: "21:30" },
-  flyer: { label: "Phát tờ rơi: báo QL đúng giờ hạn từng tuyến (giờ ở đây chỉ dùng khi gửi thử)", freq: "daily", time: "20:00", on: true },
+  flyernew: { label: "Tờ rơi: báo đợt phát mới ngay khi QL tạo (lịch, tuyến, người)", freq: "daily", time: "00:00", on: true },
+  flyerpre: { label: "Tờ rơi: nhắc người chưa nộp ảnh trước giờ hạn (số phút: FLYER_REMIND_BEFORE_MIN)", freq: "daily", time: "00:00", on: true },
+  flyer: { label: "Tờ rơi: báo QL đúng giờ hạn từng tuyến (giờ ở đây chỉ dùng khi gửi thử)", freq: "daily", time: "20:00", on: true },
   service: { label: "Phục vụ & vi phạm", freq: "weekly", time: "09:00", dow: 1 },
   fund: { label: "Quỹ thu chi (chi tiết thu, chi, số dư)", freq: "weekly", time: "09:00", dow: 1, on: true },
 };
@@ -158,6 +160,8 @@ async function compose(kind: string, date: string, cfg: Record<string, any>, opt
     return { text: kind === "clean" ? cleanMsg(store, date, rows, names, zones, done) : cleanRemindMsg(store, date, rows, names, zones, done), period: date };
   }
   if (kind === "flyer") return { text: await flyerText(date, store, null), period: date };
+  if (kind === "flyerpre") return { text: await flyerText(date, store, null, undefined, Number(cfg.FLYER_REMIND_BEFORE_MIN ?? 120) || 120), period: date };
+  if (kind === "flyernew") return { text: await flyerNewText(store, false), period: date };
   if (kind === "busy") return { text: busyMsg(store, date, await rest(`busy?select=busy_date,staff_id,type,shifts&busy_date=eq.${addDays(date, 1)}`), names), period: date };
   if (kind === "rs") return { text: rsMsg(store, date, vnParts().hm, await rest(`roadshow?select=rs_date,rs_time,staff_id,photos,km,minutes&rs_date=gte.${addDays(date, -7)}&rs_date=lte.${addDays(date, 1)}`), names), period: date };
   if (kind === "service") {
@@ -168,12 +172,16 @@ async function compose(kind: string, date: string, cfg: Record<string, any>, opt
   throw new Error("Đầu mục không hợp lệ.");
 }
 
-// Tờ rơi: lấy tuyến tới hạn (hoặc mọi tuyến của ngày khi gửi thử) + phân công, soạn tin
-async function flyerText(date: string, store: string, hm: string | null, out?: { ids: number[] }) {
-  const q = hm ? `flyer_tasks?select=id,campaign_id,route_name,qty,due_date,due_hm&notified_at=is.null&due_date=gte.${addDays(date, -3)}&order=due_date,due_hm,id`
-    : `flyer_tasks?select=id,campaign_id,route_name,qty,due_date,due_hm&due_date=eq.${date}&order=due_hm,id`;
+// Tờ rơi: lấy tuyến tới hạn (hm), tới giờ nhắc trước hạn (pre phút), hoặc mọi tuyến của ngày khi gửi thử; soạn tin
+const hmAdd = (hm: string, min: number) => { const [h, m] = hm.split(":").map(Number); const t = Math.max(0, h * 60 + m + min); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
+async function flyerText(date: string, store: string, hm: string | null, out?: { ids: number[] }, pre = 0) {
+  const sel = "flyer_tasks?select=id,campaign_id,route_name,qty,due_date,due_hm";
+  const q = hm && !pre ? `${sel}&notified_at=is.null&due_date=gte.${addDays(date, -3)}&order=due_date,due_hm,id`
+    : hm && pre ? `${sel}&reminded_at=is.null&notified_at=is.null&due_date=eq.${date}&order=due_hm,id`
+    : `${sel}&due_date=eq.${date}&order=due_hm,id`;
   let tasks: any[] = await rest(q);
-  if (hm) tasks = tasks.filter((t) => t.due_date < date || (t.due_date === date && t.due_hm <= hm));
+  if (hm && !pre) tasks = tasks.filter((t) => t.due_date < date || (t.due_date === date && t.due_hm <= hm));
+  if (hm && pre) tasks = tasks.filter((t) => hmAdd(t.due_hm, -pre) <= hm && hm < t.due_hm);
   if (!tasks.length) return null;
   if (out) out.ids = tasks.map((t) => t.id);
   const ids = tasks.map((t) => t.id).join(","), cids = [...new Set(tasks.map((t) => t.campaign_id))].join(",");
@@ -182,7 +190,21 @@ async function flyerText(date: string, store: string, hm: string | null, out?: {
     rest(`flyer_campaigns?select=id,name&id=in.(${cids})`),
     rest("staff?select=id,name"),
   ]);
-  return flyerMsg(store, date, tasks, assigns, new Map(staff.map((x: any) => [x.id, x.name])), new Map(camps.map((c: any) => [c.id, c.name])), APP_URL);
+  return flyerMsg(store, date, tasks, assigns, new Map(staff.map((x: any) => [x.id, x.name])), new Map(camps.map((c: any) => [c.id, c.name])), APP_URL, pre);
+}
+// Đợt mới: auto = đợt chưa báo (announced_at trống); gửi thử = đợt tạo gần nhất
+async function flyerNewText(store: string, auto: boolean, out?: { ids: number[] }) {
+  const camps: any[] = await rest(`flyer_campaigns?select=id,name,total_qty,deadline_hm,start_date,end_date${auto ? "&announced_at=is.null" : ""}&order=id.desc&limit=${auto ? 5 : 1}`);
+  if (!camps.length) return null;
+  if (out) out.ids = camps.map((c) => c.id);
+  const staff: any[] = await rest("staff?select=id,name"), names = new Map(staff.map((x: any) => [x.id, x.name]));
+  const parts: string[] = [];
+  for (const c of camps.reverse()) {
+    const tasks: any[] = await rest(`flyer_tasks?select=id,route_name,map_url,qty,due_date,due_hm&campaign_id=eq.${c.id}&order=due_date,id`);
+    const assigns: any[] = tasks.length ? await rest(`flyer_assign?select=task_id,staff_id,qty&task_id=in.(${tasks.map((t) => t.id).join(",")})`) : [];
+    const m = flyerNewMsg(store, c, tasks, assigns, names, APP_URL); if (m) parts.push(m);
+  }
+  return parts.join("\n\n") || null;
 }
 
 async function telegram(token: string, method: string, body: unknown) {
@@ -221,19 +243,21 @@ async function tick() {
   if (cfg.NOTIFY_ENABLED !== true) return { skipped: "off" };
   const now = vnParts(); const done: string[] = [];
   for (const it of items(cfg)) {
-    if (it.id === "flyer") {
-      // không theo giờ cố định: gửi khi tới giờ hạn của tuyến, mỗi tuyến báo 1 lần
+    if (it.id === "flyer" || it.id === "flyerpre" || it.id === "flyernew") {
+      // không theo giờ cố định: đợt mới → gửi ngay; trước hạn X phút → nhắc; tới giờ hạn → báo; mỗi tuyến / đợt 1 lần
       if (!it.on) continue;
       try {
-        const out = { ids: [] as number[] };
-        const text = await flyerText(now.date, String(cfg.STORE_NAME || ""), now.hm, out);
-        if (text && out.ids.length) {
-          await sendAll(text, cfg);
-          await rest(`flyer_tasks?id=in.(${out.ids.join(",")})`, { method: "PATCH", body: JSON.stringify({ notified_at: new Date().toISOString() }) });
-          await log("flyer", now.date + " " + now.hm, true, "auto " + out.ids.length);
-          done.push("flyer");
+        const out = { ids: [] as number[] }, store = String(cfg.STORE_NAME || "");
+        const pre = Number(cfg.FLYER_REMIND_BEFORE_MIN ?? 120) || 120;
+        const text = it.id === "flyernew" ? await flyerNewText(store, true, out) : await flyerText(now.date, store, now.hm, out, it.id === "flyerpre" ? pre : 0);
+        if (out.ids.length) {
+          if (text) await sendAll(text, cfg);
+          const table = it.id === "flyernew" ? "flyer_campaigns" : "flyer_tasks", col = { flyer: "notified_at", flyerpre: "reminded_at", flyernew: "announced_at" }[it.id]!;
+          await rest(`${table}?id=in.(${out.ids.join(",")})`, { method: "PATCH", body: JSON.stringify({ [col]: new Date().toISOString() }) });
+          await log(it.id, now.date + " " + now.hm, true, "auto " + out.ids.length);
+          done.push(it.id);
         }
-      } catch (e) { await log("flyer-error", now.date + " " + now.hm, false, String((e as Error).message)); }
+      } catch (e) { await log(it.id + "-error", now.date + " " + now.hm, false, String((e as Error).message)); }
       continue;
     }
     if (!it.on || now.hm < it.time) continue;

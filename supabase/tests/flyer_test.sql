@@ -4,7 +4,8 @@ insert into memberships(email, role, staff_id, stores) values ('own@x.vn','owner
 -- chỉ cho kiểm thử: đọc thẳng bảng (bảng thật chỉ đọc qua hàm)
 do $$ declare t text; begin foreach t in array array['flyer_routes','flyer_campaigns','flyer_tasks','flyer_assign'] loop
   execute format('drop policy if exists test_read on public.%I', t); execute format('create policy test_read on public.%I for select to authenticated using (true)', t);
-  execute format('grant select on public.%I to authenticated', t); end loop; end $$;
+  execute format('grant select on public.%I to authenticated', t); end loop;
+  drop policy if exists test_upd on public.flyer_tasks; create policy test_upd on public.flyer_tasks for update to authenticated using (true); grant update on public.flyer_tasks to authenticated; end $$;
 delete from flyer_campaigns;
 update flyer_routes set last_used = null;
 set role authenticated;
@@ -33,10 +34,16 @@ do $$ declare r jsonb; b jsonb; v_c bigint; v_sum int; v_t bigint; n int; begin
   select id into v_t from public.flyer_tasks where campaign_id = v_c order by id limit 1;
   perform public.flyer_task_assign(v_t, array['1001','1003']);
   if (select count(*) from public.flyer_assign where task_id = v_t) <> 2 then raise exception 'sửa nhân sự không đúng'; end if;
+  update public.flyer_tasks set reminded_at = now() where id = v_t;
   perform public.flyer_task_update(v_t, public.vn_today() + 2, '18:00', 40);
+  if (select reminded_at from public.flyer_tasks where id = v_t) is not null then raise exception 'đổi giờ hạn phải nhắc lại'; end if;
   if (select sum(qty) from public.flyer_assign where task_id = v_t) <> 40 then raise exception 'chia lại số tờ sai'; end if;
   b := public.flyer_board();
   if jsonb_array_length(b -> 'campaigns') < 2 then raise exception 'board thiếu đợt'; end if;
+  -- đợt mới chưa báo Telegram; NV có 'lịch sắp tới' trong việc cần làm
+  if (select announced_at from public.flyer_campaigns where id = (r ->> 'campaign_id')::bigint) is not null then raise exception 'đợt mới phải chờ báo Telegram'; end if;
+  if not exists (select 1 from jsonb_array_elements(public.flyer_todo((select a.staff_id from public.flyer_assign a join public.flyer_tasks t on t.id = a.task_id
+      where t.campaign_id = (r ->> 'campaign_id')::bigint limit 1), public.vn_today())) x where x ->> 'k' = 'fl_next') then raise exception 'thiếu nhắc lịch sắp tới'; end if;
   -- Xoá đợt 2
   perform public.flyer_campaign_delete((r ->> 'campaign_id')::bigint);
   -- Thêm / sửa tuyến
@@ -58,7 +65,8 @@ do $$ declare v_t bigint; r jsonb; begin
 end $$;
 reset role;
 do $$ declare t text; begin foreach t in array array['flyer_routes','flyer_campaigns','flyer_tasks','flyer_assign'] loop
-  execute format('drop policy if exists test_read on public.%I', t); end loop; end $$;
+  execute format('drop policy if exists test_read on public.%I', t); end loop;
+  drop policy if exists test_upd on public.flyer_tasks; revoke update on public.flyer_tasks from authenticated; end $$;
 delete from flyer_campaigns;
 update flyer_routes set last_used = null;
 \echo flyer_test OK

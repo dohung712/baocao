@@ -1,4 +1,4 @@
-// Nhắc việc cho NV theo lịch đăng ký: trực vệ sinh hôm nay / ngày mai (lịch CV → Vệ sinh) và khu vực vệ sinh của mình chưa báo xong.
+// Nhắc việc cho NV theo lịch đăng ký: trực vệ sinh hôm nay / ngày mai (lịch CV → Vệ sinh), khu vực vệ sinh chưa báo xong, lịch phát tờ rơi (D11).
 import { $, esc, vnToday, addDays, dmy, dow } from "./ui.js";
 import { sb, S, rpc } from "./store.js";
 import { openCum } from "./cumulative.js";
@@ -17,7 +17,7 @@ export async function renderReminders(go) {
     sb.from("clean_zones").select("id,dept,kind,name,staff_text,staff_ids").eq("kind", "zone"),
     sb.from("clean_zone_checks").select("zone_id").eq("d", today).eq("staff_id", me),
   ]).catch(() => [{}, {}, {}]);
-  const cum = await rpc("cum_form", { p_staff: me }).catch(() => null);
+  const [cum, fl] = await Promise.all([rpc("cum_form", { p_staff: me }).catch(() => null), rpc("flyer_todo", { p_staff: me, p_date: today }).catch(() => [])]);
   if (tok !== busy) return;
   const items = [], c0 = (cl.data || []).find((c) => c.clean_date === today), c1 = (cl.data || []).find((c) => c.clean_date === tm);
   if (c0 && (c0.photos || []).length < 3) items.push(["cl" + today, `🧹 <b>Hôm nay (${dow(today)} ${dmy(today)}) bạn trực vệ sinh</b> theo lịch đăng ký — làm xong nộp 3 ảnh.`]);
@@ -27,6 +27,12 @@ export async function renderReminders(go) {
   if (mine.length) items.push(["zone" + today, `🧽 <b>Khu vực vệ sinh của bạn:</b> ${mine.map((z) => esc(z.name)).join(" · ")} — làm xong bấm “Xong hôm nay”.`]);
   if (cum && cum.window.open && ["monday", "unlock"].includes(cum.window.why) && !cum.done)
     items.unshift(["cum" + today + (cum.window.since || ""), `📈 <b>${cum.window.why === "monday" ? "Thứ 2: cập nhật lũy kế tháng" : "Quản lý mở khoá: cập nhật lại lũy kế"}</b> đến hết ${dow(cum.as_of)} ${dmy(cum.as_of)} — DT QĐ và từng môn đúng loại (🔢 Số lượng · 💰 DT quy đổi · 💵 DT thực).`, "cum"]);
+  // Tờ rơi (D11): quá hạn / hôm nay / mai / lịch sắp tới — hiện ngay khi QL vừa tạo đợt
+  for (const f of Array.isArray(fl) ? fl : []) {
+    const k = f.k + today + ":" + String(f.d || "").length;   // lịch đổi (thêm / bớt tuyến) thì hiện lại dù đã ẩn
+    const tail = f.k === "fl_over" ? " — nộp ảnh album ngay" : f.k === "fl_today" ? " — phát xong chụp màn hình album nộp trên tool" : "";
+    (f.lv === "bad" ? items.unshift.bind(items) : items.push.bind(items))([k, `${f.icon} <b>${esc(f.t)}:</b> ${esc(f.d)}${tail}`, "flyer"]);
+  }
   const hide = off(), show = items.filter(([k]) => !hide.includes(k));
   box.innerHTML = show.map(([k, t, act]) => `<div class="remind-i"><span class="grow">${t}</span><button class="btn small primary" type="button" data-ro="${act || "cv"}">${act === "cum" ? "Cập nhật" : "Mở"}</button><button class="btn small ghost" type="button" data-rx="${k}" title="Ẩn hôm nay">✕</button></div>`).join("");
   box.onclick = (e) => {
@@ -34,6 +40,6 @@ export async function renderReminders(go) {
     if (x) { try { localStorage.setItem(KEY, JSON.stringify({ d: today, k: [...off(), x.dataset.rx] })); } catch { /* bỏ qua */ } x.closest(".remind-i").remove(); return; }
     const ro = e.target.closest("[data-ro]");
     if (ro?.dataset.ro === "cum") return openCum(me);
-    if (ro) { try { localStorage.setItem("thidua-v2-cv", "clean"); } catch { /* bỏ qua */ } go?.("cv"); }
+    if (ro) { try { localStorage.setItem("thidua-v2-cv", ro.dataset.ro === "flyer" ? "flyer" : "clean"); } catch { /* bỏ qua */ } go?.("cv"); }
   };
 }

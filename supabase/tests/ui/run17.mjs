@@ -39,6 +39,7 @@ await p.screenshot({ path: OUT + "/flyer-admin.png", fullPage: true });
 await p.context().close();
 // NV 1001 trên điện thoại
 p = await open("nv1001@x.vn", { width: 412, height: 915 });
+console.log("dải nhắc tờ rơi:", (await p.$$eval(".remind-i", (x) => x.map((y) => y.textContent.replace(/\s+/g, " ")).filter((t) => /tờ rơi/i.test(t)).map((t) => t.slice(0, 70)))).join(" | ") || "(không có)");
 await p.evaluate(() => document.querySelector('[data-page="cv"]').click()); await p.waitForTimeout(1500);
 console.log("NV việc của tôi:", await p.$$eval("[data-rep]", (x) => x.length), "| tạo đợt (phải 0):", await p.$$eval("#flGen", (x) => x.length));
 console.log("overflow ngang:", await p.evaluate(() => document.documentElement.scrollWidth - innerWidth));

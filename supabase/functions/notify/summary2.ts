@@ -160,7 +160,7 @@ export function busyDeadlineMsg(store: string, date: string, mon: string, hm: st
 }
 
 // Phát tờ rơi: tới giờ hạn → báo QL / chủ sở hữu tuyến nào đã nộp ảnh album, ai chưa
-export function flyerMsg(store: string, date: string, tasks: any[], assigns: any[], names: Map<string, string>, camps: Map<number, string>, appUrl: string) {
+export function flyerMsg(store: string, date: string, tasks: any[], assigns: any[], names: Map<string, string>, camps: Map<number, string>, appUrl: string, pre = 0) {
   if (!tasks.length) return null;
   const by = new Map<number, any[]>(); for (const a of assigns) by.set(a.task_id, [...(by.get(a.task_id) || []), a]);
   const late: string[] = [], ok: string[] = [];
@@ -173,10 +173,30 @@ export function flyerMsg(store: string, date: string, tasks: any[], assigns: any
     (list.length && list.every((a) => a.done_at) ? ok : late).push(line);
   }
   const cs = [...new Set(tasks.map((t) => camps.get(t.campaign_id)).filter(Boolean))];
-  const L = [`📄 <b>HẠN PHÁT TỜ RƠI · ${dow(date)} ${dm(date)}</b>`, esc(store), cs.length ? esc(cs.join(" · ")) : "", "",
-    `Đã báo cáo: <b>${done}/${need}</b> lượt nhân sự`];
-  if (late.length) L.push("", `❌ <b>Chưa hoàn tất (${late.length} tuyến)</b>`, ...late);
-  if (ok.length) L.push("", `✅ <b>Đã hoàn tất (${ok.length} tuyến)</b>`, ...ok);
-  L.push("", `Xem ảnh album: ${appUrl} → CV → 📄 Tờ rơi`);
+  if (pre && !late.length) return null;   // nhắc trước hạn: ai cũng đã nộp thì thôi
+  const L = [pre ? `⏰ <b>NHẮC PHÁT TỜ RƠI · còn ${pre >= 60 ? Math.round(pre / 60 * 10) / 10 + " giờ" : pre + " phút"} tới hạn · ${dow(date)} ${dm(date)}</b>` : `📄 <b>HẠN PHÁT TỜ RƠI · ${dow(date)} ${dm(date)}</b>`,
+    esc(store), cs.length ? esc(cs.join(" · ")) : "", "", `Đã báo cáo: <b>${done}/${need}</b> lượt nhân sự`];
+  if (late.length) L.push("", `❌ <b>${pre ? "Chưa nộp ảnh album" : "Chưa hoàn tất"} (${late.length} tuyến)</b>`, ...late);
+  if (ok.length && !pre) L.push("", `✅ <b>Đã hoàn tất (${ok.length} tuyến)</b>`, ...ok);
+  L.push("", pre ? `Phát xong tạo album trên nhóm, chụp màn hình album → nộp trên tool: ${appUrl} → CV → 📄 Tờ rơi` : `Xem ảnh album: ${appUrl} → CV → 📄 Tờ rơi`);
   return L.filter((x, i) => !(x === "" && L[i - 1] === "")).join("\n");
+}
+
+// Tờ rơi: QL vừa tạo đợt → báo cả nhóm lịch phát theo ngày (tuyến, số tờ, người, bản đồ)
+export function flyerNewMsg(store: string, camp: any, tasks: any[], assigns: any[], names: Map<string, string>, appUrl: string) {
+  if (!tasks.length) return null;
+  const by = new Map<number, any[]>(); for (const a of assigns) by.set(a.task_id, [...(by.get(a.task_id) || []), a]);
+  const L = [`📄 <b>ĐỢT PHÁT TỜ RƠI MỚI</b>`, esc(store), `<b>${esc(camp.name)}</b> · ${num(camp.total_qty, 0)} tờ · ${tasks.length} tuyến · hạn báo cáo <b>${esc(camp.deadline_hm)}</b> mỗi ngày phát`];
+  const people = new Map<string, number>();
+  for (const d of [...new Set(tasks.map((t) => t.due_date))].sort()) {
+    L.push("", `🗓️ <b>${dow(d)} ${dm(d)}</b>`);
+    tasks.filter((t) => t.due_date === d).forEach((t, i) => {
+      const list = by.get(t.id) || [];
+      list.forEach((a) => people.set(a.staff_id, (people.get(a.staff_id) || 0) + Number(a.qty)));
+      L.push(`${i + 1}. <b>${esc(t.route_name)}</b> · ${t.qty} tờ — ${esc(list.map((a) => `${short(names.get(a.staff_id) || a.staff_id)} (${a.qty})`).join(", ") || "chưa có người")}${t.map_url ? `\n   <a href="${esc(t.map_url)}">🗺️ Bản đồ</a>` : ""}`);
+    });
+  }
+  L.push("", `👥 ${people.size} nhân sự: ${esc([...people].map(([id, q]) => `${short(names.get(id) || id)} ${q}`).join(" · "))}`,
+    "", `Phát xong tạo album trên nhóm, chụp màn hình album → nộp trên tool: ${appUrl} → CV → 📄 Tờ rơi`);
+  return L.join("\n");
 }
