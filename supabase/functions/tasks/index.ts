@@ -6,6 +6,7 @@
 //  • shift_latest: lấy file lịch ca mới nhất trong thư mục Drive của tool sắp ca                      (quản lý)
 import { json, CORS, rest, member, gemini, vnParts } from "../_shared/common.ts";
 import { SCHEMA, systemPrompt, toFields } from "./prompt.ts";
+import { driveVersion } from "../_shared/drive.ts";
 
 const secret = async (k: string) => (await rest("private_settings?select=value&key=eq." + k))[0]?.value as string | undefined;
 const setting = async (k: string) => (await rest("settings?select=value&key=eq." + k))[0]?.value;
@@ -45,6 +46,7 @@ async function jobUpload(m: { role: string; staff_id: string | null; stores: str
   if (m.role === "employee" && m.staff_id !== job.staff_id) throw new Error("Đây không phải việc của bạn.");
   if (m.role === "manager" && !(m.stores || []).includes(st.dept)) throw new Error("Ngoài phạm vi của bạn.");
   if (job.status === "missed") throw new Error("Việc đã bỏ lỡ, nhờ quản lý mở lại.");
+  if ((await driveVersion()) < 2) throw new Error(OLD_SCRIPT);
   const type = job.type_id ? (await rest(`job_types?select=name&id=eq.${job.type_id}`))[0]?.name : "";
   const base = await setting("JOB_DRIVE_PATH");
   const path = [...(Array.isArray(base) ? base.map(String) : ["Tool Báo Cáo", "01 - Ảnh minh chứng công việc"]), cleanName(`${st.id} - ${st.name}`), cleanName(type || "Việc khác")];
@@ -81,6 +83,7 @@ Deno.serve(async (req) => {
       return json({ status: "success" });
     }
     if (body.mode === "shift_latest") {
+      if ((await driveVersion()) < 2) throw new Error(OLD_SCRIPT);
       const p = await setting("SHIFT_DRIVE_PATH");
       const r = await drive({ action: "latest", path: Array.isArray(p) ? p.map(String) : ["Tool Báo Cáo", "02 - Lịch ca làm việc"] });
       if (!r.version) throw new Error(OLD_SCRIPT);

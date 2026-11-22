@@ -5,7 +5,7 @@
 import * as XLSX from "npm:xlsx@0.18.5";
 import { rest, rpc, vnParts, addDays } from "../_shared/common.ts";
 import { pushMany, type PushData } from "../_shared/webpush.ts";
-import { drive, driveReady } from "../_shared/drive.ts";
+import { drive, driveReady, driveVersion } from "../_shared/drive.ts";
 import { parseShiftAoa, matchStaff } from "../_shared/shift.ts";
 
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -140,7 +140,7 @@ export async function jobMaintenance(cfg: Record<string, any>) {
 async function shiftAuto(cfg: Record<string, any>, force = false) {
   const p = vnParts();
   if (!force && Number(p.hm.slice(3)) % 30 >= 5) return null;
-  if (!(await driveReady())) return null;
+  if (!(await driveReady()) || (await driveVersion()) < 2) return null;   // Apps Script bản 1 chưa có "latest"
   const last = cfg.SHIFT_LAST && typeof cfg.SHIFT_LAST === "object" ? cfg.SHIFT_LAST : {};
   const path = Array.isArray(cfg.SHIFT_DRIVE_PATH) ? cfg.SHIFT_DRIVE_PATH.map(String) : ["Tool Báo Cáo", "02 - Lịch ca làm việc"];
   const r = await drive({ action: "latest", path, since: last.updated || "", since_id: last.file_id || "" });
