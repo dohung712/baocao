@@ -1,6 +1,6 @@
 # HANDOFF: tiếp tục làm "Thi Đua & BXH v2" trong môi trường code
 
-Cập nhật: 22/11/2026 · commit mới nhất lúc viết: `83b9b9e` (D11 Tờ rơi: nhắc NV + Telegram)
+Cập nhật: 23/11/2026 · việc mới nhất: D12 Bảng việc (giao việc, nộp ảnh Drive, lịch ca, thông báo đẩy, Telegram công việc)
 
 Mở repo này trong Claude Code (hoặc bất kỳ trình soạn thảo nào) rồi đọc lần lượt:
 1. **HANDOFF.md** (file này): bối cảnh, cách chạy, việc đang dở.
@@ -60,7 +60,7 @@ bash supabase/tests/check.sh --ui   # thêm kiểm thử giao diện (server htt
 
 1. Tra mã chức năng trong TOOL.md → chỉ mở đúng file/hàm.
 2. SQL: tạo **migration mới**, `create or replace` nguyên hàm; **không sửa migration đã áp**; đổi chữ ký thì `drop function` trước. Hàm `security definer set search_path = ''` → luôn ghi `public.` trước tên bảng/hàm. Biến trùng tên cột → `#variable_conflict use_variable`.
-3. **Đánh số migration**: xem `ls supabase/migrations | tail` và lấy số **lớn hơn số lớn nhất** (hiện tại lớn nhất là `0930` → file tiếp theo `20261115000940_v2_<tên>.sql`). Đã có 2 cặp trùng tiền tố (`0880_*`, `0890_*`) do nhiều phiên làm song song; không ảnh hưởng vì áp theo tên đầy đủ, nhưng đừng tạo thêm.
+3. **Đánh số migration**: xem `ls supabase/migrations | tail` và lấy số **lớn hơn số lớn nhất** (hiện tại lớn nhất là `0940` → file tiếp theo `20261115000950_v2_<tên>.sql`). Đã có 2 cặp trùng tiền tố (`0880_*`, `0890_*`) do nhiều phiên làm song song; không ảnh hưởng vì áp theo tên đầy đủ, nhưng đừng tạo thêm.
 4. Quyền: `_require_member`, `_manager_scope`, `_member_for_staff`, `can_see_staff`, `_flyer_mgr`. Hiện **mọi quản lý đều là chủ quản (owner)** (migration 0830).
 5. Giao diện: dùng helper `ui.js`; sau `await` kiểm tra phần tử còn tồn tại.
 6. Chạy `check.sh` (`--ui` nếu đổi giao diện lớn) → commit (kết thúc bằng dòng Co-Authored-By) → push → xem 2 workflow success.
@@ -79,10 +79,15 @@ bash supabase/tests/check.sh --ui   # thêm kiểm thử giao diện (server htt
 | D11 | **Phát tờ rơi**: 31 tuyến seed từ file "Ma trận tờ rơi", tạo đợt tự chia tuyến/ngày/người, NV-PG nộp ảnh album, sửa phân công | 0880_v2_flyer |
 | D11 | Nhắc tờ rơi: dải nhắc đầu app + lịch sắp tới, Telegram đợt mới (`flyernew`), nhắc trước hạn (`flyerpre`, `FLYER_REMIND_BEFORE_MIN`=120), báo đúng hạn (`flyer`) | 0930 |
 | quy | Trang quỹ cũ: cổng mật khẩu 2026 + thông báo dùng tool mới | repo `quy` |
+| H0, D12 | **🏠 Hôm nay** (trang mở đầu) + **📋 Giao việc**: QL giao việc (theo ca / người / bộ phận, hạn giờ, ảnh / checklist, sao trừ trễ / bỏ lỡ), NV nộp ảnh → Drive `<thư mục ảnh>/<Mã - Tên NV>/<Hạng mục>/`, không duyệt; thống kê NV × ngày × hạng mục; tab CV cũ ẩn với NV (`cv.nav`) | 0940_v2_jobs |
+| D12b, D12c, E4 | Lịch ca đọc file tool sắp ca trong Drive (30 phút), thông báo đẩy Web Push (manifest + sw.js, Edge `push`), Telegram `jobday` / `jobweek`; Apps Script bản 2 (path nhiều cấp, `latest`, `sheet`) | 0940 + functions |
 
 Các commit khác trong cùng giai đoạn do phiên khác làm: B15 báo cáo PG, E3 Telegram Quỹ, UX form báo cáo, F2q, D10 Biên bản vi phạm, bảo mật 0880_security_hardening.
 
 ## 7. Việc đang dở / chờ người dùng quyết
+
+- **D12 Bảng việc** (23/11): chủ quản phải **cập nhật Apps Script lên bản 2** (`supabase/apps-script/drive-upload.gs`, Deploy → Manage deployments → New version, cấp quyền Google Sheets) thì NV mới nộp ảnh và tool mới đọc được lịch ca. Chưa cập nhật: Edge `tasks` báo “Apps Script … còn bản cũ”.
+- **Việc chưa làm của D12**: (1) việc mẫu lặp lại theo ca (người dùng sẽ gửi danh sách việc hằng ngày thật); (2) đồng bộ trang tính “Tool Báo Cáo” (Apps Script đã có action `sheet`, chưa gọi); (3) thư mục `00 - Nhập doanh thu và thi đua`: đọc file doanh thu + thi đua siêu thị / NV để xếp hạng và target còn lại; (4) xác nhận giờ 6 ca (`SHIFT_SLOTS` đang đoán 07:30–22:00).
 
 - **Tờ rơi**: muốn chọn tuyến khi tạo đợt (hiện tool chọn tuyến lâu chưa phát, 4 chợ nằm cuối nên đợt đầu ít khi tới)? Có cần ô chỉnh `FLYER_REMIND_BEFORE_MIN` trên giao diện?
 - **Dữ liệu file Excel tờ rơi**: 3 tuyến bị trùng (đã gộp); tên và link chợ có vẻ bị đảo ("Chợ Đầu Mối Hòa Cường" ↔ "Chợ Lê Thanh Nghị"), người dùng cần kiểm tra trong Danh mục tuyến.

@@ -25,6 +25,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 ### 0. Bắt đầu ở đâu
 | Mã | Chức năng | Trên web | File |
 |---|---|---|---|
+| H0 | **🏠 Hôm nay** (trang mở đầu của mọi người, D12): ca làm hôm nay (lịch ca), vòng tiến độ việc hôm nay, **Quá hạn** (việc QL giao + mục cũ mức đỏ), **Việc hôm nay** (thẻ việc → nộp ảnh), **Nhắc từ các mục khác** (`todo_list` + `flyer_todo`: TikTok, vệ sinh, roadshow, lũy kế, lịch bận…), **Sắp tới**, lịch ca 7 ngày, lưới **Tất cả chức năng** (mục cũ của CV mở đúng 1 tab), thẻ **🔔 Bật thông báo** (Web Push; iPhone cần thêm ra màn hình chính). QL có thẻ mở 📋 Giao việc | 🏠 Hôm nay | `pages/today.js`, `js/jobs-common.js` (jobCard, openSubmit, openCv), `js/push.js`, `js/lib-shift.js` (slotText) |
 | H1b | **📊 Tổng quan tháng** (khung đầu của Tổng quan): stat tile Đã báo cáo hôm nay · Doanh thu QĐ tháng % target (✅/⚠️/🔴 so tiến độ chuẩn = ngày ÷ số ngày trong tháng) · Vi phạm tháng · NV âm sao; meter doanh thu từng bộ phận (thanh = lũy kế / target tháng, vạch đứng = tiến độ chuẩn hôm nay); 🏆 top 3 / 🆘 3 người cần hỗ trợ (không trùng). Quản lý chỉ thấy bộ phận mình | Quản lý → 🏠 Tổng quan | `pages/admin-home.js` (kpiHtml) — số liệu `score_board` (p_full = false, target nhân lại theo tiến độ) |
 | H1 | **🏠 Tổng quan** (tab đầu của Quản lý): Việc cần làm ngay (chờ duyệt, chưa báo cáo, thiếu target, lần dán kết quả siêu thị, phục vụ tuần trước, Telegram) · Lịch quản lý ngày/tuần/tháng có tick · Tìm chức năng (gõ chữ → nút mở đúng chỗ) · Tuỳ chỉnh nhanh | Quản lý → 🏠 Tổng quan | `pages/admin-home.js` (FEATURES = danh mục chức năng, PLAN = lịch) |
 
@@ -91,6 +92,9 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | D7 | **Việc**: 🔗 Link trang tính (chỉ QL) · ⏰ Việc QL có deadline (QL bấm Hoàn thành + ghi chú) · 📢 Triển khai toàn NV / theo bộ phận (NV bấm "Đã đọc & nắm rõ") · 📌 Giao việc NV (NV bấm "Hoàn thành" + ghi chú). QL dán nội dung + đính kèm ảnh, PDF, Excel, Word, PowerPoint, file nén ≤ 10MB/file (lưu Google Drive qua Apps Script; chữ trong Word/Excel/PowerPoint được đọc bằng `js/lib-office.js` để AI tóm tắt) → ✨ AI tóm tắt (Gemini, lời nhắc + khuôn JSON trong `supabase/functions/tasks/prompt.ts`): **tiêu đề, hạn hoàn tất (+giờ), thời gian áp dụng, nội dung chính (đủ mọi mức %/điều kiện), lưu ý, người hỗ trợ, gợi ý lặp lại / lâu dài**; mẫu chuẩn `supabase/tests/fixtures/task-unipass.*` kiểm tra mỗi lần deploy (`ai_summary_test.mjs`); link trong nội dung hiện thành nút → cảnh báo nếu chọn nhắc lại chưa đúng (cả khi không dùng AI, dò chữ "hằng tuần, quy định…") → tick ⭐ Quan trọng, nhắc lại tuần / tháng / 2 tháng (mỗi kỳ NV xác nhận lại), 📌 Lâu dài. **Việc thời vụ tự ẩn** với NV sau hạn + `TASK_HIDE_GRACE_DAYS` (3) ngày, không có hạn thì sau `TASK_AUTO_HIDE_DAYS` (30) ngày; QL tìm lại bằng ô 🔎. QL xem tiến độ ai đã đọc / hoàn thành lúc nào, copy lời nhắc | CV → 📋 Việc | `pages/cv-tasks.js`, Edge function `tasks` (summarize / upload / delete), `supabase/apps-script/drive-upload.gs` | `tasks`, `task_acks`, `task_save`, `task_set_status`, `task_ack`, `_task_period`, `_task_hide_after`, `can_see_task`; khoá `GEMINI_API_KEY`, `DRIVE_UPLOAD_URL`, `DRIVE_UPLOAD_SECRET` (GitHub Secrets → `set-private.mjs`) |
 | D6 | **Quỹ thu chi** (thay tool quy cũ dùng Firebase): số dư, thu/chi tháng, thêm khoản (mọi thành viên), sửa/xoá (quản lý; người tạo trong 24 giờ), lọc tháng/loại/danh mục/người, thống kê, copy, CSV, nhật ký; danh mục & đối tác (chủ quản). Dữ liệu cũ chép 1 lần bằng GitHub Actions | CV → 💵 Quỹ | `pages/cv-fund.js` | `fund_tx`, `fund_save`, `fund_delete`, `fund_log`, settings `FUND_CATEGORIES`, `FUND_PARTNERS`; `supabase/scripts/import-quy.mjs` |
 | D5 | Thống kê CV theo NV | CV → Thống kê | `pages/cv.js` | (đọc các bảng trên) |
+| D12 | **📋 Bảng việc — giao việc & nộp ảnh** (migration 0940): QL giao việc (hạng mục, tên, hướng dẫn, người làm **theo ca** (lịch ca) / **chọn người** (thấy ai OFF / bận) / **cả bộ phận**, ngày + giờ hạn, **lặp mỗi ngày đến** (≤ 31 ngày), minh chứng 📷 ảnh tối thiểu–tối đa / ☑️ checklist + ảnh / ✅ chỉ bấm hoàn thành, **⭐ trừ khi nộp trễ** và **⭐ trừ khi bỏ lỡ** do QL khai báo). **Không cần duyệt**: NV nộp là xong (`job_submit`; trễ thì trừ `pen_late` một lần). Quá hạn `JOB_MISS_HOURS` (24) giờ chưa nộp → **Bỏ lỡ**, trừ `pen_miss` (`job_tick`, notify tick 5 phút). Ảnh nén trên máy → Edge `tasks` mode `job_upload` → Apps Script bản 2 → Drive `JOB_DRIVE_PATH` / `<Mã - Tên NV>` / `<Hạng mục>` / `<YYYY-MM-DD>_<HHhMM>_<việc>_<n>.jpg`; thư mục NV lưu ở `job_folders`. QL: **📊 Hôm nay** (từng NV: chip việc theo trạng thái, 🔔 Nhắc = thông báo đẩy, 📁 thư mục Drive; bấm chip → xem ảnh, nộp hộ, đổi hạn / người (cả lần giao), mở lại (hoàn sao), xoá (hoàn sao, ảnh giữ trên Drive)) · **📈 Thống kê** (khoảng ngày, bộ phận, hạng mục: theo NV, NV × ngày (số ảnh, màu trạng thái), theo hạng mục, bấm tên NV xem từng việc + ảnh, CSV) · **🗂️ Hạng mục** (tên, biểu tượng, thứ tự, đang dùng, đưa vào Telegram) · **⚙️ Cài đặt** (giờ bỏ lỡ, phút nhắc trước, ẩn / hiện tab CV cũ với NV, ai đã bật thông báo, kiểm tra Drive) | 🏠 Hôm nay · 📋 Giao việc | `pages/jobs.js`, `js/jobs-common.js` (stateOf, openSubmit, openManage), `pages/today.js`, Edge `tasks` (job_upload), `supabase/apps-script/drive-upload.gs` (bản 2) | `job_types`, `jobs`, `job_folders`, `job_type_save`, `job_type_delete`, `job_assign`, `job_update`, `job_delete`, `job_reopen`, `job_submit`, `job_tick`, `_job_star` (ghi `star_adjustments` + `score_log`), `_vn_ts`, `_mins_txt`; settings `JOB_MISS_HOURS`, `JOB_REMIND_BEFORE_MIN`, `JOB_DRIVE_PATH` |
+| D12b | **🗓️ Lịch ca** từ tool sắp ca: file Excel / CSV dạng bảng “Quản lý phân ca” (hàng ngày `T2 (23/11)` gộp 6 cột; `Bộ phận · User · Họ tên · Tổng · Ca 1…Ca 6`, ô số giờ > 0 = làm ca đó). Notify tick **30 phút / lần** đọc file mới nhất trong `SHIFT_DRIVE_PATH` (Apps Script `latest`, file chưa đổi thì không tải lại) → `_shift_save`; QL bấm 📥 Lấy file từ Drive hoặc chọn file trên máy (xem trước, ai chưa khớp mã) → `shift_import`. Ghép NV theo mã User, không có thì theo họ tên. Giờ từng ca `SHIFT_SLOTS` | 📋 Giao việc → 🗓️ Lịch ca | `pages/jobs.js` (shift), `js/lib-shift.js` = `functions/_shared/shift.ts` (sửa cả hai), `notify/jobs.ts` (shiftAuto, importShiftFile; SheetJS `npm:xlsx@0.18.5`) | `shifts`, `_shift_save`, `shift_import`; settings `SHIFT_DRIVE_PATH`, `SHIFT_SLOTS`, `SHIFT_LAST` |
+| D12c | **🔔 Thông báo đẩy** (Web Push, chạy cả khi tắt Telegram): việc mới (`pushed_at`), nhắc trước hạn `JOB_REMIND_BEFORE_MIN` phút (`reminded_at`), quá hạn (`overdue_at`), QL bấm 🔔 Nhắc. Khoá VAPID tự tạo lần đầu (private_settings `PUSH_VAPID_JWK`). App cài được ra màn hình chính (manifest, `sw.js` chỉ nhận thông báo, không lưu đệm) | 🏠 Hôm nay (bật) · 📋 Giao việc | `js/push.js`, `v2/sw.js`, `v2/manifest.webmanifest`, `v2/icons/`, Edge `push` (key / test / send), `functions/_shared/webpush.ts`, `notify/jobs.ts` (jobMaintenance) | `push_subs`, `push_subscribe`, `push_unsubscribe`, `push_status`, `push_overview` |
 
 ### E. Telegram
 | Mã | Chức năng | Trên web | File | Ghi chú |
@@ -98,6 +102,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | E1 | Bật/tắt + giờ + tần suất từng đầu mục (daily, weekly, revenue, score, tiktok, clean, busy, rs, service): Hằng ngày / Hằng tuần (1 thứ) / Chọn thứ (`dows`) / Ngày hạn T3-T6 (tiktok). QL chỉnh được lịch; token, nơi nhận, bật chung chỉ chủ quản | Quản lý → Telegram | `pages/admin.js` (telegram), `supabase/functions/notify/index.ts` (`items`, `tick`) | `save_notify_items` (setting `NOTIFY_ITEMS`); pg_cron `thidua-notify` gọi 5 phút/lần, chống gửi trùng bằng `notify_log` |
 | E3 | **💵 Quỹ thu chi qua Telegram** (đầu mục `fund`, mặc định **bật, thứ 2 09:00**; QL đổi tần suất / thứ / giờ ở bảng lịch như mọi đầu mục): kỳ báo cáo = **từ ngày sau lần gửi quỹ trước** (tự động hoặc gửi tay) đến ngày gửi, lần đầu 7 ngày; khoản ngày cũ mới nhập sau lần gửi trước kèm nhãn "⤴ ghi bổ sung". Nội dung: tổng thu, tổng chi, chênh lệch, **số dư** (tính ở máy chủ), chi tiết từng khoản (ngày, danh mục, tên, số tiền, người, ghi chú), chi theo danh mục, tổng tháng. Gửi dày (< 7 ngày) mà không có khoản nào thì bỏ qua. QL chọn **khoảng ngày bất kỳ**: Telegram → Xem trước & gửi ngay (đầu mục Quỹ hiện ô "Từ ngày") hoặc CV → 💵 Quỹ → **📤 Báo cáo Telegram** (7 ngày / từ đầu tháng / từ lần gửi trước → xem trước → gửi) | Quản lý → Telegram · CV → 💵 Quỹ | `functions/notify/index.ts` (ITEMS.fund, compose opt.from), `functions/notify/summary2.ts` (fundMsg), `pages/admin.js` (telegram: tgFrom), `pages/cv-fund.js` (teleReport) | `fund_summary` (chỉ service_role), `fund_tx`, `notify_log` |
 | E2 | Nội dung tin | n/a | `functions/notify/summary.ts`, `summary2.ts` | `current_streaks` |
+| E4 | **📋 Báo cáo công việc theo hạng mục** (D12): `jobday` (mặc định bật, hằng ngày 21:45: từng hạng mục — ai đã nộp + số ảnh, trễ, ai chưa nộp + hạn, bỏ lỡ) và `jobweek` (mặc định bật, thứ 2 09:05: gửi CN = tuần này, ngày khác = tuần trước; từng hạng mục: số việc, % đúng hạn, ảnh, từng NV x/y; đúng hạn 100%, cần nhắc). Hạng mục bỏ tick Telegram thì không đưa vào | Quản lý → Telegram | `functions/notify/jobs.ts` (jobDayMsg, jobWeekMsg, weekRange, loadJobs), `notify/index.ts` (ITEMS, compose) | `jobs`, `job_types.tg` |
 
 ### F. Quản lý / cài đặt
 | Mã | Chức năng | Trên web | File | Hàm / bảng SQL |
@@ -109,7 +114,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | F2c | **Gợi ý sao theo kết quả siêu thị**: dán báo cáo (Tổng / %Đạt) → nhóm 🎯 Tập trung 5đ · 🌱 Target thấp 3đ · ⚡ Gần về số (dự kiến 70–100%) 2đ · môn khác 1đ · ✅ Đã về số lũy kế 0 sao, không trừ; 1đ = +100/−50 (sửa được) → Áp dụng / Copy gửi nhóm | Quản lý → Môn & sao (khung đầu) | `pages/admin-suggest.js` | `apply_star_suggestions`, `items.focus/low_target/store_target/store_pct`, setting `STAR_POINTS` |
 | F2b | **Thưởng & trừ sao**: ngưỡng X2/X3, ngày bắt đầu trừ, tăng ca, hệ số lũy tiến + bảng xem trước | Quản lý → Cài đặt (thẻ đầu tiên) | `js/star-rules.js` (dayOutcome, starCardHtml), `pages/admin.js` | settings `STREAK_*`, `PEN_*`, `DOUBLE_/TRIPLE_BONUS_RATE` |
 | F3 | Target/sao riêng từng NV (chỉ còn tác dụng với sao khi NV đã được giao môn tháng) | Quản lý → Target NV | `pages/admin.js` (targets) | `staff_targets` |
-| F4 | Ẩn trang/chức năng theo vai trò | Cài đặt → Ẩn trang | `pages/admin.js` (FEATURES), `js/store.js` (isHidden) | setting `HIDE` |
+| F4 | Ẩn trang/chức năng theo vai trò. **`cv.nav`** (mặc định ẩn với NV từ migration 0940): tab CV không hiện trên menu / thanh dưới của NV; NV mở từng chức năng CV từ 🏠 Hôm nay (CV chỉ hiện 1 tab + “← Hôm nay”). QL bật lại ở Giao việc → ⚙️ Cài đặt hoặc ở đây | Cài đặt → Ẩn trang | `pages/admin.js` (FEATURES), `js/store.js` (isHidden), `js/app.js` (PAGES.nav / tab), `pages/cv.js` (focus) | setting `HIDE` |
 | F5 | Ngưỡng chuỗi/phạt, giờ chốt, trọng số điểm, quy tắc riêng từng môn, khoá AI | Quản lý → Cài đặt | `pages/admin.js` (settings) | `settings`, `private_settings` |
 | F6 | Nhật ký thao tác | Quản lý → Nhật ký | `pages/admin.js` (audit) | `audit_log` |
 
@@ -145,8 +150,8 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 - Target báo cáo ngày = 200% × target tháng ÷ số ngày làm việc (mặc định số ngày trong tháng − `DAYS_OFF`), làm tròn lên, tối thiểu 0,5. Điểm thi đua xếp hạng vẫn so với target tháng.
 
 ## 4. Cài đặt (bảng `settings`)
-`PG_DEPTS PG_ADDONS TASK_HIDE_GRACE_DAYS TASK_AUTO_HIDE_DAYS FUND_CATEGORIES FUND_PARTNERS FUND_IMPORTED_AT HELP_DELAY_S DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
-Khoá bí mật (bảng `private_settings`, không đọc được từ web): `TELEGRAM_BOT_TOKEN GEMINI_API_KEY CRON_SECRET`
+`JOB_MISS_HOURS JOB_REMIND_BEFORE_MIN JOB_DRIVE_PATH SHIFT_DRIVE_PATH SHIFT_SLOTS SHIFT_LAST PG_DEPTS PG_ADDONS TASK_HIDE_GRACE_DAYS TASK_AUTO_HIDE_DAYS FUND_CATEGORIES FUND_PARTNERS FUND_IMPORTED_AT HELP_DELAY_S DAILY_TARGET_PCT DAILY_TARGET_MIN STAR_POINTS SCORE_SEE_ALL TRIPLE_BONUS_RATE STORE_NAME CUTOFF_TIME STREAK_OVERTIME STREAK_PENALTY_STAR PEN_T2_MIN PEN_T3_MIN PEN_T4_MIN PEN_M1..M4 LATE_STEP DOUBLE_BONUS_RATE AUTO_STREAK_ENABLED EMPLOYEE_SEE_LEADERBOARD ITEM_RULES HIDE W_REVENUE W_CONTEST W_SERVICE VIOLATION_POINTS VIOLATION_TYPES RATING_DEDUCT REVENUE_UNIT DAYS_OFF TIKTOK_* RS_MIN_KM RS_MIN_MIN BUSY_MAX_WEEKDAY NOTIFY_ENABLED NOTIFY_CHAT_IDS NOTIFY_ITEMS`
+Khoá bí mật (bảng `private_settings`, không đọc được từ web): `TELEGRAM_BOT_TOKEN GEMINI_API_KEY CRON_SECRET PUSH_VAPID_JWK DRIVE_UPLOAD_URL DRIVE_UPLOAD_SECRET`
 
 ---
 
@@ -214,18 +219,24 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_cum_window` | function | 000820_cumulative.sql:46 |
 | `_daily_target` | function | 000750_daily_target_x2.sql:8 |
 | `_ensure_contest_items` | function | 000720_report_items_from_contest.sql:59 |
+| `_flyer_mgr` | function | 000880_flyer.sql:87 |
 | `_is_pg` | function | 000910_pg_reports.sql:35 |
 | `_item_measure` | function | 000820_cumulative.sql:38 |
 | `_item_no_pen` | function | 000890_items_quick_violation_docs.sql:51 |
 | `_item_streak` | function | 000200_logic.sql:24 |
+| `_job_mgr` | function | 000940_jobs.sql:118 |
+| `_job_star` | function | 000940_jobs.sql:140 |
 | `_keep_one_owner` | function | 000830_manager_owner.sql:8 |
 | `_manager_scope` | function | 000200_logic.sql:271 |
 | `_member_for_staff` | function | 000600_modules.sql:125 |
+| `_mins_txt` | function | 000940_jobs.sql:132 |
 | `_pg_cum` | function | 000910_pg_reports.sql:43 |
 | `_require_member` | function | 000200_logic.sql:189 |
+| `_shift_save` | function | 000940_jobs.sql:357 |
 | `_staff_items` | function | 000890_items_quick_violation_docs.sql:7 |
 | `_task_hide_after` | function | 000790_tasks_notes_autohide.sql:12 |
 | `_task_period` | function | 000780_tasks.sql:35 |
+| `_vn_ts` | function | 000940_jobs.sql:127 |
 | `_work_days` | function | 000720_report_items_from_contest.sql:9 |
 | `add_violation` | function | 000890_items_quick_violation_docs.sql:140 |
 | `adjust_revenue` | function | 000700_scoring.sql:229 |
@@ -251,6 +262,16 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `delete_result` | function | 000200_logic.sql:296 |
 | `delete_revenue_adjust` | function | 000700_scoring.sql:241 |
 | `delete_violation` | function | 000890_items_quick_violation_docs.sql:162 |
+| `flyer_board` | function | 000880_flyer.sql:97 |
+| `flyer_campaign_delete` | function | 000880_flyer.sql:256 |
+| `flyer_generate` | function | 000880_flyer.sql:149 |
+| `flyer_report` | function | 000880_flyer.sql:269 |
+| `flyer_report_clear` | function | 000880_flyer.sql:282 |
+| `flyer_route_delete` | function | 000880_flyer.sql:137 |
+| `flyer_route_save` | function | 000880_flyer.sql:117 |
+| `flyer_task_assign` | function | 000880_flyer.sql:212 |
+| `flyer_task_update` | function | 000930_flyer_remind.sql:9 |
+| `flyer_todo` | function | 000930_flyer_remind.sql:33 |
 | `fund_delete` | function | 000770_fund.sql:62 |
 | `fund_log` | function | 000770_fund.sql:79 |
 | `fund_save` | function | 000770_fund.sql:32 |
@@ -262,6 +283,14 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `is_member` | function | 000100_core.sql:148 |
 | `is_owner` | function | 000100_core.sql:144 |
 | `items_quick_save` | function | 000890_items_quick_violation_docs.sql:93 |
+| `job_assign` | function | 000940_jobs.sql:185 |
+| `job_delete` | function | 000940_jobs.sql:264 |
+| `job_reopen` | function | 000940_jobs.sql:285 |
+| `job_submit` | function | 000940_jobs.sql:306 |
+| `job_tick` | function | 000940_jobs.sql:340 |
+| `job_type_delete` | function | 000940_jobs.sql:170 |
+| `job_type_save` | function | 000940_jobs.sql:150 |
+| `job_update` | function | 000940_jobs.sql:226 |
 | `leaderboard` | function | 000200_logic.sql:368 |
 | `legacy_date` | function | 000300_migrate.sql:8 |
 | `legacy_hm` | function | 000610_update_logic.sql:6 |
@@ -274,6 +303,10 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `pg_report_save` | function | 000910_pg_reports.sql:79 |
 | `preview_daily_report` | function | 000200_logic.sql:198 |
 | `private_setting_status` | function | 000780_tasks.sql:153 |
+| `push_overview` | function | 000940_jobs.sql:421 |
+| `push_status` | function | 000940_jobs.sql:411 |
+| `push_subscribe` | function | 000940_jobs.sql:391 |
+| `push_unsubscribe` | function | 000940_jobs.sql:403 |
 | `rank_reward_close` | function | 000870_rank_reward.sql:50 |
 | `rank_reward_preview` | function | 000870_rank_reward.sql:23 |
 | `report_form` | function | 000900_report_month_staff_overview.sql:5 |
@@ -300,6 +333,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `set_staff_total` | function | 000700_scoring.sql:141 |
 | `setting_num` | function | 000100_core.sql:160 |
 | `setting_text` | function | 000100_core.sql:170 |
+| `shift_import` | function | 000940_jobs.sql:382 |
 | `staff_overview` | function | 000900_report_month_staff_overview.sql:33 |
 | `staff_total` | function | 000700_scoring.sql:120 |
 | `submit_daily_report` | function | 000200_logic.sql:225 |
@@ -322,23 +356,32 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `cleaning` | table | 000600_modules.sql:33 |
 | `daily_results` | table | 000100_core.sql:40 |
 | `extra_proposals` | table | 000100_core.sql:58 |
+| `flyer_assign` | table | 000880_flyer.sql:38 |
+| `flyer_campaigns` | table | 000880_flyer.sql:16 |
+| `flyer_routes` | table | 000880_flyer.sql:4 |
+| `flyer_tasks` | table | 000880_flyer.sql:26 |
 | `fund_tx` | table | 000770_fund.sql:5 |
 | `hot_bonuses` | table | 000740_star_suggest_hot.sql:91 |
 | `item_adjustments` | table | 000820_cumulative.sql:19 |
 | `item_measures` | table | 000820_cumulative.sql:7 |
 | `items` | table | 000100_core.sql:26 |
+| `job_folders` | table | 000940_jobs.sql:68 |
+| `job_types` | table | 000940_jobs.sql:22 |
+| `jobs` | table | 000940_jobs.sql:35 |
 | `locked_dates` | table | 000100_core.sql:86 |
 | `media_reports` | table | 000840_report_todo_media.sql:7 |
 | `monthly_targets` | table | 000700_scoring.sql:32 |
 | `notify_log` | table | 000100_core.sql:114 |
 | `pg_reports` | table | 000910_pg_reports.sql:13 |
 | `private_settings` | table | 000100_core.sql:80 |
+| `push_subs` | table | 000940_jobs.sql:86 |
 | `rank_rewards` | table | 000870_rank_reward.sql:8 |
 | `ratings` | table | 000700_scoring.sql:42 |
 | `revenue_entries` | table | 000700_scoring.sql:18 |
 | `roadshow` | table | 000600_modules.sql:59 |
 | `score_log` | table | 000700_scoring.sql:70 |
 | `settings` | table | 000100_core.sql:72 |
+| `shifts` | table | 000940_jobs.sql:75 |
 | `staff` | table | 000100_core.sql:13 |
 | `staff_targets` | table | 000600_modules.sql:6 |
 | `star_adjustments` | table | 000700_scoring.sql:7 |

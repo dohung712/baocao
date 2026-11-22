@@ -43,7 +43,10 @@ async function draw(quiet = false) {
   const tabs = TABS.filter(([id]) => !isHidden("cv." + id));
   if (!tabs.length) { $("#cvBody").innerHTML = `<div class="empty">Không có chức năng nào đang mở.</div>`; return; }
   if (!tabs.some(([id]) => id === tab)) tab = tabs[0][0];
-  $("#cvTabs").innerHTML = tabs.map(([id, l]) => `<button type="button" data-t="${id}" class="${id === tab ? "on" : ""}">${l}</button>`).join("");
+  // NV khi tab CV ẩn trên menu (HIDE.employee có "cv.nav"): mở đúng 1 chức năng từ 🏠 Hôm nay, không hiện dải 8 tab
+  const focus = !isManager() && isHidden("cv.nav");
+  $("#cvTabs").innerHTML = focus ? `<button type="button" data-page="today">← Hôm nay</button><button type="button" class="on">${tabs.find(([id]) => id === tab)[1]}</button>`
+    : tabs.map(([id, l]) => `<button type="button" data-t="${id}" class="${id === tab ? "on" : ""}">${l}</button>`).join("");
   centerTab($("#cvTabs"));
   const body = $("#cvBody"); body.onclick = null;
   if (!quiet) body.innerHTML = `<div class="empty">Đang tải…</div>`;

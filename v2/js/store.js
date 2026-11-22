@@ -102,6 +102,7 @@ export function startRealtime() {
     staff_targets: () => emit("targets"),
     star_adjustments: () => { loadStaff(); emit("score"); }, revenue_entries: () => emit("score"), item_adjustments: () => emit("score"), media_reports: () => emit("score"), monthly_targets: () => emit("score"),
     ratings: () => emit("score"), violations: () => emit("score"),
+    jobs: () => emit("jobs"), job_types: () => emit("jobs"), shifts: () => emit("jobs"),
   };
   const timers = {};
   channel = sb.channel("thidua-v2");

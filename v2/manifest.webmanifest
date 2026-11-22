@@ -1,0 +1,16 @@
+{
+  "name": "Thi Đua & Công việc 351",
+  "short_name": "Thi Đua 351",
+  "description": "Việc cần làm, nộp ảnh, báo cáo và xếp hạng của siêu thị 351",
+  "lang": "vi",
+  "start_url": "./#today",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f4",
+  "theme_color": "#0f3d2e",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

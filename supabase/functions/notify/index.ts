@@ -3,6 +3,7 @@
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
 import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyDeadlineMsg, flyerMsg, flyerNewMsg, busyMsg, rsMsg, serviceMsg, fundMsg } from "./summary2.ts";
+import { jobDayMsg, jobWeekMsg, loadJobs, weekRange, jobMaintenance } from "./jobs.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -75,6 +76,8 @@ export const ITEMS: Record<string, { label: string; freq: string; time: string; 
   flyer: { label: "Tờ rơi: báo QL đúng giờ hạn từng tuyến (giờ ở đây chỉ dùng khi gửi thử)", freq: "daily", time: "20:00", on: true },
   service: { label: "Phục vụ & vi phạm", freq: "weekly", time: "09:00", dow: 1 },
   fund: { label: "Quỹ thu chi (chi tiết thu, chi, số dư)", freq: "weekly", time: "09:00", dow: 1, on: true },
+  jobday: { label: "📋 Công việc trong ngày theo hạng mục (đã nộp, chưa nộp, số ảnh)", freq: "daily", time: "21:45", on: true },
+  jobweek: { label: "📋 Tổng kết công việc tuần theo hạng mục (gửi CN: tuần này · ngày khác: tuần trước)", freq: "weekly", time: "09:05", dow: 1, on: true },
 };
 function items(cfg: Record<string, any>) {
   const saved: any[] = Array.isArray(cfg.NOTIFY_ITEMS) ? cfg.NOTIFY_ITEMS : [];
@@ -120,6 +123,8 @@ async function compose(kind: string, date: string, cfg: Record<string, any>, opt
   }
   const staff: any[] = await rest("staff?select=id,name&hidden=eq.false&order=sort,id");
   const names = new Map(staff.map((x) => [x.id, x.name]));
+  if (kind === "jobday") { const j = await loadJobs(date, date); return { text: jobDayMsg(store, date, j.jobs, j.types, names), period: date }; }
+  if (kind === "jobweek") { const w = weekRange(date), j = await loadJobs(w.from, w.to); return { text: jobWeekMsg(store, w.from, w.to, j.jobs, j.types, names), period: isoWeek(date) }; }
   if (kind === "revenue") {
     const [board, today] = await Promise.all([rpc("score_board", { p_from: monthStart, p_to: date, p_full: true }), rest(`revenue_entries?select=staff_id,amount&kind=eq.daily&entry_date=eq.${date}`)]);
     return { text: revenueMsg(store, date, String(cfg.REVENUE_UNIT || ""), board, new Map(today.map((r: any) => [r.staff_id, Number(r.amount)]))), period: date };
@@ -240,7 +245,9 @@ async function member(req: Request) {
 
 async function tick() {
   const cfg = await settings();
-  if (cfg.NOTIFY_ENABLED !== true) return { skipped: "off" };
+  // Bảng việc (D12): bỏ lỡ + trừ sao, thông báo đẩy, đọc lịch ca từ Drive — chạy cả khi tắt Telegram
+  const jobs = await jobMaintenance(cfg).catch((e) => ({ error: String((e as Error).message) }));
+  if (cfg.NOTIFY_ENABLED !== true) return { skipped: "off", jobs };
   const now = vnParts(); const done: string[] = [];
   for (const it of items(cfg)) {
     if (it.id === "flyer" || it.id === "flyerpre" || it.id === "flyernew") {
@@ -274,7 +281,7 @@ async function tick() {
       done.push(it.id);
     } catch (e) { await log(it.id + "-error", period + " " + now.hm, false, String((e as Error).message)); }
   }
-  return { done };
+  return { done, jobs };
 }
 
 Deno.serve(async (req) => {

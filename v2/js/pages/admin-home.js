@@ -4,6 +4,10 @@ import { sb, S, rpc, isOwner, visibleStaff, setting } from "../store.js";
 
 // go: { tab, sub, focus } = tab trong Quản lý · { page } = trang khác
 export const FEATURES = [
+  { c: "D12", t: "Giao việc cho NV (theo ca / chọn người / cả bộ phận, hạn giờ, ảnh / checklist, sao trừ khi trễ / bỏ lỡ)", w: "📋 Giao việc → ➕ Giao việc", k: "giao việc phân công nhiệm vụ hạn deadline ảnh minh chứng checklist", go: { page: "jobs" } },
+  { c: "D12", t: "Bảng việc hôm nay: ai đã nộp, quá hạn, nhắc NV qua thông báo điện thoại", w: "📋 Giao việc → 📊 Hôm nay", k: "bảng việc hôm nay quá hạn nhắc thông báo đẩy điện thoại", go: { page: "jobs" } },
+  { c: "D12", t: "Thống kê công việc theo NV × ngày × hạng mục, số ảnh, xem ảnh từng NV, thư mục Drive", w: "📋 Giao việc → 📈 Thống kê", k: "thống kê công việc ảnh drive thư mục nhân viên hạng mục", go: { page: "jobs" } },
+  { c: "D12", t: "Lịch ca: đọc file tool sắp ca trong Drive (tự động 30 phút) hoặc chọn file Excel", w: "📋 Giao việc → 🗓️ Lịch ca", k: "lịch ca phân ca ca làm việc excel sắp ca", go: { page: "jobs" } },
   { c: "B1", t: "Xem / nhắc ai chưa báo cáo hôm nay", w: "Báo cáo (dải “Chưa báo cáo”)", k: "báo cáo nhắc chưa nộp", go: { page: "report" } },
   { c: "B3", t: "Nộp hộ / sửa báo cáo cho nhân viên", w: "Báo cáo → chọn nhân viên", k: "nộp hộ sửa báo cáo", go: { page: "report" } },
   { c: "B5", t: "Duyệt thưởng nóng, bán thêm, yêu cầu sửa", w: "Quản lý → Duyệt", k: "duyệt thưởng nóng bán thêm sửa", go: { tab: "approve" } },

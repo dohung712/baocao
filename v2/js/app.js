@@ -13,12 +13,18 @@ import * as rules from "./pages/rules.js";
 import * as assistant from "./pages/assistant.js";
 import * as score from "./pages/score.js";
 import * as mePage from "./pages/me.js";
+import * as today from "./pages/today.js";
+import * as jobs from "./pages/jobs.js";
+import { registerSW } from "./push.js";
 
+// tab: hiện ở thanh dưới (điện thoại) · nav: có hiện trên menu không (CV của NV ẩn khi HIDE.employee có "cv.nav" — NV vào từng chức năng từ 🏠 Hôm nay)
 const PAGES = [
+  { id: "today", icon: "🏠", label: "Hôm nay", mod: today, tab: true },
   { id: "report", icon: "📝", label: "Báo cáo", mod: report, tab: true },
-  { id: "cv", icon: "🗂️", label: "CV", mod: cv, tab: true },
-  { id: "score", icon: "🏅", label: "Xếp hạng", mod: score, tab: true },
-  { id: "me", icon: "👤", label: "Của tôi", mod: mePage, tab: true },
+  { id: "cv", icon: "🗂️", label: "CV", mod: cv, tab: true, nav: () => isManager() || !isHidden("cv.nav") },
+  { id: "jobs", icon: "📋", label: "Giao việc", mod: jobs, manager: true, tab: true },
+  { id: "score", icon: "🏅", label: "Xếp hạng", mod: score, tab: () => !isManager() },
+  { id: "me", icon: "👤", label: "Của tôi", mod: mePage, tab: () => !isManager() },
   { id: "ranking", icon: "🏆", label: "BXH sao", mod: ranking },
   { id: "history", icon: "🕒", label: "Lịch sử", mod: historyPage },
   { id: "store", icon: "🏢", label: "Siêu thị", mod: store },
@@ -32,14 +38,15 @@ let current = null, cleanup = null, navToken = 0;
 function show(id) { for (const x of ["boot", "login", "app"]) $("#" + x).hidden = x !== id; }
 
 function pendingCount() { return (S.pending.proposals || 0) + (S.pending.changes || 0) + (S.pending.hot || 0); }
+const isTab = (p) => (typeof p.tab === "function" ? p.tab() : !!p.tab);
 function renderNav() {
-  const pages = allowed();
+  const pages = allowed().filter((p) => !p.nav || p.nav() || p.id === current);
   const html = (p) => {
     const b = p.id === "admin" && pendingCount() ? `<b class="badge">${pendingCount()}</b>` : "";
     return `<button type="button" data-page="${p.id}" class="${current === p.id ? "on" : ""}"><span>${p.icon}</span> ${p.label}${b}</button>`;
   };
   $("#nav").innerHTML = pages.map(html).join("");
-  const tabs = pages.filter((p) => p.tab), more = pages.filter((p) => !p.tab);
+  const tabs = pages.filter(isTab), more = pages.filter((p) => !isTab(p));
   const moreOn = more.some((p) => p.id === current), badge = pendingCount() && more.some((p) => p.id === "admin") ? `<b class="badge">${pendingCount()}</b>` : "";
   $("#tabbar").innerHTML = tabs.map((p) => `<button type="button" data-page="${p.id}" class="${current === p.id ? "on" : ""}"><span>${p.icon}</span>${p.label}</button>`).join("")
     + (more.length ? `<button type="button" id="btnMore" class="${moreOn ? "on" : ""}"><span>☰</span>Thêm${badge}</button>` : "");
@@ -95,8 +102,9 @@ async function enterApp() {
   $("#btnMe").textContent = `👤 ${S.me.email.split("@")[0]} · ${roleLabel(S.me.role)}`;
   show("app");
   startRealtime();
+  registerSW();   // nhận thông báo đẩy (sw.js) — không lưu đệm trang
   if (S.user?.user_metadata?.must_change) setTimeout(() => setPassword(false, true), 300);
-  const id = location.hash.slice(1).split("?")[0] || (isManager() ? "report" : "report");
+  const id = location.hash.slice(1).split("?")[0] || "today";
   go(id);
   remind();
 }

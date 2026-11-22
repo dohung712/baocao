@@ -5,6 +5,10 @@ import { setting, isManager } from "./store.js";
 
 // [selector, tiêu đề, nội dung, chỉ quản lý?] — selector khớp phần tử gần nhất (closest)
 const H = [
+[".td-hero", "🏠 Hôm nay", "Vòng tròn = số việc đã nộp / việc hôm nay. Ca làm lấy từ lịch ca của tool sắp ca. Chạm vào từng thẻ việc để chụp / chọn ảnh rồi nộp — ảnh lưu vào thư mục của bạn trên Google Drive."],
+[".td-push", "🔔 Thông báo trên điện thoại", "Bật để nhận việc mới, nhắc trước hạn và báo quá hạn ngay trên màn hình khoá. iPhone: thêm tool ra màn hình chính trước (Chia sẻ → Thêm vào MH chính)."],
+["#jTabs [data-t=assign]", "➕ Giao việc", "Chọn hạng mục, tên việc, người làm (theo ca, chọn người hoặc cả bộ phận), giờ hạn, kiểu minh chứng và số sao trừ khi trễ / bỏ lỡ. Có thể lặp mỗi ngày đến một ngày."],
+["#jTabs [data-t=stats]", "📈 Thống kê công việc", "Theo NV, theo ngày, theo hạng mục: số việc, đã nộp, đúng hạn, trễ, bỏ lỡ, số ảnh. Bấm tên NV để xem từng việc và ảnh, 📁 mở thư mục ảnh của NV trên Drive."],
   // Menu trang
   ['[data-page="report"]', "📝 Báo cáo", "Nhập thực đạt từng môn và doanh thu QĐ mỗi ngày trước giờ chốt. Gửi xong có thể lưu ảnh để gửi Zalo/Line."],
   ['[data-page="cv"]', "🗂️ CV", "TikTok (hạn Thứ 3, Thứ 6), đăng ký vệ sinh, lịch bận/OFF, roadshow và thống kê."],
