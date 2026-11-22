@@ -1,3 +1,5 @@
+> **Bản đang dùng là v2**: web https://dohung712.github.io/baocao/v2/ · code trong `v2/` và `supabase/`. Đọc **HANDOFF.md**, **CLAUDE.md**, **TOOL.md** để tiếp tục phát triển. Phần dưới đây mô tả bản v1 cũ.
+
 # Thi đua & BXH PRO 20
 
 Frontend: GitHub Pages at https://dohung712.github.io/baocao/.

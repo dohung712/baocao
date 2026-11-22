@@ -1,6 +1,6 @@
 # CLAUDE.md: hướng dẫn cho Claude khi sửa repo này
 
-Đọc **TOOL.md** trước: mã chức năng (A1…G3) → trang, file giao diện, hàm SQL; luật tính; chỉ mục hàm SQL (mục 8).
+Phiên mới / máy mới: đọc **HANDOFF.md** (bối cảnh, cách chạy, việc đang dở). Sau đó đọc **TOOL.md**: mã chức năng (A1…G3) → trang, file giao diện, hàm SQL; luật tính; chỉ mục hàm SQL (mục 8).
 Người dùng sẽ gửi "Sửa <mã>: …". Chỉ mở đúng file/hàm của mã đó; đừng đọc cả repo.
 
 ## Quy trình nhanh
