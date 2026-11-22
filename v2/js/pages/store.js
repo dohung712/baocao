@@ -1,7 +1,8 @@
 // Trang Thi đua siêu thị: dán số liệu realtime, xếp hạng môn, gợi ý sao
 import { $, $$, esc, fmt, toast, copyText, sortTh, sorter, applySort, dmy } from "../ui.js";
 import { sb, S, rpc, onChange, isManager, setting, errMsg, staffById } from "../store.js";
-import { loadBi, biRevenueHtml, biStaffHtml, biToolsHtml, bindBiTools } from "../bi.js";
+import * as BI from "../bi.js";
+const { loadBi, biRevenueHtml, biStaffHtml, biToolsHtml, bindBiTools } = BI;
 
 // Bóc tách văn bản báo cáo nội bộ (giữ đúng cách làm của bản cũ)
 export function parseStoreText(text) {
@@ -92,7 +93,7 @@ async function load() {
     $("#sBi").innerHTML = biRevenueHtml(bi);
     $("#sBiStaff").innerHTML = biStaffHtml(bi, (id) => staffById(id)?.name);
     const tools = $("#sBiTools");
-    if (tools) { const open = tools.querySelector("details")?.open; tools.innerHTML = biToolsHtml(bi); if (open) tools.querySelector("details").open = true; bindBiTools(tools, load); }
+    if (tools && !BI.biBusy?.on) { const open = tools.querySelector("details")?.open; tools.innerHTML = biToolsHtml(bi); if (open) tools.querySelector("details").open = true; bindBiTools(tools, load); }
   }
   draw();
 }

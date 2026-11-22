@@ -100,19 +100,22 @@ export function biStaffHtml(bi, nameOf) {
 export function biToolsHtml(bi) {
   return `<details class="card" id="biTools" style="margin-bottom:14px"><summary><b>📥 Số liệu BI từ ảnh chụp</b> <span class="muted small">— ${bi.count} ảnh đã đọc${bi.errors.length ? ` · <span class="neg">${bi.errors.length} lỗi</span>` : ""}${bi.last ? ` · lần cuối ${new Date(bi.last).toLocaleString("vi-VN")}` : ""}</span></summary>
     <p class="small muted" style="margin:8px 0">Chụp màn hình app BI (Doanh thu hợp nhất, BC Thi đua lũy kế, thẻ nhân viên) bỏ vào thư mục Drive <b>Tool Báo Cáo / 00 - Nhập doanh thu và thi đua</b>. Tool tự đọc 30 phút / lần, hoặc bấm đọc ngay. Ảnh BC Thi đua mới nhất sẽ thay bảng thi đua bên dưới.</p>
-    <div class="row"><button class="btn primary" id="biSync" type="button">📥 Đọc ảnh mới trong Drive</button><label class="btn" for="biFile">📷 Chọn ảnh từ máy</label><input type="file" id="biFile" accept="image/*" multiple hidden><span class="small muted" id="biMsg"></span></div>
+    <div class="row"><button class="btn primary" id="biSync" type="button">📥 Đọc ảnh mới trong Drive</button><label class="btn" for="biFile">📷 Chọn ảnh từ máy</label><input type="file" id="biFile" accept="image/*" multiple hidden><span class="small muted" id="biMsg">${esc(biBusy.last || "")}</span></div>
     ${bi.errors.length ? `<div style="margin-top:10px">${bi.errors.map((r) => `<div class="row small" style="gap:6px;margin-top:4px"><span class="pill bad">Lỗi</span><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a><span class="muted">${esc(r.error)}</span><button class="btn ghost small" type="button" data-biforget="${esc(r.file_id)}">Đọc lại</button></div>`).join("")}</div>` : ""}
   </details>`;
 }
 
 const b64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = () => rej(new Error("Không đọc được ảnh")); r.readAsDataURL(blob); });
 
+// Đang đọc ảnh → trang không vẽ lại thanh công cụ (giữ dòng tiến độ)
+export const biBusy = { on: false };
+
 // Gắn sự kiện cho thanh công cụ QL (gọi sau khi chèn biToolsHtml)
 export function bindBiTools(box, reload) {
-  const msg = (t) => { const m = box.querySelector("#biMsg"); if (m) m.textContent = t; };
+  const msg = (t) => { biBusy.last = t; const m = box.querySelector("#biMsg"); if (m) m.textContent = t; };
   const btn = box.querySelector("#biSync");
   if (btn) btn.onclick = async () => {
-    btn.disabled = true; let read = 0, err = 0, rows = null;
+    btn.disabled = true; biBusy.on = true; let read = 0, err = 0, rows = null;
     try {
       for (let i = 0; i < 15; i++) {
         msg(`Đang đọc… (${read} ảnh xong)`);
@@ -120,14 +123,14 @@ export function bindBiTools(box, reload) {
         read += r.read; err += r.errors; rows = r.contestRows ?? rows;
         if (!r.remaining || (!r.read && !r.errors)) { msg(`${r.total} ảnh trong thư mục · đọc mới ${read}${err ? ` · ${err} lỗi` : ""}${rows ? ` · cập nhật ${rows} dòng thi đua` : ""}`); break; }
       }
-      toast(read ? `Đã đọc ${read} ảnh BI` : "Không có ảnh mới"); reload();
+      toast(read ? `Đã đọc ${read} ảnh BI` : "Không có ảnh mới");
     } catch (e) { msg(""); toast(errMsg(e), 5000); }
-    btn.disabled = false;
+    btn.disabled = false; biBusy.on = false; reload(true);
   };
   const inp = box.querySelector("#biFile");
   if (inp) inp.onchange = async () => {
     const files = [...inp.files].slice(0, 12); inp.value = ""; if (!files.length) return;
-    let done = 0;
+    let done = 0; biBusy.on = true;
     try {
       for (let i = 0; i < files.length; i += 2) {
         msg(`Đang tải & đọc ${Math.min(files.length, i + 2)}/${files.length}…`);
@@ -137,8 +140,9 @@ export function bindBiTools(box, reload) {
         done += r.files.filter((x) => !x.error).length;
         const bad = r.files.filter((x) => x.error); if (bad.length) toast(bad.map((x) => `${x.name}: ${x.error}`).join(" · "), 5000);
       }
-      msg(`Đã đọc ${done}/${files.length} ảnh`); toast(`Đã đọc ${done} ảnh BI`); reload();
+      msg(`Đã đọc ${done}/${files.length} ảnh`); toast(`Đã đọc ${done} ảnh BI`);
     } catch (e) { msg(""); toast(errMsg(e), 5000); }
+    biBusy.on = false; reload(true);
   };
   box.onclick = async (e) => {
     const b = e.target.closest("[data-biforget]"); if (!b) return;
