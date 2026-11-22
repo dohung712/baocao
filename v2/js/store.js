@@ -111,7 +111,7 @@ export function startRealtime() {
   channel = sb.channel("thidua-v2");
   for (const table of Object.keys(refresh)) {
     channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
-      clearTimeout(timers[table]); timers[table] = setTimeout(() => refresh[table]().catch(console.error), 400);
+      clearTimeout(timers[table]); timers[table] = setTimeout(() => Promise.resolve().then(refresh[table]).catch(console.error), 400);
     });
   }
   channel.subscribe((status) => liveCb(status === "SUBSCRIBED"));

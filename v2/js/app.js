@@ -181,7 +181,8 @@ async function viewAsAction(kind) {
   if (kind === "off") { setViewAs(null); location.hash = "today"; return location.reload(); }
   if (kind === "emp") {
     const cur = S.me.viewAs?.role === "employee" ? S.me.staff_id : S.realMe?.staff_id;
-    const v = await modal(`<h3>👁️ Xem như nhân viên</h3><p class="muted small">Menu, trang 🏠 Hôm nay, CV… hiện đúng như NV đó thấy. Nộp ảnh / báo cáo vẫn ghi thật cho NV đang xem — nên thử bằng mã của chính bạn${S.realMe?.staff_id ? ` (${esc(S.realMe.staff_id)})` : ""}.</p>
+    const own = S.realMe?.staff_id, ownOk = all.some((s) => s.id === own);
+    const v = await modal(`<h3>👁️ Xem như nhân viên</h3><p class="muted small">Menu, trang 🏠 Hôm nay, CV… hiện đúng như NV đó thấy. Nộp ảnh / báo cáo vẫn ghi thật cho NV đang xem${ownOk ? ` — nên thử bằng mã của chính bạn (${esc(own)})` : own ? `. Mã của bạn (${esc(own)}) đang ẩn trong Nhân sự nên không nhận việc được: muốn thử nộp ảnh thì giao 1 việc thử cho 1 NV rồi xoá sau (xoá việc hoàn sao, ảnh vẫn nằm trong thư mục Drive của NV đó)` : ""}.</p>
       <form class="stack"><label>Nhân viên<select name="staff">${all.map((s) => `<option value="${esc(s.id)}" ${s.id === cur ? "selected" : ""}>${esc(s.name)} · ${esc(s.dept)} · ${esc(s.id)}</option>`).join("")}</select></label></form>
       <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn primary" data-v="submit">Xem như NV này</button></div>`);
     if (!v?.staff) return;
