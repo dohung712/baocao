@@ -1,5 +1,6 @@
 // Google Apps Script (chạy dưới tài khoản Google của chủ quản) — nhận yêu cầu từ Edge Function "tasks" / "notify" và làm việc với Google Drive.
 // BẢN 2 (D12 Bảng việc): lưu ảnh theo đường dẫn nhiều cấp, lấy file lịch ca mới nhất, ghi trang tính.
+// BẢN 3 (B16 Số liệu BI): liệt kê file trong thư mục (list), lấy nội dung 1 file nằm trong thư mục đó (get).
 //
 // Cài đặt / cập nhật:
 //   1. Mở dự án Apps Script đang dùng (địa chỉ = DRIVE_UPLOAD_URL), dán đè toàn bộ file này, bấm Lưu.
@@ -9,7 +10,7 @@
 //   Web app: Execute as: Me · Who has access: Anyone.
 const SECRET = 'ĐẶT_MÃ_BÍ_MẬT';
 const FOLDER_ID = '176C0AxvgopmScYWcD1s_byyCzEgu2ArV';
-const VERSION = 2;
+const VERSION = 3;
 
 function doPost(e) {
   try {
@@ -37,6 +38,28 @@ function doPost(e) {
       const fresh = !d.since || meta.updated > d.since || meta.id !== d.since_id;
       return out({ ok: true, version: VERSION, file: meta, folder: { id: folder.getId(), url: folder.getUrl() },
         data: fresh ? Utilities.base64Encode(best.getBlob().getBytes()) : '' });
+    }
+
+    // Liệt kê file trong thư mục (mới sửa trước): [{id, name, mime, updated, size, url}]
+    if (d.action === 'list') {
+      const lf = walk(root, d.path || []).folder;
+      const li = lf.getFiles(), files = [];
+      while (li.hasNext()) {
+        const x = li.next();
+        files.push({ id: x.getId(), name: x.getName(), mime: x.getMimeType(), updated: x.getLastUpdated().toISOString(), size: x.getSize(), url: x.getUrl() });
+      }
+      files.sort(function (a, b) { return a.updated < b.updated ? 1 : -1; });
+      return out({ ok: true, version: VERSION, folder: { id: lf.getId(), url: lf.getUrl() }, files: files.slice(0, d.limit || 300) });
+    }
+
+    // Lấy nội dung 1 file — chỉ khi file nằm trong thư mục path (không đọc được file ở chỗ khác)
+    if (d.action === 'get') {
+      const gf = walk(root, d.path || []).folder, file = DriveApp.getFileById(d.id), ps = file.getParents();
+      let inside = false;
+      while (ps.hasNext()) if (ps.next().getId() === gf.getId()) inside = true;
+      if (!inside) return out({ ok: false, error: 'file không nằm trong thư mục được phép' });
+      return out({ ok: true, version: VERSION, file: { id: file.getId(), name: file.getName(), mime: file.getMimeType(), updated: file.getLastUpdated().toISOString(), size: file.getSize(), url: file.getUrl() },
+        data: Utilities.base64Encode(file.getBlob().getBytes()) });
     }
 
     // Ghi trang tính: tabs = [{name, rows: [[...], ...]}] — xoá nội dung cũ của tab rồi ghi lại

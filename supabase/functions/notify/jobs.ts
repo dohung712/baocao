@@ -7,6 +7,7 @@ import { rest, rpc, vnParts, addDays } from "../_shared/common.ts";
 import { pushMany, type PushData } from "../_shared/webpush.ts";
 import { drive, driveReady, driveVersion } from "../_shared/drive.ts";
 import { parseShiftAoa, matchStaff } from "../_shared/shift.ts";
+import { biSync } from "../_shared/bi.ts";
 
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const dm = (d: string) => d.slice(8, 10) + "/" + d.slice(5, 7);
@@ -133,7 +134,17 @@ export async function jobMaintenance(cfg: Record<string, any>) {
     if (over.length) await mark(over.map((j) => j.id), "overdue_at");
   } catch (e) { out.pushError = String((e as Error).message); }
   try { const s = await shiftAuto(cfg); if (s) out.shift = s; } catch (e) { out.shiftError = String((e as Error).message); }
+  try { const b = await biAuto(); if (b) out.bi = { read: b.read, errors: b.errors, remaining: b.remaining }; } catch (e) { out.biError = String((e as Error).message); }
   return out;
+}
+
+// B16: 30 phút 1 lần (phút 10–14, 40–44) đọc ảnh BI mới trong thư mục "00 - Nhập doanh thu và thi đua" (mỗi lần ≤ 2 ảnh)
+async function biAuto() {
+  const m = Number(vnParts().hm.slice(3)) % 30;
+  if (m < 10 || m >= 15) return null;
+  if (!(await driveReady()) || (await driveVersion()) < 3) return null;
+  const r = await biSync("tu-dong", 2);
+  return r.read || r.errors ? r : null;
 }
 
 // Đọc file lịch ca mới nhất trong Drive (30 phút / lần); file chưa đổi thì Apps Script không gửi lại nội dung

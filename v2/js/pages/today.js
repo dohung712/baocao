@@ -6,6 +6,7 @@ import { openCum } from "../cumulative.js";
 import { loadTypes, jobCard, openSubmit, stateOf, vnAt, nPhotos, openCv } from "../jobs-common.js";
 import { slotText } from "../lib-shift.js";
 import { pushState, enablePush, disablePush, isIOS } from "../push.js";
+import { myBiHtml } from "../bi.js";
 
 const APPS = [
   ["report", "📝", "Báo cáo ngày"], ["cv:tiktok", "🎬", "TikTok"], ["cv:clean", "🧹", "Vệ sinh"], ["cv:flyer", "📄", "Tờ rơi"],
@@ -14,14 +15,14 @@ const APPS = [
   ["cv:fund", "💵", "Quỹ"], ["store", "🏢", "Siêu thị"], ["assistant", "🤖", "Trợ lý"], ["rules", "📖", "Rule"],
 ];
 const appOk = (k) => k.startsWith("cv:") ? !isHidden("cv") && !isHidden("cv." + k.slice(3)) : !isHidden(k);
-let root, goFn, J = [], legacy = [], shifts = [], tok = 0;
+let root, goFn, J = [], legacy = [], shifts = [], tok = 0, biHtml = "";
 
 export async function render(view, _p, ctx = {}) {
   root = view; goFn = ctx.go || ((id) => { location.hash = id; }); pushSt = null;
   view.innerHTML = `<div class="page-h"><div><h1>🏠 Hôm nay</h1><p>${dow(vnToday())} ${dmy(vnToday())} · việc cần làm theo hạn, nộp ảnh ngay trên thẻ việc</p></div></div><div id="tdBody"><div class="empty">Đang tải…</div></div>`;
   view.onclick = onClick;
   await load();
-  const off = onChange((w) => { if ((w === "jobs" || w === "cv") && $("#tdBody")) load(true); });
+  const off = onChange((w) => { if ((w === "jobs" || w === "cv" || w === "contest") && $("#tdBody")) load(true); });
   const timer = setInterval(() => { if ($("#tdBody")) draw(); }, 60000);   // cập nhật "còn x phút / quá hạn"
   return () => { off(); clearInterval(timer); };
 }
@@ -30,15 +31,16 @@ async function load() {
   const me = S.me?.staff_id, today = vnToday(), t = ++tok;
   try {
     await loadTypes();
-    const [jr, sr, td, fl] = await Promise.all([
+    const [jr, sr, td, fl, bh] = await Promise.all([
       me ? sb.from("jobs").select("*").eq("staff_id", me).gte("due_at", new Date(Date.now() - 3 * 864e5).toISOString()).lte("due_at", new Date(Date.now() + 8 * 864e5).toISOString()).order("due_at") : { data: [] },
       me ? sb.from("shifts").select("d,slots,hours").eq("staff_id", me).gte("d", today).lte("d", addDays(today, 6)).order("d") : { data: [] },
       me ? rpc("todo_list", { p_staff: me, p_date: today }).catch(() => []) : [],
       me ? rpc("flyer_todo", { p_staff: me, p_date: today }).catch(() => []) : [],
+      me && !isHidden("store") ? myBiHtml(me).catch(() => "") : "",
     ]);
     if (t !== tok || !$("#tdBody")) return;
     if (jr.error) throw jr.error;
-    J = jr.data || []; shifts = sr.data || [];
+    J = jr.data || []; shifts = sr.data || []; biHtml = bh || "";
     legacy = [...(Array.isArray(td) ? td : []), ...(Array.isArray(fl) ? fl.map((f) => ({ ...f, go: "cv:flyer" })) : [])];
     draw();
   } catch (e) { if ($("#tdBody")) $("#tdBody").innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
@@ -70,7 +72,7 @@ function draw() {
       <div class="td-who"><b>${esc(staff?.name || "")}</b><span class="small muted">${esc(staff?.dept || "")} · mã ${esc(me)}</span>
         <span class="td-shift ${sh && !sh.slots?.length ? "off" : ""}">🕑 ${sh ? (sh.slots?.length ? esc(slotText(sh.slots, slots)) : "OFF hôm nay") : "Chưa có lịch ca"}</span></div>
       <div class="td-nums"><span><b>${todayAll.filter((j) => j.status === "todo").length}</b>cần nộp</span><span class="bad"><b>${over.length + legBad.length}</b>quá hạn</span><span><b>${todayAll.reduce((a, j) => a + nPhotos(j), 0)}</b>ảnh đã nộp</span></div>
-    </div>` : `<div class="banner info"><div>Tài khoản chưa gắn mã nhân viên nên không có việc cá nhân.</div></div>`}
+    </div><div id="tdBi">${biHtml}</div>` : `<div class="banner info"><div>Tài khoản chưa gắn mã nhân viên nên không có việc cá nhân.</div></div>`}
     ${over.length || legBad.length ? `<h3 class="td-sec bad">⚠️ Quá hạn · ${over.length + legBad.length}</h3><div class="jb-list">${over.map(card).join("")}${legBad.map(leg).join("")}</div>` : ""}
     ${me ? `<h3 class="td-sec">📌 Việc hôm nay · ${todayJ.length}</h3><div class="jb-list">${todayJ.length ? todayJ.map(card).join("") : `<div class="empty small">Hôm nay chưa có việc được giao.</div>`}${doneOld.map(card).join("")}</div>` : ""}
     ${legRest.length ? `<h3 class="td-sec">🔔 Nhắc từ các mục khác · ${legRest.length}</h3><div class="jb-list">${legRest.map(leg).join("")}</div>` : ""}

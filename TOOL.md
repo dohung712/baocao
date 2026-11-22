@@ -58,7 +58,8 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | B7 | Khoá sổ ngày | Quản lý → Khoá sổ | `pages/admin.js` (lock) | `locked_dates` |
 | B8 | BXH sao (tổng sao) | BXH sao | `pages/ranking.js` | `leaderboard`, `staff_stars`, `staff_total` |
 | B9 | Lịch sử báo cáo | Lịch sử | `pages/history.js` | `daily_results` |
-| B10 | Thi đua siêu thị (chỉ tiêu chung) | Siêu thị | `pages/store.js` | `store_contest`, `save_store_contest` |
+| B10 | Thi đua siêu thị (chỉ tiêu chung) + cột **Còn thiếu / Cần mỗi ngày** (số ngày còn lại lấy theo ảnh BI, không có thì theo lịch) | Siêu thị | `pages/store.js` | `store_contest`, `save_store_contest` |
+| B16 | **Số liệu BI từ ảnh chụp**: QL bỏ ảnh chụp app BI công ty (Doanh thu hợp nhất, BC Thi đua lũy kế, thẻ NV) vào Drive `Tool Báo Cáo/00 - Nhập doanh thu và thi đua` (đường dẫn = cài đặt `BI_DRIVE_PATH`) → AI (Gemini) đọc → doanh thu QĐ / target / dự kiến / còn thiếu / cần bán mỗi ngày từng kênh + toàn siêu thị; ảnh BC Thi đua mới nhất mỗi kênh **thay bảng B10** (TGD, AAR + dòng TỔNG cộng 2 kênh); bảng NV theo BI; NV thấy thẻ chỉ tiêu của mình ở 🏠 Hôm nay. Tự đọc 30 phút / lần (phút 10–14, 40–44, ≤ 2 ảnh), QL bấm "Đọc ảnh mới" hoặc chọn ảnh từ máy; ảnh lỗi → "Đọc lại". Mã siêu thị → kênh: cài đặt `BI_STORES`. Cần Apps Script **bản 3** (`list`, `get`) | Siêu thị (khối 📥 Số liệu BI, 📊 Doanh thu, 👥 NV theo BI); Hôm nay (🎯 Chỉ tiêu) | `js/bi.js`, `pages/store.js`, `pages/today.js`; Edge `bi` (sync / upload / apply), `_shared/bi.ts`, `notify/jobs.ts` (biAuto) | `bi_files`, `_store_contest_set`, `bi_forget` |
 
 ### C. Target tháng và xếp hạng điểm
 | Mã | Chức năng | Trên web | File giao diện | Hàm / bảng SQL |
@@ -234,6 +235,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_require_member` | function | 000200_logic.sql:189 |
 | `_shift_save` | function | 000940_jobs.sql:357 |
 | `_staff_items` | function | 000890_items_quick_violation_docs.sql:7 |
+| `_store_contest_set` | function | 000950_bi.sql:41 |
 | `_task_hide_after` | function | 000790_tasks_notes_autohide.sql:12 |
 | `_task_period` | function | 000780_tasks.sql:35 |
 | `_vn_ts` | function | 000940_jobs.sql:127 |
@@ -243,6 +245,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `adjust_stars` | function | 000700_scoring.sql:157 |
 | `app_member` | function | 000100_core.sql:139 |
 | `apply_star_suggestions` | function | 000740_star_suggest_hot.sql:57 |
+| `bi_forget` | function | 000950_bi.sql:61 |
 | `busy_deadline` | function | 000840_report_todo_media.sql:41 |
 | `busy_delete` | function | 000600_modules.sql:262 |
 | `busy_register` | function | 000840_report_todo_media.sql:47 |
@@ -350,6 +353,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `zone_check` | function | 000800_clean_zones_notify.sql:78 |
 | `zone_delete` | function | 000800_clean_zones_notify.sql:67 |
 | `zone_save` | function | 000800_clean_zones_notify.sql:45 |
+| `bi_files` | table | 000950_bi.sql:10 |
 | `busy` | table | 000600_modules.sql:47 |
 | `clean_zone_checks` | table | 000800_clean_zones_notify.sql:16 |
 | `clean_zones` | table | 000800_clean_zones_notify.sql:5 |

@@ -97,7 +97,7 @@ export function startRealtime() {
     daily_results: () => { loadStaff(); emit("results"); },
     extra_proposals: () => { loadPending(); loadStaff(); emit("proposals"); },
     change_requests: () => { loadPending(); emit("changes"); },
-    store_contest: () => emit("contest"),
+    store_contest: () => emit("contest"), bi_files: () => emit("contest"),
     hot_bonuses: () => { loadPending(); emit("proposals"); },
     fund_tx: () => emit("cv"),
     tasks: () => emit("cv"), task_acks: () => emit("cv"),

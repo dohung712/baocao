@@ -746,3 +746,14 @@ tr.sel td{background:var(--brand-soft)}
 .viewas{max-width:1240px;margin:10px auto 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--info-soft);color:var(--info);border:1px solid var(--info);border-radius:var(--radius);padding:8px 12px;font-size:13.5px}
 @media (max-width:860px){.viewas{margin:8px 12px 0}}
 .td-mgr .row{flex-wrap:wrap}
+
+/* B16 Số liệu BI */
+.bi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:14px}
+.bi-rev,.bi-me{display:flex;flex-direction:column;gap:8px}
+.bi-me{margin-top:12px}
+.bi-rev-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.bi-big b{font-size:24px;font-variant-numeric:tabular-nums}
+.bi-kv{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.bi-kv span{display:flex;flex-direction:column}
+.bi-kv small{color:var(--muted);font-size:12px}
+.bi-kv b{font-variant-numeric:tabular-nums}

@@ -50,7 +50,7 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 3.2.0   # ghim bản cố định: "latest" phải hỏi GitHub API, hay bị giới hạn lượt gọi (rate limit) làm hỏng deploy
-      - name: Triển khai Edge Functions (notify, accounts, assistant, tasks, push)
+      - name: Triển khai Edge Functions (notify, accounts, assistant, tasks, push, bi)
         run: supabase functions deploy --project-ref "$PROJECT_REF" --no-verify-jwt --yes
       - name: Kiểm tra (chỉ in số lượng)
         run: node supabase/scripts/verify.mjs
