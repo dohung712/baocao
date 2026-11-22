@@ -86,7 +86,7 @@ Các commit khác trong cùng giai đoạn do phiên khác làm: B15 báo cáo P
 
 ## 7. Việc đang dở / chờ người dùng quyết
 
-- **D12 Bảng việc** (23/11): chủ quản phải **cập nhật Apps Script lên bản 2** (`supabase/apps-script/drive-upload.gs`, Deploy → Manage deployments → New version, cấp quyền Google Sheets) thì NV mới nộp ảnh và tool mới đọc được lịch ca. Chưa cập nhật: Edge `tasks` báo “Apps Script … còn bản cũ”.
+- **D12 Bảng việc** (23/11): Apps Script dự án “Thi dua - tai file len Drive” đã lên **bản 2** (deployment phiên bản 2, giữ địa chỉ cũ; mã bí mật nằm ở dòng `const SECRET` trong dự án, không có trong repo). Thư mục `Tool Báo Cáo/02 - Lịch ca làm việc` đã tạo, chưa có file. Mã 18450 (chủ quản) đã bỏ ẩn để thử nhận việc / thông báo; chủ quản có nút 👁️ Xem như NV / QL (`js/viewas.js`).
 - **Việc chưa làm của D12**: (1) việc mẫu lặp lại theo ca (người dùng sẽ gửi danh sách việc hằng ngày thật); (2) đồng bộ trang tính “Tool Báo Cáo” (Apps Script đã có action `sheet`, chưa gọi); (3) thư mục `00 - Nhập doanh thu và thi đua`: đọc file doanh thu + thi đua siêu thị / NV để xếp hạng và target còn lại; (4) xác nhận giờ 6 ca (`SHIFT_SLOTS` đang đoán 07:30–22:00).
 
 - **Tờ rơi**: muốn chọn tuyến khi tạo đợt (hiện tool chọn tuyến lâu chưa phát, 4 chợ nằm cuối nên đợt đầu ít khi tới)? Có cần ô chỉnh `FLYER_REMIND_BEFORE_MIN` trên giao diện?
