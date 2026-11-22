@@ -1,5 +1,6 @@
 // Kết nối Supabase + bộ nhớ dữ liệu dùng chung + đồng bộ realtime
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.76.0/+esm";
+import { applyMe, filterStaff } from "./viewas.js";
 
 export const SUPABASE_URL = "https://iauxgnnybhzqeirnqaen.supabase.co";
 export const SUPABASE_KEY = "sb_publishable_NRvEe2l11DFIHjQZzQinIQ_ASSaVsyX";
@@ -35,7 +36,8 @@ export async function loadMe() {
   S.user = user;
   if (!user) { S.me = null; return null; }
   const rows = await q(sb.from("memberships").select("*").eq("email", (user.email || "").toLowerCase()).eq("active", true));
-  S.me = rows[0] || null;
+  S.realMe = rows[0] || null;
+  S.me = applyMe(S.realMe);   // chủ quản đang "👁️ Xem như" NV / QL → giao diện theo vai trò đó (viewas.js)
   return S.me;
 }
 
@@ -45,7 +47,8 @@ export async function loadSettings() {
   emit("settings");
 }
 export async function loadStaff() {
-  S.staff = await q(sb.from("staff_stars").select("*").order("sort").order("name"));
+  S.allStaff = await q(sb.from("staff_stars").select("*").order("sort").order("name"));
+  S.staff = filterStaff(S.allStaff, S.me);
   emit("staff");
 }
 export async function loadItems() {
@@ -73,7 +76,7 @@ export async function loadAll() {
 
 export const setting = (k, d) => (S.settings[k] === undefined || S.settings[k] === null ? d : S.settings[k]);
 export const visibleStaff = () => S.staff.filter((s) => !s.hidden);
-export const staffById = (id) => S.staff.find((s) => s.id === id);
+export const staffById = (id) => S.staff.find((s) => s.id === id) || S.allStaff?.find((s) => s.id === id);
 export const staffEmail = (id) => `nv${String(id).trim().toLowerCase()}@thidua351.vn`;
 // Ẩn trang / chức năng theo vai trò (chủ quản luôn thấy tất cả)
 export function isHidden(id) {

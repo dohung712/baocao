@@ -63,6 +63,7 @@ function draw() {
   const badgeFor = (k) => legacy.filter((x) => x.go === k && x.lv !== "info").length + (k === "report" ? 0 : 0);
   body.innerHTML = `
     <div id="tdPush"></div>
+    ${S.realMe?.role === "owner" && !S.me.viewAs ? `<div class="card td-mgr"><div><b>👁️ Xem thử giao diện</b><span class="small muted">Xem đúng màn hình nhân viên hoặc quản lý thấy, không cần tài khoản khác</span></div><div class="row"><button class="btn" type="button" data-viewas="emp">👤 Nhân viên</button><button class="btn" type="button" data-viewas="mgr">🧑‍💼 Quản lý</button></div></div>` : ""}
     ${isManager() ? `<div class="card td-mgr"><div><b>📋 Điều hành công việc</b><span class="small muted">Giao việc, xem ảnh từng NV, thống kê, lịch ca</span></div><button class="btn primary" type="button" data-page="jobs">Mở Giao việc ›</button></div>` : ""}
     ${me ? `<div class="card td-hero">
       <div class="td-ring" style="--p:${pct}"><b>${doneN}/${todayAll.length}</b><small>hôm nay</small></div>
@@ -99,6 +100,8 @@ async function drawPush(force = false) {
 async function onClick(e) {
   const j = e.target.closest("[data-job]");
   if (j) { const job = J.find((x) => String(x.id) === j.dataset.job); if (job && (await openSubmit(job))) load(); return; }
+  const va = e.target.closest("[data-viewas]");
+  if (va) { document.dispatchEvent(new CustomEvent("viewas", { detail: va.dataset.viewas })); return; }
   const g = e.target.closest("[data-go]");
   if (g) {
     const k = g.dataset.go;

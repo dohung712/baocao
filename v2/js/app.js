@@ -16,6 +16,7 @@ import * as mePage from "./pages/me.js";
 import * as today from "./pages/today.js";
 import * as jobs from "./pages/jobs.js";
 import { registerSW } from "./push.js";
+import { setViewAs } from "./viewas.js";
 
 // tab: hiện ở thanh dưới (điện thoại) · nav: có hiện trên menu không (CV của NV ẩn khi HIDE.employee có "cv.nav" — NV vào từng chức năng từ 🏠 Hôm nay)
 const PAGES = [
@@ -99,8 +100,9 @@ async function enterApp() {
     await loadAll();
   } catch (e) { show("login"); $("#loginMsg").className = "msg err"; $("#loginMsg").textContent = errMsg(e); return; }
   $("#storeName").textContent = setting("STORE_NAME", "");
-  $("#btnMe").textContent = `👤 ${S.me.email.split("@")[0]} · ${roleLabel(S.me.role)}`;
+  $("#btnMe").textContent = S.me.viewAs ? `👁️ ${roleLabel(S.me.role)} · ${S.me.role === "employee" ? (S.allStaff || []).find((s) => s.id === S.me.staff_id)?.name || S.me.staff_id : (S.me.stores || []).join(", ")}` : `👤 ${S.me.email.split("@")[0]} · ${roleLabel(S.me.role)}`;
   show("app");
+  renderViewAs();
   startRealtime();
   registerSW();   // nhận thông báo đẩy (sw.js) — không lưu đệm trang
   if (S.user?.user_metadata?.must_change) setTimeout(() => setPassword(false, true), 300);
@@ -163,9 +165,49 @@ async function setPassword(afterLink = false, forced = false) {
   toast(error ? errMsg(error) : "Đã lưu mật khẩu mới");
 }
 
+// ---------- 👁️ Xem như (chủ quản xem thử giao diện NV / QL) ----------
+function renderViewAs() {
+  let el = $("#viewas");
+  const va = S.me?.viewAs;
+  if (!va) { el?.remove(); return; }
+  if (!el) { el = document.createElement("div"); el.id = "viewas"; el.className = "viewas"; $("#remind").before(el); }
+  const name = (S.allStaff || []).find((s) => s.id === S.me.staff_id)?.name || S.me.staff_id;
+  el.innerHTML = `<span class="grow">👁️ Đang xem như <b>${va.role === "employee" ? "NHÂN VIÊN " + esc(name) : "QUẢN LÝ " + esc((S.me.stores || []).join(", ") || "(chưa chọn bộ phận)")}</b> · nộp ảnh, báo cáo vẫn ghi thật</span>
+    <button class="btn small" type="button" data-va="${va.role === "employee" ? "emp" : "mgr"}">Đổi</button><button class="btn small" type="button" data-va="${va.role === "employee" ? "mgr" : "emp"}">${va.role === "employee" ? "Xem như QL" : "Xem như NV"}</button><button class="btn small primary" type="button" data-va="off">Thoát</button>`;
+  el.onclick = (e) => { const b = e.target.closest("[data-va]"); if (b) viewAsAction(b.dataset.va); };
+}
+async function viewAsAction(kind) {
+  const all = (S.allStaff || S.staff).filter((s) => !s.hidden);
+  if (kind === "off") { setViewAs(null); location.hash = "today"; return location.reload(); }
+  if (kind === "emp") {
+    const cur = S.me.viewAs?.role === "employee" ? S.me.staff_id : S.realMe?.staff_id;
+    const v = await modal(`<h3>👁️ Xem như nhân viên</h3><p class="muted small">Menu, trang 🏠 Hôm nay, CV… hiện đúng như NV đó thấy. Nộp ảnh / báo cáo vẫn ghi thật cho NV đang xem — nên thử bằng mã của chính bạn${S.realMe?.staff_id ? ` (${esc(S.realMe.staff_id)})` : ""}.</p>
+      <form class="stack"><label>Nhân viên<select name="staff">${all.map((s) => `<option value="${esc(s.id)}" ${s.id === cur ? "selected" : ""}>${esc(s.name)} · ${esc(s.dept)} · ${esc(s.id)}</option>`).join("")}</select></label></form>
+      <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn primary" data-v="submit">Xem như NV này</button></div>`);
+    if (!v?.staff) return;
+    setViewAs({ role: "employee", staff_id: v.staff }); location.hash = "today"; return location.reload();
+  }
+  if (kind === "mgr") {
+    const ds = [...new Set(all.map((s) => s.dept).filter(Boolean))].sort();
+    const cur = S.me.viewAs?.role === "manager" ? S.me.stores || [] : ds;
+    const v = await modal(`<h3>👁️ Xem như quản lý</h3><p class="muted small">Quản lý chỉ thấy nhân sự và số liệu của bộ phận được giao, không có các mục chỉ dành cho chủ quản (Cài đặt, Tài khoản NV, Phân quyền…).</p>
+      <form class="stack"><div class="chips">${ds.map((d, i) => `<label class="chip"><input type="checkbox" name="d${i}" value="${esc(d)}" ${cur.includes(d) ? "checked" : ""}> ${esc(d)}</label>`).join("")}</div></form>
+      <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn primary" data-v="submit">Xem như QL</button></div>`);
+    if (!v) return;
+    const stores = Object.values(v).filter(Boolean);
+    if (!stores.length) return toast("Chọn ít nhất 1 bộ phận");
+    setViewAs({ role: "manager", stores }); location.hash = "today"; return location.reload();
+  }
+}
+
+document.addEventListener("viewas", (e) => viewAsAction(e.detail));   // nút "Xem thử giao diện" ở trang 🏠 Hôm nay
+
 $("#btnMe").onclick = async () => {
-  const v = await modal(`<h3>${esc(S.me.email)}</h3><p class="muted">${roleLabel(S.me.role)}${S.me.staff_id ? " · Mã NV " + esc(S.me.staff_id) : ""}${S.me.stores?.length ? " · " + esc(S.me.stores.join(", ")) : ""}</p>
-    <div class="stack"><button class="btn" data-v="pass">🔑 Đổi mật khẩu</button><button class="btn" data-v="help">💡 Gợi ý tự hiện: ${helpOn() ? "Đang bật — bấm để tắt" : "Đang tắt — bấm để bật"}</button><button class="btn" data-v="old">↩️ Mở bản cũ</button><button class="btn danger" data-v="out">Đăng xuất</button></div>`);
+  const real = S.realMe || S.me, ownerTools = real?.role === "owner";
+  const v = await modal(`<h3>${esc(S.me.email)}</h3><p class="muted">${roleLabel(real.role)}${S.me.viewAs ? ` · đang xem như <b>${roleLabel(S.me.role)}</b>` : ""}${real.staff_id ? " · Mã NV " + esc(real.staff_id) : ""}${S.me.stores?.length ? " · " + esc(S.me.stores.join(", ")) : ""}</p>
+    <div class="stack">${ownerTools ? `<div class="row" style="gap:6px"><button class="btn grow" data-v="va-emp">👁️ Xem như nhân viên</button><button class="btn grow" data-v="va-mgr">👁️ Xem như quản lý</button></div>${S.me.viewAs ? `<button class="btn primary" data-v="va-off">↩️ Về giao diện chủ quản</button>` : ""}` : ""}
+    <button class="btn" data-v="pass">🔑 Đổi mật khẩu</button><button class="btn" data-v="help">💡 Gợi ý tự hiện: ${helpOn() ? "Đang bật — bấm để tắt" : "Đang tắt — bấm để bật"}</button><button class="btn" data-v="old">↩️ Mở bản cũ</button><button class="btn danger" data-v="out">Đăng xuất</button></div>`);
+  if (v && v.startsWith?.("va-")) return viewAsAction(v.slice(3));
   if (v === "pass") setPassword();
   if (v === "help") { setHelp(!helpOn()); toast(helpOn() ? `Đã bật: rê chuột lên một mục ${setting("HELP_DELAY_S", 15)} giây (điện thoại: nhấn giữ) để xem gợi ý` : "Đã tắt gợi ý tự hiện"); }
   if (v === "old") location.href = "../";

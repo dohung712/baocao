@@ -742,3 +742,7 @@ button.chip{font:inherit;font-size:13px;cursor:pointer;color:var(--ink);min-heig
 .jb-hist{display:flex;flex-direction:column;gap:10px}
 .jb-h{border-bottom:1px solid var(--line);padding-bottom:10px;display:flex;flex-direction:column;gap:6px}
 tr.sel td{background:var(--brand-soft)}
+/* 👁️ Xem như (chủ quản xem thử giao diện NV / QL) */
+.viewas{max-width:1240px;margin:10px auto 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--info-soft);color:var(--info);border:1px solid var(--info);border-radius:var(--radius);padding:8px 12px;font-size:13.5px}
+@media (max-width:860px){.viewas{margin:8px 12px 0}}
+.td-mgr .row{flex-wrap:wrap}
