@@ -78,18 +78,28 @@ export async function gemini(key: string, payload: Record<string, unknown>) {
   await loadSaved();
   const call = async (m: string) => {
     tried.add(m);
-    for (let attempt = 0; attempt < 2; attempt++) {
+    let b = body, plain = false, retried = false;   // plain: đã bỏ thinkingConfig (model không hỗ trợ) · retried: đã chờ thử lại vì quá tải
+    for (let attempt = 0; attempt < 3; attempt++) {
       let r: Response;
-      try { r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body, signal: AbortSignal.timeout(95000) }); }
+      try { r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: b, signal: AbortSignal.timeout(95000) }); }
       catch (e) {   // quá 95 giây: dừng gọn (Edge Function chỉ được chạy 150 giây / lần)
         if ((e as Error).name === "TimeoutError" || /abort|timeout/i.test(String(e))) { errs.push(`${m}: AI chậm quá 95 giây`); return { stop: true }; }
         errs.push(`${m}: ${String((e as Error).message).slice(0, 100)}`); return null;
       }
       const j = await r.json().catch(() => ({}));
-      if (r.ok) { await saveGood(m); return { text: (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim() }; }
+      if (r.ok) {
+        await saveGood(m);
+        const c = j.candidates?.[0], text = (c?.content?.parts || []).filter((p: any) => !p.thought).map((p: any) => p.text || "").join("").trim();
+        if (c?.finishReason === "MAX_TOKENS") errs.push(`${m}: trả lời bị cắt (MAX_TOKENS)`);
+        return { text };
+      }
       const msg = String(j.error?.message || r.status).replace(/\s+/g, " ").slice(0, 140);
+      // Model không nhận thinkingConfig → gọi lại không có nó
+      if (r.status === 400 && !plain && /thinking/i.test(msg) && (payload as any).generationConfig?.thinkingConfig) {
+        const p2: any = JSON.parse(b); delete p2.generationConfig.thinkingConfig; b = JSON.stringify(p2); plain = true; continue;
+      }
       const daily = /per ?day|daily|PerDay/i.test(JSON.stringify(j.error || ""));   // hết hạn mức trong ngày: chờ cũng vô ích
-      if ([429, 500, 503].includes(r.status) && attempt === 0 && !daily) { await sleep(r.status === 429 ? 5000 : 3000); continue; }
+      if ([429, 500, 503].includes(r.status) && !retried && !daily) { retried = true; await sleep(r.status === 429 ? 5000 : 3000); continue; }   // quá tải tạm: chờ rồi thử lại 1 lần
       errs.push(`${m}: ${r.status} ${msg}`);
       if (r.status === 401 || (r.status === 403 && /api key|permission|billing/i.test(msg))) return { stop: true };   // khoá AI sai / hết quyền: thử model khác vô ích
       return null;

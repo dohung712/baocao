@@ -110,7 +110,8 @@ export async function extract(mime: string, b64: string) {
   if (!k) throw new Error("Chưa có khoá AI (GEMINI_API_KEY).");
   const out = await gemini(k, {
     contents: [{ role: "user", parts: [{ text: BI_PROMPT }, { inline_data: { mime_type: mime || "image/jpeg", data: b64 } }] }],
-    generationConfig: { temperature: 0, maxOutputTokens: 24000, responseMimeType: "application/json", responseSchema: BI_SCHEMA },
+    // thinkingLevel "low": model Gemini 3 bớt "suy nghĩ" → nhanh hơn, không bị cắt câu trả lời (model không hỗ trợ thì gemini() tự bỏ)
+    generationConfig: { temperature: 0, maxOutputTokens: 32000, responseMimeType: "application/json", responseSchema: BI_SCHEMA, thinkingConfig: { thinkingLevel: "low" } },
   });
   return parseJson(out);
 }
@@ -265,7 +266,7 @@ export async function biSync(actor: string, limit = 4, force: string[] = [], bud
     if (s.status === "error") return (Number(s.data?.tries) || 1) < BI_MAX_TRIES && now - Date.parse(s.processed_at) >= RETRY_AFTER_MS;
     return s.file_updated !== f.updated && s.file_updated !== "upload";
   });
-  let ok = 0, errors = 0, stopped = "", n = 0;
+  let ok = 0, errors = 0, stopped = "", n = 0, lastErr = "";
   for (const f of todo.slice(0, limit)) {
     if (n > 0 && Date.now() - t0 > budgetMs) break;   // hết giờ của lượt → lượt sau đọc tiếp
     n++;
@@ -276,13 +277,15 @@ export async function biSync(actor: string, limit = 4, force: string[] = [], bud
       ok++;
     } catch (e) {
       const msg = String((e as Error).message); errors++;
-      await saveError({ id: f.id, name: f.name, updated: f.updated, url: f.url }, msg, actor, tries).catch(() => {});
+      // Đọc lại ảnh đã có số đúng mà lỗi → GIỮ số cũ, không ghi đè bằng lỗi
+      if (prev?.status !== "ok") await saveError({ id: f.id, name: f.name, updated: f.updated, url: f.url }, msg, actor, tries).catch(() => {});
+      else lastErr = msg;
       if (aiBusy(msg)) { stopped = "AI đang quá tải / hết hạn mức — lượt sau đọc tiếp"; break; }
     }
   }
   const applied = ok ? await applyContest(actor).catch(() => null) : null;
   const proposals = ok ? await proposeFromCards(actor).catch(() => 0) : 0;
-  return { total: files.length, today: fresh.length, read: ok, errors, remaining: stopped ? 0 : Math.max(0, todo.length - n), stopped, contestRows: applied, proposals, folder: l.folder?.url || "" };
+  return { total: files.length, today: fresh.length, read: ok, errors, remaining: stopped ? 0 : Math.max(0, todo.length - n), stopped, lastErr, contestRows: applied, proposals, folder: l.folder?.url || "" };
 }
 
 // QL chọn ảnh từ máy: lưu vào thư mục BI trên Drive rồi đọc luôn

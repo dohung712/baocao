@@ -75,7 +75,7 @@ export function summaryCells(card) {
   const a = analyze(card, null), s = a.s;
   return {
     focus: a.topMix || "—",
-    inst: n(s.installment_pct) !== null ? `${fmt(n(s.installment_pct), 0)}%` : a.instProgs.length ? a.instProgs.slice(0, 1).map((x) => `${x.name.replace(/^Trả chậm\s*/i, "")} ${fmt(x.pct, 0)}%`).join("") : "—",
+    inst: n(s.installment_pct) !== null ? `${fmt(n(s.installment_pct), 0)}%` : a.instProgs.length ? a.instProgs.slice(0, 2).map((x) => `${x.name.replace(/^Trả chậm\s*/i, "").split(/[,(]/)[0].trim()} ${fmt(x.pct, 0)}%`).join(" · ") : "—",
     contest: n(s.contest_pct) !== null ? `${fmt(n(s.contest_pct), 0)}%${n(s.contest_store_avg) !== null ? ` / TB ${fmt(n(s.contest_store_avg), 0)}%` : ""}` : "—",
     vsLast: a.vsLast, contestCls: n(s.contest_pct) !== null && n(s.contest_store_avg) !== null ? (n(s.contest_pct) >= n(s.contest_store_avg) ? "pos" : "neg") : "",
   };
