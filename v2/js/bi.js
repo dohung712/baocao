@@ -2,7 +2,7 @@
 //  • doanh thu từng siêu thị + toàn siêu thị: lũy kế / target, dự kiến, còn thiếu, cần bán mỗi ngày còn lại
 //  • xếp hạng NV theo thẻ BI; thẻ chỉ tiêu của chính NV (trang Hôm nay)
 //  • QL: đọc ảnh mới trong Drive, chọn ảnh từ máy, xem ảnh đọc lỗi / đọc lại
-import { esc, fmt, toast, dmy } from "./ui.js";
+import { esc, fmt, toast, dmy, dm } from "./ui.js";
 import { sb, rpc, callFn, errMsg } from "./store.js";
 import { compress } from "./photos.js";
 
@@ -50,10 +50,17 @@ export async function loadBi() {
   }
   const days = chs[0] ? { el: chs[0].el, tot: chs[0].tot, left: chs[0].left } : (() => { const c = calDays(); return { el: c.el, tot: c.tot, left: c.tot - c.el }; })();
   const through = [...Object.values(rev), ...Object.values(contest)].map((r) => r.data_through).filter(Boolean).sort().pop() || null;
+  const maxOf = (rows, k) => rows.map((r) => r[k]).filter(Boolean).sort().pop() || null;
   return { month, rev: P, total, contest, cards: [...cards.values()], errors: (data || []).filter((r) => r.status === "error"), count: (data || []).length, days, through,
-    last: (data || [])[0]?.processed_at || null };
+    last: (data || [])[0]?.processed_at || null,
+    // thời gian cập nhật: tool đọc ảnh lúc (processed_at) · BI chụp / cập nhật lúc (captured_at)
+    revAt: maxOf(Object.values(rev), "processed_at"), revCap: maxOf(Object.values(rev), "captured_at"),
+    contestAt: maxOf(Object.values(contest), "processed_at"), contestCap: maxOf(Object.values(contest), "captured_at"),
+    cardAt: maxOf([...cards.values()], "processed_at") };
 }
 
+// "06:32 23/11" theo giờ Việt Nam
+const upd = (iso) => { if (!iso) return ""; const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", hourCycle: "h23" }).formatToParts(new Date(iso)).map((x) => [x.type, x.value])); return `${p.hour}:${p.minute} ${p.day}/${p.month}`; };
 const money = (x) => (x === null ? "—" : fmt(x, x >= 100 ? 0 : 1));
 const pctTxt = (x) => (x === null ? "—" : fmt(x, 1) + "%");
 const barCls = (p) => (p >= 100 ? "" : p >= 85 ? "mid" : "low");
@@ -75,6 +82,7 @@ export function biRevenueHtml(bi) {
   if (!bi.total) return "";
   const sub = (p) => { const v = p.v || {}; return [v.ssg_pct !== null && v.ssg_pct !== undefined ? `SSG ${fmt(v.ssg_pct, 1)}%` : "", v.bills ? `${fmt(v.bills)} bill` : "", v.installment_pct ? `trả chậm ${fmt(v.installment_pct, 1)}%` : ""].filter(Boolean).join(" · "); };
   return `<h3 class="td-sec">📊 Doanh thu quy đổi & mục tiêu tháng ${esc((bi.month || "").slice(5, 7))} <span class="tiny muted">· số BI tới hết ${bi.through ? dmy(bi.through) : "?"} · ngày ${bi.days.el ?? "?"}/${bi.days.tot ?? "?"}</span></h3>
+    <p class="tiny muted bi-upd">🕒 Cập nhật lúc <b>${upd(bi.revAt) || "—"}</b>${bi.revCap ? ` · BI chụp ${upd(bi.revCap)}` : ""}</p>
     <div class="bi-grid">${revCard("Toàn siêu thị", bi.total)}${["TGD", "AAR"].map((ch) => bi.rev[ch] ? revCard(CH[ch], bi.rev[ch], esc(sub(bi.rev[ch]))) : "").join("")}</div>`;
 }
 
@@ -85,7 +93,7 @@ export function biStaffHtml(bi, nameOf) {
     const s = r.data?.staff || {}, el = n(r.data?.days_elapsed) ?? bi.days.el, tot = n(r.data?.days_total) ?? bi.days.tot;
     return { r, s, p: plan(n(s.revenue_qd) || 0, n(s.revenue_target), el, tot), name: (r.staff_id && nameOf(r.staff_id)) || s.name || "?" };
   }).sort((a, b) => (b.p.fcPct ?? -1) - (a.p.fcPct ?? -1));
-  return `<h3 class="td-sec">👥 Nhân viên theo BI · ${rows.length}</h3>
+  return `<h3 class="td-sec">👥 Nhân viên theo BI · ${rows.length} <span class="tiny muted">· 🕒 cập nhật ${upd(bi.cardAt) || "—"}</span></h3>
     <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Nhân viên</th><th class="num">DT QĐ</th><th class="num">MT</th><th>% dự kiến</th><th class="num">Còn thiếu</th><th class="num">Cần/ngày</th><th class="num">Bill</th><th class="num">Bán kèm</th><th class="num">Thi đua đạt</th><th class="num">Hạng nhóm</th></tr></thead><tbody>
     ${rows.map(({ r, s, p, name }, i) => `<tr><td class="muted">${i + 1}</td><td><b>${esc(name)}</b><div class="tiny muted">${esc(r.staff_id || s.code || "")}${s.dept ? " · " + esc(s.dept) : ""}${r.staff_id ? "" : ' · <span class="pill warn">chưa khớp mã</span>'}</div></td>
       <td class="num">${money(p.actual)}</td><td class="num">${money(p.target)}</td>
@@ -153,13 +161,13 @@ export function bindBiTools(box, reload) {
 // Thẻ chỉ tiêu của chính NV (trang 🏠 Hôm nay)
 export async function myBiHtml(staffId) {
   if (!staffId) return "";
-  const { data } = await sb.from("bi_files").select("data,data_through,captured_at,month").eq("kind", "staff_card").eq("status", "ok").eq("staff_id", staffId)
+  const { data } = await sb.from("bi_files").select("data,data_through,captured_at,month,processed_at").eq("kind", "staff_card").eq("status", "ok").eq("staff_id", staffId)
     .order("month", { ascending: false }).order("data_through", { ascending: false, nullsFirst: false }).limit(1);
   const r = data?.[0]; if (!r) return "";
   const s = r.data?.staff || {}, el = n(r.data?.days_elapsed), tot = n(r.data?.days_total);
   const p = plan(n(s.revenue_qd) || 0, n(s.revenue_target), el, tot);
   const weak = (r.data?.programs || []).filter((x) => n(x.pct) !== null).sort((a, b) => a.pct - b.pct).slice(0, 4);
-  return `<div class="card bi-me"><div class="bi-rev-h"><b>🎯 Chỉ tiêu tháng ${esc((r.month || "").slice(5, 7))} (BI)</b><span class="tiny muted">tới hết ${r.data_through ? dmy(r.data_through) : "?"}${s.group_rank ? ` · hạng ${s.group_rank}/${s.group_size ?? "?"}` : ""}</span></div>
+  return `<div class="card bi-me"><div class="bi-rev-h"><b>🎯 Chỉ tiêu tháng ${esc((r.month || "").slice(5, 7))} (BI)</b><span class="tiny muted">tới hết ${r.data_through ? dm(r.data_through) : "?"}${s.group_rank ? ` · hạng ${s.group_rank}/${s.group_size ?? "?"}` : ""} · 🕒 ${upd(r.processed_at)}</span></div>
     <div class="bi-big"><b>${money(p.actual)}</b><span class="muted"> / ${money(p.target)} tr DT QĐ</span></div>
     <div class="row" style="gap:6px;flex-wrap:nowrap"><div class="bar ${barCls(p.fcPct ?? 0)}" style="flex:1"><i style="width:${Math.min(100, p.pct ?? 0)}%"></i></div><b class="small">${pctTxt(p.pct)}</b></div>
     <div class="bi-kv"><span><small>Dự kiến</small><b class="${(p.fcPct ?? 0) >= 100 ? "pos" : "neg"}">${pctTxt(p.fcPct)}</b></span>

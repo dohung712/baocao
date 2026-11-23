@@ -21,7 +21,9 @@ const APPS = [
   ["cv:fund", "💵", "Quỹ"], ["store", "🏢", "Siêu thị"], ["assistant", "🤖", "Trợ lý"], ["rules", "📖", "Rule"],
 ];
 const appOk = (k) => k.startsWith("cv:") ? !isHidden("cv") && !isHidden("cv." + k.slice(3)) : !isHidden(k);
-let root, goFn, J = [], legacy = [], shifts = [], tok = 0, biHtml = "", BI = null, CT = [], BOARD = [], rkScope = "dept";
+let root, goFn, J = [], legacy = [], shifts = [], tok = 0, biHtml = "", BI = null, CT = [], BOARD = [], rkScope = "dept", MYUPD = null;
+// "06:32 23/11" theo giờ Việt Nam
+const upd = (iso) => { if (!iso) return ""; const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", hourCycle: "h23" }).formatToParts(new Date(iso)).map((x) => [x.type, x.value])); return `${p.hour}:${p.minute} ${p.day}/${p.month}`; };
 
 export async function render(view, _p, ctx = {}) {
   root = view; goFn = ctx.go || ((id) => { location.hash = id; }); pushSt = null;
@@ -41,16 +43,18 @@ async function load() {
   const me = S.me?.staff_id, today = vnToday(), t = ++tok;
   try {
     await loadTypes();
-    const [jr, sr, td, fl, bh, bi, ct, bd] = await Promise.all([
+    const [jr, sr, td, fl, bh, bi, ct, bd, bu] = await Promise.all([
       me ? sb.from("jobs").select("*").eq("staff_id", me).gte("due_at", new Date(Date.now() - 3 * 864e5).toISOString()).lte("due_at", new Date(Date.now() + 8 * 864e5).toISOString()).order("due_at") : { data: [] },
       me ? sb.from("shifts").select("d,slots,hours").eq("staff_id", me).gte("d", today).lte("d", addDays(today, 6)).order("d") : { data: [] },
       me ? rpc("todo_list", { p_staff: me, p_date: today }).catch(() => []) : [],
       me ? rpc("flyer_todo", { p_staff: me, p_date: today }).catch(() => []) : [],
       me && showStore() ? myBiHtml(me).catch(() => "") : "",
       showStore() ? loadBi().catch(() => null) : null,
-      showStore() ? sb.from("store_contest").select("name,type,actual,target,rate_month,forecast,branch").eq("branch", "TỔNG") : { data: [] },
+      showStore() ? sb.from("store_contest").select("name,type,actual,target,rate_month,forecast,branch,updated_at").eq("branch", "TỔNG") : { data: [] },
       showScore() ? rpc("score_board", { p_from: monthFrom(), p_to: today, p_full: false }).catch(() => []) : [],
+      me && showScore() ? sb.from("bi_proposals").select("as_of,reviewed_at").eq("staff_id", me).eq("status", "approved").order("reviewed_at", { ascending: false }).limit(1) : { data: [] },
     ]);
+    MYUPD = bu?.data?.[0] || null;
     if (t !== tok || !$("#tdBody")) return;
     if (jr.error) throw jr.error;
     J = jr.data || []; shifts = sr.data || []; biHtml = bh || ""; BI = bi; CT = ct?.data || []; BOARD = Array.isArray(bd) ? bd : [];
@@ -127,7 +131,8 @@ function revHtml() {
     <span class="tiny">${p.gap ? `Thiếu <b>${money(p.gap)}</b> · cần <b class="star">${money(p.perDay)}</b>/ngày` : "✅ Đã đạt target"}</span></div>` : "";
   return `${secH(2, "td-rev", "💰", "Doanh thu siêu thị", more)}
     <div class="card td-revbig">
-      <div class="row" style="justify-content:space-between;align-items:baseline"><small class="muted">Toàn siêu thị · DT quy đổi (triệu)</small><span class="tiny muted">tới ${BI.through ? dm(BI.through) : "?"} · ngày ${BI.days.el ?? "?"}/${BI.days.tot ?? "?"}</span></div>
+      <div class="row" style="justify-content:space-between;align-items:baseline"><small class="muted">Toàn siêu thị · DT quy đổi (triệu)</small><span class="tiny muted">số tới hết ${BI.through ? dm(BI.through) : "?"} · ngày ${BI.days.el ?? "?"}/${BI.days.tot ?? "?"}</span></div>
+      <span class="td-upd">🕒 Cập nhật lúc <b>${upd(BI.revAt) || "—"}</b>${BI.revCap ? ` · BI chụp ${upd(BI.revCap)}` : ""}</span>
       <div class="bi-big"><b>${money(t.actual)}</b><span class="muted"> / ${money(t.target)} tr</span> <b class="small">${pctTxt(t.pct)}</b></div>
       <div class="bar ${barCls(t.fcPct ?? 0)}"><i style="width:${Math.min(100, t.pct ?? 0)}%"></i></div>
       <div class="td-kv"><span><small>Dự kiến</small><b class="${(t.fcPct ?? 0) >= 100 ? "pos" : "neg"}">${pctTxt(t.fcPct)}</b></span><span><small>Còn thiếu</small><b>${t.gap ? money(t.gap) : "✅"}</b></span><span><small>Cần/ngày · ${t.left ?? "?"}n</small><b class="star">${t.gap ? money(t.perDay) : "—"}</b></span></div>
@@ -146,7 +151,9 @@ function contestHtml() {
   const row = (r) => { const gap = Math.max(0, Number(r.target) - Number(r.actual)), sl = r.type === "SỐ LƯỢNG"; return `<div class="td-crow"><div class="td-cname"><b>${esc(r.name)}</b><span class="tiny muted">${sl ? "SL" : "DT"} · ${fmt(r.actual, 2)} / ${fmt(r.target, 2)}</span></div>
     <div class="td-cbar"><div class="bar ${barCls(f(r))}"><i style="width:${Math.min(100, f(r))}%"></i></div><b class="small">${fmt(f(r), 0)}%</b></div>
     <span class="tiny td-cneed">${gap ? `thiếu <b>${fmt(gap, sl ? 0 : 1)}</b> · <b class="star">${fmt(gap / left, sl ? 1 : 1)}</b>/ngày` : "✅"}</span></div>`; };
+  const ctAt = CT.map((r) => r.updated_at).filter(Boolean).sort().pop();
   return `${secH(3, "td-ct", "🏁", "Thi đua siêu thị", more)}
+    ${ctAt ? `<p class="td-upd">🕒 Cập nhật lúc <b>${upd(ctAt)}</b>${BI?.contestCap ? ` · BI chụp ${upd(BI.contestCap)}` : ""}</p>` : ""}
     <div class="td-stats"><span><b>${CT.length}</b>môn</span><span class="pos"><b>${done}</b>dự báo về số</span><span class="star"><b>${near.length}</b>sát nút</span><span class="neg"><b>${zero}</b>chưa phát sinh</span></div>
     ${push.length ? `<h3 class="td-sec">🎯 Cần đẩy (${left} ngày còn lại)</h3><div class="card td-clist">${push.map(row).join("")}</div>` : ""}`;
 }
@@ -162,7 +169,8 @@ function rankHtml() {
   const bar = (v, max) => `<div class="bar ${max && v / max >= 0.7 ? "" : max && v / max >= 0.4 ? "mid" : "low"}"><i style="width:${max ? Math.max(0, Math.min(100, (v / max) * 100)) : 0}%"></i></div>`;
   const dRank = (r) => list.findIndex((x) => x.staff_id === r.staff_id) + 1;
   return `${secH(4, "td-rk", "🏅", "Xếp hạng tháng", more)}
-    ${mine ? `<button type="button" class="card td-myrank" data-sd="${esc(mine.staff_id)}">
+    <p class="td-upd">🕒 Tính đến lúc mở trang${MYUPD ? ` · DT & môn của bạn cập nhật từ BI lúc <b>${upd(MYUPD.reviewed_at)}</b> (số tới hết ${dm(MYUPD.as_of)})` : ""}</p>
+    ${mine ?`<button type="button" class="card td-myrank" data-sd="${esc(mine.staff_id)}">
       <span class="td-bigrank"><b>${scope === "all" ? mine.rank : dRank(mine)}</b><small>/${list.length}</small></span>
       <span class="td-myr"><b>Hạng của bạn</b><span class="tiny muted">${scope === "all" ? "cả siêu thị" : esc(dept)} · bấm xem điểm đến từ đâu</span>
         <span class="td-3bars"><span>DT ${bar(mine.rev_score, W.r)}<b>${fmt(mine.rev_score, 1)}</b></span><span>TĐ ${bar(mine.contest_score, W.c)}<b>${fmt(mine.contest_score, 1)}</b></span><span>PV ${bar(mine.service_score, W.s)}<b>${fmt(mine.service_score, 1)}</b></span></span></span>

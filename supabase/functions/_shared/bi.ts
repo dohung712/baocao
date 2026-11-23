@@ -181,7 +181,7 @@ export async function proposeFromCards(actor: string) {
   const todo = cards.filter((c) => !have.has(c.file_id));
   if (!todo.length) return 0;
   const measures = new Map(((await rest("item_measures?select=name,measure")) as any[]).map((x) => [x.name, x.measure]));
-  let made = 0; const who: string[] = [];
+  let made = 0, applied = 0; const who: string[] = [];
   for (const c of todo) {
     const month = c.data_through.slice(0, 7) + "-01";
     const t = (await rest(`monthly_targets?select=items&staff_id=eq.${encodeURIComponent(c.staff_id)}&month=eq.${month}`))[0];
@@ -196,12 +196,14 @@ export async function proposeFromCards(actor: string) {
       items.push({ name: it.name, bi_name: p.name, pct, target: it.target, value: it.target ? (sl ? Math.round(v) : Math.round(v * 100) / 100) : null, sl });
     }
     const r = await rpc("_bi_propose", { p: { file_id: c.file_id, staff_id: c.staff_id, as_of: c.data_through, revenue: num(c.data?.staff?.revenue_qd), items }, p_actor: actor });
-    if (r?.status === "success") { made++; who.push(c.staff_id); }
+    if (r?.status === "applied") { made++; applied++; }
+    else if (r?.status === "success") { made++; who.push(c.staff_id); }
   }
-  if (made) {
+  // B16c: thường tự cập nhật luôn (BI_AUTO_APPLY) → chỉ báo QL khi còn thẻ phải duyệt tay (khoá sổ / tắt tự cập nhật)
+  if (who.length) {
     try {
       const mgr: any[] = await rest("memberships?select=staff_id&active=eq.true&role=in.(owner,manager)&staff_id=not.is.null");
-      await pushMany(mgr.map((x) => ({ staff_id: x.staff_id, data: { title: `🟡 ${made} số BI của NV chờ duyệt`, body: "Duyệt để nối DT QĐ + môn thi đua vào bảng điểm / lũy kế", url: "https://dohung712.github.io/baocao/v2/#store", tag: "bi-approve" } })));
+      await pushMany(mgr.map((x) => ({ staff_id: x.staff_id, data: { title: `🟡 ${who.length} số BI của NV chờ duyệt`, body: "Không tự cập nhật được (tắt tự cập nhật hoặc ngày đã khoá sổ) — mở trang Siêu thị để xử lý", url: "https://dohung712.github.io/baocao/v2/#store", tag: "bi-approve" } })));
     } catch { /* không có máy nào bật thông báo */ }
   }
   return made;

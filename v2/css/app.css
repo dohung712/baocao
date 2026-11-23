@@ -830,3 +830,9 @@ tr.sel td{background:var(--brand-soft)}
 .hub-tabs{margin-bottom:12px}
 .hub-body .page-h h1{font-size:19px}
 .hub-body .page-h p{font-size:12.5px}
+
+/* B16c thời gian cập nhật */
+.td-upd{display:block;font-size:12px;color:var(--muted);margin:2px 2px 8px}
+.td-revbig .td-upd{margin:0}
+.td-upd b,.bi-upd b{color:var(--ink)}
+.bi-upd{margin:-4px 2px 8px}

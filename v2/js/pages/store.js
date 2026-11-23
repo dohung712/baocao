@@ -40,6 +40,8 @@ export function suggest(c) {
   return { bonus: 200, penalty: 100, label: "Tiêu chuẩn", cls: "mute" };
 }
 
+// "06:32 23/11" theo giờ Việt Nam
+const upd = (iso) => { if (!iso) return ""; const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", hourCycle: "h23" }).formatToParts(new Date(iso)).map((x) => [x.type, x.value])); return `${p.hour}:${p.minute} ${p.day}/${p.month}`; };
 let st;
 export async function render(view) {
   st = { rows: [], branch: "TỔNG", filter: "", sort: { key: "forecast", dir: -1 }, draft: null, updated: null };
@@ -130,7 +132,7 @@ function draw() {
   const done = all.filter((r) => r.forecast >= 100).length, near = all.filter((r) => r.forecast >= 70 && r.forecast < 100).length, zero = all.filter((r) => !r.forecast).length;
   $("#sStats").innerHTML = `<div class="stat"><small>Số môn</small><b>${all.length}</b></div><div class="stat"><small>Dự báo về số</small><b class="pos">${done}</b></div>
     <div class="stat"><small>Sát nút 70–100%</small><b class="star">${near}</b></div><div class="stat"><small>Chưa phát sinh</small><b class="neg">${zero}</b></div>`;
-  $("#sUpdated").innerHTML = st.draft ? '<span class="pill warn">Bản xem trước — chưa lưu</span>' : st.updated ? `Cập nhật ${new Date(st.updated).toLocaleString("vi-VN")}` : "";
+  $("#sUpdated").innerHTML = st.draft ? '<span class="pill warn">Bản xem trước — chưa lưu</span>' : st.updated ? `🕒 Cập nhật lúc <b>${upd(st.updated)}</b>${st.bi?.contestCap ? ` · BI chụp ${upd(st.bi.contestCap)}` : ""}` : "";
   const list = applySort(current(), st.sort);
   if (!list.length) { $("#sTable").innerHTML = `<div class="tbl-wrap"><div class="empty">Chưa có số liệu${isManager() ? " — dán báo cáo ở khung phía trên" : ""}.</div></div>`; return; }
   $("#sTable").innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>#</th>${sortTh(st.sort, "name", "Môn thi đua")}${sortTh(st.sort, "actual", "Đạt", "num")}${sortTh(st.sort, "target", "Target", "num")}${sortTh(st.sort, "gap", "Còn thiếu", "num")}${sortTh(st.sort, "perDay", `Cần/ngày (${daysLeft()}n)`, "num")}${sortTh(st.sort, "rate_month", "% HT tháng", "num")}${sortTh(st.sort, "forecast", "% Dự báo")}${sortTh(st.sort, "rankNum", "Hạng vùng", "num")}<th>Gợi ý sao</th></tr></thead><tbody>
