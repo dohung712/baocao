@@ -904,3 +904,4 @@ tr.sel td{background:var(--brand-soft)}
 .si-mon i em{position:absolute;bottom:100%;left:0;right:0;background:var(--accent);opacity:.3;border-radius:6px 6px 0 0}
 .si-mon small{font-size:10.5px;color:var(--muted)}
 tr.click{cursor:pointer}
+.si-bt i.nt{background:var(--brand2)}

@@ -81,7 +81,7 @@ export function summaryCells(card) {
   };
 }
 
-const bars = (list, { max = 100, marker = null, unit = "%" } = {}) => list.map((x) => { const v = n(x.pct ?? x.value), w = v === null ? 0 : Math.min(100, (v * 100) / max); return `<div class="si-bar"><span class="si-bn">${esc(x.name)}</span><span class="si-bt"><i class="${v === null ? "" : v >= 100 && unit === "%" ? "ok" : v >= 70 ? "mid" : "low"}" style="width:${w}%"></i>${marker !== null ? `<b class="si-mk" style="left:${Math.min(100, (marker * 100) / max)}%"></b>` : ""}</span><b class="si-bv">${v === null ? "—" : fmt(v, v >= 100 ? 0 : 1) + unit}</b></div>`; }).join("");
+const bars = (list, { max = 100, marker = null, unit = "%", neutral = false } = {}) => list.map((x) => { const v = n(x.pct ?? x.value), w = v === null ? 0 : Math.min(100, (v * 100) / max); return `<div class="si-bar"><span class="si-bn">${esc(x.name)}</span><span class="si-bt"><i class="${neutral ? "nt" : v === null ? "" : v >= 100 && unit === "%" ? "ok" : v >= 70 ? "mid" : "low"}" style="width:${w}%"></i>${marker !== null ? `<b class="si-mk" style="left:${Math.min(100, (marker * 100) / max)}%"></b>` : ""}</span><b class="si-bv">${v === null ? "—" : fmt(v, v >= 100 ? 0 : 1) + unit}</b></div>`; }).join("");
 
 // Mở bảng phân tích 1 NV (thẻ BI mới nhất + thẻ trước đó để so)
 export async function openStaffInsight(staffId) {
@@ -107,7 +107,7 @@ export async function openStaffInsight(staffId) {
     ${a.mon.length ? `<h4 class="si-t">📈 DT QĐ từng tháng <span class="tiny muted">(tháng này: cột nhạt = dự kiến theo tốc độ)</span></h4>
       <div class="si-mon">${a.mon.map((x) => { const isCur = x.month === a.curM; return `<div><span class="tiny">${f1(Number(x.value))}</span><i style="height:${(Number(x.value) * 100) / maxM}%" class="${isCur ? "cur" : ""}">${isCur && a.fc ? `<em style="height:${Math.max(0, ((a.fc - Number(x.value)) * 100) / Number(x.value || 1))}%"></em>` : ""}</i><small>${x.month.slice(5)}/${x.month.slice(2, 4)}</small></div>`; }).join("")}</div>
       <p class="tiny">${a.vsLast !== null ? `So tháng trước: <b class="${cls(a.vsLast)}">${sign(a.vsLast, "%")}</b>` : ""}${a.vs3 !== null ? ` · so TB 3 tháng: <b class="${cls(a.vs3)}">${sign(a.vs3, "%")}</b>` : ""}${a.fc ? ` · dự kiến ${f1(a.fc)} tr` : ""}</p>` : ""}
-    ${a.mix.length ? `<h4 class="si-t">🧭 Đang tập trung (tỷ trọng ngành hàng)</h4>${bars(a.mix)}` : ""}
+    ${a.mix.length ? `<h4 class="si-t">🧭 Đang tập trung (tỷ trọng ngành hàng)</h4>${bars(a.mix, { neutral: true })}` : ""}
     ${a.eff.length ? `<h4 class="si-t">⚡ Hiệu quả khai thác <span class="tiny muted">(vạch = 100% TB nhóm)</span></h4>${bars([...a.eff].sort((x, y) => (y.pct ?? -1) - (x.pct ?? -1)), { max: Math.max(150, ...a.eff.map((x) => x.pct || 0)), marker: 100 })}` : ""}
     ${a.progs.length ? `<h4 class="si-t">🏁 Thi đua ${pc(n(s.contest_pct))}${n(s.contest_store_avg) !== null ? ` <span class="tiny muted">· TB siêu thị ${pc(n(s.contest_store_avg))}</span>` : ""}</h4>
       <p class="tiny">${s.contest_total ? `Đạt <b>${s.contest_passed ?? 0}</b>/${s.contest_total}` : ""}${n(s.contest_near) !== null ? ` · gần đạt <b>${s.contest_near}</b>` : ""}${n(s.contest_need) !== null ? ` · cần cố gắng <b>${s.contest_need}</b>` : ""}${n(s.contest_nodata) !== null ? ` · chưa có số <b>${s.contest_nodata}</b>` : ""}</p>
