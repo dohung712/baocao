@@ -106,6 +106,8 @@ export function parseJson(out: string) {
 type FileMeta = { id: string; name: string; updated?: string; url?: string };
 // Ghi kết quả 1 ảnh: ghép kênh (TGD / AAR) và mã NV, chuẩn hoá ngày
 export async function saveExtraction(f: FileMeta, p: any, actor: string) {
+  // Thẻ NV mà AI không đọc ra mã lẫn tên (chữ nhỏ, AI bỏ sót) → coi là lỗi để lượt sau tự đọc lại
+  if (p?.kind === "staff_card" && !String(p.staff?.code || "").trim() && !String(p.staff?.name || "").trim()) throw new Error("AI chưa đọc được mã / tên NV trên thẻ (sẽ tự đọc lại).");
   const stores = (await setting("BI_STORES")) || {};
   const code = String(p.store_code || "").replace(/\D/g, "") || null;
   const channel = ["TGD", "AAR"].includes(p.channel) ? p.channel : (code && stores[code]) || null;
