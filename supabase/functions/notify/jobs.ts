@@ -23,7 +23,7 @@ const APP = "https://dohung712.github.io/baocao/v2/";
 
 export async function loadJobs(from: string, to: string) {
   const [jobs, types] = await Promise.all([
-    rest(`jobs?select=id,type_id,staff_id,title,due_at,status,done_at,late_min,photos,group_key,done_staff&due_at=gte.${dayStart(from)}&due_at=lt.${dayStart(addDays(to, 1))}&order=due_at&limit=5000`),
+    rest(`jobs?select=id,type_id,staff_id,title,due_at,status,done_at,late_min,photos,group_key,done_staff,seen_at&due_at=gte.${dayStart(from)}&due_at=lt.${dayStart(addDays(to, 1))}&order=due_at&limit=5000`),
     rest("job_types?select=id,name,icon,sort,tg&order=sort,id"),
   ]);
   return { jobs: collapseGroups(jobs as any[]), types: types as any[] };
@@ -32,11 +32,12 @@ export async function loadJobs(from: string, to: string) {
 function collapseGroups(jobs: any[]) {
   const out: any[] = [], g = new Map<string, any>();
   for (const j of jobs) {
-    if (!j.group_key) { out.push({ ...j, staff_ids: [j.staff_id] }); continue; }
+    if (!j.group_key) { out.push({ ...j, staff_ids: [j.staff_id], seen_ids: j.seen_at ? [j.staff_id] : [] }); continue; }
     let rep = g.get(j.group_key);
-    if (!rep) { rep = { ...j, staff_ids: [] }; g.set(j.group_key, rep); out.push(rep); }
+    if (!rep) { rep = { ...j, staff_ids: [], seen_ids: [] }; g.set(j.group_key, rep); out.push(rep); }
+    if (j.seen_at) rep.seen_ids.push(j.staff_id);
     rep.staff_ids.push(j.staff_id);
-    if (j.status === "done" && j.done_staff === j.staff_id) Object.assign(rep, { ...j, staff_ids: rep.staff_ids });   // việc của người đã nộp làm đại diện
+    if (j.status === "done" && j.done_staff === j.staff_id) Object.assign(rep, { ...j, staff_ids: rep.staff_ids, seen_ids: rep.seen_ids });   // việc của người đã nộp làm đại diện
   }
   for (const r of out) if (r.status === "done" && r.done_staff) r.staff_id = r.done_staff;
   return out;
@@ -79,7 +80,38 @@ export function jobDueMsg(store: string, soon: any[], over: any[], names: Map<st
   return L.join("\n");
 }
 
-export function jobDayMsg(store: string, date: string, jobs: any[], types: any[], names: Map<string, string>) {
+// D13b: thông báo đẩy trong ngày (push_log) + NV đã bật thông báo (push_subs)
+export async function loadPush(date: string) {
+  const [log, subs] = await Promise.all([
+    rest(`push_log?select=staff_id,kind,sent,devices,delivered_at,clicked_at,closed_at&at=gte.${dayStart(date)}&at=lt.${dayStart(addDays(date, 1))}&limit=5000`),
+    rest("push_subs?select=staff_id"),
+  ]);
+  return { log: log as any[], subs: new Set((subs as any[]).map((x) => x.staff_id).filter(Boolean)) };
+}
+const JOB_KINDS = new Set(["new", "soon", "near", "over", "nag", "shift", "manual"]);
+// Dòng "📲 Thông báo": NV chưa bật thông báo · NV còn việc trễ / chưa nộp: số lần nhắc tới máy → bấm mở / gạt tắt · chưa mở xem việc
+function pushLines(all: any[], names: Map<string, string>, nowIso: string, push: { log: any[]; subs: Set<string> }) {
+  const nm = (id: string) => esc(short(names.get(id) || id));
+  const everyone = [...new Set(all.flatMap((j) => j.staff_ids?.length ? j.staff_ids : [j.staff_id]))];
+  const off = everyone.filter((id) => !push.subs.has(id));
+  const bad = new Set<string>(), unseen = new Set<string>();
+  for (const j of all) {
+    const ids = j.staff_ids?.length ? j.staff_ids : [j.staff_id];
+    if (isLate(j)) bad.add(j.staff_id);
+    else if (j.status === "missed" || (j.status === "todo" && j.due_at < nowIso)) for (const id of ids) { bad.add(id); if (!(j.seen_ids || []).includes(id)) unseen.add(id); }
+  }
+  const L: string[] = [];
+  if (off.length) L.push(`🔕 Chưa bật thông báo trên điện thoại: ${off.map(nm).join(", ")}`);
+  const per = [...bad].filter((id) => push.subs.has(id)).map((id) => {
+    const l = push.log.filter((x) => x.staff_id === id && JOB_KINDS.has(x.kind) && x.sent > 0);
+    return { id, n: l.length, got: l.filter((x) => x.delivered_at).length, open: l.filter((x) => x.clicked_at).length, shut: l.filter((x) => x.closed_at && !x.clicked_at).length };
+  }).filter((x) => x.n).sort((a, b) => b.n - a.n);
+  if (per.length) L.push(`📲 Đã nhắc mà vẫn trễ / chưa nộp: ` + per.map((x) => `${nm(x.id)} ${x.n} nhắc (${x.got < x.n ? `${x.got} tới máy, ` : ""}${x.open} bấm mở${x.shut ? `, ${x.shut} gạt tắt` : ""})`).join(" · "));
+  if (unseen.size) L.push(`👀 Chưa mở xem việc trễ: ${[...unseen].map(nm).join(", ")}`);
+  return L;
+}
+
+export function jobDayMsg(store: string, date: string, jobs: any[], types: any[], names: Map<string, string>, push?: { log: any[]; subs: Set<string> }) {
   const groups = byType(jobs, types);
   const all = groups.flatMap((g) => g.list);
   if (!all.length) return null;
@@ -90,6 +122,7 @@ export function jobDayMsg(store: string, date: string, jobs: any[], types: any[]
     `Tổng <b>${all.length}</b> việc · ✅ <b>${done.length}</b> đã nộp${done.some(isLate) ? ` (${done.filter(isLate).length} trễ)` : ""} · ⏳ <b>${open.length}</b> chưa nộp${over.length ? ` (${over.length} quá hạn)` : ""}${miss.length ? ` · ❌ <b>${miss.length}</b> bỏ lỡ` : ""} · 📷 <b>${all.reduce((a, j) => a + nPhotos(j), 0)}</b> ảnh`];
   const lateLine = lateSummary(all, names, nowIso);
   if (lateLine) L.push(`⏰ <b>Trễ hôm nay</b>: ${lateLine}`);
+  if (push) L.push(...pushLines(all, names, nowIso, push));
   for (const g of groups) {
     const d = g.list.filter((j) => j.status === "done");
     L.push("", `${g.icon} <b>${esc(g.name)}</b> · ${d.length}/${g.list.length} việc · 📷 ${g.list.reduce((a, j) => a + nPhotos(j), 0)}`);
@@ -141,9 +174,9 @@ const idsIn = (ids: number[]) => `id=in.(${ids.join(",")})`;
 async function mark(ids: number[], col: string) {
   for (let i = 0; i < ids.length; i += 150) await rest(`jobs?${idsIn(ids.slice(i, i + 150))}`, { method: "PATCH", body: JSON.stringify({ [col]: new Date().toISOString() }) });
 }
-function groupPush(list: any[], one: (j: any) => PushData, many: (l: any[]) => PushData) {
+function groupPush(list: any[], one: (j: any) => PushData, many: (l: any[]) => PushData, kind = "other") {
   const by = new Map<string, any[]>(); for (const j of list) by.set(j.staff_id, [...(by.get(j.staff_id) || []), j]);
-  return [...by.entries()].map(([staff_id, l]) => ({ staff_id, data: l.length === 1 ? one(l[0]) : many(l) }));
+  return [...by.entries()].map(([staff_id, l]) => ({ staff_id, data: { ...(l.length === 1 ? one(l[0]) : many(l)), kind, jobs: l.map((j) => Number(j.id)) } }));
 }
 const when = (iso: string) => { const p = vnHmDm(iso), today = vnParts().date; return p.date === today ? p.hm : `${p.hm} ${dow(p.date)} ${dm(p.date)}`; };
 
@@ -154,7 +187,11 @@ export async function jobMaintenance(cfg: Record<string, any>) {
   try { const r = await rtAuto(cfg); if (r) out.rt = r; } catch (e) { out.rtError = String((e as Error).message).slice(0, 200); }
   // Không nhắc sau RT_NAG_UNTIL (22:15) tới 06:00 — việc quá hạn để trễ hẹn
   const vn = vnParts(), quiet = vn.hm >= String(cfg.RT_NAG_UNTIL || "22:15") || vn.hm < "06:00";
-  if (quiet) { out.quiet = true; }
+  if (quiet) {
+    out.quiet = true;
+    // nhật ký thông báo giữ 60 ngày
+    if (vn.hm.startsWith("03:0")) await rest(`push_log?at=lt.${encodeURIComponent(new Date(Date.now() - 60 * 864e5).toISOString())}`, { method: "DELETE" }).catch(() => {});
+  }
   else try {
     const now = Date.now(), nowIso = new Date(now).toISOString();
     const before = Math.max(5, Number(cfg.JOB_REMIND_BEFORE_MIN ?? 60) || 60);
@@ -166,11 +203,11 @@ export async function jobMaintenance(cfg: Record<string, any>) {
     const over: any[] = await rest(`${sel}&overdue_at=is.null&due_at=lte.${encodeURIComponent(nowIso)}&due_at=gte.${encodeURIComponent(new Date(now - 864e5).toISOString())}&order=due_at&limit=300`);
     const msgs = [
       ...groupPush(fresh, (j) => ({ title: "📌 Việc mới: " + j.title, body: `Hạn ${when(j.due_at)} · bấm để xem và nộp ảnh`, url: APP + "#today", tag: "job-" + j.id }),
-        (l) => ({ title: `📌 Bạn có ${l.length} việc mới`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-new" })),
+        (l) => ({ title: `📌 Bạn có ${l.length} việc mới`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-new" }), "new"),
       ...groupPush(soon, (j) => ({ title: "⏰ Sắp tới hạn: " + j.title, body: `Hạn ${when(j.due_at)} · nộp ảnh trên tool`, url: APP + "#today", tag: "job-" + j.id }),
-        (l) => ({ title: `⏰ ${l.length} việc sắp tới hạn`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-soon" })),
+        (l) => ({ title: `⏰ ${l.length} việc sắp tới hạn`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-soon" }), "soon"),
       ...groupPush(over, (j) => ({ title: "⚠️ Quá hạn: " + j.title, body: `Hạn ${when(j.due_at)} · ${j.template_id ? "nộp ngay (trễ được ghi nhận)" : "nộp ngay để tránh bị trừ sao"}`, url: APP + "#today", tag: "job-" + j.id }),
-        (l) => ({ title: `⚠️ ${l.length} việc quá hạn`, body: l.slice(0, 4).map((j) => `• ${j.title}`).join("\n"), url: APP + "#today", tag: "jobs-over" })),
+        (l) => ({ title: `⚠️ ${l.length} việc quá hạn`, body: l.slice(0, 4).map((j) => `• ${j.title}`).join("\n"), url: APP + "#today", tag: "jobs-over" }), "over"),
     ];
     // D13: còn 5 phút → nhắc lại; quá hạn → cứ 15 phút nhắc 1 lần (chỉ việc hạn trong hôm nay)
     const soonMin = Math.max(1, Number(cfg.RT_REMIND_SOON_MIN ?? 5) || 5), every = Math.max(5, Number(cfg.RT_NAG_EVERY_MIN ?? 15) || 15);
@@ -179,9 +216,9 @@ export async function jobMaintenance(cfg: Record<string, any>) {
       .filter((j) => !over.some((o) => o.id === j.id) && Date.parse(j.nag_at || j.overdue_at) <= now - every * 60000);
     msgs.push(
       ...groupPush(near, (j) => ({ title: `⏰ Còn ${soonMin} phút: ${j.title}`, body: `Hạn ${when(j.due_at)} · nộp ảnh ngay trên tool`, url: APP + "#today", tag: "job-" + j.id }),
-        (l) => ({ title: `⏰ ${l.length} việc còn ${soonMin} phút`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-near" })),
+        (l) => ({ title: `⏰ ${l.length} việc còn ${soonMin} phút`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-near" }), "near"),
       ...groupPush(nag, (j) => ({ title: `⚠️ Quá hạn ${mins(Math.floor((now - Date.parse(j.due_at)) / 60000))}: ${j.title}`, body: `Hạn ${when(j.due_at)} · nộp ngay`, url: APP + "#today", tag: "job-" + j.id }),
-        (l) => ({ title: `⚠️ Còn ${l.length} việc quá hạn chưa nộp`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-nag" })),
+        (l) => ({ title: `⚠️ Còn ${l.length} việc quá hạn chưa nộp`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-nag" }), "nag"),
     );
     try { msgs.push(...(await shiftStartNudges(vn))); } catch (e) { out.nudgeError = String((e as Error).message).slice(0, 120); }
     if (msgs.length) out.push = await pushMany(msgs);
@@ -225,10 +262,10 @@ async function shiftStartNudges(vn: { date: string; hm: string }) {
   const sent = new Set(((await rest(`job_nudges?select=staff_id&d=eq.${vn.date}&kind=eq.shift&staff_id=in.(${ids})`)) as any[]).map((x) => x.staff_id));
   const todo = starting.filter((x) => !sent.has(x.staff_id));
   if (!todo.length) return [];
-  const jobs: any[] = await rest(`jobs?select=staff_id,title,due_at&status=eq.todo&staff_id=in.(${todo.map((x) => encodeURIComponent(x.staff_id)).join(",")})&due_at=gte.${dayStart(vn.date)}&due_at=lt.${dayStart(addDays(vn.date, 1))}&order=due_at&limit=1000`);
+  const jobs: any[] = await rest(`jobs?select=id,staff_id,title,due_at&status=eq.todo&staff_id=in.(${todo.map((x) => encodeURIComponent(x.staff_id)).join(",")})&due_at=gte.${dayStart(vn.date)}&due_at=lt.${dayStart(addDays(vn.date, 1))}&order=due_at&limit=1000`);
   await rest("job_nudges?on_conflict=staff_id,d,kind", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify(todo.map((x) => ({ staff_id: x.staff_id, d: vn.date, kind: "shift" }))) });
   return todo.map((x) => ({ x, l: jobs.filter((j) => j.staff_id === x.staff_id) })).filter(({ l }) => l.length)
-    .map(({ x, l }) => ({ staff_id: x.staff_id, data: { title: `🕑 Vào ca: bạn có ${l.length} việc hôm nay`, body: l.slice(0, 6).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "shift-start" } as PushData }));
+    .map(({ x, l }) => ({ staff_id: x.staff_id, data: { title: `🕑 Vào ca: bạn có ${l.length} việc hôm nay`, body: l.slice(0, 6).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "shift-start", kind: "shift", jobs: l.map((j) => Number(j.id)) } as PushData }));
 }
 
 // B16: mỗi lượt (5 phút) từ 06:00 đến 22:59 xem thư mục "00 - Nhập doanh thu và thi đua", có ảnh mới thì đọc (mỗi lượt ≤ 3 ảnh trong ~35 giây)

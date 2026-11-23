@@ -66,11 +66,23 @@ async function encrypt(p256dh: string, auth: string, payload: Uint8Array) {
 }
 
 export type Sub = { endpoint: string; p256dh: string; auth: string; staff_id?: string | null };
-export type PushData = { title: string; body: string; url?: string; tag?: string };
+// kind / jobs chỉ để ghi nhật ký push_log (không gửi xuống máy); ack = mã để máy báo lại đã nhận / bấm / gạt tắt
+export type PushData = { title: string; body: string; url?: string; tag?: string; kind?: string; jobs?: number[]; ack?: { u: string; t: string } };
+
+// D13b: mã báo lại = id dòng push_log + HMAC (khoá suy ra từ khoá riêng VAPID, không lộ ra ngoài)
+const ackKey = async () => enc.encode("push-ack:" + String((await vapidKeys()).jwk.d || ""));
+export async function ackSign(id: number) { return id + "." + b64u((await hmac(await ackKey(), enc.encode(String(id)))).slice(0, 16)); }
+export async function ackVerify(tok: string) {
+  const m = /^(\d{1,15})\.([\w-]{16,40})$/.exec(String(tok || ""));
+  return m && (await ackSign(Number(m[1]))) === tok ? Number(m[1]) : 0;
+}
+const ACK_URL = (Deno.env.get("SUPABASE_URL") || "") + "/functions/v1/push";
+const jobOfTag = (tag?: string) => { const m = /^job-(\d+)$/.exec(tag || ""); return m ? [Number(m[1])] : []; };
 
 // Gửi 1 thông báo tới 1 máy. Trả về mã HTTP của dịch vụ đẩy (201 = đã nhận); 404/410 = máy đã huỷ đăng ký → xoá.
 export async function sendOne(sub: Sub, data: PushData, keys: Vapid) {
-  const body = await encrypt(sub.p256dh, sub.auth, enc.encode(JSON.stringify({ ...data, url: data.url || APP_URL })));
+  const { kind: _k, jobs: _j, ...wire } = data;
+  const body = await encrypt(sub.p256dh, sub.auth, enc.encode(JSON.stringify({ ...wire, url: data.url || APP_URL })));
   const r = await fetch(sub.endpoint, {
     method: "POST", body,
     headers: { Authorization: await vapidHeader(sub.endpoint, keys), "Content-Encoding": "aes128gcm", "Content-Type": "application/octet-stream", TTL: "86400", Urgency: "high" },
@@ -90,19 +102,34 @@ export async function sendToSubs(subs: Sub[], data: PushData) {
   return { sent, failed };
 }
 
-// Gửi theo NV: mỗi phần tử {staff_id, data}; mọi máy NV đó đã bật thông báo đều nhận
+// Gửi theo NV: mỗi phần tử {staff_id, data}; mọi máy NV đó đã bật thông báo đều nhận.
+// D13b: mỗi phần tử ghi 1 dòng push_log (NV chưa bật thông báo: devices = 0) để QL biết đã gửi / máy nhận / bấm / gạt tắt.
 export async function pushMany(list: { staff_id: string; data: PushData }[]) {
-  const ids = [...new Set(list.map((x) => x.staff_id).filter(Boolean))];
+  list = list.filter((x) => x.staff_id);
+  const ids = [...new Set(list.map((x) => x.staff_id))];
   if (!ids.length) return { sent: 0, failed: 0, staff: 0 };
   const subs: Sub[] = await rest(`push_subs?select=endpoint,p256dh,auth,staff_id&staff_id=in.(${ids.map((x) => encodeURIComponent('"' + String(x).replace(/"/g, "") + '"')).join(",")})`);
+  const mine = (id: string) => subs.filter((x) => x.staff_id === id);
+  let logs: { id: number }[] = [];
+  try {
+    logs = await rest("push_log?select=id", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(list.map((it) => ({
+      staff_id: it.staff_id, kind: String(it.data.kind || "other").slice(0, 20), title: String(it.data.title || "").slice(0, 200),
+      job_ids: (it.data.jobs?.length ? it.data.jobs : jobOfTag(it.data.tag)).filter((n) => Number.isFinite(n)).slice(0, 100), devices: mine(it.staff_id).length,
+    }))) });
+  } catch { logs = []; }   // nhật ký lỗi không chặn thông báo
   if (!subs.length) return { sent: 0, failed: 0, staff: 0 };
   const keys = await vapidKeys();
   let sent = 0, failed = 0;
   const reached = new Set<string>();
-  for (const it of list) {
-    for (const s of subs.filter((x) => x.staff_id === it.staff_id)) {
-      try { const st = await sendOne(s, it.data, keys); if (st >= 200 && st < 300) { sent++; reached.add(it.staff_id); } else failed++; } catch { failed++; }
+  for (const [i, it] of list.entries()) {
+    const my = mine(it.staff_id); if (!my.length) continue;
+    const logId = logs[i]?.id, data = logId && ACK_URL.startsWith("http") ? { ...it.data, ack: { u: ACK_URL, t: await ackSign(logId) } } : it.data;
+    let ok = 0, bad = 0;
+    for (const s of my) {
+      try { const st = await sendOne(s, data, keys); if (st >= 200 && st < 300) { ok++; reached.add(it.staff_id); } else bad++; } catch { bad++; }
     }
+    sent += ok; failed += bad;
+    if (logId) await rest(`push_log?id=eq.${logId}`, { method: "PATCH", body: JSON.stringify({ sent: ok, failed: bad }) }).catch(() => {});
   }
   return { sent, failed, staff: reached.size };
 }

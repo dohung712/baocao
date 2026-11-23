@@ -149,6 +149,7 @@ export async function openManage(j, folders = {}) {
       ${folders[j.staff_id] ? `<span>📁 <a href="${esc(folders[j.staff_id])}" target="_blank" rel="noopener">Thư mục ảnh của ${esc(shortName(s?.name || ""))} trên Drive</a></span>` : ""}
     </div>
     ${photos.length ? `<div class="jb-photos">${photos.map((f, i) => `<span class="jb-th"><a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${thumb(f)}" alt="Ảnh ${i + 1}" loading="lazy"></a></span>`).join("")}</div>` : ""}
+    <div id="mgPush" style="margin-top:10px"></div>
     ${j.status === "todo" ? `<details style="margin-top:10px"><summary class="linkish">✏️ Đổi hạn / người làm</summary>
       <div class="fields" style="margin-top:8px"><label>Ngày hạn<input type="date" id="mgD" value="${due.date}"></label><label>Giờ hạn<input type="time" id="mgH" value="${due.hm}"></label>
       <label>Người làm<select id="mgS">${S.staff.filter((x) => !x.hidden).map((x) => `<option value="${esc(x.id)}" ${x.id === j.staff_id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label></div>
@@ -161,6 +162,7 @@ export async function openManage(j, folders = {}) {
       <button class="btn" data-v="cancel">Đóng</button><button data-v="saved" hidden id="mgDone">x</button></div>`;
   const v = await modal(html, {
     onOpen(body) {
+      import("./push-track.js").then((m) => m.fillPushTrack($("#mgPush", body), j)).catch(() => {});
       $("#mgSave", body)?.addEventListener("click", async () => {
         const p = { due_date: $("#mgD", body).value, due_hm: $("#mgH", body).value };
         if ($("#mgS", body).value !== j.staff_id) p.staff_id = $("#mgS", body).value;
@@ -183,7 +185,7 @@ export async function openManage(j, folders = {}) {
       const r = await rpc("job_reopen", { p_id: j.id, ...nd }); toast(r.message); return true;
     }
     if (v === "nudge") {
-      const r = await callFn("push", { mode: "send", ids: [j.staff_id], title: "🔔 Nhắc việc: " + j.title, body: `Hạn ${whenTxt(j.due_at)} · mở tool để nộp ảnh`, tag: "job-" + j.id });
+      const r = await callFn("push", { mode: "send", ids: [j.staff_id], title: "🔔 Nhắc việc: " + j.title, body: `Hạn ${whenTxt(j.due_at)} · mở tool để nộp ảnh`, tag: "job-" + j.id, jobs: [j.id] });
       toast(r.message, 4000); return false;
     }
   } catch (x) { toast(errMsg(x), 4500); }

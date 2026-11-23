@@ -76,8 +76,8 @@ async function board(body, alive) {
       const over = js.filter((j) => st(j) === "over").length, done = js.filter((j) => j.status === "done").length;
       const sl = sh.get(s.id);
       return `<div class="jb-row ${over ? "has-over" : ""}">
-        <div class="jb-who"><b>${esc(s.name)}</b><span class="tiny muted">${esc(s.dept)}${sl ? " · " + (sl.length ? esc(slotText(sl, slots)) : "OFF") : ""}${push[s.id] ? " · 🔔" : ""}</span></div>
-        <div class="jb-chips">${js.map((j) => { const x = st(j); return `<button type="button" class="jb-chip st-${x}" data-mj="${j.id}" title="${esc(STATE[x][1])} · hạn ${esc(whenTxt(j.due_at))}">${typeOf(j.type_id)?.icon || "📌"} ${esc(j.title.length > 26 ? j.title.slice(0, 25) + "…" : j.title)} <small>${vnAt(j.due_at).hm}${nPhotos(j) ? " · " + nPhotos(j) + "📷" : ""}</small></button>`; }).join("") || `<span class="tiny muted">Không có việc</span>`}</div>
+        <div class="jb-who"><b>${esc(s.name)}</b><span class="tiny muted">${esc(s.dept)}${sl ? " · " + (sl.length ? esc(slotText(sl, slots)) : "OFF") : ""}${push[s.id] ? " · 🔔" : js.length ? ' · <span class="c-bad" title="Chưa bật thông báo trên điện thoại">🔕</span>' : ""}</span></div>
+        <div class="jb-chips">${js.map((j) => { const x = st(j); return `<button type="button" class="jb-chip st-${x}" data-mj="${j.id}" title="${esc(STATE[x][1])} · hạn ${esc(whenTxt(j.due_at))}${j.status === "todo" ? (j.seen_at ? " · đã xem " + esc(whenTxt(j.seen_at)) : " · chưa mở xem") : ""}">${typeOf(j.type_id)?.icon || "📌"} ${esc(j.title.length > 26 ? j.title.slice(0, 25) + "…" : j.title)} <small>${vnAt(j.due_at).hm}${nPhotos(j) ? " · " + nPhotos(j) + "📷" : ""}${j.status === "todo" && j.seen_at ? " · 👀" : ""}</small></button>`; }).join("") || `<span class="tiny muted">Không có việc</span>`}</div>
         <div class="jb-act"><span class="small"><b>${done}/${js.length}</b></span>${over ? `<button class="btn small" type="button" data-nudge="${esc(s.id)}" title="Gửi thông báo nhắc">🔔 Nhắc</button>` : ""}${folders[s.id] ? `<a class="btn small ghost" href="${esc(folders[s.id])}" target="_blank" rel="noopener" title="Thư mục ảnh trên Drive">📁</a>` : ""}</div></div>`;
     }).join("")}</div>
     ${idle.length ? `<p class="small muted" style="margin-top:10px">Không có việc, không có lịch ca: ${idle.map((r) => esc(shortName(r.s.name))).join(", ")}</p>` : ""}`;
@@ -90,7 +90,7 @@ async function board(body, alive) {
     const n = e.target.closest("[data-nudge]");
     if (n) {
       const list = jobs.filter((j) => j.staff_id === n.dataset.nudge && st(j) === "over");
-      try { const r = await callFn("push", { mode: "send", ids: [n.dataset.nudge], title: `⚠️ ${list.length} việc quá hạn`, body: list.slice(0, 4).map((j) => "• " + j.title).join("\n") + "\nMở tool để nộp ảnh", tag: "jobs-over" }); toast(r.message, 4000); } catch (x) { err(x); }
+      try { const r = await callFn("push", { mode: "send", ids: [n.dataset.nudge], title: `⚠️ ${list.length} việc quá hạn`, body: list.slice(0, 4).map((j) => "• " + j.title).join("\n") + "\nMở tool để nộp ảnh", tag: "jobs-over", jobs: list.map((j) => j.id) }); toast(r.message, 4000); } catch (x) { err(x); }
     }
   };
 }

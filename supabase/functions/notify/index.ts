@@ -3,7 +3,7 @@
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
 import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyDeadlineMsg, flyerMsg, flyerNewMsg, busyMsg, rsMsg, serviceMsg, fundMsg } from "./summary2.ts";
-import { jobDayMsg, jobWeekMsg, jobDueMsg, loadJobs, weekRange, jobMaintenance, shiftConflictMsg } from "./jobs.ts";
+import { jobDayMsg, jobWeekMsg, jobDueMsg, loadJobs, loadPush, weekRange, jobMaintenance, shiftConflictMsg } from "./jobs.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -125,7 +125,7 @@ async function compose(kind: string, date: string, cfg: Record<string, any>, opt
   }
   const staff: any[] = await rest("staff?select=id,name&hidden=eq.false&order=sort,id");
   const names = new Map(staff.map((x) => [x.id, x.name]));
-  if (kind === "jobday") { const j = await loadJobs(date, date); return { text: jobDayMsg(store, date, j.jobs, j.types, names), period: date }; }
+  if (kind === "jobday") { const [j, p] = await Promise.all([loadJobs(date, date), loadPush(date).catch(() => undefined)]); return { text: jobDayMsg(store, date, j.jobs, j.types, names, p), period: date }; }
   if (kind === "shiftcheck") {   // gửi thử: đối chiếu lịch ca đang có 14 ngày tới với lịch bận
     const list = await rpc("_shift_conflicts", { p_from: date, p_to: addDays(date, 13) });
     return { text: shiftConflictMsg(store, "lịch ca hiện có (14 ngày tới)", Array.isArray(list) ? list : [], Array.isArray(cfg.SHIFT_SLOTS) ? cfg.SHIFT_SLOTS.map(String) : []) || `✅ Lịch ca 14 ngày tới không trùng lịch bận / OFF · ${store}`, period: date };

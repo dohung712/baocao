@@ -62,6 +62,9 @@ async function load() {
     J = jr.data || []; shifts = sr.data || []; biHtml = bh || ""; BI = bi; CT = ct?.data || []; BOARD = Array.isArray(bd) ? bd : [];
     legacy = keepTodo([...(Array.isArray(td) ? td : []), ...(Array.isArray(fl) ? fl.map((f) => ({ ...f, go: "cv:flyer" })) : [])]);
     draw();
+    // D13b: NV đã thấy việc trên trang Hôm nay → ghi "đã xem" (lần đầu) cho QL theo dõi
+    const unseen = J.filter((j) => j.status === "todo" && !j.seen_at).map((j) => j.id);
+    if (unseen.length && document.visibilityState === "visible") rpc("job_seen", { p_ids: unseen }).catch(() => {});
   } catch (e) { if ($("#tdBody")) $("#tdBody").innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 
