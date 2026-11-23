@@ -5,6 +5,7 @@
 import { esc, fmt, toast, dmy, dm } from "./ui.js";
 import { sb, rpc, callFn, errMsg } from "./store.js";
 import { compress } from "./photos.js";
+import { summaryCells } from "./staff-insight.js";
 
 const COLS = "id,file_id,name,url,kind,channel,staff_id,captured_at,data_through,month,data,status,error,processed_at";
 const CH = { TGD: "TGDĐ", AAR: "Topzone" };
@@ -99,6 +100,7 @@ export function biStaffHtml(bi, nameOf) {
       <td class="num">${money(p.actual)}</td><td class="num">${money(p.target)}</td>
       <td><div class="row" style="gap:6px;flex-wrap:nowrap"><div class="bar ${barCls(p.fcPct ?? 0)}" style="width:70px"><i style="width:${Math.min(100, p.fcPct ?? 0)}%"></i></div><b class="small">${pctTxt(p.fcPct)}</b></div></td>
       <td class="num">${p.gap === null ? "—" : p.gap ? money(p.gap) : "✅"}</td><td class="num">${p.gap ? money(p.perDay) : "—"}</td>
+      <td class="small">${esc(c.focus)}</td><td class="num">${esc(c.inst)}</td><td class="num ${c.contestCls}">${esc(c.contest)}</td><td class="num ${c.vsLast === null ? "" : c.vsLast >= 0 ? "pos" : "neg"}">${c.vsLast === null ? "—" : (c.vsLast >= 0 ? "+" : "−") + fmt(Math.abs(c.vsLast), 1) + "%"}</td>
       <td class="num">${s.bills ?? "—"}</td><td class="num">${s.attach_pct === null || s.attach_pct === undefined ? "—" : fmt(s.attach_pct, 1) + "%"}</td>
       <td class="num">${s.contest_total ? `${s.contest_passed ?? 0}/${s.contest_total}` : "—"}</td><td class="num">${s.group_rank ? `${s.group_rank}/${s.group_size ?? "?"}` : "—"}</td></tr>`).join("")}
     </tbody></table></div><p class="tiny muted">Tiền tính bằng triệu đồng. % dự kiến = tốc độ bán hiện tại kéo tới hết tháng so với MT. So T. trước = DT dự kiến tháng này so với DT tháng trước. <b>Bấm 1 nhân viên để xem phân tích chi tiết.</b></p>`;
