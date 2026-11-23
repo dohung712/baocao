@@ -107,9 +107,9 @@ export function biStaffHtml(bi, nameOf) {
 // Thanh công cụ QL + danh sách ảnh đọc lỗi
 export function biToolsHtml(bi) {
   return `<details class="card" id="biTools" style="margin-bottom:14px"><summary><b>📥 Số liệu BI từ ảnh chụp</b> <span class="muted small">— ${bi.count} ảnh đã đọc${bi.errors.length ? ` · <span class="neg">${bi.errors.length} lỗi</span>` : ""}${bi.last ? ` · lần cuối ${new Date(bi.last).toLocaleString("vi-VN")}` : ""}</span></summary>
-    <p class="small muted" style="margin:8px 0">Chụp màn hình app BI (Doanh thu hợp nhất, BC Thi đua lũy kế, thẻ nhân viên) bỏ vào thư mục Drive <b>Tool Báo Cáo / 00 - Nhập doanh thu và thi đua</b>. Tool tự đọc 30 phút / lần, hoặc bấm đọc ngay. Ảnh BC Thi đua mới nhất sẽ thay bảng thi đua bên dưới.</p>
-    <div class="row"><button class="btn primary" id="biSync" type="button">📥 Đọc ảnh mới trong Drive</button><label class="btn" for="biFile">📷 Chọn ảnh từ máy</label><input type="file" id="biFile" accept="image/*" multiple hidden><span class="small muted" id="biMsg">${esc(biBusy.last || "")}</span></div>
-    ${bi.errors.length ? `<div style="margin-top:10px">${bi.errors.map((r) => `<div class="row small" style="gap:6px;margin-top:4px"><span class="pill bad">Lỗi</span><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a><span class="muted">${esc(r.error)}</span><button class="btn ghost small" type="button" data-biforget="${esc(r.file_id)}">Đọc lại</button></div>`).join("")}</div>` : ""}
+    <p class="small muted" style="margin:8px 0">Chụp màn hình app BI (Doanh thu hợp nhất, BC Thi đua lũy kế, thẻ nhân viên) bỏ vào thư mục Drive <b>Tool Báo Cáo / 00 - Nhập doanh thu và thi đua</b>. Tool tự xem thư mục mỗi 5 phút (06:00–23:00) và <b>chỉ đọc ảnh úp trong ngày</b> (ảnh cũ bỏ qua cho nhanh); ảnh đọc lỗi tự đọc lại sau 10 phút, tối đa 4 lần. Ảnh BC Thi đua mới nhất sẽ thay bảng thi đua bên dưới.</p>
+    <div class="row"><button class="btn primary" id="biSync" type="button">📥 Đọc ảnh mới trong Drive</button><label class="btn" for="biFile">📷 Chọn ảnh từ máy</label><input type="file" id="biFile" accept="image/*" multiple hidden><button class="btn ghost small" id="biAi" type="button">🤖 Kiểm tra AI</button><span class="small muted" id="biMsg">${esc(biBusy.last || "")}</span></div>
+    ${bi.errors.length ? `<div style="margin-top:10px">${bi.errors.map((r) => `<div class="row small" style="gap:6px;margin-top:4px"><span class="pill bad">Lỗi</span><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a><span class="muted">${esc(r.error)}${r.data?.tries ? ` · đã thử ${r.data.tries}/4` : ""}</span><button class="btn ghost small" type="button" data-biforget="${esc(r.file_id)}">Đọc lại</button></div>`).join("")}</div>` : ""}
   </details>`;
 }
 
@@ -129,9 +129,9 @@ export function bindBiTools(box, reload) {
         msg(`Đang đọc… (${read} ảnh xong)`);
         const r = await callFn("bi", { mode: "sync" });
         read += r.read; err += r.errors; rows = r.contestRows ?? rows;
-        if (!r.remaining || (!r.read && !r.errors)) { msg(`${r.total} ảnh trong thư mục · đọc mới ${read}${err ? ` · ${err} lỗi` : ""}${rows ? ` · cập nhật ${rows} dòng thi đua` : ""}`); break; }
+        if (!r.remaining || (!r.read && !r.errors)) { msg(`${r.today ?? r.total} ảnh úp hôm nay · đọc mới ${read}${err ? ` · ${err} lỗi` : ""}${rows ? ` · cập nhật ${rows} dòng thi đua` : ""}${r.stopped ? ` · ${r.stopped}` : ""}`); break; }
       }
-      toast(read ? `Đã đọc ${read} ảnh BI` : "Không có ảnh mới");
+      toast(read ? `Đã đọc ${read} ảnh BI` : "Không có ảnh mới hôm nay");
     } catch (e) { msg(""); toast(errMsg(e), 5000); }
     btn.disabled = false; biBusy.on = false; reload(true);
   };
@@ -154,7 +154,18 @@ export function bindBiTools(box, reload) {
   };
   box.onclick = async (e) => {
     const b = e.target.closest("[data-biforget]"); if (!b) return;
-    try { await rpc("bi_forget", { p_file_id: b.dataset.biforget }); toast("Đã xoá kết quả cũ — đang đọc lại"); box.querySelector("#biSync")?.click(); } catch (x) { toast(errMsg(x), 4000); }
+    b.disabled = true; msg("Đang đọc lại…");
+    try {   // đọc lại đúng ảnh này (kể cả ảnh cũ không phải hôm nay)
+      const r = await callFn("bi", { mode: "sync", force: [b.dataset.biforget], limit: 1 });
+      msg(r.read ? "✅ Đã đọc lại" : r.stopped || "Vẫn lỗi — xem dòng lỗi"); toast(r.read ? "Đã đọc lại ảnh" : "Vẫn lỗi", 3000); reload(true);
+    } catch (x) { msg(""); toast(errMsg(x), 5000); b.disabled = false; }
+  };
+  const ai = box.querySelector("#biAi");
+  if (ai) ai.onclick = async () => {   // 🤖 Kiểm tra AI: model nào đang chạy được
+    ai.disabled = true; msg("Đang kiểm tra AI…");
+    try { const r = await callFn("bi", { mode: "ai_check" }); msg(r.ok ? `✅ AI chạy tốt · model ${r.model}` : `⛔ ${r.error}`); }
+    catch (x) { msg(""); toast(errMsg(x), 5000); }
+    ai.disabled = false;
   };
 }
 

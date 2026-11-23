@@ -1,7 +1,7 @@
 // B16 Số liệu BI: AI (Gemini) đọc ảnh chụp app BI công ty trong thư mục Drive "00 - Nhập doanh thu và thi đua"
 //   → bảng bi_files (số đọc được từng ảnh) → bảng thi đua siêu thị store_contest (TGD, AAR + TỔNG).
 // Dùng ở Edge Function "bi" (QL bấm đọc / chọn ảnh) và "notify" (tự đọc 30 phút / lần).
-import { rest, rpc, gemini } from "./common.ts";
+import { rest, rpc, gemini, vnParts } from "./common.ts";
 import { drive, driveVersion } from "./drive.ts";
 import { pushMany } from "./webpush.ts";
 
@@ -122,10 +122,13 @@ export async function saveExtraction(f: FileMeta, p: any, actor: string) {
   await rest("bi_files?on_conflict=file_id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(row) });
   return row;
 }
-async function saveError(f: FileMeta, msg: string, actor: string) {
+// Ảnh đọc lỗi: ghi lỗi + số lần đã thử (data.tries) để lượt sau tự đọc lại (tối đa BI_MAX_TRIES lần)
+async function saveError(f: FileMeta, msg: string, actor: string, tries = 1) {
   await rest("bi_files?on_conflict=file_id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify({ file_id: f.id, name: f.name || "", file_updated: f.updated || "", url: f.url || "", kind: "other", status: "error", error: msg.slice(0, 500), data: {}, processed_at: new Date().toISOString(), processed_by: actor }) });
+    body: JSON.stringify({ file_id: f.id, name: f.name || "", file_updated: f.updated || "", url: f.url || "", kind: "other", status: "error", error: msg.slice(0, 500), data: { tries }, processed_at: new Date().toISOString(), processed_by: actor }) });
 }
+const BI_MAX_TRIES = 4, RETRY_AFTER_MS = 10 * 60000;
+const aiBusy = (msg: string) => /AI lỗi/.test(msg) && /\b(429|503|500)\b|quota|RESOURCE_EXHAUSTED|overload|UNAVAILABLE/i.test(msg);
 
 // Bảng thi đua siêu thị từ ảnh "BC Thi đua" mới nhất của mỗi kênh trong tháng mới nhất + dòng TỔNG (cộng 2 kênh)
 export async function applyContest(actor: string) {
@@ -209,27 +212,43 @@ export async function proposeFromCards(actor: string) {
   return made;
 }
 
-// Đọc các ảnh mới / đã sửa trong thư mục BI (mỗi lần tối đa `limit` ảnh để không quá giờ chạy)
-export async function biSync(actor: string, limit = 4) {
+// Đọc ảnh BI trong thư mục — CHỈ ảnh úp / sửa TRONG NGÀY (giờ VN), bỏ qua ảnh cũ cho nhanh (force = mã file QL bấm "Đọc lại").
+//   Ảnh mới hoặc vừa sửa → đọc; ảnh lỗi → tự đọc lại sau 10 phút, tối đa 4 lần. Mỗi lần tối đa `limit` ảnh để không quá giờ chạy.
+//   AI quá tải / hết hạn mức → dừng lượt này, lượt sau đọc tiếp.
+export async function biSync(actor: string, limit = 4, force: string[] = []) {
   if ((await driveVersion()) < 3) throw new Error("Apps Script trên Google Drive cần bản 3 (supabase/apps-script/drive-upload.gs).");
   const p = await setting("BI_DRIVE_PATH");
   const path = Array.isArray(p) ? p.map(String) : ["Tool Báo Cáo", "00 - Nhập doanh thu và thi đua"];
-  const l = await drive({ action: "list", path });
+  const l = await drive({ action: "list", path, limit: 120 });
+  const today = vnParts().date, forced = new Set(force.map(String));
   const files: any[] = (l.files || []).filter((f: any) => IMG.test(f.mime));
-  const done: any[] = await rest("bi_files?select=file_id,file_updated&limit=5000");
-  const seen = new Map(done.map((d) => [d.file_id, d.file_updated]));
-  const todo = files.filter((f) => !seen.has(f.id) || (seen.get(f.id) !== f.updated && seen.get(f.id) !== "upload"));
-  let ok = 0, errors = 0;
+  const fresh = files.filter((f) => forced.has(f.id) || (f.updated && vnParts(new Date(f.updated)).date === today));
+  const ids = fresh.map((f) => f.id);
+  const done: any[] = ids.length ? await rest(`bi_files?select=file_id,file_updated,status,data,processed_at&file_id=in.(${ids.map((x) => encodeURIComponent(x)).join(",")})`) : [];
+  const seen = new Map(done.map((d) => [d.file_id, d]));
+  const now = Date.now();
+  const todo = fresh.filter((f) => {
+    const s = seen.get(f.id);
+    if (!s || forced.has(f.id)) return true;
+    if (s.status === "error") return (Number(s.data?.tries) || 1) < BI_MAX_TRIES && now - Date.parse(s.processed_at) >= RETRY_AFTER_MS;
+    return s.file_updated !== f.updated && s.file_updated !== "upload";
+  });
+  let ok = 0, errors = 0, stopped = "";
   for (const f of todo.slice(0, limit)) {
+    const prev = seen.get(f.id), tries = prev?.status === "error" ? (Number(prev.data?.tries) || 1) + 1 : 1;
     try {
       const g = await drive({ action: "get", id: f.id, path });
       await saveExtraction({ id: f.id, name: f.name, updated: f.updated, url: f.url }, await extract(g.file?.mime || f.mime, g.data), actor);
       ok++;
-    } catch (e) { errors++; await saveError({ id: f.id, name: f.name, updated: f.updated, url: f.url }, String((e as Error).message), actor).catch(() => {}); }
+    } catch (e) {
+      const msg = String((e as Error).message); errors++;
+      await saveError({ id: f.id, name: f.name, updated: f.updated, url: f.url }, msg, actor, tries).catch(() => {});
+      if (aiBusy(msg)) { stopped = "AI đang quá tải / hết hạn mức — lượt sau đọc tiếp"; break; }
+    }
   }
   const applied = ok ? await applyContest(actor).catch(() => null) : null;
   const proposals = ok ? await proposeFromCards(actor).catch(() => 0) : 0;
-  return { total: files.length, read: ok, errors, remaining: Math.max(0, todo.length - limit), contestRows: applied, proposals, folder: l.folder?.url || "" };
+  return { total: files.length, today: fresh.length, read: ok, errors, remaining: stopped ? 0 : Math.max(0, todo.length - limit), stopped, contestRows: applied, proposals, folder: l.folder?.url || "" };
 }
 
 // QL chọn ảnh từ máy: lưu vào thư mục BI trên Drive rồi đọc luôn

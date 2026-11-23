@@ -41,18 +41,49 @@ export function vnParts(d = new Date()) {
 }
 export const addDays = (d: string, n: number) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 
-// Gọi Gemini, tự thử model kế tiếp khi model cũ bị ngừng (404) hoặc quá tải (429/503)
-export const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash", "gemini-2.5-flash"];
+// Gọi Gemini (23/11/2026: gemini-2.5-flash bị Google ngừng → bỏ). Cách chạy:
+//  1. Thử lần lượt GEMINI_MODELS; quá tải / hết hạn mức tạm (429, 500, 503) → chờ rồi thử lại 1 lần; model bị ngừng / không có → sang model khác
+//  2. Hỏng hết → hỏi Google danh sách model đang dùng được (ListModels), chọn model "flash" mới nhất → Google đổi model thì tool tự theo
+//  3. Báo lỗi ghi rõ từng model (không che nguyên nhân thật)
+export const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest"];
+const GEM = "https://generativelanguage.googleapis.com/v1beta/models";
+let goodModel: string | null = null, discovered: string[] | null = null;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const verNum = (n: string) => Number((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1] || 0);
+// Model "flash" đang dùng được, mới nhất trước (bỏ bản ảnh / giọng nói / live / embedding; bản lite xếp sau)
+export async function geminiModels(key: string) {
+  const r = await fetch(`${GEM}?pageSize=200`, { headers: { "x-goog-api-key": key } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error?.message || String(r.status));
+  return ((j.models || []) as any[])
+    .filter((m) => (m.supportedGenerationMethods || []).includes("generateContent"))
+    .map((m) => String(m.name || "").replace(/^models\//, ""))
+    .filter((n) => /flash/i.test(n) && !/image|tts|audio|live|embed|thinking|robotics|computer/i.test(n))
+    .sort((a, b) => (/lite/.test(a) ? 1 : 0) - (/lite/.test(b) ? 1 : 0) || verNum(b) - verNum(a) || (/preview|exp/.test(a) ? 1 : 0) - (/preview|exp/.test(b) ? 1 : 0));
+}
+export const lastGoodModel = () => goodModel;
 export async function gemini(key: string, payload: Record<string, unknown>) {
-  let last = "";
-  for (const m of GEMINI_MODELS) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
-      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(payload),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (r.ok) return (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim();
-    last = j.error?.message || String(r.status);
-    if (![404, 429, 500, 503].includes(r.status)) break;
+  const errs: string[] = [], tried = new Set<string>();
+  const call = async (m: string) => {
+    tried.add(m);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(payload) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) { goodModel = m; return { text: (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim() }; }
+      const msg = String(j.error?.message || r.status).replace(/\s+/g, " ").slice(0, 140);
+      if ([429, 500, 503].includes(r.status) && attempt === 0) { await sleep(r.status === 429 ? 6000 : 3000); continue; }
+      errs.push(`${m}: ${r.status} ${msg}`);
+      if (r.status === 401 || (r.status === 403 && /api key|permission|billing/i.test(msg))) return { stop: true };   // khoá AI sai / hết quyền: thử model khác vô ích
+      return null;
+    }
+    return null;
+  };
+  for (const m of [...new Set([goodModel, ...GEMINI_MODELS].filter(Boolean) as string[])]) {
+    const r = await call(m); if (r?.text !== undefined) return r.text; if (r?.stop) throw new Error("AI lỗi (khoá AI): " + errs.join(" | "));
   }
-  throw new Error("AI lỗi: " + last);
+  try { discovered ||= await geminiModels(key); } catch (e) { errs.push("ListModels: " + String((e as Error).message).slice(0, 100)); discovered = []; }
+  for (const m of discovered.filter((x) => !tried.has(x)).slice(0, 4)) {
+    const r = await call(m); if (r?.text !== undefined) return r.text; if (r?.stop) break;
+  }
+  throw new Error(("AI lỗi: " + errs.join(" | ")).slice(0, 480));
 }
