@@ -5,9 +5,9 @@ const { toFields, systemPrompt, SCHEMA } = await import("../functions/tasks/prom
 let ai = JSON.parse(readFileSync(new URL("./fixtures/task-unipass.ai.json", import.meta.url), "utf8"));
 if (process.env.LIVE && process.env.GEMINI_API_KEY) {
   const text = readFileSync(new URL("./fixtures/task-unipass.txt", import.meta.url), "utf8"), today = "Chủ Nhật, 15/11/2026";
-  for (const m of ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest"]) {
+  for (const m of ["gemini-3-flash-preview", "gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest"]) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: systemPrompt(today) }] }, contents: [{ role: "user", parts: [{ text: "NỘI DUNG CÔNG VIỆC / THÔNG BÁO CẦN TÓM TẮT:\n\n" + text }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 2500, responseMimeType: "application/json", responseSchema: SCHEMA } }) });
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: systemPrompt(today) }] }, contents: [{ role: "user", parts: [{ text: "NỘI DUNG CÔNG VIỆC / THÔNG BÁO CẦN TÓM TẮT:\n\n" + text }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 2500, responseMimeType: "application/json", responseSchema: SCHEMA } }), signal: AbortSignal.timeout(60000) }).catch(() => ({ ok: false, status: "hết giờ / lỗi mạng" }));
     if (!r.ok) { console.log(`AI ${m}: HTTP ${r.status}`); continue; }
     const j = await r.json(); ai = JSON.parse((j.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("")); console.log(`AI tóm tắt mẫu bằng ${m}:`); break;
   }
