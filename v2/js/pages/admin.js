@@ -508,7 +508,7 @@ async function settings(body) {
         ${NUM_SETTINGS.map(([k, l, h]) => `<label title="${esc(h)}">${esc(l)}<input id="st_${k}" type="number" step="any" min="0" value="${esc(setting(k, ""))}"></label>`).join("")}
         <label>Tự động tính chuỗi<select id="st_AUTO_STREAK_ENABLED"><option value="ON">Bật</option><option value="OFF" ${setting("AUTO_STREAK_ENABLED", "ON") === "OFF" ? "selected" : ""}>Tắt</option></select></label>
         <label>NV xem BXH sao toàn siêu thị<select id="st_EMPLOYEE_SEE_LEADERBOARD"><option value="false">Không (chỉ xem của mình)</option><option value="true" ${setting("EMPLOYEE_SEE_LEADERBOARD", false) === true ? "selected" : ""}>Có</option></select></label>
-        <label>NV xem bảng xếp hạng điểm<select id="st_SCORE_SEE_ALL"><option value="true">Cả siêu thị (chỉ điểm, DT chi tiết của mình)</option><option value="false" ${setting("SCORE_SEE_ALL", true) === false ? "selected" : ""}>Chỉ của mình</option></select></label>
+        <label>NV xem bảng xếp hạng điểm<select id="st_SCORE_SEE_ALL"><option value="detail">Cả siêu thị + bấm đồng đội xem DT, từng môn</option><option value="true" ${setting("SCORE_SEE_ALL", true) === true ? "selected" : ""}>Cả siêu thị (chỉ điểm, DT chi tiết của mình)</option><option value="false" ${setting("SCORE_SEE_ALL", true) === false ? "selected" : ""}>Chỉ của mình</option></select></label>
         <label>TikTok: bắt đầu tính từ ngày<input id="st_TIKTOK_START_DATE" type="date" value="${esc(String(setting("TIKTOK_START_DATE", "")).slice(0, 10))}"></label>
       </div>
       <div class="fields" style="margin-top:10px"><label>Đơn vị doanh thu QĐ<input id="st_REVENUE_UNIT" value="${esc(setting("REVENUE_UNIT", "triệu đ"))}"></label>
@@ -551,7 +551,7 @@ async function settings(body) {
   bindStarCard(save);
   $("#stSave").onclick = async () => {
     const pairs = [["STORE_NAME", $("#st_STORE_NAME").value.trim()], ["CUTOFF_TIME", $("#st_CUTOFF_TIME").value || "22:20"], ["AUTO_STREAK_ENABLED", $("#st_AUTO_STREAK_ENABLED").value],
-      ["EMPLOYEE_SEE_LEADERBOARD", $("#st_EMPLOYEE_SEE_LEADERBOARD").value === "true"], ["SCORE_SEE_ALL", $("#st_SCORE_SEE_ALL").value === "true"], ["REVENUE_UNIT", $("#st_REVENUE_UNIT").value.trim()],
+      ["EMPLOYEE_SEE_LEADERBOARD", $("#st_EMPLOYEE_SEE_LEADERBOARD").value === "true"], ["SCORE_SEE_ALL", { detail: "detail", true: true, false: false }[$("#st_SCORE_SEE_ALL").value]], ["REVENUE_UNIT", $("#st_REVENUE_UNIT").value.trim()],
       ["RATING_DEDUCT", Object.fromEntries($$(".rd").map((i) => [i.dataset.k, Number(i.value) || 0]))],
       ["VIOLATION_TYPES", $("#st_VIOLATION_TYPES").value.split("\n").map((x) => x.trim()).filter(Boolean)],
       ["PG_DEPTS", [...new Set($("#st_PG_DEPTS").value.split(",").map((x) => x.trim()).filter(Boolean))]],

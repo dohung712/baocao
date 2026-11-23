@@ -3,7 +3,7 @@
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
 import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyDeadlineMsg, flyerMsg, flyerNewMsg, busyMsg, rsMsg, serviceMsg, fundMsg } from "./summary2.ts";
-import { jobDayMsg, jobWeekMsg, loadJobs, weekRange, jobMaintenance } from "./jobs.ts";
+import { jobDayMsg, jobWeekMsg, jobDueMsg, loadJobs, weekRange, jobMaintenance } from "./jobs.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -78,6 +78,7 @@ export const ITEMS: Record<string, { label: string; freq: string; time: string; 
   fund: { label: "Quỹ thu chi (chi tiết thu, chi, số dư)", freq: "weekly", time: "09:00", dow: 1, on: true },
   jobday: { label: "📋 Công việc trong ngày theo hạng mục (đã nộp, chưa nộp, số ảnh)", freq: "daily", time: "21:45", on: true },
   jobweek: { label: "📋 Tổng kết công việc tuần theo hạng mục (gửi CN: tuần này · ngày khác: tuần trước)", freq: "weekly", time: "09:05", dow: 1, on: true },
+  jobdue: { label: "⏰ Nhắc công việc sắp tới hạn / quá hạn chưa nộp ảnh (gửi ngay lúc tới giờ; số phút trước hạn: JOB_REMIND_BEFORE_MIN)", freq: "daily", time: "00:00", on: true },
 };
 function items(cfg: Record<string, any>) {
   const saved: any[] = Array.isArray(cfg.NOTIFY_ITEMS) ? cfg.NOTIFY_ITEMS : [];
@@ -124,6 +125,12 @@ async function compose(kind: string, date: string, cfg: Record<string, any>, opt
   const staff: any[] = await rest("staff?select=id,name&hidden=eq.false&order=sort,id");
   const names = new Map(staff.map((x) => [x.id, x.name]));
   if (kind === "jobday") { const j = await loadJobs(date, date); return { text: jobDayMsg(store, date, j.jobs, j.types, names), period: date }; }
+  if (kind === "jobdue") {   // gửi thử: việc chưa nộp sắp tới hạn + đã quá hạn trong ngày (không đánh dấu đã nhắc)
+    const before = Math.max(5, Number(cfg.JOB_REMIND_BEFORE_MIN ?? 60) || 60), nowIso = new Date().toISOString();
+    const list: any[] = await rest(`jobs?select=id,staff_id,title,due_at&status=eq.todo&due_at=gte.${encodeURIComponent(date + "T00:00:00+07:00")}&due_at=lte.${encodeURIComponent(new Date(Date.now() + before * 60000).toISOString())}&order=due_at&limit=200`);
+    const allNames = new Map(((await rest("staff?select=id,name")) as any[]).map((x) => [x.id, x.name]));
+    return { text: jobDueMsg(store, list.filter((j) => j.due_at > nowIso), list.filter((j) => j.due_at <= nowIso), allNames, before), period: date };
+  }
   if (kind === "jobweek") { const w = weekRange(date), j = await loadJobs(w.from, w.to); return { text: jobWeekMsg(store, w.from, w.to, j.jobs, j.types, names), period: isoWeek(date) }; }
   if (kind === "revenue") {
     const [board, today] = await Promise.all([rpc("score_board", { p_from: monthStart, p_to: date, p_full: true }), rest(`revenue_entries?select=staff_id,amount&kind=eq.daily&entry_date=eq.${date}`)]);
@@ -249,7 +256,17 @@ async function tick() {
   const jobs = await jobMaintenance(cfg).catch((e) => ({ error: String((e as Error).message) }));
   if (cfg.NOTIFY_ENABLED !== true) return { skipped: "off", jobs };
   const now = vnParts(); const done: string[] = [];
+  // Nhắc công việc tới hạn / quá hạn qua Telegram (cùng lúc với thông báo đẩy, mỗi việc 1 lần)
+  const due = (jobs as any).due;
+  if (due && (due.soon.length || due.over.length) && items(cfg).find((i) => i.id === "jobdue")?.on) {
+    try {
+      const staff: any[] = await rest("staff?select=id,name");
+      const text = jobDueMsg(String(cfg.STORE_NAME || ""), due.soon, due.over, new Map(staff.map((x) => [x.id, x.name])), due.before);
+      if (text) { await sendAll(text, cfg); await log("jobdue", now.date + " " + now.hm, true, `auto ${due.soon.length}+${due.over.length}`); done.push("jobdue"); }
+    } catch (e) { await log("jobdue-error", now.date + " " + now.hm, false, String((e as Error).message)); }
+  }
   for (const it of items(cfg)) {
+    if (it.id === "jobdue") continue;   // gửi ở trên theo từng việc
     if (it.id === "flyer" || it.id === "flyerpre" || it.id === "flyernew") {
       // không theo giờ cố định: đợt mới → gửi ngay; trước hạn X phút → nhắc; tới giờ hạn → báo; mỗi tuyến / đợt 1 lần
       if (!it.on) continue;

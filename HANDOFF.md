@@ -60,7 +60,7 @@ bash supabase/tests/check.sh --ui   # thêm kiểm thử giao diện (server htt
 
 1. Tra mã chức năng trong TOOL.md → chỉ mở đúng file/hàm.
 2. SQL: tạo **migration mới**, `create or replace` nguyên hàm; **không sửa migration đã áp**; đổi chữ ký thì `drop function` trước. Hàm `security definer set search_path = ''` → luôn ghi `public.` trước tên bảng/hàm. Biến trùng tên cột → `#variable_conflict use_variable`.
-3. **Đánh số migration**: xem `ls supabase/migrations | tail` và lấy số **lớn hơn số lớn nhất** (hiện tại lớn nhất là `0960` → file tiếp theo `20261115000970_v2_<tên>.sql`). Đã có 2 cặp trùng tiền tố (`0880_*`, `0890_*`) do nhiều phiên làm song song; không ảnh hưởng vì áp theo tên đầy đủ, nhưng đừng tạo thêm.
+3. **Đánh số migration**: xem `ls supabase/migrations | tail` và lấy số **lớn hơn số lớn nhất** (hiện tại lớn nhất là `0970` → file tiếp theo `20261115000980_v2_<tên>.sql`). Đã có 2 cặp trùng tiền tố (`0880_*`, `0890_*`) do nhiều phiên làm song song; không ảnh hưởng vì áp theo tên đầy đủ, nhưng đừng tạo thêm.
 4. Quyền: `_require_member`, `_manager_scope`, `_member_for_staff`, `can_see_staff`, `_flyer_mgr`. Hiện **mọi quản lý đều là chủ quản (owner)** (migration 0830).
 5. Giao diện: dùng helper `ui.js`; sau `await` kiểm tra phần tử còn tồn tại.
 6. Chạy `check.sh` (`--ui` nếu đổi giao diện lớn) → commit (kết thúc bằng dòng Co-Authored-By) → push → xem 2 workflow success.

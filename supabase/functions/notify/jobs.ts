@@ -40,6 +40,28 @@ function byType(jobs: any[], types: any[]) {
   return [...groups.values()].sort((a, b) => a.sort - b.sort);
 }
 const isLate = (j: any) => j.status === "done" && Number(j.late_min) > 0;
+// Số lần trễ theo NV: nộp trễ + bỏ lỡ + quá hạn chưa nộp → "Tên 3 (1 bỏ lỡ) · Tên 1"
+function lateSummary(all: any[], names: Map<string, string>, nowIso: string) {
+  const per = new Map<string, { late: number; miss: number; open: number }>();
+  for (const j of all) {
+    const k = isLate(j) ? "late" : j.status === "missed" ? "miss" : j.status === "todo" && j.due_at < nowIso ? "open" : null;
+    if (!k) continue;
+    const x = per.get(j.staff_id) || { late: 0, miss: 0, open: 0 }; x[k]++; per.set(j.staff_id, x);
+  }
+  return [...per.entries()].map(([id, x]) => ({ id, n: x.late + x.miss + x.open, x })).sort((a, b) => b.n - a.n)
+    .map(({ id, n, x }) => `${esc(short(names.get(id) || id))} <b>${n}</b>${x.miss || x.open ? ` (${[x.miss ? `${x.miss} bỏ lỡ` : "", x.open ? `${x.open} chưa nộp` : ""].filter(Boolean).join(", ")})` : ""}`).join(" · ");
+}
+
+// Nhắc qua Telegram ngay khi việc sắp tới hạn / vừa quá hạn mà chưa nộp ảnh (cùng lúc với thông báo đẩy)
+export function jobDueMsg(store: string, soon: any[], over: any[], names: Map<string, string>, before: number) {
+  if (!soon.length && !over.length) return null;
+  const line = (j: any) => `• <b>${esc(short(names.get(j.staff_id) || j.staff_id))}</b>: ${esc(j.title)} (hạn ${when(j.due_at)})`;
+  const L = [`⏰ <b>NHẮC CÔNG VIỆC</b> · ${esc(store)}`];
+  if (soon.length) L.push("", `🕐 <b>Sắp tới hạn</b> (trong ${mins(before)}):`, ...soon.map(line));
+  if (over.length) L.push("", `⚠️ <b>Quá hạn, chưa nộp ảnh</b> — nộp ngay để tránh bị trừ sao:`, ...over.map(line));
+  L.push("", `Nộp ảnh: ${APP}#today`);
+  return L.join("\n");
+}
 
 export function jobDayMsg(store: string, date: string, jobs: any[], types: any[], names: Map<string, string>) {
   const groups = byType(jobs, types);
@@ -50,6 +72,8 @@ export function jobDayMsg(store: string, date: string, jobs: any[], types: any[]
   const open = all.filter((j) => j.status === "todo"), over = open.filter((j) => j.due_at < nowIso);
   const L = [`📋 <b>CÔNG VIỆC · ${dow(date)} ${dm(date)}</b>`, esc(store), "",
     `Tổng <b>${all.length}</b> việc · ✅ <b>${done.length}</b> đã nộp${done.some(isLate) ? ` (${done.filter(isLate).length} trễ)` : ""} · ⏳ <b>${open.length}</b> chưa nộp${over.length ? ` (${over.length} quá hạn)` : ""}${miss.length ? ` · ❌ <b>${miss.length}</b> bỏ lỡ` : ""} · 📷 <b>${all.reduce((a, j) => a + nPhotos(j), 0)}</b> ảnh`];
+  const lateLine = lateSummary(all, names, nowIso);
+  if (lateLine) L.push(`⏰ <b>Trễ hôm nay</b>: ${lateLine}`);
   for (const g of groups) {
     const d = g.list.filter((j) => j.status === "done");
     L.push("", `${g.icon} <b>${esc(g.name)}</b> · ${d.length}/${g.list.length} việc · 📷 ${g.list.reduce((a, j) => a + nPhotos(j), 0)}`);
@@ -82,9 +106,9 @@ export function jobWeekMsg(store: string, from: string, to: string, jobs: any[],
   const per = new Map<string, any[]>(); for (const j of all) per.set(j.staff_id, [...(per.get(j.staff_id) || []), j]);
   const rank = [...per.entries()].map(([id, l]) => ({ id, n: l.length, p: pct(onTime(l), l.length), bad: l.filter((j) => j.status !== "done" || isLate(j)).length }));
   const top = rank.filter((r) => r.p === 100 && r.n >= 2).map((r) => esc(short(names.get(r.id) || r.id)));
-  const low = rank.filter((r) => r.bad >= 2).sort((a, b) => b.bad - a.bad).slice(0, 5).map((r) => `${esc(short(names.get(r.id) || r.id))} (${r.bad})`);
+  const lateLine = lateSummary(all, names, new Date().toISOString());
   if (top.length) L.push("", `🏅 Đúng hạn 100%: ${top.join(", ")}`);
-  if (low.length) L.push(`🆘 Cần nhắc (trễ / bỏ lỡ): ${low.join(", ")}`);
+  if (lateLine) L.push(`${top.length ? "" : "\n"}⏰ <b>Số lần trễ trong tuần</b>: ${lateLine}`);
   L.push("", `Chi tiết: ${APP}#jobs`);
   return L.join("\n");
 }
@@ -132,6 +156,8 @@ export async function jobMaintenance(cfg: Record<string, any>) {
     if (fresh.length) await mark(fresh.map((j) => j.id), "pushed_at");
     if (soon.length || soonFresh.length) await mark([...soon.map((j) => j.id), ...soonFresh], "reminded_at");
     if (over.length) await mark(over.map((j) => j.id), "overdue_at");
+    // cho tick gửi Telegram "Nhắc công việc" (mục jobdue) — không đưa ra kết quả trả về
+    Object.defineProperty(out, "due", { value: { soon: [...soon, ...fresh.filter((j) => j.due_at <= soonAt)], over, before }, enumerable: false });
   } catch (e) { out.pushError = String((e as Error).message); }
   try { const s = await shiftAuto(cfg); if (s) out.shift = s; } catch (e) { out.shiftError = String((e as Error).message); }
   try { const b = await biAuto(); if (b) out.bi = { read: b.read, errors: b.errors, remaining: b.remaining }; } catch (e) { out.biError = String((e as Error).message); }
