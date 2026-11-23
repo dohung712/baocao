@@ -939,3 +939,22 @@ tr.click{cursor:pointer}
 .av-msg.ai{align-self:flex-start;border:1px solid var(--line)}
 .av-form{display:flex;gap:8px;align-items:flex-end;position:sticky;bottom:0;padding:6px 0;background:var(--bg)}
 .av-form textarea{flex:1}
+
+/* D16 Huong dan */
+.gd-g{font-size:13px;color:var(--muted,#667);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.02em}
+.gd-card{border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+.gd-card summary{padding:11px 12px;cursor:pointer;display:flex;gap:8px;align-items:center;list-style:none}
+.gd-card summary::-webkit-details-marker{display:none}
+.gd-c{padding:0 12px 10px;font-size:14px}
+.gd-c p{margin:5px 0}
+.gd-news{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.gd-news.read{opacity:.75}
+.gd-news ul,.gd-day ul{margin:6px 0;padding-left:20px}
+.gd-prog{font-size:14px;margin:6px 0 10px}
+.gd-step{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.gd-step.ok{opacity:.7}
+.gd-n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);flex:none;font-weight:700}
+.gd-day{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.gd-time{font-size:14px}
+.gd-banner{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;width:100%;text-align:left;border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin:0 0 10px;background:transparent;color:inherit;cursor:pointer;font:inherit}
+.gd-banner span:nth-child(2){flex:1;font-size:13px}

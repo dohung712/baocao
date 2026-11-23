@@ -30,7 +30,8 @@ const upd = (iso) => { if (!iso) return ""; const p = Object.fromEntries(new Int
 export async function render(view, _p, ctx = {}) {
   root = view; goFn = ctx.go || ((id) => { location.hash = id; }); pushSt = null;
   try { rkScope = localStorage.getItem("thidua-v2-td-rk") || "dept"; } catch { /* bỏ qua */ }
-  view.innerHTML = `<div class="page-h td-head"><div><h1>🏠 Hôm nay</h1><p>${dow(vnToday())} ${dmy(vnToday())}</p></div></div><div id="tdBody"><div class="empty">Đang tải…</div></div>`;
+  view.innerHTML = `<div class="page-h td-head"><div><h1>🏠 Hôm nay</h1><p>${dow(vnToday())} ${dmy(vnToday())}</p></div></div><div id="tdGuide"></div><div id="tdBody"><div class="empty">Đang tải…</div></div>`;
+  import("../guide-track.js").then((m) => m.todayBanner($("#tdGuide"), goFn)).catch(() => {});   // D16: nhắc làm tiếp bài Nhập môn
   view.onclick = onClick;
   await load();
   const off = onChange((w) => { if (["jobs", "cv", "contest", "score", "results"].includes(w) && $("#tdBody")) load(true); });

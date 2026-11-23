@@ -9,9 +9,9 @@ const LABEL = {
   late: ["⏰", "Việc trễ chưa nộp", "Cho nộp bù (Trợ lý tạo việc mới, việc cũ vẫn ghi trễ) hoặc chỉ ghi trễ"],
   req_delay: ["🙋", "NV xin dời hạn", ""], req_excuse: ["🙋", "NV xin miễn việc", ""],
   no_shift: ["🗓️", "Lịch ca", ""], rt: ["📄", "Trang tính việc lặp lại", ""], bi: ["📊", "Ảnh BI", ""], bi_stuck: ["📊", "Số BI kẹt", ""],
-  no_push: ["🔕", "Chưa bật thông báo", ""], shift_conflict: ["⚠️", "Lịch ca trùng lịch bận", ""], sys: ["🛠️", "Lỗi chạy tự động", ""], weekly: ["📈", "Phân tích tuần", ""],
+  no_push: ["🔕", "Chưa bật thông báo", ""], guide: ["📖", "Hướng dẫn & nhập môn", ""], shift_conflict: ["⚠️", "Lịch ca trùng lịch bận", ""], sys: ["🛠️", "Lỗi chạy tự động", ""], weekly: ["📈", "Phân tích tuần", ""],
 };
-const LINK = { no_shift: ["jobs", "🗓️ Mở Lịch ca"], shift_conflict: ["jobs", "🗓️ Mở Lịch ca"], bi: ["store", "📊 Mở Siêu thị"], bi_stuck: ["admin", "📊 Mở Quản lý"], rt: ["jobs", "🔁 Mở Lặp lại"] };
+const LINK = { guide: ["guide", "👥 Mở Theo dõi"], no_shift: ["jobs", "🗓️ Mở Lịch ca"], shift_conflict: ["jobs", "🗓️ Mở Lịch ca"], bi: ["store", "📊 Mở Siêu thị"], bi_stuck: ["admin", "📊 Mở Quản lý"], rt: ["jobs", "🔁 Mở Lặp lại"] };
 const ORDER = ["req_delay", "req_excuse", "late", "no_shift", "rt", "sys", "shift_conflict", "bi", "bi_stuck", "no_push", "weekly"];
 let F = "need", goFn;
 const fmtVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -128,7 +128,7 @@ function onClick(list) {
       } catch (x) { toast(errMsg(x), 5000); q.disabled = false; }
       return;
     }
-    const g = e.target.closest("[data-go]"); if (g) { if (g.dataset.go === "jobs") try { localStorage.setItem("thidua-v2-jobs", "shift"); } catch { /* bỏ qua */ } return goFn?.(g.dataset.go); }
+    const g = e.target.closest("[data-go]"); if (g) { try { if (g.dataset.go === "jobs") localStorage.setItem("thidua-v2-jobs", "shift"); if (g.dataset.go === "guide") localStorage.setItem("thidua-v2-guide", "track"); } catch { /* bỏ qua */ } return goFn?.(g.dataset.go); }
     const bk = e.target.closest("[data-bulk]");
     const b = e.target.closest("[data-act]");
     if (!bk && !b) return;

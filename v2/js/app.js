@@ -15,6 +15,8 @@ import * as today from "./pages/today.js";
 import * as jobs from "./pages/jobs.js";
 import * as duyet from "./pages/duyet.js";
 import * as advisor from "./pages/advisor.js";
+import * as guide from "./pages/guide.js";
+import * as guideTrack from "./guide-track.js";
 import { registerSW } from "./push.js";
 import { setViewAs } from "./viewas.js";
 
@@ -34,7 +36,8 @@ const PAGES = [
   { id: "cv", icon: "🗂️", label: "CV", mod: cv, more: true, nav: () => isManager() || !isHidden("cv.nav") },
   { id: "history", icon: "🕒", label: "Báo cáo đã nộp", mod: historyPage, more: true, nav: () => isManager() },
   { id: "assistant", icon: "🤖", label: "Trợ lý", mod: assistant, more: true },
-  { id: "rules", icon: "📖", label: "Rule", mod: rules, more: true },
+  { id: "guide", icon: "📖", label: "Hướng dẫn", mod: guide, more: true, ok: () => true },
+  { id: "rules", icon: "📜", label: "Rule", mod: rules, more: true },
   { id: "ranking", icon: "⭐", label: "BXH sao", mod: { render: rankhub.make("ranking") }, ok: hubOk, alias: true },
   { id: "me", icon: "👤", label: "Của tôi", mod: { render: rankhub.make("me") }, ok: hubOk, alias: true },
 ];
@@ -78,6 +81,7 @@ async function go(id, params = {}) {
     const c = (await page.mod.render(view, params, { go })) || null;
     if (token !== navToken) { try { c?.(); } catch { /* bỏ qua */ } return; } // đã chuyển trang khác trong lúc tải
     cleanup = c;
+    guideTrack.visit(page.id);   // D16: bước nhập môn "mở trang …"
   } catch (e) {
     if (token !== navToken) return;
     console.error(e); view.innerHTML = `<div class="banner bad"><div><b>Không tải được trang</b>${esc(errMsg(e))}</div></div>`;
@@ -117,6 +121,7 @@ async function enterApp() {
   const id = location.hash.slice(1).split("?")[0] || "today";
   go(id);
   remind();
+  setTimeout(() => guideTrack.start(go), 1500);   // D16: 🆕 Có gì mới (hiện lại tới khi bấm Đã hiểu)
 }
 
 // ---------- Đăng nhập ----------

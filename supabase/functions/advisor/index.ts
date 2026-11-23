@@ -3,7 +3,7 @@
 //    gửi thông báo đẩy cho Giám đốc / QL; Telegram: thi đua → AGENT_CHAT_IDS (trống = NOTIFY_CHAT_IDS); nhân sự → chỉ ADV_PRIVATE_CHAT_IDS (riêng tư)
 //  • run  (QL): phân tích lại ngay (kind biz | people)
 //  • ask  (QL): hỏi đáp bằng lời
-import { json, CORS, rest, member, vnParts } from "../_shared/common.ts";
+import { json, CORS, rest, member, vnParts, gemini } from "../_shared/common.ts";
 import { runReport, ask, tgPlain } from "../_shared/advisor.ts";
 import { pushMany } from "../_shared/webpush.ts";
 
@@ -58,6 +58,23 @@ Deno.serve(async (req) => {
       return json({ status: "success", ...(await job) });
     }
     const m = await member(req);
+    // D16 💬 Hỏi cách dùng (mọi thành viên): AI trả lời theo guide.json (nguồn hướng dẫn duy nhất), đúng vai trò người hỏi
+    if (body.mode === "howto") {
+      const q = String(body.question || "").trim().slice(0, 600);
+      if (!q) throw new Error("Chưa có câu hỏi.");
+      const g = await (await fetch(APP + "guide.json?v=" + Math.floor(Date.now() / 6e5))).json();
+      const role = m.role === "owner" ? "gd" : m.role === "manager" ? "ql" : "nv";
+      const mine = (r: string[]) => r.includes(role) || (role === "gd" && r.includes("ql"));
+      const ctx = { vai_tro: g.roles?.[role], huong_dan: (g.cards || []).filter((c: any) => mine(c.roles)), co_gi_moi: (g.news || []).filter((n: any) => mine(n.roles)).slice(0, 8), ...(role !== "nv" ? { lich_ql: g.qlday } : {}), link_huong_dan: APP + "huongdan.html" };
+      const key = (await rest("private_settings?select=value&key=eq.GEMINI_API_KEY"))[0]?.value;
+      if (!key) throw new Error("Chưa cài khoá AI.");
+      const answer = await gemini(key, {
+        systemInstruction: { parts: [{ text: "Bạn là người hướng dẫn dùng tool quản lý công việc của siêu thị. Trả lời tiếng Việt, rất ngắn (≤ 90 chữ), dạng các bước bấm cụ thể (Menu → nút …). CHỈ dựa vào HƯỚNG DẪN dưới đây; không có thì nói chưa có hướng dẫn và gợi ý hỏi quản lý. Văn bản thường, không markdown, gạch đầu dòng bằng '•'.\n\nHƯỚNG DẪN:\n" + JSON.stringify(ctx) }] },
+        contents: [{ role: "user", parts: [{ text: q }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 800, thinkingConfig: { thinkingLevel: "low" } },
+      });
+      return json({ status: "success", answer: answer || "Chưa trả lời được — hỏi quản lý giúp nhé." });
+    }
     if (!["owner", "manager"].includes(m.role)) throw new Error("Cố vấn AI chỉ dành cho quản lý.");
     if (body.mode === "run") {
       const kind = body.kind === "people" ? "people" : "biz";

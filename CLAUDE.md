@@ -11,7 +11,8 @@ Người dùng sẽ gửi "Sửa <mã>: …". Chỉ mở đúng file/hàm của 
 3. Kiểm tra: `bash supabase/tests/check.sh` (thêm `--ui` nếu đổi giao diện lớn). Phải ra `diffs=0` và `✅ OK`.
 4. Commit + `git -c push.negotiate=true push origin main`, rồi `gh run list -R dohung712/baocao -L 2` để xem workflow "Supabase v2 deploy" và Pages đều success.
 5. Nếu đổi chức năng/hàm: cập nhật dòng tương ứng trong TOOL.md, chạy `node supabase/scripts/fn-index.mjs` để làm mới mục 8. Chức năng quản lý mới → thêm 1 dòng vào `FEATURES` (và `PLAN` nếu là việc định kỳ) trong `v2/js/pages/admin-home.js`, và 1 dòng gợi ý vào mảng `H` trong `v2/js/help.js`.
-6. Trả lời người dùng bằng tiếng Việt, ngắn: đã đổi gì, xem ở đâu.
+6. **Hướng dẫn sống (D16) — BẮT BUỘC mỗi lần đổi chức năng người dùng thấy:** sửa `v2/guide.json` — cập nhật thẻ (`cards`) liên quan, thêm 1 mục `news` (id mới dạng `YYYY-MM-DD-<tên>`, `roles` đúng: nv / ql / gd, 2–4 dòng nói bấm ở đâu), đổi `version`; thêm / sửa bước `onboard` hoặc `qlday` nếu cần. NV / QL sẽ thấy 🆕 Có gì mới khi mở tool, trang `huongdan.html` và AI 💬 Hỏi cách dùng tự theo.
+7. Trả lời người dùng bằng tiếng Việt, ngắn: đã đổi gì, xem ở đâu.
 
 ## Lưu ý
 - Dữ liệu thật đang ở v2. **Không chạy lại `migrate_legacy` / `migrate_legacy_all`.**

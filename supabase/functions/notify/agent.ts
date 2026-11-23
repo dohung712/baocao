@@ -152,6 +152,20 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
     } catch { /* bỏ qua */ }
     const st: any[] = await rest("bi_proposals?select=id&status=eq.pending&limit=50").catch(() => []);
     if (st.length) items.push({ key: `bi_stuck:${vn.date}`, kind: "bi_stuck", needs_decision: false, title: `${st.length} thẻ số BI của NV đang kẹt chưa áp dụng`, detail: "Mở Quản lý → Duyệt số NV." });
+    // D16: ai chưa đọc "Có gì mới" quá 2 ngày / chưa xong Nhập môn sau 3 ngày kể từ lần đầu mở tool
+    if (vn.hm >= "09:00") try {
+      const g = await (await fetch(APP + "guide.json?v=" + Math.floor(now / 6e5))).json();
+      const [mem, gp]: any[][] = await Promise.all([rest("memberships?select=email,role,staff_id&active=eq.true"), rest("guide_progress?select=email,kind,item&limit=20000")]);
+      const has = (e: string, k: string, i: string) => gp.some((x) => x.email === e && x.kind === k && x.item === i);
+      const first = (e: string) => gp.find((x) => x.email === e && x.kind === "seen" && x.item === "first");
+      const rk = (r: string) => (r === "owner" ? "gd" : r === "manager" ? "ql" : "nv");
+      const who = (m: any) => m.staff_id ? name(m.staff_id) : String(m.email).split("@")[0];
+      const d2 = addDays(vn.date, -2), d21 = addDays(vn.date, -21);
+      const unread = mem.filter((m) => first(m.email) && (g.news || []).some((n: any) => { const r = rk(m.role); return (n.roles.includes(r) || (r === "gd" && n.roles.includes("ql"))) && n.date <= d2 && n.date >= d21 && !has(m.email, "news", n.id); }));
+      const noOb = mem.filter((m) => { const f = first(m.email); return f && Date.parse(f.at) < now - 3 * 864e5 && !has(m.email, "onboard", "done"); });
+      if (unread.length) items.push({ key: "guide_news:" + vn.date, kind: "guide", needs_decision: false, title: `${unread.length} người chưa đọc "Có gì mới" (quá 2 ngày)`, detail: unread.map(who).join(", ") + " — nhắc mở tool → bấm ✅ Đã hiểu." });
+      if (noOb.length) items.push({ key: "guide_onboard:" + vn.date, kind: "guide", needs_decision: false, title: `${noOb.length} người chưa xong bài Nhập môn`, detail: noOb.map(who).join(", ") + " — 📖 Hướng dẫn → ✅ Nhập môn." });
+    } catch { /* bỏ qua */ }
     const added = await addItems(items);
     const urgent = added.filter((x) => x.urgent);
     if (urgent.length) {
@@ -170,7 +184,7 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
     const t = times.find((x) => toMin(vn.hm) >= toMin(x) && toMin(vn.hm) < toMin(x) + 15);
     if (t && (await once(vn.date, "digest-" + t))) {
       const open: any[] = await rest("agent_items?select=id,kind,title,detail,urgent,needs_decision,digest_at,created_at&status=eq.open&order=urgent.desc,created_at&limit=300");
-      const LABEL: Record<string, string> = { sys: "🛠️ Lỗi chạy tự động", late: "⏰ Việc trễ — cho nộp bù / ghi trễ", req_delay: "🙋 NV xin dời hạn", req_excuse: "🙋 NV xin miễn việc", no_shift: "🗓️ Lịch ca", rt: "📄 Trang tính việc", bi: "📊 Ảnh BI", bi_stuck: "📊 Số BI kẹt", no_push: "🔕 Chưa bật thông báo", shift_conflict: "⚠️ Lịch ca trùng bận", weekly: "📈 Phân tích tuần" };
+      const LABEL: Record<string, string> = { guide: "📖 Hướng dẫn", sys: "🛠️ Lỗi chạy tự động", late: "⏰ Việc trễ — cho nộp bù / ghi trễ", req_delay: "🙋 NV xin dời hạn", req_excuse: "🙋 NV xin miễn việc", no_shift: "🗓️ Lịch ca", rt: "📄 Trang tính việc", bi: "📊 Ảnh BI", bi_stuck: "📊 Số BI kẹt", no_push: "🔕 Chưa bật thông báo", shift_conflict: "⚠️ Lịch ca trùng bận", weekly: "📈 Phân tích tuần" };
       // D14b: thưởng nóng / thưởng bán thêm / sửa báo cáo chờ duyệt (trước nằm riêng ở Quản lý) → cùng 1 hộp
       const [hb, xp, cr]: any[][] = await Promise.all([
         rest(`hot_bonuses?select=staff_id,item_name&status=eq.${encodeURIComponent("Chờ duyệt")}&limit=100`).catch(() => []),
