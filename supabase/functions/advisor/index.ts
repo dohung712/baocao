@@ -62,10 +62,13 @@ Deno.serve(async (req) => {
     if (body.mode === "howto") {
       const q = String(body.question || "").trim().slice(0, 600);
       if (!q) throw new Error("Chưa có câu hỏi.");
-      const g = await (await fetch(APP + "guide.json?v=" + Math.floor(Date.now() / 6e5))).json();
+      // D16b: nội dung trong CSDL (guide_content); chỉ đưa AI phần của vai trò người hỏi + vai trò thấp hơn
+      const g = (await rest("guide_content?select=data&id=eq.1"))[0]?.data;
+      if (!g) throw new Error("Chưa có nội dung hướng dẫn.");
       const role = m.role === "owner" ? "gd" : m.role === "manager" ? "ql" : "nv";
-      const mine = (r: string[]) => r.includes(role) || (role === "gd" && r.includes("ql"));
-      const ctx = { vai_tro: g.roles?.[role], huong_dan: (g.cards || []).filter((c: any) => mine(c.roles)), co_gi_moi: (g.news || []).filter((n: any) => mine(n.roles)).slice(0, 8), ...(role !== "nv" ? { lich_ql: g.qlday } : {}), link_huong_dan: APP + "huongdan.html" };
+      const RANK: Record<string, number> = { nv: 1, ql: 2, gd: 3 }, my = RANK[role];
+      const mine = (r: string[]) => (r || []).some((x) => (RANK[x] || 99) <= my);
+      const ctx = { vai_tro: g.roles?.[role], huong_dan: (g.cards || []).filter((c: any) => mine(c.roles)), co_gi_moi: (g.news || []).filter((n: any) => mine(n.roles)).slice(0, 8), ...(my >= 2 ? { lich_ql: g.qlday } : {}), link_huong_dan: APP + "#guide" };
       const key = (await rest("private_settings?select=value&key=eq.GEMINI_API_KEY"))[0]?.value;
       if (!key) throw new Error("Chưa cài khoá AI.");
       const answer = await gemini(key, {

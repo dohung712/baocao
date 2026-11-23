@@ -6,12 +6,15 @@ import { pushState } from "./push.js";
 
 let guideP = null, prog = null, newsShown = false;
 export function loadGuide() {
-  guideP ||= fetch("guide.json?v=" + Math.floor(Date.now() / 6e5), { cache: "no-cache" }).then((r) => { if (!r.ok) throw new Error("Không tải được hướng dẫn"); return r.json(); }).catch((e) => { guideP = null; throw e; });
+  // D16b: nội dung nằm trong CSDL, chỉ trả về phần trong phạm vi vai trò (của mình + vai trò thấp hơn) — phải đăng nhập
+  guideP ||= rpc("guide_get").then((g) => { if (!g) throw new Error("Chưa có nội dung hướng dẫn (chủ quản nạp ở 📖 Hướng dẫn → ⚙️ Nội dung)."); return g; }).catch((e) => { guideP = null; throw e; });
   return guideP;
 }
 // Vai trò hướng dẫn: nhân viên = nv · quản lý = ql · chủ quản = gd (xem cả phần quản lý)
 export const roleKey = () => (S.me?.role === "owner" ? "gd" : S.me?.role === "manager" ? "ql" : "nv");
-export const forMe = (roles = []) => { const r = roleKey(); return roles.includes(r) || (r === "gd" && roles.includes("ql")); };
+export const forMe = (roles = []) => roles.includes(roleKey());   // tin "Có gì mới" / nhập môn: đúng vai trò của mình
+export const RANK = { nv: 1, ql: 2, gd: 3 };
+export const resetGuide = () => { guideP = null; };
 export const onboardList = (g) => (roleKey() === "nv" ? g.onboard.nv : g.onboard.ql) || [];
 
 export async function progress(force = false) {
