@@ -106,5 +106,7 @@ function walk(root, path) {
   });
   return { folder: folder, folders: folders };
 }
+// Chạy 1 lần trong trình soạn thảo (chọn hàm này → ▶ Chạy → Cho phép) để cấp quyền Google Sheets cho bản 4 (đọc trang tính việc lặp lại)
+function capQuyenTrangTinh() { SpreadsheetApp.getActiveSpreadsheet(); DriveApp.getRootFolder(); Logger.log('Đã cấp quyền Google Sheets + Drive'); }
 function doGet() { return out({ ok: true, service: 'thidua-drive-upload', version: VERSION }); }
 function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
