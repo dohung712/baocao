@@ -44,7 +44,7 @@ export async function start(go) {
       ${list.slice(0, 4).map((n) => `<div class="gd-news"><b>${esc(n.title)}</b> <span class="tiny muted">${esc(n.date.slice(8))}/${esc(n.date.slice(5, 7))}</span><ul>${n.lines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></div>`).join("")}
       <div class="modal-actions"><button class="btn" data-v="guide">📖 Xem hướng dẫn</button><button class="btn primary" data-v="ok">✅ Đã hiểu</button></div>`);
     if (v === "ok" || v === "guide") await ack("news", list.slice(0, 4).map((n) => n.id));
-    if (v === "guide") go("guide");
+    if (v === "guide") { try { localStorage.setItem("thidua-v2-guide", "news"); } catch { /* bỏ qua */ } location.hash = "#guide"; setTimeout(() => { if (!document.querySelector("#gdBody")) go("guide"); }, 400); }
   } catch { /* không chặn tool */ }
 }
 
