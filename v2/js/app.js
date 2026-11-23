@@ -5,35 +5,36 @@ import { renderReminders } from "./reminders.js";
 import { sb, S, loadMe, loadAll, startRealtime, stopRealtime, onLive, onChange, isManager, roleLabel, errMsg, setting, SUPABASE_URL, staffEmail, isHidden } from "./store.js";
 import * as report from "./pages/report.js";
 import * as historyPage from "./pages/history.js";
-import * as ranking from "./pages/ranking.js";
 import * as store from "./pages/store.js";
 import * as admin from "./pages/admin.js";
 import * as cv from "./pages/cv.js";
 import * as rules from "./pages/rules.js";
 import * as assistant from "./pages/assistant.js";
-import * as score from "./pages/score.js";
-import * as mePage from "./pages/me.js";
+import * as rankhub from "./pages/rankhub.js";
 import * as today from "./pages/today.js";
 import * as jobs from "./pages/jobs.js";
 import { registerSW } from "./push.js";
 import { setViewAs } from "./viewas.js";
 
-// tab: hiện ở thanh dưới (điện thoại) · nav: có hiện trên menu không (CV của NV ẩn khi HIDE.employee có "cv.nav" — NV vào từng chức năng từ 🏠 Hôm nay)
+// Menu gọn (23/11/2026): chức năng chính trên menu, phần còn lại trong "☰ Thêm".
+// tab: hiện ở thanh dưới (điện thoại) · more: chỉ nằm trong ☰ Thêm · nav: có liệt kê không (vẫn mở được bằng địa chỉ / nút)
+// alias: trang con của trang khác (Xếp hạng gộp Điểm · Sao · Của tôi) · ok: điều kiện mở thay cho Ẩn trang theo id
+const hubOk = rankhub.anyOpen;
 const PAGES = [
   { id: "today", icon: "🏠", label: "Hôm nay", mod: today, tab: true },
   { id: "report", icon: "📝", label: "Báo cáo", mod: report, tab: true },
-  { id: "cv", icon: "🗂️", label: "CV", mod: cv, tab: true, nav: () => isManager() || !isHidden("cv.nav") },
   { id: "jobs", icon: "📋", label: "Giao việc", mod: jobs, manager: true, tab: true },
-  { id: "score", icon: "🏅", label: "Xếp hạng", mod: score, tab: () => !isManager() },
-  { id: "me", icon: "👤", label: "Của tôi", mod: mePage, tab: () => !isManager() },
-  { id: "ranking", icon: "🏆", label: "BXH sao", mod: ranking },
-  { id: "history", icon: "🕒", label: "Lịch sử", mod: historyPage },
-  { id: "store", icon: "🏢", label: "Siêu thị", mod: store },
-  { id: "assistant", icon: "🤖", label: "Trợ lý", mod: assistant },
-  { id: "rules", icon: "📖", label: "Rule", mod: rules },
+  { id: "score", icon: "🏅", label: "Xếp hạng", mod: { render: rankhub.make("score") }, tab: true, ok: hubOk, group: ["ranking", "me"] },
+  { id: "store", icon: "🏢", label: "Siêu thị", mod: store, tab: () => !isManager() },
   { id: "admin", icon: "⚙️", label: "Quản lý", mod: admin, manager: true },
+  { id: "cv", icon: "🗂️", label: "CV", mod: cv, more: true, nav: () => isManager() || !isHidden("cv.nav") },
+  { id: "history", icon: "🕒", label: "Báo cáo đã nộp", mod: historyPage, more: true, nav: () => isManager() },
+  { id: "assistant", icon: "🤖", label: "Trợ lý", mod: assistant, more: true },
+  { id: "rules", icon: "📖", label: "Rule", mod: rules, more: true },
+  { id: "ranking", icon: "⭐", label: "BXH sao", mod: { render: rankhub.make("ranking") }, ok: hubOk, alias: true },
+  { id: "me", icon: "👤", label: "Của tôi", mod: { render: rankhub.make("me") }, ok: hubOk, alias: true },
 ];
-const allowed = () => PAGES.filter((p) => (!p.manager || isManager()) && !isHidden(p.id));
+const allowed = () => PAGES.filter((p) => (!p.manager || isManager()) && (p.ok ? p.ok() : !isHidden(p.id)));
 let current = null, cleanup = null, navToken = 0;
 
 function show(id) { for (const x of ["boot", "login", "app"]) $("#" + x).hidden = x !== id; }
@@ -41,20 +42,23 @@ function show(id) { for (const x of ["boot", "login", "app"]) $("#" + x).hidden 
 function pendingCount() { return (S.pending.proposals || 0) + (S.pending.changes || 0) + (S.pending.hot || 0); }
 const isTab = (p) => (typeof p.tab === "function" ? p.tab() : !!p.tab);
 function renderNav() {
-  const pages = allowed().filter((p) => !p.nav || p.nav() || p.id === current);
-  const html = (p) => {
-    const b = p.id === "admin" && pendingCount() ? `<b class="badge">${pendingCount()}</b>` : "";
-    return `<button type="button" data-page="${p.id}" class="${current === p.id ? "on" : ""}"><span>${p.icon}</span> ${p.label}${b}</button>`;
-  };
-  $("#nav").innerHTML = pages.map(html).join("");
-  const tabs = pages.filter(isTab), more = pages.filter((p) => !isTab(p));
-  const moreOn = more.some((p) => p.id === current), badge = pendingCount() && more.some((p) => p.id === "admin") ? `<b class="badge">${pendingCount()}</b>` : "";
-  $("#tabbar").innerHTML = tabs.map((p) => `<button type="button" data-page="${p.id}" class="${current === p.id ? "on" : ""}"><span>${p.icon}</span>${p.label}</button>`).join("")
-    + (more.length ? `<button type="button" id="btnMore" class="${moreOn ? "on" : ""}"><span>☰</span>Thêm${badge}</button>` : "");
-  $("#btnMore")?.addEventListener("click", async () => {
-    const v = await modal(`<h3>Chức năng khác</h3><div class="sheet">${more.map((p) => `<button type="button" data-v="${p.id}"><span>${p.icon}</span>${p.label}${p.id === "admin" && pendingCount() ? ` <b class="badge">${pendingCount()}</b>` : ""}</button>`).join("")}</div>`);
+  const pages = allowed().filter((p) => !p.alias && (!p.nav || p.nav() || p.id === current));
+  const on = (p) => current === p.id || (p.group || []).includes(current);
+  const badgeOf = (p) => (p.id === "admin" && pendingCount() ? `<b class="badge">${pendingCount()}</b>` : "");
+  const main = pages.filter((p) => !p.more), extra = pages.filter((p) => p.more);
+  const tabs = main.filter(isTab), sheet = [...main.filter((p) => !isTab(p)), ...extra];
+  // Máy tính: chức năng chính + ☰ Thêm · Điện thoại: thanh dưới + ☰ Thêm (phần còn lại)
+  $("#nav").innerHTML = main.map((p) => `<button type="button" data-page="${p.id}" class="${on(p) ? "on" : ""}"><span>${p.icon}</span> ${p.label}${badgeOf(p)}</button>`).join("")
+    + (extra.length ? `<button type="button" class="nav-more ${extra.some(on) ? "on" : ""}" data-more="1"><span>☰</span> Thêm</button>` : "");
+  const moreBadge = pendingCount() && sheet.some((p) => p.id === "admin") ? `<b class="badge">${pendingCount()}</b>` : "";
+  $("#tabbar").innerHTML = tabs.map((p) => `<button type="button" data-page="${p.id}" class="${on(p) ? "on" : ""}"><span>${p.icon}</span>${p.label}</button>`).join("")
+    + (sheet.length ? `<button type="button" id="btnMore" data-more="2" class="${sheet.some(on) ? "on" : ""}"><span>☰</span>Thêm${moreBadge}</button>` : "");
+  const openSheet = async (list) => {
+    const v = await modal(`<h3>Chức năng khác</h3><div class="sheet">${list.map((p) => `<button type="button" data-v="${p.id}"><span>${p.icon}</span>${p.label}${badgeOf(p) ? " " + badgeOf(p) : ""}</button>`).join("")}</div>`);
     if (v) go(v);
-  });
+  };
+  $("#nav").querySelector("[data-more]")?.addEventListener("click", () => openSheet(extra));
+  $("#btnMore")?.addEventListener("click", () => openSheet(sheet));
 }
 
 async function go(id, params = {}) {

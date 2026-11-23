@@ -826,3 +826,7 @@ tr.sel td{background:var(--brand-soft)}
 .sd-item b{text-align:right}
 .sd-item small{grid-column:1/-1;margin-top:-4px}
 @media (max-width:400px){.td-kv b{font-size:14px}.td-mini>b{font-size:14.5px}.td-stats b{font-size:18px}}
+/* Xếp hạng gộp (Điểm · Sao · Của tôi) */
+.hub-tabs{margin-bottom:12px}
+.hub-body .page-h h1{font-size:19px}
+.hub-body .page-h p{font-size:12.5px}

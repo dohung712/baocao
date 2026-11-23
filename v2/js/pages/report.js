@@ -4,6 +4,7 @@ import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errM
 import { reportPng, shareOrDownload } from "../report-image.js";
 import { multLabel } from "../star-rules.js";
 import { openCum } from "../cumulative.js";
+import { keepTodo } from "../simplify.js";
 import { pgReport, isPgStaff } from "./report-pg.js";
 
 const LS_STAFF = "thidua-v2-staff";
@@ -24,7 +25,8 @@ export async function render(view, params, ctx) {
     return;
   }
   view.innerHTML = `
-    <div class="page-h"><div><h1>Báo cáo ca ngày</h1><p>Nộp trước <b>${esc(setting("CUTOFF_TIME", "22:20"))}</b> mỗi ngày<span class="hide-m"> · số liệu tính sao ở máy chủ</span></p></div></div>
+    <div class="page-h"><div><h1>Báo cáo ca ngày</h1><p>Nộp trước <b>${esc(setting("CUTOFF_TIME", "22:20"))}</b> mỗi ngày<span class="hide-m"> · số liệu tính sao ở máy chủ</span></p></div>
+      ${isHidden("history") ? "" : `<button class="btn small" type="button" data-page="history">🕒 Báo cáo đã nộp</button>`}</div>
     <div id="missing"></div>
     <div class="report-head ${isManager() ? "" : "solo"}">
       <label>Ngày làm việc<input type="date" id="rDate" max="${vnToday()}" value="${st.date}"></label>
@@ -69,7 +71,7 @@ async function refreshQuiet() {
 
 // Việc cần làm = todo_list + việc phát tờ rơi (D11)
 const todoAll = () => Promise.all([rpc("todo_list", { p_staff: st.staffId, p_date: st.date }).catch(() => []), rpc("flyer_todo", { p_staff: st.staffId, p_date: st.date }).catch(() => [])])
-  .then(([a, b]) => [...(Array.isArray(b) ? b : []), ...(Array.isArray(a) ? a : [])]);
+  .then(([a, b]) => keepTodo([...(Array.isArray(b) ? b : []), ...(Array.isArray(a) ? a : [])]));
 async function refreshTodo() {
   if (!$("#todoCard") || st.busy) return;
   try { st.todo = await todoAll(); drawTodo(); } catch { /* bỏ qua */ }

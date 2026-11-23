@@ -46,9 +46,6 @@ export async function render(view) {
   view.innerHTML = `
     <div class="page-h"><div><h1>Thi đua siêu thị</h1><p>${esc(setting("STORE_NAME", ""))} · TGDĐ (TGD) và Topzone (AAR)</p></div>
       <div class="row"><button class="btn small" id="sCopy" type="button">📋 Copy báo cáo</button><button class="btn small" id="sCopy70" type="button">🎯 Copy môn 70–100%</button></div></div>
-    ${isManager() ? `<details class="card" id="sPaste" style="margin-bottom:14px"><summary><b>📥 Dán số liệu lũy kế & realtime</b> <span class="muted small">— copy báo cáo nội bộ rồi dán vào đây</span></summary>
-      <textarea id="sText" style="margin-top:10px;min-height:120px" placeholder="Dán nguyên văn bảng báo cáo (có các dòng TỔNG, TGD_DNA_HCH, AAR_DNA_HCH)…"></textarea>
-      <div class="row" style="margin-top:8px"><button class="btn" id="sParse" type="button">⚡ Bóc tách</button><button class="btn primary" id="sSave" type="button" disabled>💾 Lưu cho mọi người</button><span class="muted small" id="sParseMsg"></span></div></details>` : ""}
     ${isManager() ? `<div id="sBiTools"></div>` : ""}
     <div id="sBi"></div>
     <h3 class="td-sec">🏁 Thi đua từng môn</h3>
@@ -60,7 +57,10 @@ export async function render(view) {
     </div>
     <div id="sTable"></div>
     ${isManager() ? `<div id="sBiApprove"></div>` : ""}
-    <div id="sBiStaff"></div>`;
+    <div id="sBiStaff"></div>
+    ${isManager() ? `<details class="card" id="sPaste" style="margin-top:18px"><summary class="small"><b>✍️ Nhập tay thi đua</b> <span class="muted">— chỉ dùng khi chưa có ảnh BI: dán báo cáo nội bộ, xem trước ở bảng phía trên</span></summary>
+      <textarea id="sText" style="margin-top:10px;min-height:120px" placeholder="Dán nguyên văn bảng báo cáo (có các dòng TỔNG, TGD_DNA_HCH, AAR_DNA_HCH)…"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" id="sParse" type="button">⚡ Bóc tách</button><button class="btn primary" id="sSave" type="button" disabled>💾 Lưu cho mọi người</button><span class="muted small" id="sParseMsg"></span></div></details>` : ""}`;
   $("#sBranch").onclick = (e) => { const b = e.target.closest("[data-b]"); if (!b) return; $$("#sBranch button").forEach((x) => x.classList.toggle("on", x === b)); st.branch = b.dataset.b; draw(); };
   $("#sFilter").onclick = (e) => { const b = e.target.closest("[data-f]"); if (!b) return; $$("#sFilter button").forEach((x) => x.classList.toggle("on", x === b)); st.filter = b.dataset.f; draw(); };
   $("#sTable").addEventListener("click", (e) => { const th = e.target.closest("th[data-sort]"); if (th) { sorter(st.sort, th.dataset.sort); draw(); } });

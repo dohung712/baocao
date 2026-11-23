@@ -2,6 +2,7 @@
 import { $, $$, esc, fmt, sign, starHtml, toast, modal, vnToday, addDays, weekStart, monthStart, dmy, dm, dow, shiftMonth, monthLabel, initials } from "../ui.js";
 import { sb, S, rpc, onChange, isManager, visibleStaff, staffById, setting, errMsg, isHidden } from "../store.js";
 import { openCum } from "../cumulative.js";
+import { cumManual } from "../simplify.js";
 
 let st;
 export async function render(view) {
@@ -63,7 +64,7 @@ async function load(quiet = false) {
           ${daily.length || adjR.length ? `<div class="tbl-wrap"><table><tbody>${daily.map((r) => `<tr><td>${dow(r.entry_date)} ${dmy(r.entry_date)}</td><td class="num"><b>${fmt(r.amount, 2)}</b></td><td class="num"><button class="btn small ghost" data-rev="${r.entry_date}|${r.amount}" type="button">Sửa</button></td></tr>`).join("")}
             ${adjR.map((r) => `<tr><td>${dmy(r.entry_date)} <span class="pill info">Điều chỉnh</span></td><td class="num ${r.amount >= 0 ? "pos" : "neg"}">${r.amount > 0 ? "+" : ""}${fmt(r.amount, 2)}</td><td class="small muted">${esc(r.note || "")} · ${esc(r.created_by || "")}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Chưa nhập doanh thu tháng này.</p>`}
           ${tgt[0]?.revenue_target != null ? `<p class="small muted">Target tháng: <b>${fmt(tgt[0].revenue_target, 1)}</b> ${esc(unit)}</p>` : ""}</div>`}
-        <div class="card"><div class="card-h"><h3>📋 Môn thi đua tháng</h3><button class="btn small primary" id="meCum" type="button" title="Thứ 2 hằng tuần hoặc khi quản lý mở khoá">📈 Cập nhật lũy kế</button></div>
+        <div class="card"><div class="card-h"><h3>📋 Môn thi đua tháng</h3>${cumManual() ? `<button class="btn small primary" id="meCum" type="button" title="Thứ 2 hằng tuần hoặc khi quản lý mở khoá">📈 Cập nhật lũy kế</button>` : ""}</div>
           ${me?.items_detail?.length ? `<div class="tbl-wrap"><table><thead><tr><th>Môn</th><th class="num">Lũy kế</th><th class="num">Target tiến độ</th><th class="num">%</th></tr></thead><tbody>${me.items_detail.map((i) => `<tr><td>${esc(i.name)}</td><td class="num">${fmt(i.actual, 2)}</td><td class="num">${fmt(i.target, 2)}</td><td class="num ${i.pct >= 100 ? "pos" : ""}"><b>${fmt(i.pct)}%</b></td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Quản lý chưa giao môn thi đua tháng.</p>`}
           <p class="small" style="margin:10px 0 4px"><b>Chuỗi chưa về hiện tại:</b> ${form.items.filter((i) => i.streak > 0).map((i) => `${esc(i.name)} <b class="${i.streak >= 3 ? "neg" : ""}">${i.streak}</b>`).join(" · ") || "không có ✅"}</p>
           <p class="small muted" style="margin:0">Tháng này: ${days.length} ngày báo cáo · về số ${items.length ? Math.round(ok * 100 / items.length) : 0}% (${ok}/${items.length})</p></div>
@@ -79,7 +80,7 @@ async function load(quiet = false) {
     $("#meRevAdd")?.addEventListener("click", () => editRevenue(today, ""));
     body.querySelectorAll("[data-rev]").forEach((b) => b.onclick = () => { const [d, v] = b.dataset.rev.split("|"); editRevenue(d, v); });
     $("#meRate").onclick = rateSelf;
-    $("#meCum").onclick = () => openCum(st.sid, () => load(true));
+    $("#meCum")?.addEventListener("click", () => openCum(st.sid, () => load(true)));
   } catch (e) { body.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 

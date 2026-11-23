@@ -27,5 +27,5 @@ export async function scoreDetail(rows, sid, { from, to, full = false } = {}) {
     <div class="sc-total">${fmt(r.rev_score, 1)} <small>DT</small> + ${fmt(r.contest_score, 1)} <small>TĐ</small> + ${fmt(r.service_score, 1)} <small>PV</small>${Number(r.violation_points) ? ` − ${fmt(r.violation_points)} <small>VP</small>` : ""} = <b class="star">${fmt(r.total, 1)}</b></div>
     ${sec("💰", "Doanh thu QĐ", r.rev_score, W.r, rev)}${sec("📋", "Thi đua", r.contest_score, W.c, con)}${sec("🤝", "Phục vụ", r.service_score, W.s, svc)}${sec("⚠️", "Vi phạm", -Number(r.violation_points || 0), 0, vp)}
     <div class="modal-actions">${sid === S.me?.staff_id ? `<button class="btn" data-v="me" type="button">👤 Xem trang Của tôi</button>` : ""}<button class="btn primary" data-v="ok">Đóng</button></div>`);
-  if (v === "me") document.querySelector('#nav [data-page="me"]')?.click();
+  if (v === "me") location.hash = "me";   // Xếp hạng → tab Của tôi
 }

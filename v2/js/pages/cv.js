@@ -8,16 +8,17 @@ import { tasks, pendingCount } from "./cv-tasks.js";
 import { zones } from "./cv-zones.js";
 import { flyer } from "./cv-flyer.js";
 import { violationDocs } from "./cv-vio.js";
+import { CV_DROPPED } from "../simplify.js";
 
 const TABS = [["tasks", "📋 Việc"], ["tiktok", "📱 TikTok"], ["clean", "🧹 Vệ sinh"], ["busy", "📅 Lịch bận"], ["rs", "🏃 Roadshow"], ["flyer", "📄 Tờ rơi"], ["vio", "📄 Biên bản"], ["fund", "💵 Quỹ"], ["stats", "📊 Thống kê"]];
 const RS_TIMES = (() => { const o = []; const add = (a, b) => { for (let t = a; t <= b; t += 30) o.push(String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0")); }; add(360, 630); add(900, 1080); return o; })();
-let tab = localStorage.getItem("thidua-v2-cv") || "tasks", ym = ymOf(vnToday()), root;
+let tab = localStorage.getItem("thidua-v2-cv") || "tiktok", ym = ymOf(vnToday()), root;
 const D = { tiktok: [], clean: [], busy: [], rs: [] };
 
 export async function render(view) {
   root = view;
   try { tab = localStorage.getItem("thidua-v2-cv") || tab; } catch { /* bỏ qua */ }
-  view.innerHTML = `<div class="page-h"><div><h1>Công việc (CV)</h1><p>Việc cần làm, TikTok, lịch vệ sinh, lịch bận/OFF, roadshow, phát tờ rơi, quỹ thu chi và thống kê</p></div></div>
+  view.innerHTML = `<div class="page-h"><div><h1>Công việc (CV)</h1><p>TikTok, lịch vệ sinh, lịch bận/OFF, roadshow, phát tờ rơi, biên bản, quỹ thu chi · giao việc dùng 📋 Giao việc</p></div></div>
     <div class="subtabs" id="cvTabs"></div><div id="cvBody"></div>`;
   $("#cvTabs").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) { tab = b.dataset.t; localStorage.setItem("thidua-v2-cv", tab); draw(); } };
   await draw();
@@ -40,7 +41,7 @@ async function load(table, col, from, to) {
   if (error) throw error; return data;
 }
 async function draw(quiet = false) {
-  const tabs = TABS.filter(([id]) => !isHidden("cv." + id));
+  const tabs = TABS.filter(([id]) => !CV_DROPPED.has(id) && !isHidden("cv." + id));   // Việc + Thống kê đã bỏ (simplify.js)
   if (!tabs.length) { $("#cvBody").innerHTML = `<div class="empty">Không có chức năng nào đang mở.</div>`; return; }
   if (!tabs.some(([id]) => id === tab)) tab = tabs[0][0];
   // NV khi tab CV ẩn trên menu (HIDE.employee có "cv.nav"): mở đúng 1 chức năng từ 🏠 Hôm nay, không hiện dải 8 tab

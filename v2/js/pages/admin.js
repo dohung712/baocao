@@ -493,7 +493,7 @@ const NUM_SETTINGS = [
 export const FEATURES = [
   ["today", "🏠 Hôm nay (việc cần làm, nộp ảnh)"], ["jobs", "📋 Giao việc (với quản lý)"], ["cv.nav", "· Tab CV trên thanh menu (ẩn: NV vào từng chức năng từ 🏠 Hôm nay)"],
   ["report", "📝 Báo cáo"], ["report.revenue", "· Ô doanh thu QĐ trong báo cáo"], ["report.media", "· Báo cáo truyền thông ngày"], ["report.extra", "· Bán thêm ngoài thi đua"],
-  ["cv", "🗂️ CV"], ["cv.tasks", "· Việc (triển khai, giao việc)"], ["cv.tiktok", "· TikTok"], ["cv.clean", "· Vệ sinh"], ["cv.busy", "· Lịch bận"], ["cv.rs", "· Roadshow"], ["cv.flyer", "· Phát tờ rơi"], ["cv.vio", "· Biên bản vi phạm"], ["cv.fund", "· Quỹ thu chi"], ["cv.stats", "· Thống kê"],
+  ["cv", "🗂️ CV"], ["cv.tiktok", "· TikTok"], ["cv.clean", "· Vệ sinh"], ["cv.busy", "· Lịch bận"], ["cv.rs", "· Roadshow"], ["cv.flyer", "· Phát tờ rơi"], ["cv.vio", "· Biên bản vi phạm"], ["cv.fund", "· Quỹ thu chi"],
   ["score", "🏅 Xếp hạng điểm"], ["me", "👤 Của tôi"], ["ranking", "🏆 BXH sao"], ["history", "🕒 Lịch sử"], ["store", "🏢 Siêu thị"], ["assistant", "🤖 Trợ lý"], ["rules", "📖 Rule"], ["admin", "⚙️ Quản lý (với quản lý)"],
 ];
 async function settings(body) {

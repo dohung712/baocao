@@ -12,11 +12,12 @@ import { slotText } from "../lib-shift.js";
 import { pushState, enablePush, disablePush, isIOS } from "../push.js";
 import { myBiHtml, loadBi } from "../bi.js";
 import { scoreDetail } from "../score-detail.js";
+import { keepTodo } from "../simplify.js";
 
 const APPS = [
   ["report", "📝", "Báo cáo ngày"], ["cv:tiktok", "🎬", "TikTok"], ["cv:clean", "🧹", "Vệ sinh"], ["cv:flyer", "📄", "Tờ rơi"],
-  ["cv:busy", "🗓️", "Lịch bận / OFF"], ["cv:rs", "🏍️", "Roadshow"], ["cv:tasks", "📢", "Triển khai"], ["score", "🏅", "Xếp hạng"],
-  ["me", "👤", "Của tôi"], ["ranking", "🏆", "BXH sao"], ["history", "🕒", "Lịch sử"], ["cv:vio", "📋", "Biên bản"],
+  ["cv:busy", "🗓️", "Lịch bận / OFF"], ["cv:rs", "🏍️", "Roadshow"], ["score", "🏅", "Xếp hạng"],
+  ["history", "🕒", "Báo cáo đã nộp"], ["cv:vio", "📋", "Biên bản"],
   ["cv:fund", "💵", "Quỹ"], ["store", "🏢", "Siêu thị"], ["assistant", "🤖", "Trợ lý"], ["rules", "📖", "Rule"],
 ];
 const appOk = (k) => k.startsWith("cv:") ? !isHidden("cv") && !isHidden("cv." + k.slice(3)) : !isHidden(k);
@@ -53,7 +54,7 @@ async function load() {
     if (t !== tok || !$("#tdBody")) return;
     if (jr.error) throw jr.error;
     J = jr.data || []; shifts = sr.data || []; biHtml = bh || ""; BI = bi; CT = ct?.data || []; BOARD = Array.isArray(bd) ? bd : [];
-    legacy = [...(Array.isArray(td) ? td : []), ...(Array.isArray(fl) ? fl.map((f) => ({ ...f, go: "cv:flyer" })) : [])];
+    legacy = keepTodo([...(Array.isArray(td) ? td : []), ...(Array.isArray(fl) ? fl.map((f) => ({ ...f, go: "cv:flyer" })) : [])]);
     draw();
   } catch (e) { if ($("#tdBody")) $("#tdBody").innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
