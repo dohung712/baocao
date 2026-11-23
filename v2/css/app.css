@@ -928,3 +928,14 @@ tr.click{cursor:pointer}
 .ag-health.ok{border-color:var(--ok)}
 .ag-health.warn{border-color:var(--warn,#d89614)}
 .ag-health.bad{border-color:var(--bad);font-weight:600}
+
+/* D15 Co van AI */
+.av-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px}
+.av-card.old{opacity:.85}
+.av-text{white-space:pre-line;line-height:1.5;margin-top:4px;font-size:14px}
+.av-chat{display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;padding:4px 0}
+.av-msg{white-space:pre-line;padding:9px 12px;border-radius:14px;max-width:88%;line-height:1.45;font-size:14px}
+.av-msg.me{align-self:flex-end;background:var(--brand,#2563eb);color:#fff}
+.av-msg.ai{align-self:flex-start;border:1px solid var(--line)}
+.av-form{display:flex;gap:8px;align-items:flex-end;position:sticky;bottom:0;padding:6px 0;background:var(--bg)}
+.av-form textarea{flex:1}
