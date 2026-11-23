@@ -4,6 +4,7 @@ import { sb, S, rpc, onChange, isManager, setting, errMsg, staffById } from "../
 import * as BI from "../bi.js";
 const { loadBi, biRevenueHtml, biStaffHtml, biToolsHtml, bindBiTools } = BI;
 import { loadProposals, proposalsHtml, bindProposals } from "../bi-approve.js";
+import { openStaffInsight } from "../staff-insight.js";
 
 // Bóc tách văn bản báo cáo nội bộ (giữ đúng cách làm của bản cũ)
 export function parseStoreText(text) {
@@ -97,6 +98,7 @@ async function load() {
   if (bi) {
     $("#sBi").innerHTML = biRevenueHtml(bi);
     $("#sBiStaff").innerHTML = biStaffHtml(bi, (id) => staffById(id)?.name);
+    $("#sBiStaff").onclick = (e) => { const r = e.target.closest("[data-insight]"); if (r) openStaffInsight(r.dataset.insight); };   // B16d phân tích NV
     const tools = $("#sBiTools");
     const ap = $("#sBiApprove");
     if (ap && props) { const sel = new Set([...ap.querySelectorAll(".bi-prop")].filter((c) => !c.querySelector(".bp-sel")?.checked).map((c) => c.dataset.pid));

@@ -80,9 +80,9 @@ export async function gemini(key: string, payload: Record<string, unknown>) {
     tried.add(m);
     for (let attempt = 0; attempt < 2; attempt++) {
       let r: Response;
-      try { r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body, signal: AbortSignal.timeout(75000) }); }
-      catch (e) {   // quá 75 giây: dừng gọn (Edge Function chỉ được chạy 150 giây / lần)
-        if ((e as Error).name === "TimeoutError" || /abort|timeout/i.test(String(e))) { errs.push(`${m}: AI chậm quá 75 giây`); return { stop: true }; }
+      try { r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body, signal: AbortSignal.timeout(95000) }); }
+      catch (e) {   // quá 95 giây: dừng gọn (Edge Function chỉ được chạy 150 giây / lần)
+        if ((e as Error).name === "TimeoutError" || /abort|timeout/i.test(String(e))) { errs.push(`${m}: AI chậm quá 95 giây`); return { stop: true }; }
         errs.push(`${m}: ${String((e as Error).message).slice(0, 100)}`); return null;
       }
       const j = await r.json().catch(() => ({}));

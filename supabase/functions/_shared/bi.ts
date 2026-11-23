@@ -37,8 +37,21 @@ export const BI_SCHEMA = {
         complete_pct: N("Hoàn thành ..%"), revenue_qd: N("DOANH THU QĐ, triệu đồng"), revenue_target: N("MT (target DT), triệu đồng"), pct_target: N("% TARGET"),
         bills: I("SỐ LƯỢT BILL BÁN HÀNG"), attach_pct: N("% BÁN KÈM"), erp_points: N("ĐIỂM THƯỞNG ERP"), contest_pct: N("% lớn ở mục THI ĐUA"),
         contest_passed: I("số chương trình đạt"), contest_total: I("tổng số chương trình tính tỷ lệ"), avg_price: N("TB SẢN PHẨM CHÍNH, triệu đồng"),
+        // B16d — thẻ mẫu mới: số "TB" trong chip nhỏ cạnh mỗi số = trung bình nhóm để so sánh
+        revenue_avg: N("TB của DOANH THU QĐ (chip 'TB 523.8 tr'), triệu"), pct_target_avg: N("TB của % TARGET (chip 'TB 88%')"),
+        bills_avg: N("TB của SỐ LƯỢT BILL"), conversion_pct: N("% QUY ĐỔI"), installment_pct: N("% TRẢ CHẬM"), installment_avg: N("TB của % TRẢ CHẬM"),
+        attach_avg: N("TB của % BÁN KÈM"), erp_avg: N("TB của ĐIỂM THƯỞNG ERP"), erp_per_hour: N("ĐIỂM THƯỞNG / GIỜ CÔNG"), erp_per_hour_avg: N("TB của ĐIỂM THƯỞNG / GIỜ CÔNG"),
+        dtqd_per_hour: N("ĐTQĐ / GIỜ CÔNG"), dtqd_per_hour_avg: N("TB của ĐTQĐ / GIỜ CÔNG"), avg_price_avg: N("TB của TB SẢN PHẨM CHÍNH, triệu"),
+        contest_store_avg: N("THI ĐUA: 'so với TB siêu thị x%' → x"), contest_near: I("THI ĐUA: số 'Gần đạt'"), contest_need: I("THI ĐUA: số 'Cần cố gắng'"), contest_nodata: I("THI ĐUA: số 'Chưa có số'"),
       },
     },
+    sections: { type: "ARRAY", nullable: true, description: "Thẻ NV: các ô điểm từng mảng ở đầu thẻ, vd DOANH THU 4/6", items: { type: "OBJECT", properties: { name: { type: "STRING" }, got: N("số đạt"), total: N("tổng") }, required: ["name"] } },
+    notes: { type: "ARRAY", nullable: true, description: "Thẻ NV: các dòng nhận xét (★ … / ● …) dưới các ô điểm, nguyên văn", items: { type: "STRING" } },
+    efficiency: { type: "ARRAY", nullable: true, description: "Thẻ NV: mục HIỆU QUẢ KHAI THÁC — mỗi dòng '% Phụ kiện 128%' (so với 100% = TB)", items: { type: "OBJECT", properties: { name: { type: "STRING" }, pct: N("% bên phải, dấu gạch → null") }, required: ["name"] } },
+    unit_prices: { type: "ARRAY", nullable: true, description: "Thẻ NV: mục ĐƠN GIÁ — mỗi ô (TB SẢN PHẨM CHÍNH, TIVI, TỦ LẠNH, MÁY GIẶT, MÁY LẠNH, MLN, ĐIỆN THOẠI, LAPTOP)", items: { type: "OBJECT", properties: { name: { type: "STRING" }, value: N("triệu, dấu gạch → null"), avg: N("chip TB, triệu") }, required: ["name"] } },
+    category_mix: { type: "ARRAY", nullable: true, description: "Thẻ NV: TỶ TRỌNG NGÀNH HÀNG — tên + %", items: { type: "OBJECT", properties: { name: { type: "STRING" }, pct: N("%") }, required: ["name"] } },
+    monthly: { type: "ARRAY", nullable: true, description: "Thẻ NV: DOANH THU QĐ TỪNG THÁNG — mỗi cột: tháng (dưới cột) + số (trên cột)", items: { type: "OBJECT", properties: { month: T("YYYY-MM"), value: N("triệu") }, required: ["month"] } },
+    nodata_programs: { type: "ARRAY", nullable: true, description: "Thẻ NV: danh sách sau 'Chưa có số liệu (n):'", items: { type: "STRING" } },
     programs: {
       type: "ARRAY",
       items: {
@@ -71,6 +84,13 @@ Có 3 loại màn hình:
    staff.score / score_max từ vòng "13 /27"; staff.complete_pct = "Hoàn thành ..%"; staff.revenue_qd = "DOANH THU QĐ"; staff.revenue_target = số sau "MT"; staff.pct_target = "% TARGET";
    staff.bills = "SỐ LƯỢT BILL BÁN HÀNG"; staff.attach_pct = "% BÁN KÈM"; staff.erp_points = "ĐIỂM THƯỞNG ERP"; staff.contest_pct = số % lớn ở mục THI ĐUA;
    staff.contest_passed / contest_total từ "3/13 chương trình đạt"; programs = các ô chương trình trong mục THI ĐUA (name + pct, actual / target / forecast = null); staff.avg_price = "TB SẢN PHẨM CHÍNH".
+   Thẻ mẫu mới (nhiều mục màu): đọc thêm ĐỦ các mục — mỗi số thường có chip nhỏ "↓ TB x" / "↑ TB x" = trung bình nhóm → điền vào trường *_avg tương ứng; chip "MT 811.0 tr" = staff.revenue_target.
+   sections = các ô đầu thẻ (DOANH THU 4/6, NĂNG SUẤT 0/3, HIỆU QUẢ 1/9, ĐƠN GIÁ 0/8, THI ĐUA 1/1); notes = các dòng nhận xét ★ / ● nguyên văn;
+   DOANH THU: revenue_qd, pct_target, bills, conversion_pct (% QUY ĐỔI), installment_pct (% TRẢ CHẬM), attach_pct (% BÁN KÈM) + các TB;
+   NĂNG SUẤT: erp_points, erp_per_hour (ĐIỂM THƯỞNG / GIỜ CÔNG), dtqd_per_hour (ĐTQĐ / GIỜ CÔNG) + các TB;
+   efficiency = MỌI dòng của HIỆU QUẢ KHAI THÁC (bỏ tiền tố "% ", vd name "Phụ kiện", pct 128);
+   THI ĐUA: contest_pct = số % lớn, contest_store_avg từ "so với TB siêu thị 6%", contest_passed/total từ "2/24 chương trình đạt", contest_near (Gần đạt), contest_need (Cần cố gắng), contest_nodata (Chưa có số); programs = MỌI ô chương trình (name + pct); nodata_programs = danh sách sau "Chưa có số liệu";
+   unit_prices = MỌI ô ĐƠN GIÁ (TB SẢN PHẨM CHÍNH, TIVI, TỦ LẠNH, MÁY GIẶT, MÁY LẠNH, MLN, ĐIỆN THOẠI, LAPTOP) với value + avg; category_mix = TỶ TRỌNG NGÀNH HÀNG; monthly = DOANH THU QĐ TỪNG THÁNG (06/2026 → month "2026-06").
 Ảnh khác: kind="other".
 Thời gian: captured_at từ "Cập nhật lúc HH:MM:SS DD/MM/YYYY" hoặc "Chụp lúc HH:MM DD/MM/YYYY" (trả "YYYY-MM-DD HH:MM"); data_through từ "Số tới hết ngày 21/11";
 nếu chỉ có "lũy kế 21/30 ngày" thì data_through là ngày 21 của tháng đó; month = "YYYY-MM" (lấy năm từ giờ cập nhật / chụp).

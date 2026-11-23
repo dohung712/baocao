@@ -170,7 +170,7 @@ async function biAuto() {
   const h = Number(vnParts().hm.slice(0, 2));
   if (h < 6 || h >= 23) return null;
   if (!(await driveReady()) || (await driveVersion()) < 3) return null;
-  const r = await biSync("tu-dong", 3, [], 35000);   // ≤ 35 giây bắt đầu ảnh mới (còn chỗ cho Telegram trong 150 giây)
+  const r = await biSync("tu-dong", 3, [], 25000);   // ≤ 25 giây bắt đầu ảnh mới (còn chỗ cho Telegram trong 150 giây)
   return r.read || r.errors ? r : null;
 }
 

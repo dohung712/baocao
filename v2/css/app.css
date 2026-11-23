@@ -874,3 +874,33 @@ tr.sel td{background:var(--brand-soft)}
 .ts-p{font-size:12.5px;background:var(--brand-soft);color:var(--brand);border-radius:999px;padding:2px 8px}
 .ts-p.me{background:var(--brand);color:var(--card);font-weight:700}
 .ts-n{font-weight:700;text-align:right;color:var(--muted)}
+/* B16d Phân tích NV theo BI */
+.si-h{display:flex;justify-content:space-between;gap:8px}
+.si-secs{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px;margin:10px 0}
+.si-sec{display:flex;flex-direction:column;border-radius:10px;padding:6px 8px;background:var(--bg);border:1px solid var(--line)}
+.si-sec small{font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase}
+.si-sec b{font-size:15px}
+.si-sec.ok{border-color:var(--ok);background:var(--ok-soft)}.si-sec.mid{border-color:var(--warn);background:var(--warn-soft)}.si-sec.low{border-color:var(--bad);background:var(--bad-soft)}
+.si-t{font-size:14px;margin:14px 0 6px}
+.si-say{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.si-say li{font-size:13px;line-height:1.4;padding:6px 8px;border-radius:8px;background:var(--bg);border-left:3px solid var(--line2)}
+.si-say li.ok{border-left-color:var(--ok)}.si-say li.bad{border-left-color:var(--bad)}.si-say li.warn{border-left-color:var(--warn)}
+.si-notes{margin:6px 0 0;font-style:italic}
+.si-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px}
+.si-kv{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.si-kv small{font-size:11px;color:var(--muted)}
+.si-kv b{font-size:15px;font-variant-numeric:tabular-nums}
+.si-bar{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr 48px;gap:6px;align-items:center;font-size:12.5px;margin:3px 0}
+.si-bn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.si-bt{position:relative;height:8px;border-radius:99px;background:var(--line)}
+.si-bt i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--bad)}
+.si-bt i.mid{background:var(--warn)}.si-bt i.ok{background:var(--ok)}
+.si-mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.si-bv{text-align:right;font-variant-numeric:tabular-nums}
+.si-mon{display:flex;align-items:flex-end;gap:6px;height:130px;margin:6px 0}
+.si-mon>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:2px}
+.si-mon i{width:100%;max-width:38px;background:var(--brand2);border-radius:6px 6px 0 0;position:relative;display:block}
+.si-mon i.cur{background:var(--accent)}
+.si-mon i em{position:absolute;bottom:100%;left:0;right:0;background:var(--accent);opacity:.3;border-radius:6px 6px 0 0}
+.si-mon small{font-size:10.5px;color:var(--muted)}
+tr.click{cursor:pointer}

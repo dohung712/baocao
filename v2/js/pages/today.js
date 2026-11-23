@@ -14,6 +14,7 @@ import { myBiHtml, loadBi } from "../bi.js";
 import { scoreDetail } from "../score-detail.js";
 import { keepTodo } from "../simplify.js";
 import { openTeamShift } from "../team-shift.js";
+import { openStaffInsight } from "../staff-insight.js";
 
 const APPS = [
   ["report", "📝", "Báo cáo ngày"], ["cv:tiktok", "🎬", "TikTok"], ["cv:clean", "🧹", "Vệ sinh"], ["cv:flyer", "📄", "Tờ rơi"],
@@ -211,6 +212,7 @@ async function onClick(e) {
   const rk = e.target.closest("[data-rk]");
   if (rk) { rkScope = rk.dataset.rk; try { localStorage.setItem("thidua-v2-td-rk", rkScope); } catch { /* bỏ qua */ } draw(); document.getElementById("td-rk")?.scrollIntoView({ block: "start" }); return; }
   if (e.target.closest("[data-team]")) return openTeamShift();
+  const ins = e.target.closest("[data-insight]"); if (ins) return openStaffInsight(ins.dataset.insight);
   if (e.target.closest("[data-assign]")) { try { localStorage.setItem("thidua-v2-jobs", "assign"); } catch { /* bỏ qua */ } return goFn("jobs"); }
   const va = e.target.closest("[data-viewas]");
   if (va) { document.dispatchEvent(new CustomEvent("viewas", { detail: va.dataset.viewas })); return; }

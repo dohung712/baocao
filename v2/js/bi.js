@@ -91,17 +91,17 @@ export function biStaffHtml(bi, nameOf) {
   if (!bi.cards.length) return "";
   const rows = bi.cards.map((r) => {
     const s = r.data?.staff || {}, el = n(r.data?.days_elapsed) ?? bi.days.el, tot = n(r.data?.days_total) ?? bi.days.tot;
-    return { r, s, p: plan(n(s.revenue_qd) || 0, n(s.revenue_target), el, tot), name: (r.staff_id && nameOf(r.staff_id)) || s.name || "?" };
+    return { r, s, p: plan(n(s.revenue_qd) || 0, n(s.revenue_target), el, tot), name: (r.staff_id && nameOf(r.staff_id)) || s.name || "?", c: summaryCells(r) };
   }).sort((a, b) => (b.p.fcPct ?? -1) - (a.p.fcPct ?? -1));
   return `<h3 class="td-sec">👥 Nhân viên theo BI · ${rows.length} <span class="tiny muted">· 🕒 cập nhật ${upd(bi.cardAt) || "—"}</span></h3>
-    <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Nhân viên</th><th class="num">DT QĐ</th><th class="num">MT</th><th>% dự kiến</th><th class="num">Còn thiếu</th><th class="num">Cần/ngày</th><th class="num">Bill</th><th class="num">Bán kèm</th><th class="num">Thi đua đạt</th><th class="num">Hạng nhóm</th></tr></thead><tbody>
-    ${rows.map(({ r, s, p, name }, i) => `<tr><td class="muted">${i + 1}</td><td><b>${esc(name)}</b><div class="tiny muted">${esc(r.staff_id || s.code || "")}${s.dept ? " · " + esc(s.dept) : ""}${r.staff_id ? "" : ' · <span class="pill warn">chưa khớp mã</span>'}</div></td>
+    <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Nhân viên</th><th class="num">DT QĐ</th><th class="num">MT</th><th>% dự kiến</th><th class="num">Còn thiếu</th><th class="num">Cần/ngày</th><th>Đang tập trung</th><th class="num">Trả chậm</th><th class="num">Thi đua / TB</th><th class="num">So T. trước</th><th class="num">Bill</th><th class="num">Bán kèm</th><th class="num">Thi đua đạt</th><th class="num">Hạng nhóm</th></tr></thead><tbody>
+    ${rows.map(({ r, s, p, name, c }, i) => `<tr class="click" ${r.staff_id ? `data-insight="${esc(r.staff_id)}"` : ""}><td class="muted">${i + 1}</td><td><b>${esc(name)}</b><div class="tiny muted">${esc(r.staff_id || s.code || "")}${s.dept ? " · " + esc(s.dept) : ""}${r.staff_id ? "" : ' · <span class="pill warn">chưa khớp mã</span>'}</div></td>
       <td class="num">${money(p.actual)}</td><td class="num">${money(p.target)}</td>
       <td><div class="row" style="gap:6px;flex-wrap:nowrap"><div class="bar ${barCls(p.fcPct ?? 0)}" style="width:70px"><i style="width:${Math.min(100, p.fcPct ?? 0)}%"></i></div><b class="small">${pctTxt(p.fcPct)}</b></div></td>
       <td class="num">${p.gap === null ? "—" : p.gap ? money(p.gap) : "✅"}</td><td class="num">${p.gap ? money(p.perDay) : "—"}</td>
       <td class="num">${s.bills ?? "—"}</td><td class="num">${s.attach_pct === null || s.attach_pct === undefined ? "—" : fmt(s.attach_pct, 1) + "%"}</td>
       <td class="num">${s.contest_total ? `${s.contest_passed ?? 0}/${s.contest_total}` : "—"}</td><td class="num">${s.group_rank ? `${s.group_rank}/${s.group_size ?? "?"}` : "—"}</td></tr>`).join("")}
-    </tbody></table></div><p class="tiny muted">Tiền tính bằng triệu đồng. % dự kiến = tốc độ bán hiện tại kéo tới hết tháng so với MT.</p>`;
+    </tbody></table></div><p class="tiny muted">Tiền tính bằng triệu đồng. % dự kiến = tốc độ bán hiện tại kéo tới hết tháng so với MT. So T. trước = DT dự kiến tháng này so với DT tháng trước. <b>Bấm 1 nhân viên để xem phân tích chi tiết.</b></p>`;
 }
 
 // Thanh công cụ QL + danh sách ảnh đọc lỗi
@@ -185,6 +185,7 @@ export async function myBiHtml(staffId) {
       <span><small>Còn thiếu</small><b>${p.gap === null ? "—" : p.gap ? money(p.gap) + " tr" : "✅ Đạt"}</b></span>
       <span><small>Cần bán / ngày${p.left !== null ? ` (${p.left} ngày)` : ""}</small><b class="star">${p.gap ? money(p.perDay) + " tr" : "—"}</b></span>
       <span><small>Thi đua đạt</small><b>${s.contest_total ? `${s.contest_passed ?? 0}/${s.contest_total}` : "—"}</b></span></div>
+    <button class="btn small" type="button" data-insight="${esc(staffId)}" style="align-self:flex-start">📊 Xem phân tích</button>
     ${weak.length ? `<p class="small" style="margin:8px 0 0">Cần đẩy: ${weak.map((x) => `<span class="pill ${x.pct < 50 ? "bad" : "warn"}">${esc(x.name)} ${fmt(x.pct, 0)}%</span>`).join(" ")}</p>` : ""}
   </div>`;
 }

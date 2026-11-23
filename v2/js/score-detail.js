@@ -26,6 +26,7 @@ export async function scoreDetail(rows, sid, { from, to, full = false } = {}) {
     <p class="small muted" style="margin:-4px 0 10px">${esc(r.dept || "")} · ${dmy(from)} → ${dmy(to)} · ${full ? "so target cả tháng" : "so tiến độ (target chia theo số ngày đã qua)"}</p>
     <div class="sc-total">${fmt(r.rev_score, 1)} <small>DT</small> + ${fmt(r.contest_score, 1)} <small>TĐ</small> + ${fmt(r.service_score, 1)} <small>PV</small>${Number(r.violation_points) ? ` − ${fmt(r.violation_points)} <small>VP</small>` : ""} = <b class="star">${fmt(r.total, 1)}</b></div>
     ${sec("💰", "Doanh thu QĐ", r.rev_score, W.r, rev)}${sec("📋", "Thi đua", r.contest_score, W.c, con)}${sec("🤝", "Phục vụ", r.service_score, W.s, svc)}${sec("⚠️", "Vi phạm", -Number(r.violation_points || 0), 0, vp)}
-    <div class="modal-actions">${sid === S.me?.staff_id ? `<button class="btn" data-v="me" type="button">👤 Xem trang Của tôi</button>` : ""}<button class="btn primary" data-v="ok">Đóng</button></div>`);
+    <div class="modal-actions"><button class="btn" data-v="bi" type="button">📊 Phân tích BI</button>${sid === S.me?.staff_id ? `<button class="btn" data-v="me" type="button">👤 Xem trang Của tôi</button>` : ""}<button class="btn primary" data-v="ok">Đóng</button></div>`);
   if (v === "me") location.hash = "me";   // Xếp hạng → tab Của tôi
+  if (v === "bi") { const { openStaffInsight } = await import("./staff-insight.js"); openStaffInsight(sid); }
 }
