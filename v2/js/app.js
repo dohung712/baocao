@@ -41,19 +41,19 @@ let current = null, cleanup = null, navToken = 0;
 
 function show(id) { for (const x of ["boot", "login", "app"]) $("#" + x).hidden = x !== id; }
 
-function pendingCount() { return (S.pending.proposals || 0) + (S.pending.changes || 0) + (S.pending.hot || 0); }
+function pendingCount() { return (S.pending.proposals || 0) + (S.pending.changes || 0) + (S.pending.hot || 0) + (S.pending.agent || 0); }
 const isTab = (p) => (typeof p.tab === "function" ? p.tab() : !!p.tab);
 function renderNav() {
   const pages = allowed().filter((p) => !p.alias && (!p.nav || p.nav() || p.id === current));
   const on = (p) => current === p.id || (p.group || []).includes(current);
-  const badgeOf = (p) => (p.id === "admin" && pendingCount() ? `<b class="badge">${pendingCount()}</b>` : "");
+  const badgeOf = (p) => (p.id === "duyet" && pendingCount() ? `<b class="badge">${pendingCount()}</b>` : "");   // D14b: mọi mục chờ duyệt gom về 📥 Duyệt
   const main = pages.filter((p) => !p.more), extra = pages.filter((p) => p.more);
   const tabs = main.filter(isTab), sheet = [...main.filter((p) => !isTab(p)), ...extra];
   // Máy tính: chức năng chính + ☰ Thêm · Điện thoại: thanh dưới + ☰ Thêm (phần còn lại)
   $("#nav").innerHTML = main.map((p) => `<button type="button" data-page="${p.id}" class="${on(p) ? "on" : ""}"><span>${p.icon}</span> ${p.label}${badgeOf(p)}</button>`).join("")
     + (extra.length ? `<button type="button" class="nav-more ${extra.some(on) ? "on" : ""}" data-more="1"><span>☰</span> Thêm</button>` : "");
-  const moreBadge = pendingCount() && sheet.some((p) => p.id === "admin") ? `<b class="badge">${pendingCount()}</b>` : "";
-  $("#tabbar").innerHTML = tabs.map((p) => `<button type="button" data-page="${p.id}" class="${on(p) ? "on" : ""}"><span>${p.icon}</span>${p.label}</button>`).join("")
+  const moreBadge = pendingCount() && sheet.some((p) => p.id === "duyet") ? `<b class="badge">${pendingCount()}</b>` : "";
+  $("#tabbar").innerHTML = tabs.map((p) => `<button type="button" data-page="${p.id}" class="${on(p) ? "on" : ""}"><span>${p.icon}</span>${p.label}${badgeOf(p)}</button>`).join("")
     + (sheet.length ? `<button type="button" id="btnMore" data-more="2" class="${sheet.some(on) ? "on" : ""}"><span>☰</span>Thêm${moreBadge}</button>` : "");
   const openSheet = async (list) => {
     const v = await modal(`<h3>Chức năng khác</h3><div class="sheet">${list.map((p) => `<button type="button" data-v="${p.id}"><span>${p.icon}</span>${p.label}${badgeOf(p) ? " " + badgeOf(p) : ""}</button>`).join("")}</div>`);

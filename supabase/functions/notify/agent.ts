@@ -170,7 +170,18 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
     const t = times.find((x) => toMin(vn.hm) >= toMin(x) && toMin(vn.hm) < toMin(x) + 15);
     if (t && (await once(vn.date, "digest-" + t))) {
       const open: any[] = await rest("agent_items?select=id,kind,title,detail,urgent,needs_decision,digest_at,created_at&status=eq.open&order=urgent.desc,created_at&limit=300");
-      const LABEL: Record<string, string> = { late: "⏰ Việc trễ — cho nộp bù / ghi trễ", req_delay: "🙋 NV xin dời hạn", req_excuse: "🙋 NV xin miễn việc", no_shift: "🗓️ Lịch ca", rt: "📄 Trang tính việc", bi: "📊 Ảnh BI", bi_stuck: "📊 Số BI kẹt", no_push: "🔕 Chưa bật thông báo", shift_conflict: "⚠️ Lịch ca trùng bận", weekly: "📈 Phân tích tuần" };
+      const LABEL: Record<string, string> = { sys: "🛠️ Lỗi chạy tự động", late: "⏰ Việc trễ — cho nộp bù / ghi trễ", req_delay: "🙋 NV xin dời hạn", req_excuse: "🙋 NV xin miễn việc", no_shift: "🗓️ Lịch ca", rt: "📄 Trang tính việc", bi: "📊 Ảnh BI", bi_stuck: "📊 Số BI kẹt", no_push: "🔕 Chưa bật thông báo", shift_conflict: "⚠️ Lịch ca trùng bận", weekly: "📈 Phân tích tuần" };
+      // D14b: thưởng nóng / thưởng bán thêm / sửa báo cáo chờ duyệt (trước nằm riêng ở Quản lý) → cùng 1 hộp
+      const [hb, xp, cr]: any[][] = await Promise.all([
+        rest(`hot_bonuses?select=staff_id,item_name&status=eq.${encodeURIComponent("Chờ duyệt")}&limit=100`).catch(() => []),
+        rest(`extra_proposals?select=staff_id,content&status=eq.${encodeURIComponent("Chờ duyệt")}&limit=100`).catch(() => []),
+        rest("change_requests?select=staff_id,report_date&status=eq.pending&limit=100").catch(() => []),
+      ]);
+      const ql = [...hb.map((x) => ({ kind: "ql", needs_decision: true, title: `🔥 Thưởng nóng: ${name(x.staff_id)} · ${x.item_name}` })),
+        ...xp.map((x) => ({ kind: "ql", needs_decision: true, title: `🎁 Bán thêm: ${name(x.staff_id)} · ${String(x.content || "").slice(0, 60)}` })),
+        ...cr.map((x) => ({ kind: "ql", needs_decision: true, title: `✏️ Sửa báo cáo: ${name(x.staff_id)} · ${String(x.report_date).slice(8)}/${String(x.report_date).slice(5, 7)}` }))];
+      LABEL.ql = "🛂 Thưởng nóng / bán thêm / sửa báo cáo";
+      open.push(...ql);
       const need = open.filter((x) => x.needs_decision), info = open.filter((x) => !x.needs_decision);
       const L = [`📥 <b>TRỢ LÝ VẬN HÀNH · ${t} ${vn.date.slice(8)}/${vn.date.slice(5, 7)}</b>`, esc(String(cfg.STORE_NAME || "")), "",
         need.length ? `Cần anh/chị duyệt: <b>${need.length}</b> mục${info.length ? ` · cần biết: ${info.length}` : ""}` : `✅ Không có mục nào cần duyệt${info.length ? ` · cần biết: ${info.length}` : ""}`];
@@ -187,7 +198,8 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
       }
       L.push("", `Duyệt nhanh: ${APP}#duyet`);
       digest = L.join("\n");
-      if (open.length) await rest(`agent_items?id=in.(${open.map((x) => x.id).join(",")})&digest_at=is.null`, { method: "PATCH", body: JSON.stringify({ digest_at: nowIso }) });
+      const ids = open.filter((x) => x.id).map((x) => x.id);
+      if (ids.length) await rest(`agent_items?id=in.(${ids.join(",")})&digest_at=is.null`, { method: "PATCH", body: JSON.stringify({ digest_at: nowIso }) });
       if (need.length) {
         const to = await leaders();
         await pushMany(to.map((staff_id) => ({ staff_id, data: { title: `📥 ${need.length} mục chờ duyệt (${t})`, body: need.slice(0, 5).map((x) => "• " + x.title).join("\n"), url: APP + "#duyet", tag: "agent-digest", kind: "agent" } as PushData })));

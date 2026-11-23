@@ -62,12 +62,13 @@ export async function loadLocked() {
 }
 export async function loadPending() {
   if (!isManager()) return;
-  const [p, c, h] = await Promise.all([
+  const [p, c, h, a] = await Promise.all([
     sb.from("extra_proposals").select("id", { count: "exact", head: true }).eq("status", "Chờ duyệt"),
     sb.from("change_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     sb.from("hot_bonuses").select("id", { count: "exact", head: true }).eq("status", "Chờ duyệt"),
+    sb.from("agent_items").select("id", { count: "exact", head: true }).eq("status", "open").eq("needs_decision", true),
   ]);
-  S.pending = { proposals: p.count || 0, changes: c.count || 0, hot: h.count || 0 };
+  S.pending = { proposals: p.count || 0, changes: c.count || 0, hot: h.count || 0, agent: a.count || 0 };
   emit("pending");
 }
 export async function loadAll() {
@@ -106,7 +107,7 @@ export function startRealtime() {
     star_adjustments: () => { loadStaff(); emit("score"); }, revenue_entries: () => emit("score"), item_adjustments: () => emit("score"), media_reports: () => emit("score"), monthly_targets: () => emit("score"),
     ratings: () => emit("score"), violations: () => emit("score"),
     jobs: () => emit("jobs"), job_types: () => emit("jobs"), shifts: () => emit("jobs"),
-    agent_items: () => emit("agent"),
+    agent_items: () => { loadPending(); emit("agent"); },
   };
   const timers = {};
   channel = sb.channel("thidua-v2");

@@ -263,10 +263,26 @@ async function member(req: Request) {
   return rows[0] as { email: string; role: string };
 }
 
+// D14b: mỗi lượt chạy xong ghi "nhịp tim" (system_health) — bộ canh riêng trong CSDL (_watchdog, pg_cron 10 phút)
+// thấy quá 30 phút không có nhịp → báo Telegram. Lỗi từng phần (trừ đọc ảnh BI, đã có cảnh báo riêng) → mục "Cần biết" trong 📥 Duyệt.
+const SYS_LABEL: Record<string, string> = { error: "Bảng việc (toàn bộ)", tickError: "Chuyển việc bỏ lỡ", rtError: "Giao việc lặp lại", pushError: "Thông báo đẩy nhắc việc",
+  nudgeError: "Nhắc vào ca", shiftError: "Đọc lịch ca từ Drive", agentError: "Trợ lý vận hành", lateError: "Trợ lý: kiểm tra việc trễ", slotError: "Trợ lý: đối soát hết ca",
+  healthError: "Trợ lý: canh lỗi", digestError: "Trợ lý: hộp duyệt" };
+async function heartbeat(jobs: Record<string, any>) {
+  const errors: Record<string, string> = {};
+  for (const src of [jobs, jobs?.agent || {}]) for (const [k, v] of Object.entries(src)) if (SYS_LABEL[k] && v) errors[k] = String(v).slice(0, 200);
+  const now = new Date().toISOString(), d = vnParts().date;
+  await rest("system_health?on_conflict=key", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ key: "tick", at: now, ok: !Object.keys(errors).length, detail: { errors } }) });
+  const keys = Object.keys(errors);
+  if (keys.length) await rest("agent_items?on_conflict=key", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" },
+    body: JSON.stringify(keys.map((k) => ({ key: `sys:${d}:${k}`, kind: "sys", needs_decision: false, title: "Lỗi chạy tự động: " + SYS_LABEL[k], detail: errors[k] }))) });
+}
+
 async function tick() {
   const cfg = await settings();
   // Bảng việc (D12): bỏ lỡ + trừ sao, thông báo đẩy, đọc lịch ca từ Drive — chạy cả khi tắt Telegram
   const jobs = await jobMaintenance(cfg).catch((e) => ({ error: String((e as Error).message) }));
+  await heartbeat(jobs as Record<string, any>).catch(() => {});
   if (cfg.NOTIFY_ENABLED !== true) return { skipped: "off", jobs };
   const now = vnParts(); const done: string[] = [];
   // D12d: file lịch ca mới xếp trùng lịch bận / OFF → báo nhóm ngay (mỗi file 1 lần)
