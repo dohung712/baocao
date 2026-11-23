@@ -76,7 +76,7 @@ export const ITEMS: Record<string, { label: string; freq: string; time: string; 
   flyer: { label: "Tờ rơi: báo QL đúng giờ hạn từng tuyến (giờ ở đây chỉ dùng khi gửi thử)", freq: "daily", time: "20:00", on: true },
   service: { label: "Phục vụ & vi phạm", freq: "weekly", time: "09:00", dow: 1 },
   fund: { label: "Quỹ thu chi (chi tiết thu, chi, số dư)", freq: "weekly", time: "09:00", dow: 1, on: true },
-  jobday: { label: "📋 Công việc trong ngày theo hạng mục (đã nộp, chưa nộp, số ảnh)", freq: "daily", time: "21:45", on: true },
+  jobday: { label: "📋 Công việc trong ngày theo hạng mục (đã nộp, chưa nộp, số ảnh, số lần trễ)", freq: "daily", time: "22:20", on: true },
   jobweek: { label: "📋 Tổng kết công việc tuần theo hạng mục (gửi CN: tuần này · ngày khác: tuần trước)", freq: "weekly", time: "09:05", dow: 1, on: true },
   shiftcheck: { label: "⚠️ Lịch ca trùng lịch bận / OFF (gửi ngay khi tool đọc file lịch ca mới)", freq: "daily", time: "00:00", on: true },
   jobdue: { label: "⏰ Nhắc công việc sắp tới hạn / quá hạn chưa nộp ảnh (gửi ngay lúc tới giờ; số phút trước hạn: JOB_REMIND_BEFORE_MIN)", freq: "daily", time: "00:00", on: true },

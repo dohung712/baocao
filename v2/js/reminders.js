@@ -21,8 +21,9 @@ export async function renderReminders(go) {
   const [cum, fl] = await Promise.all([setting("CUM_MANUAL", false) === true ? rpc("cum_form", { p_staff: me }).catch(() => null) : null,rpc("flyer_todo", { p_staff: me, p_date: today }).catch(() => [])]);
   if (tok !== busy) return;
   const items = [], c0 = (cl.data || []).find((c) => c.clean_date === today), c1 = (cl.data || []).find((c) => c.clean_date === tm);
-  if (c0 && (c0.photos || []).length < 3) items.push(["cl" + today, `🧹 <b>Hôm nay (${dow(today)} ${dmy(today)}) bạn trực vệ sinh</b> theo lịch đăng ký — làm xong nộp 3 ảnh.`]);
-  if (c1) items.push(["cl" + tm, `🧹 <b>Ngày mai (${dow(tm)} ${dmy(tm)}) bạn trực vệ sinh</b> theo lịch đăng ký.`]);
+  // D13: báo cáo vệ sinh theo lịch đăng ký là việc trong 🏠 Hôm nay (nộp 4 ảnh) — dải nhắc chỉ báo trước ngày mai
+  void c0;
+  if (c1) items.push(["cl" + tm, `🧹 <b>Ngày mai (${dow(tm)} ${dmy(tm)}) bạn trực vệ sinh</b> theo lịch đăng ký — việc sẽ hiện ở 🏠 Hôm nay.`]);
   const done = new Set((ck.data || []).map((x) => x.zone_id));
   const mine = (zs.data || []).filter((z) => zoneStaff(z).includes(me) && !done.has(z.id));
   if (mine.length) items.push(["zone" + today, `🧽 <b>Khu vực vệ sinh của bạn:</b> ${mine.map((z) => esc(z.name)).join(" · ")} — làm xong bấm “Xong hôm nay”.`]);

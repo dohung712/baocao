@@ -7,6 +7,7 @@
 import { json, CORS, rest, member, gemini, vnParts } from "../_shared/common.ts";
 import { SCHEMA, systemPrompt, toFields } from "./prompt.ts";
 import { driveVersion } from "../_shared/drive.ts";
+import { rtSync } from "../_shared/rtask.ts";
 
 const secret = async (k: string) => (await rest("private_settings?select=value&key=eq." + k))[0]?.value as string | undefined;
 const setting = async (k: string) => (await rest("settings?select=value&key=eq." + k))[0]?.value;
@@ -90,6 +91,14 @@ Deno.serve(async (req) => {
       return json({ status: "success", file: r.file || null, data: r.data || "", folder: r.folder || null });
     }
     if (body.mode === "status") return json({ status: "success", drive: !!(await secret("DRIVE_UPLOAD_URL")), ai: !!(await secret("GEMINI_API_KEY")) });
+    // D13 việc lặp lại: lưu link trang tính (QL dán link) · đọc trang tính + giao việc hôm nay ngay
+    if (body.mode === "rt_link") {
+      const id = String(body.sheet || "").match(/[-\w]{25,}/)?.[0];
+      if (!id) throw new Error("Link trang tính không hợp lệ (dán link docs.google.com/spreadsheets/d/…).");
+      await rest("settings?on_conflict=key", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ key: "RT_SHEET_ID", value: id, updated_by: m.email, updated_at: new Date().toISOString() }) });
+      return json({ status: "success", ...(await rtSync(m.email)) });
+    }
+    if (body.mode === "rt_sync") return json({ status: "success", ...(await rtSync(m.email)) });
     throw new Error("Chế độ không hợp lệ.");
   } catch (e) {
     return json({ status: "error", message: (e as Error).message || "Lỗi" });

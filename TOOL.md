@@ -101,6 +101,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | D12b | **🗓️ Lịch ca** từ tool sắp ca: file Excel / CSV dạng bảng “Quản lý phân ca” (hàng ngày `T2 (23/11)` gộp 6 cột; `Bộ phận · User · Họ tên · Tổng · Ca 1…Ca 6`, ô số giờ > 0 = làm ca đó). Notify tick **30 phút / lần** đọc file mới nhất trong `SHIFT_DRIVE_PATH` (Apps Script `latest`, file chưa đổi thì không tải lại) → `_shift_save`; QL bấm 📥 Lấy file từ Drive hoặc chọn file trên máy (xem trước, ai chưa khớp mã) → `shift_import`. Ghép NV theo mã User, không có thì theo họ tên. Giờ từng ca `SHIFT_SLOTS` | 📋 Giao việc → 🗓️ Lịch ca | `pages/jobs.js` (shift), `js/lib-shift.js` = `functions/_shared/shift.ts` (sửa cả hai), `notify/jobs.ts` (shiftAuto, importShiftFile; SheetJS `npm:xlsx@0.18.5`) | `shifts`, `_shift_save`, `shift_import`; settings `SHIFT_DRIVE_PATH`, `SHIFT_SLOTS`, `SHIFT_LAST` |
 | D12c | **🔔 Thông báo đẩy** (Web Push, chạy cả khi tắt Telegram): việc mới (`pushed_at`), nhắc trước hạn `JOB_REMIND_BEFORE_MIN` phút (`reminded_at`), quá hạn (`overdue_at`), QL bấm 🔔 Nhắc. Khoá VAPID tự tạo lần đầu (private_settings `PUSH_VAPID_JWK`). App cài được ra màn hình chính (manifest, `sw.js` chỉ nhận thông báo, không lưu đệm) | 🏠 Hôm nay (bật) · 📋 Giao việc | `js/push.js`, `v2/sw.js`, `v2/manifest.webmanifest`, `v2/icons/`, Edge `push` (key / test / send), `functions/_shared/webpush.ts`, `notify/jobs.ts` (jobMaintenance) | `push_subs`, `push_subscribe`, `push_unsubscribe`, `push_status`, `push_overview` |
 | D12d | **Lịch ca ↔ Lịch bận (23/11/2026, theo bảng HRM thực tế)**: 6 ca 07:30–09:00 · 09:00–12:00 · 12:00–15:00 · 15:00–18:00 · 18:00–21:00 · 21:00–22:00 (đã khớp HRM). Bộ đọc file hiểu cả dạng HRM (cột Nhân viên gộp "18450 - Hùng") lẫn dạng User / Họ tên tách cột; lưu **bộ phận trong file** (`shifts.pos`). **NV chỉ xem ca của NV**, không xem ca Quản lý / Trưởng ca (`SHIFT_PRIVATE_POS`, RLS `shifts.private`; QL thấy hết, có 🔒). 🏠 Hôm nay → **👥 Ca cả nhóm** (chọn ngày → từng ca ai làm). **Lịch bận làm lại**: CV → Lịch bận → 📝 Đăng ký tuần (từng ngày Đi làm / OFF / Bận + chọn Ca 1–6 có giờ; NV tự sửa / bỏ trước hạn; `busy_set`) · 📅 Lịch tháng · ⚠️ Đối chiếu ca (thay dán bảng HRM). Tool tự đọc **mọi file** Excel / CSV mới / vừa sửa trong thư mục lịch ca (TGDĐ, Topzone… mỗi bên 1 file; nhớ ở `SHIFT_SEEN`), mỗi file chỉ thay lịch NV có trong file. **Lưu lịch ca → tự so với lịch bận** (`_shift_conflicts`): OFF mà có ca, bận ca X mà bị xếp ca X, bận chưa ghi ca → báo Telegram `shiftcheck` + thông báo đẩy QL + ô đỏ ở Giao việc → Lịch ca + thẻ ngày ở Đăng ký tuần | CV → Lịch bận · 🏠 Hôm nay · Giao việc → Lịch ca | `js/lib-shift.js` + `_shared/shift.ts` (parseShiftAoa), `pages/cv-busy.js`, `js/team-shift.js`, `pages/jobs.js` (shift), `notify/jobs.ts` (shiftConflictMsg) | `shifts.pos/private`, `_shift_private`, `_shift_conflicts`, `shift_conflicts`, `busy_set`, `_shift_save` |
+| D13 | **🔁 Việc lặp lại từ trang tính** (23/11/2026): QL dán link trang tính (Giao việc → 🔁 Lặp lại; cài đặt `RT_SHEET_ID`), Apps Script **bản 4** (`sheet_read`) đọc 30 phút / lần; `_shared/rtask.ts` hiểu từng dòng không cần AI (siêu thị TGDĐ / Topzone / PG · hằng ngày / thứ 2–CN / theo lịch đăng ký · "Ca 3 và Ca 6" ghép "14h00 và 21h15" · "2 tiếng 1 lần" nhiều mốc · "Từ 8h đến trước 11h" · "Trước khi hết ca 30 phút, không có ca thì 17h" · nộp ảnh / ≥ n link · "có thể báo cáo trước") → `job_templates`. `rt_generate` mỗi lượt giao việc hôm nay theo **lịch ca**: "nhân sự trong ca" = **cả ca nhận, 1 người nộp là xong** (`group_key`, `group_staff`, `done_staff`); "All nhân sự" = từng NV (có ca / mọi NV); "Theo lịch đăng ký" = người đăng ký vệ sinh; hạn đã qua lúc giao thì không tạo; đổi ca → bỏ việc chưa làm. Nhắc **chỉ thông báo đẩy, đích danh**: vào ca (tổng quan việc), trước hạn 1 giờ, trước hạn 5 phút (`RT_REMIND_SOON_MIN`), quá hạn cứ 15 phút (`RT_NAG_EVERY_MIN`); **không nhắc sau 22:15** (`RT_NAG_UNTIL`). Trễ chỉ ghi nhận, không trừ sao. Telegram: `jobday` (22:20) / `jobweek` theo nhóm việc, việc cả ca tính 1 lần, dòng số lần trễ. TikTok + báo cáo vệ sinh theo lịch đăng ký chuyển sang Bảng việc (tắt sao TikTok cũ: `TIKTOK_START_DATE` rỗng; tắt tin Telegram `tiktok`, `clean`; bỏ tab CV → TikTok) | Giao việc → 🔁 Lặp lại · 🏠 Hôm nay | `_shared/rtask.ts`, `notify/jobs.ts` (rtAuto, shiftStartNudges, collapseGroups), `tasks` (rt_link, rt_sync), `pages/jobs-rt.js`, `js/jobs-common.js` (link, cả ca) | `job_templates`, `job_nudges`, `rt_generate`, `_rt_save_templates`, `job_submit(…, p_links)`, `jobs.group_key/group_staff/done_staff/links/links_min/start_at/remind5_at/nag_at` |
 
 ### E. Telegram
 | Mã | Chức năng | Trên web | File | Ghi chú |
@@ -242,6 +243,10 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_mins_txt` | function | 000940_jobs.sql:132 |
 | `_pg_cum` | function | 000910_pg_reports.sql:43 |
 | `_require_member` | function | 000200_logic.sql:189 |
+| `_rt_save_templates` | function | 001010_recurring.sql:79 |
+| `_rt_slot_at` | function | 001010_recurring.sql:71 |
+| `_rt_slot_hm` | function | 001010_recurring.sql:66 |
+| `_rt_store` | function | 001010_recurring.sql:60 |
 | `_shift_conflicts` | function | 001000_shift_busy.sql:27 |
 | `_shift_private` | function | 001000_shift_busy.sql:16 |
 | `_shift_save` | function | 001000_shift_busy.sql:51 |
@@ -302,7 +307,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `job_assign` | function | 000940_jobs.sql:185 |
 | `job_delete` | function | 000940_jobs.sql:264 |
 | `job_reopen` | function | 000940_jobs.sql:285 |
-| `job_submit` | function | 000940_jobs.sql:306 |
+| `job_submit` | function | 001010_recurring.sql:221 |
 | `job_tick` | function | 000940_jobs.sql:340 |
 | `job_type_delete` | function | 000940_jobs.sql:170 |
 | `job_type_save` | function | 000940_jobs.sql:150 |
@@ -337,6 +342,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `rs_register` | function | 000600_modules.sql:278 |
 | `rs_report` | function | 000600_modules.sql:306 |
 | `rs_valid_time` | function | 000600_modules.sql:273 |
+| `rt_generate` | function | 001010_recurring.sql:106 |
 | `save_media` | function | 000840_report_todo_media.sql:26 |
 | `save_monthly_target` | function | 000720_report_items_from_contest.sql:75 |
 | `save_notify_items` | function | 000800_clean_zones_notify.sql:97 |
@@ -385,6 +391,8 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `item_measures` | table | 000820_cumulative.sql:7 |
 | `items` | table | 000100_core.sql:26 |
 | `job_folders` | table | 000940_jobs.sql:68 |
+| `job_nudges` | table | 001010_recurring.sql:40 |
+| `job_templates` | table | 001010_recurring.sql:22 |
 | `job_types` | table | 000940_jobs.sql:22 |
 | `jobs` | table | 000940_jobs.sql:35 |
 | `locked_dates` | table | 000100_core.sql:86 |

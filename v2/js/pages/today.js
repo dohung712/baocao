@@ -17,7 +17,7 @@ import { openTeamShift } from "../team-shift.js";
 import { openStaffInsight } from "../staff-insight.js";
 
 const APPS = [
-  ["report", "📝", "Báo cáo ngày"], ["cv:tiktok", "🎬", "TikTok"], ["cv:clean", "🧹", "Vệ sinh"], ["cv:flyer", "📄", "Tờ rơi"],
+  ["report", "📝", "Báo cáo ngày"], ["cv:clean", "🧹", "Đăng ký vệ sinh"], ["cv:flyer", "📄", "Tờ rơi"],
   ["cv:busy", "🗓️", "Lịch bận / OFF"], ["cv:rs", "🏍️", "Roadshow"], ["score", "🏅", "Xếp hạng"],
   ["history", "🕒", "Báo cáo đã nộp"], ["cv:vio", "📋", "Biên bản"],
   ["cv:fund", "💵", "Quỹ"], ["store", "🏢", "Siêu thị"], ["assistant", "🤖", "Trợ lý"], ["rules", "📖", "Rule"],

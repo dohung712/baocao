@@ -1,6 +1,7 @@
 // Google Apps Script (chạy dưới tài khoản Google của chủ quản) — nhận yêu cầu từ Edge Function "tasks" / "notify" và làm việc với Google Drive.
 // BẢN 2 (D12 Bảng việc): lưu ảnh theo đường dẫn nhiều cấp, lấy file lịch ca mới nhất, ghi trang tính.
 // BẢN 3 (B16 Số liệu BI): liệt kê file trong thư mục (list), lấy nội dung 1 file nằm trong thư mục đó (get).
+// BẢN 4 (D13 Việc lặp lại): đọc trang tính công việc (sheet_read).
 //
 // Cài đặt / cập nhật:
 //   1. Mở dự án Apps Script đang dùng (địa chỉ = DRIVE_UPLOAD_URL), dán đè toàn bộ file này, bấm Lưu.
@@ -10,7 +11,7 @@
 //   Web app: Execute as: Me · Who has access: Anyone.
 const SECRET = 'ĐẶT_MÃ_BÍ_MẬT';
 const FOLDER_ID = '176C0AxvgopmScYWcD1s_byyCzEgu2ArV';
-const VERSION = 3;
+const VERSION = 4;
 
 function doPost(e) {
   try {
@@ -60,6 +61,13 @@ function doPost(e) {
       if (!inside) return out({ ok: false, error: 'file không nằm trong thư mục được phép' });
       return out({ ok: true, version: VERSION, file: { id: file.getId(), name: file.getName(), mime: file.getMimeType(), updated: file.getLastUpdated().toISOString(), size: file.getSize(), url: file.getUrl() },
         data: Utilities.base64Encode(file.getBlob().getBytes()) });
+    }
+
+    // Đọc trang tính (bản 4 — D13 việc lặp lại): sheet = mã trang tính, tab = tên tab (trống = tab đầu) → giá trị hiển thị
+    if (d.action === 'sheet_read') {
+      const rs = SpreadsheetApp.openById(d.sheet), rt = d.tab ? rs.getSheetByName(d.tab) : rs.getSheets()[0];
+      if (!rt) return out({ ok: false, error: 'không thấy tab ' + d.tab });
+      return out({ ok: true, version: VERSION, title: rs.getName(), tab: rt.getName(), values: rt.getDataRange().getDisplayValues().slice(0, 500) });
     }
 
     // Ghi trang tính: tabs = [{name, rows: [[...], ...]}] — xoá nội dung cũ của tab rồi ghi lại
