@@ -67,7 +67,7 @@ export async function xepTab(body, alive) {
     <div class="row" style="margin-bottom:8px">
       <button class="btn primary" type="button" id="xpRun">🤖 Xếp tự động</button>
       ${hasGrid ? `<button class="btn" type="button" id="xpApprove" ${st === "approved" ? "disabled" : ""}>✅ Duyệt & lưu vào Drive</button><button class="btn" type="button" id="xpDl">⬇️ Tải file</button><button class="btn" type="button" id="xpClear">🧹 Xoá ca NV All In One</button>` : ""}
-      <span class="small">${st === "approved" ? `✅ Đã duyệt ${esc(dmy((X.plan.approved_at || "").slice(0, 10)))} · ${X.plan.file_url ? `<a href="${esc(X.plan.file_url)}" target="_blank" rel="noopener">file Drive</a>` : ""} · ${X.plan.hrm_at ? "🏢 Đã nhập HRM" : `🏢 Chưa nhập HRM — nhờ trợ lý Claude: <i>“nhập ca tuần ${dm(days[0])} siêu thị ${esc(X.store)} vào HRM”</i>`}` : st === "draft" ? `📝 Bản nháp${X.dirty ? " (đang lưu…)" : ""} — chưa duyệt` : ""}</span></div>
+      <span class="small">${st === "approved" ? `✅ Đã duyệt ${esc(dmy((X.plan.approved_at || "").slice(0, 10)))} · ${X.plan.file_url ? `<a href="${esc(X.plan.file_url)}" target="_blank" rel="noopener">file Drive</a>` : ""} · ${X.plan.hrm_at ? "🏢 Đã nhập HRM" : `🏢 Chưa nhập HRM — nhờ trợ lý Claude: <i>“nhập ca tuần ${dm(days[0])} siêu thị ${esc(X.store)} vào HRM”</i> <button class="btn small" type="button" id="xpHrm">🏢 Đánh dấu đã nhập HRM</button>`}` : st === "draft" ? `📝 Bản nháp${X.dirty ? " (đang lưu…)" : ""} — chưa duyệt` : ""}</span></div>
     ${rep && hasGrid ? `<div class="banner ${rep.short.length || rep.busyHits.length ? "warn" : "ok"}"><div>
       ${rep.busyHits.length ? `<b>⛔ ${rep.busyHits.length} chỗ trùng OFF / bận</b>: ${rep.busyHits.map((h) => `${dow(h.d)} ${esc(nm(h.id))}`).join(", ")}<br>` : ""}
       ${rep.short.length ? `<b>⚠️ Thiếu ${rep.missingHours} giờ-người</b> (${rep.short.length} ô đỏ dưới bảng) — không đủ NV cho rule; có thể tăng giờ tối đa / ngày, giảm ngày OFF tối thiểu hoặc giảm số người ca.` : "✅ Đủ người mọi ca."}
@@ -100,6 +100,7 @@ export async function xepTab(body, alive) {
   body.onclick = async (e) => {
     const w = e.target.closest("[data-wk]"); if (w) { X.week = addDays(X.week, Number(w.dataset.wk)); X.dirty = false; return redraw(); }
     const sc = e.target.closest("[data-store]"); if (sc) { X.store = sc.dataset.store; X.dirty = false; return redraw(); }
+    if (e.target.closest("#xpHrm")) { try { const r = await rpc("xepca_hrm_done", { p_id: X.plan.id }); toast(r.message); X.loaded = ""; } catch (x) { err(x); } return redraw(); }
     if (e.target.closest("#xpCfgT")) { X.showCfg = !X.showCfg; return redraw(); }
     if (e.target.closest("#xpCfgSave")) return saveCfg(cfg, redraw);
     if (e.target.closest("#xpPairAdd")) { const c = readCfg(cfg); c.pairs.push(["", ""]); await rpc("xepca_cfg_save", { p_cfg: c }).catch(err); await loadSettings(); return redraw(); }
