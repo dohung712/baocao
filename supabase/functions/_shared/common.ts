@@ -79,7 +79,12 @@ export async function gemini(key: string, payload: Record<string, unknown>) {
   const call = async (m: string) => {
     tried.add(m);
     for (let attempt = 0; attempt < 2; attempt++) {
-      const r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body });
+      let r: Response;
+      try { r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body, signal: AbortSignal.timeout(75000) }); }
+      catch (e) {   // quá 75 giây: dừng gọn (Edge Function chỉ được chạy 150 giây / lần)
+        if ((e as Error).name === "TimeoutError" || /abort|timeout/i.test(String(e))) { errs.push(`${m}: AI chậm quá 75 giây`); return { stop: true }; }
+        errs.push(`${m}: ${String((e as Error).message).slice(0, 100)}`); return null;
+      }
       const j = await r.json().catch(() => ({}));
       if (r.ok) { await saveGood(m); return { text: (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim() }; }
       const msg = String(j.error?.message || r.status).replace(/\s+/g, " ").slice(0, 140);
@@ -92,7 +97,7 @@ export async function gemini(key: string, payload: Record<string, unknown>) {
     return null;
   };
   for (const m of [...new Set([goodModel, ...GEMINI_MODELS].filter(Boolean) as string[])]) {
-    const r = await call(m); if (r?.text !== undefined) return r.text; if (r?.stop) throw new Error("AI lỗi (khoá AI): " + errs.join(" | "));
+    const r = await call(m); if (r?.text !== undefined) return r.text; if (r?.stop) throw new Error("AI lỗi: " + errs.join(" | "));
   }
   try { discovered ||= await geminiModels(key); } catch (e) { errs.push("ListModels: " + String((e as Error).message).slice(0, 100)); discovered = []; }
   for (const m of discovered.filter((x) => !tried.has(x)).slice(0, 4)) {

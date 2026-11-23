@@ -1,5 +1,5 @@
 // Edge Function "bi" (B16 Số liệu BI) — chỉ quản lý:
-//  • sync:     đọc ảnh úp / sửa TRONG NGÀY trong thư mục Drive "00 - Nhập doanh thu và thi đua" (mỗi lần ≤ 2 ảnh; còn thì trình duyệt gọi tiếp)
+//  • sync:     đọc ảnh úp / sửa TRONG NGÀY trong thư mục Drive "00 - Nhập doanh thu và thi đua" (mỗi lần ≤ 4 ảnh trong ~55 giây; còn thì trình duyệt gọi tiếp)
 //              force = [mã file] để đọc lại 1 ảnh cũ (nút "Đọc lại")
 //  • upload:   chọn ảnh từ máy → lưu vào thư mục đó trên Drive → AI đọc luôn
 //  • apply:    dựng lại bảng thi đua siêu thị từ ảnh "BC Thi đua" mới nhất + tạo / cập nhật số NV còn thiếu
@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const actor = m.email;
     if (body.mode === "sync") {
       const force = (Array.isArray(body.force) ? body.force : []).map(String).filter((x: string) => /^[\w-]{10,80}$/.test(x)).slice(0, 10);
-      const r = await biSync(actor, Math.min(2, Math.max(1, Number(body.limit) || 2)), force);
+      const r = await biSync(actor, Math.min(4, Math.max(1, Number(body.limit) || 4)), force, 55000);   // hết 55 giây thì không bắt đầu ảnh mới
       return json({ status: "success", ...r });
     }
     if (body.mode === "upload") {

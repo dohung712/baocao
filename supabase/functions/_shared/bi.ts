@@ -136,7 +136,7 @@ async function saveError(f: FileMeta, msg: string, actor: string, tries = 1) {
     body: JSON.stringify({ file_id: f.id, name: f.name || "", file_updated: f.updated || "", url: f.url || "", kind: "other", status: "error", error: msg.slice(0, 500), data: { tries }, processed_at: new Date().toISOString(), processed_by: actor }) });
 }
 const BI_MAX_TRIES = 4, RETRY_AFTER_MS = 10 * 60000;
-const aiBusy = (msg: string) => /AI lỗi/.test(msg) && /\b(429|503|500)\b|quota|RESOURCE_EXHAUSTED|overload|UNAVAILABLE/i.test(msg);
+const aiBusy = (msg: string) => /AI lỗi/.test(msg) && /\b(429|503|500)\b|quota|RESOURCE_EXHAUSTED|overload|UNAVAILABLE|chậm quá/i.test(msg);
 
 // Bảng thi đua siêu thị từ ảnh "BC Thi đua" mới nhất của mỗi kênh trong tháng mới nhất + dòng TỔNG (cộng 2 kênh)
 export async function applyContest(actor: string) {
@@ -223,7 +223,9 @@ export async function proposeFromCards(actor: string) {
 // Đọc ảnh BI trong thư mục — CHỈ ảnh úp / sửa TRONG NGÀY (giờ VN), bỏ qua ảnh cũ cho nhanh (force = mã file QL bấm "Đọc lại").
 //   Ảnh mới hoặc vừa sửa → đọc; ảnh lỗi → tự đọc lại sau 10 phút, tối đa 4 lần. Mỗi lần tối đa `limit` ảnh để không quá giờ chạy.
 //   AI quá tải / hết hạn mức → dừng lượt này, lượt sau đọc tiếp.
-export async function biSync(actor: string, limit = 4, force: string[] = []) {
+//   budgetMs: chỉ bắt đầu ảnh mới khi lượt này chạy chưa quá budgetMs (1 ảnh PNG lớn AI đọc 20–60 giây; Edge Function tối đa 150 giây / lần)
+export async function biSync(actor: string, limit = 4, force: string[] = [], budgetMs = 60000) {
+  const t0 = Date.now();
   if ((await driveVersion()) < 3) throw new Error("Apps Script trên Google Drive cần bản 3 (supabase/apps-script/drive-upload.gs).");
   const p = await setting("BI_DRIVE_PATH");
   const path = Array.isArray(p) ? p.map(String) : ["Tool Báo Cáo", "00 - Nhập doanh thu và thi đua"];
@@ -241,8 +243,10 @@ export async function biSync(actor: string, limit = 4, force: string[] = []) {
     if (s.status === "error") return (Number(s.data?.tries) || 1) < BI_MAX_TRIES && now - Date.parse(s.processed_at) >= RETRY_AFTER_MS;
     return s.file_updated !== f.updated && s.file_updated !== "upload";
   });
-  let ok = 0, errors = 0, stopped = "";
+  let ok = 0, errors = 0, stopped = "", n = 0;
   for (const f of todo.slice(0, limit)) {
+    if (n > 0 && Date.now() - t0 > budgetMs) break;   // hết giờ của lượt → lượt sau đọc tiếp
+    n++;
     const prev = seen.get(f.id), tries = prev?.status === "error" ? (Number(prev.data?.tries) || 1) + 1 : 1;
     try {
       const g = await drive({ action: "get", id: f.id, path });
@@ -256,7 +260,7 @@ export async function biSync(actor: string, limit = 4, force: string[] = []) {
   }
   const applied = ok ? await applyContest(actor).catch(() => null) : null;
   const proposals = ok ? await proposeFromCards(actor).catch(() => 0) : 0;
-  return { total: files.length, today: fresh.length, read: ok, errors, remaining: stopped ? 0 : Math.max(0, todo.length - limit), stopped, contestRows: applied, proposals, folder: l.folder?.url || "" };
+  return { total: files.length, today: fresh.length, read: ok, errors, remaining: stopped ? 0 : Math.max(0, todo.length - n), stopped, contestRows: applied, proposals, folder: l.folder?.url || "" };
 }
 
 // QL chọn ảnh từ máy: lưu vào thư mục BI trên Drive rồi đọc luôn
