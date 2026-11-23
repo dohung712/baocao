@@ -74,11 +74,12 @@ async function saveGood(m: string) {
 }
 export async function gemini(key: string, payload: Record<string, unknown>) {
   const errs: string[] = [], tried = new Set<string>();
+  const body = JSON.stringify(payload);   // ảnh base64 vài MB: đóng gói 1 lần (đóng gói lại mỗi lần thử làm hết CPU của Edge Function)
   await loadSaved();
   const call = async (m: string) => {
     tried.add(m);
     for (let attempt = 0; attempt < 2; attempt++) {
-      const r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(payload) });
+      const r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body });
       const j = await r.json().catch(() => ({}));
       if (r.ok) { await saveGood(m); return { text: (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim() }; }
       const msg = String(j.error?.message || r.status).replace(/\s+/g, " ").slice(0, 140);

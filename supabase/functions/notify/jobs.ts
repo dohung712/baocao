@@ -164,13 +164,13 @@ export async function jobMaintenance(cfg: Record<string, any>) {
   return out;
 }
 
-// B16: mỗi lượt (5 phút) từ 06:00 đến 22:59 xem thư mục "00 - Nhập doanh thu và thi đua", có ảnh mới thì đọc (mỗi lượt ≤ 3 ảnh)
-//   → ảnh úp trước 9h được đọc xong trong khoảng 20 phút
+// B16: mỗi lượt (5 phút) từ 06:00 đến 22:59 xem thư mục "00 - Nhập doanh thu và thi đua", có ảnh mới thì đọc (mỗi lượt ≤ 2 ảnh)
+//   → 12 ảnh úp trước 9h đọc xong trong khoảng 30 phút
 async function biAuto() {
   const h = Number(vnParts().hm.slice(0, 2));
   if (h < 6 || h >= 23) return null;
   if (!(await driveReady()) || (await driveVersion()) < 3) return null;
-  const r = await biSync("tu-dong", 3);
+  const r = await biSync("tu-dong", 2);
   return r.read || r.errors ? r : null;
 }
 

@@ -125,7 +125,7 @@ export function bindBiTools(box, reload) {
   if (btn) btn.onclick = async () => {
     btn.disabled = true; biBusy.on = true; let read = 0, err = 0, rows = null;
     try {
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 25; i++) {
         msg(`Đang đọc… (${read} ảnh xong)`);
         const r = await callFn("bi", { mode: "sync" });
         read += r.read; err += r.errors; rows = r.contestRows ?? rows;
