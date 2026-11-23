@@ -3,7 +3,7 @@
 //  - mode "preview" | "send" | "test" | "detect": gọi từ giao diện (xác thực bằng phiên đăng nhập)
 import { dailySummary, weeklySummary, splitMessage, type Ctx } from "./summary.ts";
 import { revenueMsg, scoreMsg, tiktokMsg, cleanMsg, cleanRemindMsg, cumMsg, busyDeadlineMsg, flyerMsg, flyerNewMsg, busyMsg, rsMsg, serviceMsg, fundMsg } from "./summary2.ts";
-import { jobDayMsg, jobWeekMsg, jobDueMsg, loadJobs, weekRange, jobMaintenance } from "./jobs.ts";
+import { jobDayMsg, jobWeekMsg, jobDueMsg, loadJobs, weekRange, jobMaintenance, shiftConflictMsg } from "./jobs.ts";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -78,6 +78,7 @@ export const ITEMS: Record<string, { label: string; freq: string; time: string; 
   fund: { label: "Quỹ thu chi (chi tiết thu, chi, số dư)", freq: "weekly", time: "09:00", dow: 1, on: true },
   jobday: { label: "📋 Công việc trong ngày theo hạng mục (đã nộp, chưa nộp, số ảnh)", freq: "daily", time: "21:45", on: true },
   jobweek: { label: "📋 Tổng kết công việc tuần theo hạng mục (gửi CN: tuần này · ngày khác: tuần trước)", freq: "weekly", time: "09:05", dow: 1, on: true },
+  shiftcheck: { label: "⚠️ Lịch ca trùng lịch bận / OFF (gửi ngay khi tool đọc file lịch ca mới)", freq: "daily", time: "00:00", on: true },
   jobdue: { label: "⏰ Nhắc công việc sắp tới hạn / quá hạn chưa nộp ảnh (gửi ngay lúc tới giờ; số phút trước hạn: JOB_REMIND_BEFORE_MIN)", freq: "daily", time: "00:00", on: true },
 };
 function items(cfg: Record<string, any>) {
@@ -125,6 +126,10 @@ async function compose(kind: string, date: string, cfg: Record<string, any>, opt
   const staff: any[] = await rest("staff?select=id,name&hidden=eq.false&order=sort,id");
   const names = new Map(staff.map((x) => [x.id, x.name]));
   if (kind === "jobday") { const j = await loadJobs(date, date); return { text: jobDayMsg(store, date, j.jobs, j.types, names), period: date }; }
+  if (kind === "shiftcheck") {   // gửi thử: đối chiếu lịch ca đang có 14 ngày tới với lịch bận
+    const list = await rpc("_shift_conflicts", { p_from: date, p_to: addDays(date, 13) });
+    return { text: shiftConflictMsg(store, "lịch ca hiện có (14 ngày tới)", Array.isArray(list) ? list : [], Array.isArray(cfg.SHIFT_SLOTS) ? cfg.SHIFT_SLOTS.map(String) : []) || `✅ Lịch ca 14 ngày tới không trùng lịch bận / OFF · ${store}`, period: date };
+  }
   if (kind === "jobdue") {   // gửi thử: việc chưa nộp sắp tới hạn + đã quá hạn trong ngày (không đánh dấu đã nhắc)
     const before = Math.max(5, Number(cfg.JOB_REMIND_BEFORE_MIN ?? 60) || 60), nowIso = new Date().toISOString();
     const list: any[] = await rest(`jobs?select=id,staff_id,title,due_at&status=eq.todo&due_at=gte.${encodeURIComponent(date + "T00:00:00+07:00")}&due_at=lte.${encodeURIComponent(new Date(Date.now() + before * 60000).toISOString())}&order=due_at&limit=200`);
@@ -256,6 +261,14 @@ async function tick() {
   const jobs = await jobMaintenance(cfg).catch((e) => ({ error: String((e as Error).message) }));
   if (cfg.NOTIFY_ENABLED !== true) return { skipped: "off", jobs };
   const now = vnParts(); const done: string[] = [];
+  // D12d: file lịch ca mới xếp trùng lịch bận / OFF → báo nhóm ngay (mỗi file 1 lần)
+  const sh = (jobs as any).shift;
+  if (sh?.list?.length && items(cfg).find((i) => i.id === "shiftcheck")?.on) {
+    try {
+      const text = shiftConflictMsg(String(cfg.STORE_NAME || ""), sh.file, sh.list, Array.isArray(cfg.SHIFT_SLOTS) ? cfg.SHIFT_SLOTS.map(String) : []);
+      if (text) { await sendAll(text, cfg); await log("shiftcheck", now.date + " " + now.hm, true, `auto ${sh.list.length}`); done.push("shiftcheck"); }
+    } catch (e) { await log("shiftcheck-error", now.date + " " + now.hm, false, String((e as Error).message)); }
+  }
   // Nhắc công việc tới hạn / quá hạn qua Telegram (cùng lúc với thông báo đẩy, mỗi việc 1 lần)
   const due = (jobs as any).due;
   if (due && (due.soon.length || due.over.length) && items(cfg).find((i) => i.id === "jobdue")?.on) {
@@ -266,7 +279,7 @@ async function tick() {
     } catch (e) { await log("jobdue-error", now.date + " " + now.hm, false, String((e as Error).message)); }
   }
   for (const it of items(cfg)) {
-    if (it.id === "jobdue") continue;   // gửi ở trên theo từng việc
+    if (it.id === "jobdue" || it.id === "shiftcheck") continue;   // gửi ở trên theo sự kiện
     if (it.id === "flyer" || it.id === "flyerpre" || it.id === "flyernew") {
       // không theo giờ cố định: đợt mới → gửi ngay; trước hạn X phút → nhắc; tới giờ hạn → báo; mỗi tuyến / đợt 1 lần
       if (!it.on) continue;

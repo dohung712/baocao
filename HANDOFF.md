@@ -60,7 +60,7 @@ bash supabase/tests/check.sh --ui   # thêm kiểm thử giao diện (server htt
 
 1. Tra mã chức năng trong TOOL.md → chỉ mở đúng file/hàm.
 2. SQL: tạo **migration mới**, `create or replace` nguyên hàm; **không sửa migration đã áp**; đổi chữ ký thì `drop function` trước. Hàm `security definer set search_path = ''` → luôn ghi `public.` trước tên bảng/hàm. Biến trùng tên cột → `#variable_conflict use_variable`.
-3. **Đánh số migration**: xem `ls supabase/migrations | tail` và lấy số **lớn hơn số lớn nhất** (hiện tại lớn nhất là `0990` → file tiếp theo `20261115001000_v2_<tên>.sql`). Đã có 2 cặp trùng tiền tố (`0880_*`, `0890_*`) do nhiều phiên làm song song; không ảnh hưởng vì áp theo tên đầy đủ, nhưng đừng tạo thêm.
+3. **Đánh số migration**: xem `ls supabase/migrations | tail` và lấy số **lớn hơn số lớn nhất** (hiện tại lớn nhất là `1000` → file tiếp theo `20261115001010_v2_<tên>.sql`). Đã có 2 cặp trùng tiền tố (`0880_*`, `0890_*`) do nhiều phiên làm song song; không ảnh hưởng vì áp theo tên đầy đủ, nhưng đừng tạo thêm.
 4. Quyền: `_require_member`, `_manager_scope`, `_member_for_staff`, `can_see_staff`, `_flyer_mgr`. Hiện **mọi quản lý đều là chủ quản (owner)** (migration 0830).
 5. Giao diện: dùng helper `ui.js`; sau `await` kiểm tra phần tử còn tồn tại.
 6. Chạy `check.sh` (`--ui` nếu đổi giao diện lớn) → commit (kết thúc bằng dòng Co-Authored-By) → push → xem 2 workflow success.
@@ -87,7 +87,7 @@ Các commit khác trong cùng giai đoạn do phiên khác làm: B15 báo cáo P
 ## 7. Việc đang dở / chờ người dùng quyết
 
 - **D12 Bảng việc** (23/11): Apps Script dự án “Thi dua - tai file len Drive” đã lên **bản 2** (deployment phiên bản 2, giữ địa chỉ cũ; mã bí mật nằm ở dòng `const SECRET` trong dự án, không có trong repo). Thư mục `Tool Báo Cáo/02 - Lịch ca làm việc` đã tạo, chưa có file. Mã 18450 (chủ quản) đã bỏ ẩn để thử nhận việc / thông báo; chủ quản có nút 👁️ Xem như NV / QL (`js/viewas.js`).
-- **Việc chưa làm của D12**: (1) việc mẫu lặp lại theo ca (người dùng sẽ gửi danh sách việc hằng ngày thật); (2) đồng bộ trang tính “Tool Báo Cáo” (Apps Script đã có action `sheet`, chưa gọi); (3) ~~thư mục 00~~ → đã làm B16 (xem dưới); (4) xác nhận giờ 6 ca (`SHIFT_SLOTS` đang đoán 07:30–22:00).
+- **Việc chưa làm của D12**: (1) việc mẫu lặp lại theo ca (người dùng sẽ gửi danh sách việc hằng ngày thật); (2) đồng bộ trang tính “Tool Báo Cáo” (Apps Script đã có action `sheet`, chưa gọi); (3) ~~thư mục 00~~ → đã làm B16 (xem dưới); (4) ~~giờ 6 ca~~ đã khớp HRM (D12d).
 - **B16 Số liệu BI** (23/11): AI đọc ảnh chụp app BI trong `Tool Báo Cáo/00 - Nhập doanh thu và thi đua` → `bi_files` → bảng thi đua siêu thị (ảnh BC Thi đua mới nhất mỗi kênh thay bảng `store_contest`) + doanh thu / còn thiếu / cần mỗi ngày + thẻ NV. Edge `bi`, `_shared/bi.ts`, `notify/jobs.ts` (biAuto); cần Apps Script **bản 3** (`list`, `get`). Số NV từ BI tự vào C10 / C12 (B16c, `BI_AUTO_APPLY` = true; tắt thì quay về QL duyệt B16b).
 
 - **Tờ rơi**: muốn chọn tuyến khi tạo đợt (hiện tool chọn tuyến lâu chưa phát, 4 chợ nằm cuối nên đợt đầu ít khi tới)? Có cần ô chỉnh `FLYER_REMIND_BEFORE_MIN` trên giao diện?

@@ -99,6 +99,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | D12 | **📋 Bảng việc — giao việc & nộp ảnh** (migration 0940): QL giao việc (hạng mục, tên, hướng dẫn, người làm **theo ca** (lịch ca) / **chọn người** (thấy ai OFF / bận) / **cả bộ phận**, ngày + giờ hạn, **lặp mỗi ngày đến** (≤ 31 ngày), minh chứng 📷 ảnh tối thiểu–tối đa / ☑️ checklist + ảnh / ✅ chỉ bấm hoàn thành, **⭐ trừ khi nộp trễ** và **⭐ trừ khi bỏ lỡ** do QL khai báo). **Không cần duyệt**: NV nộp là xong (`job_submit`; trễ thì trừ `pen_late` một lần). Quá hạn `JOB_MISS_HOURS` (24) giờ chưa nộp → **Bỏ lỡ**, trừ `pen_miss` (`job_tick`, notify tick 5 phút). Ảnh nén trên máy → Edge `tasks` mode `job_upload` → Apps Script bản 2 → Drive `JOB_DRIVE_PATH` / `<Mã - Tên NV>` / `<Hạng mục>` / `<YYYY-MM-DD>_<HHhMM>_<việc>_<n>.jpg`; thư mục NV lưu ở `job_folders`. QL: **📊 Hôm nay** (từng NV: chip việc theo trạng thái, 🔔 Nhắc = thông báo đẩy, 📁 thư mục Drive; bấm chip → xem ảnh, nộp hộ, đổi hạn / người (cả lần giao), mở lại (hoàn sao), xoá (hoàn sao, ảnh giữ trên Drive)) · **📈 Thống kê** (khoảng ngày, bộ phận, hạng mục: theo NV, NV × ngày (số ảnh, màu trạng thái), theo hạng mục, bấm tên NV xem từng việc + ảnh, CSV) · **🗂️ Hạng mục** (tên, biểu tượng, thứ tự, đang dùng, đưa vào Telegram) · **⚙️ Cài đặt** (giờ bỏ lỡ, phút nhắc trước, ẩn / hiện tab CV cũ với NV, ai đã bật thông báo, kiểm tra Drive) | 🏠 Hôm nay · 📋 Giao việc | `pages/jobs.js`, `js/jobs-common.js` (stateOf, openSubmit, openManage), `pages/today.js`, Edge `tasks` (job_upload), `supabase/apps-script/drive-upload.gs` (bản 2) | `job_types`, `jobs`, `job_folders`, `job_type_save`, `job_type_delete`, `job_assign`, `job_update`, `job_delete`, `job_reopen`, `job_submit`, `job_tick`, `_job_star` (ghi `star_adjustments` + `score_log`), `_vn_ts`, `_mins_txt`; settings `JOB_MISS_HOURS`, `JOB_REMIND_BEFORE_MIN`, `JOB_DRIVE_PATH` |
 | D12b | **🗓️ Lịch ca** từ tool sắp ca: file Excel / CSV dạng bảng “Quản lý phân ca” (hàng ngày `T2 (23/11)` gộp 6 cột; `Bộ phận · User · Họ tên · Tổng · Ca 1…Ca 6`, ô số giờ > 0 = làm ca đó). Notify tick **30 phút / lần** đọc file mới nhất trong `SHIFT_DRIVE_PATH` (Apps Script `latest`, file chưa đổi thì không tải lại) → `_shift_save`; QL bấm 📥 Lấy file từ Drive hoặc chọn file trên máy (xem trước, ai chưa khớp mã) → `shift_import`. Ghép NV theo mã User, không có thì theo họ tên. Giờ từng ca `SHIFT_SLOTS` | 📋 Giao việc → 🗓️ Lịch ca | `pages/jobs.js` (shift), `js/lib-shift.js` = `functions/_shared/shift.ts` (sửa cả hai), `notify/jobs.ts` (shiftAuto, importShiftFile; SheetJS `npm:xlsx@0.18.5`) | `shifts`, `_shift_save`, `shift_import`; settings `SHIFT_DRIVE_PATH`, `SHIFT_SLOTS`, `SHIFT_LAST` |
 | D12c | **🔔 Thông báo đẩy** (Web Push, chạy cả khi tắt Telegram): việc mới (`pushed_at`), nhắc trước hạn `JOB_REMIND_BEFORE_MIN` phút (`reminded_at`), quá hạn (`overdue_at`), QL bấm 🔔 Nhắc. Khoá VAPID tự tạo lần đầu (private_settings `PUSH_VAPID_JWK`). App cài được ra màn hình chính (manifest, `sw.js` chỉ nhận thông báo, không lưu đệm) | 🏠 Hôm nay (bật) · 📋 Giao việc | `js/push.js`, `v2/sw.js`, `v2/manifest.webmanifest`, `v2/icons/`, Edge `push` (key / test / send), `functions/_shared/webpush.ts`, `notify/jobs.ts` (jobMaintenance) | `push_subs`, `push_subscribe`, `push_unsubscribe`, `push_status`, `push_overview` |
+| D12d | **Lịch ca ↔ Lịch bận (23/11/2026, theo bảng HRM thực tế)**: 6 ca 07:30–09:00 · 09:00–12:00 · 12:00–15:00 · 15:00–18:00 · 18:00–21:00 · 21:00–22:00 (đã khớp HRM). Bộ đọc file hiểu cả dạng HRM (cột Nhân viên gộp "18450 - Hùng") lẫn dạng User / Họ tên tách cột; lưu **bộ phận trong file** (`shifts.pos`). **NV chỉ xem ca của NV**, không xem ca Quản lý / Trưởng ca (`SHIFT_PRIVATE_POS`, RLS `shifts.private`; QL thấy hết, có 🔒). 🏠 Hôm nay → **👥 Ca cả nhóm** (chọn ngày → từng ca ai làm). **Lịch bận làm lại**: CV → Lịch bận → 📝 Đăng ký tuần (từng ngày Đi làm / OFF / Bận + chọn Ca 1–6 có giờ; NV tự sửa / bỏ trước hạn; `busy_set`) · 📅 Lịch tháng · ⚠️ Đối chiếu ca (thay dán bảng HRM). **Lưu lịch ca → tự so với lịch bận** (`_shift_conflicts`): OFF mà có ca, bận ca X mà bị xếp ca X, bận chưa ghi ca → báo Telegram `shiftcheck` + thông báo đẩy QL + ô đỏ ở Giao việc → Lịch ca + thẻ ngày ở Đăng ký tuần | CV → Lịch bận · 🏠 Hôm nay · Giao việc → Lịch ca | `js/lib-shift.js` + `_shared/shift.ts` (parseShiftAoa), `pages/cv-busy.js`, `js/team-shift.js`, `pages/jobs.js` (shift), `notify/jobs.ts` (shiftConflictMsg) | `shifts.pos/private`, `_shift_private`, `_shift_conflicts`, `shift_conflicts`, `busy_set`, `_shift_save` |
 
 ### E. Telegram
 | Mã | Chức năng | Trên web | File | Ghi chú |
@@ -240,7 +241,9 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_mins_txt` | function | 000940_jobs.sql:132 |
 | `_pg_cum` | function | 000910_pg_reports.sql:43 |
 | `_require_member` | function | 000200_logic.sql:189 |
-| `_shift_save` | function | 000940_jobs.sql:357 |
+| `_shift_conflicts` | function | 001000_shift_busy.sql:27 |
+| `_shift_private` | function | 001000_shift_busy.sql:16 |
+| `_shift_save` | function | 001000_shift_busy.sql:51 |
 | `_staff_items` | function | 000890_items_quick_violation_docs.sql:7 |
 | `_store_contest_set` | function | 000950_bi.sql:41 |
 | `_task_hide_after` | function | 000790_tasks_notes_autohide.sql:12 |
@@ -257,6 +260,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `busy_deadline` | function | 000840_report_todo_media.sql:41 |
 | `busy_delete` | function | 000600_modules.sql:262 |
 | `busy_register` | function | 000840_report_todo_media.sql:47 |
+| `busy_set` | function | 001000_shift_busy.sql:83 |
 | `can_see_staff` | function | 000100_core.sql:150 |
 | `can_see_task` | function | 000790_tasks_notes_autohide.sql:22 |
 | `check_hot_bonus` | function | 000740_star_suggest_hot.sql:112 |
@@ -344,6 +348,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `set_staff_total` | function | 000700_scoring.sql:141 |
 | `setting_num` | function | 000100_core.sql:160 |
 | `setting_text` | function | 000100_core.sql:170 |
+| `shift_conflicts` | function | 001000_shift_busy.sql:41 |
 | `shift_import` | function | 000940_jobs.sql:382 |
 | `staff_overview` | function | 000900_report_month_staff_overview.sql:33 |
 | `staff_total` | function | 000700_scoring.sql:120 |

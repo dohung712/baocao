@@ -196,5 +196,28 @@ export async function importShiftFile(file: { id: string; name: string; updated:
   const { rows, unmatched } = matchStaff(sch.people, staff);
   if (!rows.length) throw new Error("File lịch ca " + file.name + ": không khớp được nhân viên nào.");
   const res = await rpc("_shift_save", { p_rows: rows, p_source: file.name, p_actor: actor, p_file: { id: file.id, updated: file.updated, unmatched: unmatched.length } });
-  return { file: file.name, n: res?.n ?? rows.length, unmatched: unmatched.length };
+  const conf: any[] = Array.isArray(res?.conflicts) ? res.conflicts : [];
+  if (conf.length) {   // D12d: xếp ca trùng lịch bận / OFF → báo QL ngay trên điện thoại (Telegram gửi ở tick)
+    try {
+      const mgr: any[] = await rest("memberships?select=staff_id&active=eq.true&role=in.(owner,manager)&staff_id=not.is.null");
+      await pushMany(mgr.map((x) => ({ staff_id: x.staff_id, data: { title: `⚠️ Lịch ca trùng lịch bận: ${conf.length} chỗ`, body: conf.slice(0, 4).map((c) => `• ${dm(c.d)} ${short(c.name)}: ${c.kind === "off" ? "OFF" : "bận"} nhưng có ca`).join("\n"), url: APP + "#cv", tag: "shift-conflict" } })));
+    } catch { /* không có máy nào bật thông báo */ }
+  }
+  const out = { file: file.name, n: res?.n ?? rows.length, unmatched: unmatched.length, conflicts: conf.length };
+  Object.defineProperty(out, "list", { value: conf, enumerable: false });   // cho tin Telegram, không đưa tên ra kết quả trả về
+  return out;
+}
+
+// Tin Telegram: các chỗ xếp ca trùng lịch bận / OFF NV đã đăng ký
+export function shiftConflictMsg(store: string, file: string, list: any[], slots: string[]) {
+  if (!list.length) return null;
+  const rng = (x: number[]) => { const s = [...x].sort((a, b) => a - b), g: number[][] = []; for (const v of s) { const l = g[g.length - 1]; if (l && v === l[1] + 1) l[1] = v; else g.push([v, v]); } return g.map(([a, b]) => (a === b ? `${a}` : `${a}–${b}`)).join(", "); };
+  const time = (x: number[]) => { const s = [...x].sort((a, b) => a - b), t1 = String(slots[s[0] - 1] || "").split("-")[0], t2 = String(slots[s[s.length - 1] - 1] || "").split("-")[1]; return t1 && t2 ? ` (${t1}–${t2})` : ""; };
+  const L = [`⚠️ <b>LỊCH CA TRÙNG LỊCH BẬN / OFF</b> · ${esc(store)}`, `File: ${esc(file)} · ${list.length} chỗ cần xem lại`, ""];
+  for (const c of list) {
+    const what = c.kind === "off" ? "đăng ký <b>OFF</b>" : c.kind === "ban" ? `bận <b>Ca ${rng(c.busy)}</b>` : "bận (chưa ghi ca)";
+    L.push(`• ${dow(c.d)} ${dm(c.d)} · <b>${esc(short(c.name))}</b>: ${what} nhưng xếp Ca ${rng(c.slots)}${time(c.slots)}${c.kind === "ban" ? ` → trùng Ca ${rng(c.overlap)}` : ""}`);
+  }
+  L.push("", `Sửa lại ở tool sắp ca rồi bỏ file mới vào Drive. Xem: ${APP}#cv`);
+  return L.join("\n");
 }

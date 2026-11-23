@@ -13,6 +13,7 @@ import { pushState, enablePush, disablePush, isIOS } from "../push.js";
 import { myBiHtml, loadBi } from "../bi.js";
 import { scoreDetail } from "../score-detail.js";
 import { keepTodo } from "../simplify.js";
+import { openTeamShift } from "../team-shift.js";
 
 const APPS = [
   ["report", "📝", "Báo cáo ngày"], ["cv:tiktok", "🎬", "TikTok"], ["cv:clean", "🧹", "Vệ sinh"], ["cv:flyer", "📄", "Tờ rơi"],
@@ -113,7 +114,8 @@ function draw() {
     ${showStore() ? revHtml() + contestHtml() : ""}
     ${showScore() ? rankHtml() : ""}
 
-    ${shifts.length > 1 ? `<h3 class="td-sec">🗓️ Lịch ca 7 ngày</h3><div class="td-week">${shifts.map((x) => `<span class="${x.d === today ? "on" : ""} ${x.slots?.length ? "" : "off"}"><b>${dow(x.d)} ${dm(x.d)}</b>${x.slots?.length ? esc(slotText(x.slots, slots).replace(/ · /g, "\n")) : "OFF"}</span>`).join("")}</div>` : ""}
+    <div class="td-h3row"><h3 class="td-sec">🗓️ Lịch ca 7 ngày</h3><button class="btn small" type="button" data-team>👥 Ca cả nhóm</button></div>
+    ${shifts.length ? `<div class="td-week">${shifts.map((x) => `<span class="${x.d === today ? "on" : ""} ${x.slots?.length ? "" : "off"}"><b>${dow(x.d)} ${dm(x.d)}</b>${x.slots?.length ? esc(slotText(x.slots, slots).replace(/ · /g, "\n")) : "OFF"}</span>`).join("")}</div>` : ""}
     ${isManager() ? `<div class="card td-mgr"><div><b>📋 Điều hành công việc</b><span class="small muted">Giao việc, xem ảnh từng NV, thống kê, lịch ca</span></div><button class="btn primary small" type="button" data-page="jobs">Mở Giao việc ›</button></div>` : ""}
     <details class="td-allapps"><summary><h3 class="td-sec" style="display:inline">▦ Tất cả chức năng</h3></summary>
       <div class="td-apps">${APPS.filter(([k]) => appOk(k)).map(([k, i, l]) => { const b = legacy.filter((x) => x.go === k && x.lv !== "info").length; return `<button type="button" class="td-app" data-go="${k}"><span>${i}</span>${esc(l)}${b ? `<i class="badge">${b}</i>` : ""}</button>`; }).join("")}</div></details>`;
@@ -208,6 +210,7 @@ async function onClick(e) {
   if (sd) { const today = vnToday(); scoreDetail(BOARD, sd.dataset.sd, { from: monthFrom(), to: today, full: false }); return; }
   const rk = e.target.closest("[data-rk]");
   if (rk) { rkScope = rk.dataset.rk; try { localStorage.setItem("thidua-v2-td-rk", rkScope); } catch { /* bỏ qua */ } draw(); document.getElementById("td-rk")?.scrollIntoView({ block: "start" }); return; }
+  if (e.target.closest("[data-team]")) return openTeamShift();
   if (e.target.closest("[data-assign]")) { try { localStorage.setItem("thidua-v2-jobs", "assign"); } catch { /* bỏ qua */ } return goFn("jobs"); }
   const va = e.target.closest("[data-viewas]");
   if (va) { document.dispatchEvent(new CustomEvent("viewas", { detail: va.dataset.viewas })); return; }

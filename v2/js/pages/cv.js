@@ -9,6 +9,7 @@ import { zones } from "./cv-zones.js";
 import { flyer } from "./cv-flyer.js";
 import { violationDocs } from "./cv-vio.js";
 import { CV_DROPPED } from "../simplify.js";
+import { busyWeek, busyCheck } from "./cv-busy.js";
 
 const TABS = [["tasks", "📋 Việc"], ["tiktok", "📱 TikTok"], ["clean", "🧹 Vệ sinh"], ["busy", "📅 Lịch bận"], ["rs", "🏃 Roadshow"], ["flyer", "📄 Tờ rơi"], ["vio", "📄 Biên bản"], ["fund", "💵 Quỹ"], ["stats", "📊 Thống kê"]];
 const RS_TIMES = (() => { const o = []; const add = (a, b) => { for (let t = a; t <= b; t += 30) o.push(String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0")); }; add(360, 630); add(900, 1080); return o; })();
@@ -190,16 +191,18 @@ async function clean(body) {
 }
 
 // =================== Lịch bận ===================
-let busySub = "reg", hrmHtml = "";
+let busySub = "week", hrmHtml = "";   // week: đăng ký theo tuần (cv-busy.js) · reg: lịch tháng · chk: đối chiếu lịch ca
 async function busy(body) {
   const from = ym + "-01", to = addDays(shiftMonth(ym, 1) + "-01", -1), today = vnToday(), max = setting("BUSY_MAX_WEEKDAY", 3);
-  D.busy = await load("busy", "busy_date", busySub === "hrm" ? addDays(today, -14) : from, busySub === "hrm" ? addDays(today, 40) : to);
+  if (!["week", "reg", "chk"].includes(busySub)) busySub = "week";
+  body.innerHTML = `<div class="seg" style="margin-bottom:12px" id="bzSub"><button data-s="week" class="${busySub === "week" ? "on" : ""}" type="button">📝 Đăng ký tuần</button><button data-s="reg" class="${busySub === "reg" ? "on" : ""}" type="button">📅 Lịch tháng</button><button data-s="chk" class="${busySub === "chk" ? "on" : ""}" type="button">⚠️ Đối chiếu ca</button></div><div id="bzBody"></div>`;
+  $("#bzSub").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) { busySub = b.dataset.s; draw(); } };
+  if (busySub === "week") return busyWeek($("#bzBody"), () => draw(true));
+  if (busySub === "chk") return busyCheck($("#bzBody"));
+  D.busy = await load("busy", "busy_date", from, to);
   const on = (d) => D.busy.filter((b) => b.busy_date === d && !staffById(b.staff_id)?.hidden);
   const isWk = (d) => { const w = new Date(d + "T00:00:00Z").getUTCDay(); return w >= 1 && w <= 5; };
-  body.innerHTML = `<div class="seg" style="margin-bottom:12px" id="bzSub"><button data-s="reg" class="${busySub === "reg" ? "on" : ""}" type="button">📝 Đăng ký Bận / OFF</button><button data-s="hrm" class="${busySub === "hrm" ? "on" : ""}" type="button">🗓️ Kiểm tra ca HRM</button></div><div id="bzBody"></div>`;
-  $("#bzSub").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) { busySub = b.dataset.s; draw(); } };
   const bz = $("#bzBody");
-  if (busySub === "hrm") return busyHrm(bz);
   bz.innerHTML = `<div class="card"><div class="card-h"><h2>📅 Lịch bận việc / OFF</h2><span class="small muted">Thứ 2–6 tối đa ${max} người/ngày · Thứ 7, CN không giới hạn · chỉ quản lý xoá</span></div>
     ${setting("BUSY_LOCK_ENABLED", true) === true || setting("BUSY_LOCK_ENABLED", true) === "true" ? (() => { const hm = setting("BUSY_DEADLINE_HM", "22:00"), mon = weekStart(today), fri = addDays(mon, 4), passed = today > fri || (today === fri && vnHM() >= hm), dl = passed ? addDays(fri, 7) : fri;
       return `<div class="banner ${passed ? "info" : "warn"}"><div><b>⏰ Hạn đăng ký bận/OFF tuần ${dmy(addDays(dl, 3)).slice(0, 5)}–${dmy(addDays(dl, 9)).slice(0, 5)}: ${esc(hm)} thứ 6 ${dmy(dl).slice(0, 5)}</b>Sau hạn nhân viên không tự đăng ký được cho tuần đó — nhờ quản lý đăng ký hộ.</div></div>`; })() : ""}
@@ -224,7 +227,7 @@ async function busy(body) {
         const sid = v.slice(4); if (!(await confirmBox("Xoá đăng ký?", `${esc(name(sid))} · ${dmy(d)}`, "Xoá", true))) return;
         await rpc("busy_delete", { p_staff: sid, p_date: d }); toast("Đã xoá");
       } else {
-        const r = await rpc("busy_register", { p_staff: state.staff, p_date: d, p_type: state.type, p_shifts: state.shifts });
+        const r = await rpc("busy_set", { p_staff: state.staff, p_date: d, p_type: state.type, p_shifts: state.shifts });   // đăng ký lại = sửa
         toast((r.status === "full" ? "⛔ " : "✅ ") + r.message, 4500);
       }
       draw();

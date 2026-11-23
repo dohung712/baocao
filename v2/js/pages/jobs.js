@@ -280,20 +280,22 @@ async function types(body) {
 async function shift(body, alive) {
   const last = setting("SHIFT_LAST", null), slots = setting("SHIFT_SLOTS", []);
   const wk = V.sweek, days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(wk, i));
-  const { data, error } = await sb.from("shifts").select("staff_id,d,slots").gte("d", days[0]).lte("d", days[6]);
+  const [{ data, error }, cf] = await Promise.all([sb.from("shifts").select("staff_id,d,slots,pos,private").gte("d", days[0]).lte("d", days[6]), rpc("shift_conflicts", { p_from: days[0], p_to: days[6] }).catch(() => [])]);
   if (error) throw error;
   if (!alive()) return;
-  const map = new Map((data || []).map((x) => [x.staff_id + "|" + x.d, x.slots || []]));
+  const map = new Map((data || []).map((x) => [x.staff_id + "|" + x.d, x.slots || []])), priv = new Set((data || []).filter((x) => x.private).map((x) => x.staff_id));
+  const conf = Array.isArray(cf) ? cf : [], cmap = new Map(conf.map((c) => [c.staff_id + "|" + c.d, c]));   // D12d: xếp ca trùng lịch bận / OFF
   const staff = staffList().filter((s) => days.some((d) => map.has(s.id + "|" + d)));
   const P = { parsed: null, file: null };
   body.innerHTML = `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>📥 Cập nhật lịch ca</h3></div>
-      <p class="small muted">Tool sắp ca bỏ file Excel vào thư mục Drive <b>${esc((setting("SHIFT_DRIVE_PATH", []) || []).join(" / "))}</b> — tool tự đọc 30 phút / lần. Có thể lấy ngay hoặc chọn file trên máy. File cùng dạng bảng “Quản lý phân ca”: hàng ngày <i>T2 (23/11)</i>, cột <i>User · Họ tên · Ca 1 … Ca 6</i>.</p>
+      <p class="small muted">Tool sắp ca bỏ file Excel vào thư mục Drive <b>${esc((setting("SHIFT_DRIVE_PATH", []) || []).join(" / "))}</b> — tool tự đọc 30 phút / lần, rồi tự so với lịch bận NV đã đăng ký (trùng → báo Telegram + thông báo QL). Có thể lấy ngay hoặc chọn file trên máy. File dạng bảng “Quản lý phân ca” HRM: hàng ngày <i>T2 (23/11)</i>, cột <i>Bộ phận · Nhân viên (18450 - Hùng) · Ca 1 … Ca 6</i>. Ca của <b>Quản lý / Trưởng ca</b> 🔒 nhân viên không thấy.</p>
       ${last ? `<p class="small">Lần cập nhật gần nhất: <b>${esc(last.source || "")}</b> · ${last.from ? dmy(last.from) + " – " + dmy(last.to) : ""} · ${last.n || 0} dòng${last.unmatched ? ` · <span style="color:var(--warn)">${last.unmatched} người chưa khớp</span>` : ""} · ${last.at ? esc(whenTxt(last.at)) : ""} · ${last.by === "tu-dong" ? "tự động" : esc(last.by || "")}</p>` : `<p class="small muted">Chưa có lịch ca.</p>`}
       <div class="row"><button class="btn primary" type="button" id="shDrive">📥 Lấy file mới nhất từ Drive</button><label class="btn">📂 Chọn file trên máy<input type="file" id="shFile" accept=".xlsx,.xls,.csv" hidden></label></div>
       <div id="shPrev"></div></div>
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>🗓️ Lịch ca tuần ${dm(days[0])} – ${dm(days[6])}</h3><button class="btn small" type="button" data-wk="-7">‹</button><button class="btn small" type="button" data-wk="7">›</button>${deptChips()}</div>
+      ${conf.length ? `<div class="banner bad"><div><b>⚠️ ${conf.length} chỗ xếp ca trùng lịch bận / OFF</b> (ô đỏ): ${conf.slice(0, 6).map((c) => `${dow(c.d)} ${dm(c.d)} ${esc(shortName(c.name))} — ${c.kind === "off" ? "OFF" : c.kind === "ban" ? "bận Ca " + c.busy.join(",") : "bận chưa ghi ca"}, xếp Ca ${c.slots.join(",")}`).join(" · ")}${conf.length > 6 ? " …" : ""}. Xem đủ ở CV → Lịch bận → ⚠️ Đối chiếu ca.</div></div>` : (staff.length ? `<div class="banner ok"><div>✅ Tuần này không xếp ca trùng lịch bận / OFF.</div></div>` : "")}
       ${staff.length ? `<div class="tbl-wrap"><table class="nosort jb-grid"><thead><tr><th>NV</th>${days.map((d) => `<th class="num">${dow(d)}<br>${dm(d)}</th>`).join("")}</tr></thead><tbody>
-      ${staff.map((s) => `<tr><td style="white-space:nowrap">${esc(shortName(s.name))}</td>${days.map((d) => { const x = map.get(s.id + "|" + d); return `<td class="num ${x && !x.length ? "c-off" : ""}" title="${x ? esc(slotText(x, slots)) : "chưa có"}">${x ? (x.length ? esc(slotRange(x)) : "OFF") : "·"}</td>`; }).join("")}</tr>`).join("")}
+      ${staff.map((s) => `<tr><td style="white-space:nowrap">${esc(shortName(s.name))}${priv.has(s.id) ? ` <span title="Quản lý / Trưởng ca — nhân viên không thấy ca này">🔒</span>` : ""}</td>${days.map((d) => { const x = map.get(s.id + "|" + d), c = cmap.get(s.id + "|" + d); return `<td class="num ${x && !x.length ? "c-off" : ""} ${c ? "c-bad" : ""}" title="${x ? esc(slotText(x, slots)) : "chưa có"}${c ? " — trùng lịch " + (c.kind === "off" ? "OFF" : "bận") : ""}">${x ? (x.length ? esc(slotRange(x)) : "OFF") : "·"}${c ? " ⚠️" : ""}</td>`; }).join("")}</tr>`).join("")}
       </tbody></table></div>` : `<div class="empty small">Chưa có lịch ca tuần này.</div>`}</div>
     <div class="card"><div class="card-h"><h3>⏰ Giờ của từng ca</h3><button class="btn small primary" type="button" id="slSave">💾 Lưu</button></div>
       <div class="fields">${[1, 2, 3, 4, 5, 6].map((i) => `<label>Ca ${i}<input class="sl" placeholder="07:30-09:00" value="${esc(slots[i - 1] || "")}"></label>`).join("")}</div></div>`;
@@ -306,7 +308,7 @@ async function shift(body, alive) {
       P.parsed = m; P.file = file;
       box.innerHTML = `<div class="banner ${m.unmatched.length ? "warn" : "ok"}" style="margin-top:10px"><div><b>${esc(file.name)}</b>: ${dmy(sch.days[0])} – ${dmy(sch.days.at(-1))} · khớp ${m.pairs.length}/${sch.people.length} người${m.unmatched.length ? ` · chưa khớp: ${m.unmatched.map((p) => esc(`${p.name} (${p.user})`)).join(", ")} — kiểm tra mã NV trong Nhân sự` : ""}</div></div>
         <div class="tbl-wrap"><table class="nosort jb-grid"><thead><tr><th>NV</th>${sch.days.map((d) => `<th class="num">${dow(d)}<br>${dm(d)}</th>`).join("")}</tr></thead><tbody>
-        ${m.pairs.map(({ p, st }) => `<tr><td style="white-space:nowrap">${esc(shortName(st.name))}</td>${sch.days.map((d) => { const x = p.days[d]?.slots || []; return `<td class="num ${x.length ? "" : "c-off"}">${x.length ? esc(slotRange(x)) : "OFF"}</td>`; }).join("")}</tr>`).join("")}
+        ${m.pairs.map(({ p, st }) => `<tr><td style="white-space:nowrap">${esc(shortName(st.name))}<div class="tiny muted">${esc(p.dept || "")}</div></td>${sch.days.map((d) => { const x = p.days[d]?.slots || []; return `<td class="num ${x.length ? "" : "c-off"}">${x.length ? esc(slotRange(x)) : "OFF"}</td>`; }).join("")}</tr>`).join("")}
         </tbody></table></div><div class="row" style="margin-top:8px"><button class="btn primary" type="button" id="shSave">💾 Lưu lịch ca (${m.rows.length} dòng)</button></div>`;
     } catch (x) { box.innerHTML = `<div class="banner bad"><div>${esc(errMsg(x))}</div></div>`; }
   }
