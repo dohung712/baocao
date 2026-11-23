@@ -62,16 +62,28 @@ export async function geminiModels(key: string) {
     .sort((a, b) => (/lite/.test(a) ? 1 : 0) - (/lite/.test(b) ? 1 : 0) || verNum(b) - verNum(a) || (/preview|exp/.test(a) ? 1 : 0) - (/preview|exp/.test(b) ? 1 : 0));
 }
 export const lastGoodModel = () => goodModel;
+// Model chạy được gần nhất lưu ở cài đặt AI_MODEL_OK (tên model, không bí mật) → mọi Edge Function dùng ngay, khỏi dò lại
+let savedLoaded = false;
+async function loadSaved() {
+  if (savedLoaded) return; savedLoaded = true;
+  try { const v = (await rest("settings?select=value&key=eq.AI_MODEL_OK"))[0]?.value; if (typeof v === "string" && /^[\w.-]{3,60}$/.test(v)) goodModel ||= v; } catch { /* bỏ qua */ }
+}
+async function saveGood(m: string) {
+  if (goodModel === m) return; goodModel = m;
+  try { await rest("settings?on_conflict=key", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ key: "AI_MODEL_OK", value: m, updated_by: "tu-dong" }) }); } catch { /* bỏ qua */ }
+}
 export async function gemini(key: string, payload: Record<string, unknown>) {
   const errs: string[] = [], tried = new Set<string>();
+  await loadSaved();
   const call = async (m: string) => {
     tried.add(m);
     for (let attempt = 0; attempt < 2; attempt++) {
       const r = await fetch(`${GEM}/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(payload) });
       const j = await r.json().catch(() => ({}));
-      if (r.ok) { goodModel = m; return { text: (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim() }; }
+      if (r.ok) { await saveGood(m); return { text: (j.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim() }; }
       const msg = String(j.error?.message || r.status).replace(/\s+/g, " ").slice(0, 140);
-      if ([429, 500, 503].includes(r.status) && attempt === 0) { await sleep(r.status === 429 ? 6000 : 3000); continue; }
+      const daily = /per ?day|daily|PerDay/i.test(JSON.stringify(j.error || ""));   // hết hạn mức trong ngày: chờ cũng vô ích
+      if ([429, 500, 503].includes(r.status) && attempt === 0 && !daily) { await sleep(r.status === 429 ? 5000 : 3000); continue; }
       errs.push(`${m}: ${r.status} ${msg}`);
       if (r.status === 401 || (r.status === 403 && /api key|permission|billing/i.test(msg))) return { stop: true };   // khoá AI sai / hết quyền: thử model khác vô ích
       return null;
