@@ -9,6 +9,7 @@ import { drive, driveReady, driveVersion } from "../_shared/drive.ts";
 import { parseShiftAoa, matchStaff } from "../_shared/shift.ts";
 import { biSync } from "../_shared/bi.ts";
 import { rtSync } from "../_shared/rtask.ts";
+import { agentTick } from "./agent.ts";
 
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const dm = (d: string) => d.slice(8, 10) + "/" + d.slice(5, 7);
@@ -23,7 +24,7 @@ const APP = "https://dohung712.github.io/baocao/v2/";
 
 export async function loadJobs(from: string, to: string) {
   const [jobs, types] = await Promise.all([
-    rest(`jobs?select=id,type_id,staff_id,title,due_at,status,done_at,late_min,photos,group_key,done_staff,seen_at&due_at=gte.${dayStart(from)}&due_at=lt.${dayStart(addDays(to, 1))}&order=due_at&limit=5000`),
+    rest(`jobs?select=id,type_id,staff_id,title,due_at,status,done_at,late_min,photos,group_key,done_staff,seen_at&excused=eq.false&due_at=gte.${dayStart(from)}&due_at=lt.${dayStart(addDays(to, 1))}&order=due_at&limit=5000`),
     rest("job_types?select=id,name,icon,sort,tg&order=sort,id"),
   ]);
   return { jobs: collapseGroups(jobs as any[]), types: types as any[] };
@@ -234,6 +235,8 @@ export async function jobMaintenance(cfg: Record<string, any>) {
   } catch (e) { out.pushError = String((e as Error).message); }
   try { const s = await shiftAuto(cfg); if (s) out.shift = s; } catch (e) { out.shiftError = String((e as Error).message); }
   try { const b = await biAuto(); if (b) out.bi = { read: b.read, errors: b.errors, remaining: b.remaining }; } catch (e) { out.biError = String((e as Error).message); }
+  // D14 Trợ lý vận hành: báo lên trên, đối soát hết ca, canh lỗi, hộp duyệt theo khung giờ
+  try { const a = await agentTick(cfg, { rtError: out.rtError as string | undefined }); if (a) { out.agent = a; Object.defineProperty(out, "agentText", { value: { digest: (a as any).digestText, alert: (a as any).alertText }, enumerable: false }); } } catch (e) { out.agentError = String((e as Error).message).slice(0, 160); }
   return out;
 }
 

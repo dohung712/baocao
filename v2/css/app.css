@@ -910,3 +910,15 @@ tr.click{cursor:pointer}
 .pt-box{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:8px}
 .pt-who{font-size:13px}
 .pt-list{margin:4px 0 0;padding-left:18px;font-size:12px;display:grid;gap:2px}
+
+/* D14 Duyet - Tro ly van hanh */
+.ag-sec{margin:12px 0}
+.ag-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.ag-card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:var(--card,transparent)}
+.ag-card.urgent{border-color:var(--bad)}
+.ag-t{font-weight:600}
+.ag-d{font-size:13px;margin-top:3px;opacity:.9}
+.ag-d.pre{white-space:pre-line}
+.ag-f{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ag-f .grow{flex:1}
+.ag-cfg{margin-top:16px}

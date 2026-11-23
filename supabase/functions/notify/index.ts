@@ -80,6 +80,7 @@ export const ITEMS: Record<string, { label: string; freq: string; time: string; 
   jobweek: { label: "📋 Tổng kết công việc tuần theo hạng mục (gửi CN: tuần này · ngày khác: tuần trước)", freq: "weekly", time: "09:05", dow: 1, on: true },
   shiftcheck: { label: "⚠️ Lịch ca trùng lịch bận / OFF (gửi ngay khi tool đọc file lịch ca mới)", freq: "daily", time: "00:00", on: true },
   jobdue: { label: "⏰ Nhắc công việc sắp tới hạn / quá hạn chưa nộp ảnh (gửi ngay lúc tới giờ; số phút trước hạn: JOB_REMIND_BEFORE_MIN)", freq: "daily", time: "00:00", on: true },
+  agent: { label: "🤖 Trợ lý vận hành: hộp duyệt theo khung giờ AGENT_TIMES (12:00 · 17:00 · 21:30) + cảnh báo gấp (nơi nhận: AGENT_CHAT_IDS, trống = như trên)", freq: "daily", time: "00:00", on: true },
 };
 function items(cfg: Record<string, any>) {
   const saved: any[] = Array.isArray(cfg.NOTIFY_ITEMS) ? cfg.NOTIFY_ITEMS : [];
@@ -135,6 +136,13 @@ async function compose(kind: string, date: string, cfg: Record<string, any>, opt
     const list: any[] = await rest(`jobs?select=id,staff_id,title,due_at&status=eq.todo&due_at=gte.${encodeURIComponent(date + "T00:00:00+07:00")}&due_at=lte.${encodeURIComponent(new Date(Date.now() + before * 60000).toISOString())}&order=due_at&limit=200`);
     const allNames = new Map(((await rest("staff?select=id,name")) as any[]).map((x) => [x.id, x.name]));
     return { text: jobDueMsg(store, list.filter((j) => j.due_at > nowIso), list.filter((j) => j.due_at <= nowIso), allNames, before), period: date };
+  }
+  if (kind === "agent") {   // gửi thử: các mục đang chờ trong hộp duyệt (không đánh dấu đã gửi)
+    const open: any[] = await rest("agent_items?select=kind,title,detail,urgent,needs_decision&status=eq.open&order=urgent.desc,created_at&limit=40");
+    const need = open.filter((x) => x.needs_decision).length;
+    const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return { text: [`📥 <b>TRỢ LÝ VẬN HÀNH (gửi thử)</b> · ${esc(store)}`, "", need ? `Cần duyệt: <b>${need}</b> · tổng ${open.length} mục` : `✅ Không có mục nào cần duyệt (${open.length} mục cần biết)`, "",
+      ...open.slice(0, 20).map((x) => `${x.urgent ? "❗" : "•"} ${esc(x.title)}${x.detail ? " — " + esc(String(x.detail).slice(0, 120)) : ""}`), "", `Duyệt nhanh: ${APP_URL}#duyet`].join("\n"), period: date };
   }
   if (kind === "jobweek") { const w = weekRange(date), j = await loadJobs(w.from, w.to); return { text: jobWeekMsg(store, w.from, w.to, j.jobs, j.types, names), period: isoWeek(date) }; }
   if (kind === "revenue") {
@@ -278,8 +286,17 @@ async function tick() {
       if (text) { await sendAll(text, cfg); await log("jobdue", now.date + " " + now.hm, true, `auto ${due.soon.length}+${due.over.length}`); done.push("jobdue"); }
     } catch (e) { await log("jobdue-error", now.date + " " + now.hm, false, String((e as Error).message)); }
   }
+  // D14 Trợ lý vận hành: tin hộp duyệt theo khung giờ + cảnh báo gấp
+  const ag = (jobs as any).agentText;
+  if (ag && (ag.digest || ag.alert) && items(cfg).find((i) => i.id === "agent")?.on) {
+    const chatCfg = Array.isArray(cfg.AGENT_CHAT_IDS) && cfg.AGENT_CHAT_IDS.length ? { ...cfg, NOTIFY_CHAT_IDS: cfg.AGENT_CHAT_IDS } : cfg;
+    for (const [k, text] of [["agent-alert", ag.alert], ["agent", ag.digest]] as [string, string | null][]) {
+      if (!text) continue;
+      try { await sendAll(text, chatCfg); await log(k, now.date + " " + now.hm, true, "auto"); done.push(k); } catch (e) { await log(k + "-error", now.date + " " + now.hm, false, String((e as Error).message)); }
+    }
+  }
   for (const it of items(cfg)) {
-    if (it.id === "jobdue" || it.id === "shiftcheck") continue;   // gửi ở trên theo sự kiện
+    if (it.id === "jobdue" || it.id === "shiftcheck" || it.id === "agent") continue;   // gửi ở trên theo sự kiện
     if (it.id === "flyer" || it.id === "flyerpre" || it.id === "flyernew") {
       // không theo giờ cố định: đợt mới → gửi ngay; trước hạn X phút → nhắc; tới giờ hạn → báo; mỗi tuyến / đợt 1 lần
       if (!it.on) continue;

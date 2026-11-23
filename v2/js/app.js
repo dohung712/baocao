@@ -13,6 +13,7 @@ import * as assistant from "./pages/assistant.js";
 import * as rankhub from "./pages/rankhub.js";
 import * as today from "./pages/today.js";
 import * as jobs from "./pages/jobs.js";
+import * as duyet from "./pages/duyet.js";
 import { registerSW } from "./push.js";
 import { setViewAs } from "./viewas.js";
 
@@ -24,6 +25,7 @@ const PAGES = [
   { id: "today", icon: "🏠", label: "Hôm nay", mod: today, tab: true },
   { id: "report", icon: "📝", label: "Báo cáo", mod: report, tab: true },
   { id: "jobs", icon: "📋", label: "Giao việc", mod: jobs, manager: true, tab: true },
+  { id: "duyet", icon: "📥", label: "Duyệt", mod: duyet, manager: true, tab: true },
   { id: "score", icon: "🏅", label: "Xếp hạng", mod: { render: rankhub.make("score") }, tab: true, ok: hubOk, group: ["ranking", "me"] },
   { id: "store", icon: "🏢", label: "Siêu thị", mod: store, tab: () => !isManager() },
   { id: "admin", icon: "⚙️", label: "Quản lý", mod: admin, manager: true },

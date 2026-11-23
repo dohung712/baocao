@@ -47,7 +47,7 @@ export function jobCard(j, { who = false, today = vnToday() } = {}) {
   return `<button type="button" class="jb-card st-${st}" data-job="${j.id}">
     <span class="jb-ic">${t?.icon || "📌"}</span>
     <span class="jb-main"><b>${esc(j.title)}</b>
-      <span class="jb-meta">${who ? esc(shortName(staffById(j.staff_id)?.name || j.staff_id)) + " · " : ""}${j.start_at && Date.parse(j.start_at) > Date.now() ? `từ ${whenTxt(j.start_at, today)} · ` : ""}hạn ${whenTxt(j.due_at, today)} · ${byOther(j) ? `✅ ${esc(shortName(staffById(j.done_staff)?.name || j.done_staff))} đã nộp cho cả ca` : j.status === "done" ? (j.links?.length ? `🔗 ${j.links.length} link` : `📷 ${n} ảnh`) : proofTxt(j)}${groupTxt(j) && j.status !== "done" ? ` · ${groupTxt(j)}` : ""}${extra ? ` · <span class="jb-x">${extra}</span>` : ""}</span></span>
+      <span class="jb-meta">${who ? esc(shortName(staffById(j.staff_id)?.name || j.staff_id)) + " · " : ""}${j.start_at && Date.parse(j.start_at) > Date.now() ? `từ ${whenTxt(j.start_at, today)} · ` : ""}hạn ${whenTxt(j.due_at, today)} · ${byOther(j) ? `✅ ${esc(shortName(staffById(j.done_staff)?.name || j.done_staff))} đã nộp cho cả ca` : j.status === "done" ? (j.excused ? `🙏 ${esc(j.note || "Được miễn")}` : j.links?.length ? `🔗 ${j.links.length} link` : `📷 ${n} ảnh`) : proofTxt(j)}${groupTxt(j) && j.status !== "done" ? ` · ${groupTxt(j)}` : ""}${extra ? ` · <span class="jb-x">${extra}</span>` : ""}</span></span>
     <span class="pill ${cls}">${ic} ${lb}</span></button>`;
 }
 
@@ -76,7 +76,12 @@ export async function openSubmit(j) {
         <span class="small muted">${j.proof === "none" ? "Ảnh không bắt buộc" : `Cần ít nhất ${j.photo_min} ảnh, tối đa ${j.photo_max}`}</span></div>` : ""}
     <label style="margin-top:10px;display:block">Ghi chú (không bắt buộc)<textarea id="jbNote" rows="2">${esc(j.note || "")}</textarea></label>
     ${!done && Date.parse(j.due_at) < Date.now() && j.pen_late ? `<p class="small" style="color:var(--bad)">⏰ Đã quá hạn: nộp bây giờ bị trừ ${j.pen_late}⭐.</p>` : ""}
-    <p class="small muted" id="jbMsg" style="min-height:1.2em"></p>`}
+    <p class="small muted" id="jbMsg" style="min-height:1.2em"></p>
+    ${own && j.status === "todo" && !j.excused ? `<details class="jb-req" style="margin-top:6px"><summary class="linkish small">🙋 Không kịp / không làm được? Xin dời hạn hoặc xin miễn</summary>
+      <div class="fields" style="margin-top:6px"><label>Loại<select id="rqType"><option value="delay">Xin dời hạn</option><option value="excuse">Xin miễn việc này</option></select></label>
+      <label id="rqDueL">Hạn mới<input type="datetime-local" id="rqDue" value="${new Date(Math.max(Date.parse(j.due_at), Date.now()) + 7 * 3600e3 + 3600e3).toISOString().slice(0, 16)}"></label></div>
+      <label>Lý do<input id="rqWhy" maxlength="300" placeholder="VD: đang đông khách, máy hỏng, không có ca…"></label>
+      <div class="row" style="margin-top:6px"><button class="btn small" type="button" id="rqSend">📨 Gửi quản lý duyệt</button><span class="small muted" id="rqMsg"></span></div></details>` : ""}`}
     <div class="modal-actions"><button class="btn" data-v="cancel">Đóng</button><button class="btn" data-v="ok" hidden id="jbClose">ok</button>
       ${j.status === "missed" || byOther(j) ? "" : `<button class="btn primary" type="button" id="jbSend">${done ? "💾 Cập nhật" : j.proof === "none" && !j.links_min ? "✅ Hoàn thành" : "📤 Nộp việc"}</button>`}</div>`;
   const v = await modal(html, {
@@ -103,6 +108,16 @@ export async function openSubmit(j) {
         if (n) { const [b] = fresh.splice(Number(n.dataset.rmn), 1); URL.revokeObjectURL(b._url); draw(); }
       });
       draw();
+      $("#rqType", body)?.addEventListener("change", (e) => { $("#rqDueL", body).hidden = e.target.value !== "delay"; });
+      $("#rqSend", body)?.addEventListener("click", async (e) => {
+        const btn = e.currentTarget, ty = $("#rqType", body).value, why = $("#rqWhy", body).value.trim(), m2 = (x) => { $("#rqMsg", body).textContent = x; };
+        if (why.length < 3) return m2("Ghi lý do giúp quản lý duyệt.");
+        const dv = $("#rqDue", body).value, due = ty === "delay" && dv ? new Date(dv + ":00+07:00").toISOString() : null;
+        if (ty === "delay" && !due) return m2("Chọn hạn mới.");
+        btn.disabled = true;
+        try { const r = await rpc("agent_request", { p_job: j.id, p_type: ty, p_reason: why, p_due: due }); m2("✅ " + r.message); toast(r.message, 4000); }
+        catch (x) { m2(errMsg(x)); btn.disabled = false; }
+      });
       $("#jbSend", body)?.addEventListener("click", async (e) => {
         const btn = e.currentTarget;
         const checks = $$("[data-ck]", body).filter((c) => c.checked).map((c) => Number(c.dataset.ck));
