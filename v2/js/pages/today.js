@@ -95,10 +95,10 @@ function draw() {
         <span class="td-shift ${sh && !sh.slots?.length ? "off" : ""}">🕑 ${sh ? (sh.slots?.length ? esc(slotText(sh.slots, slots)) : "OFF hôm nay") : "Chưa có lịch ca"}</span></div>
       <div class="td-nums"><span><b>${todayAll.filter((j) => j.status === "todo").length}</b>cần nộp</span><span class="bad"><b>${over.length + legBad.length}</b>quá hạn</span><span><b>${todayAll.reduce((a, j) => a + nPhotos(j), 0)}</b>ảnh đã nộp</span></div>
     </div>` : `<div class="banner info"><div>Tài khoản chưa gắn mã nhân viên nên không có việc cá nhân.</div></div>`}
-    ${S.realMe?.role === "owner" && !S.me.viewAs ? `<div class="card td-mgr"><div><b>👁️ Xem thử giao diện</b><span class="small muted">Xem đúng màn hình nhân viên hoặc quản lý thấy</span></div><div class="row"><button class="btn small" type="button" data-viewas="emp">👤 Nhân viên</button><button class="btn small" type="button" data-viewas="mgr">🧑‍💼 Quản lý</button></div></div>` : ""}
     <nav class="td-nav">${secs.map(([id, i, l, b]) => `<button type="button" data-sec="${id}">${i} ${l}${b ? `<i class="badge">${b}</i>` : ""}</button>`).join("")}</nav>
+    ${S.realMe?.role === "owner" && !S.me.viewAs ? `<div class="card td-mgr"><div><b>👁️ Xem thử giao diện</b><span class="small muted">Xem đúng màn hình nhân viên hoặc quản lý thấy</span></div><div class="row"><button class="btn small" type="button" data-viewas="emp">👤 Nhân viên</button><button class="btn small" type="button" data-viewas="mgr">🧑‍💼 Quản lý</button></div></div>` : ""}
 
-    ${secH(1, "td-jobs", "📌", "Công việc cần làm", isManager() ? `<button class="btn small primary" type="button" data-assign>➕ Giao thêm việc</button>` : "")}
+    ${secH(1, "td-jobs", "📌", "Công việc cần làm", isManager() ? `<button class="btn small primary" type="button" data-assign>➕ Giao việc</button>` : "")}
     ${over.length || legBad.length ? `<h3 class="td-sec bad">⚠️ Quá hạn · ${over.length + legBad.length}</h3><div class="jb-list">${over.map(card).join("")}${legBad.map(leg).join("")}</div>` : ""}
     ${me ? `<h3 class="td-sec">Hôm nay · ${todayJ.length}</h3><div class="jb-list">${todayJ.length ? todayJ.map(card).join("") : `<div class="empty small">Hôm nay chưa có việc được giao.</div>`}${doneOld.map(card).join("")}</div>` : ""}
     ${legRest.length ? `<h3 class="td-sec">🔔 Nhắc từ các mục khác · ${legRest.length}</h3><div class="jb-list">${legRest.map(leg).join("")}</div>` : ""}
@@ -129,7 +129,7 @@ function revHtml() {
       <div class="row" style="justify-content:space-between;align-items:baseline"><small class="muted">Toàn siêu thị · DT quy đổi (triệu)</small><span class="tiny muted">tới ${BI.through ? dm(BI.through) : "?"} · ngày ${BI.days.el ?? "?"}/${BI.days.tot ?? "?"}</span></div>
       <div class="bi-big"><b>${money(t.actual)}</b><span class="muted"> / ${money(t.target)} tr</span> <b class="small">${pctTxt(t.pct)}</b></div>
       <div class="bar ${barCls(t.fcPct ?? 0)}"><i style="width:${Math.min(100, t.pct ?? 0)}%"></i></div>
-      <div class="td-kv"><span><small>Dự kiến</small><b class="${(t.fcPct ?? 0) >= 100 ? "pos" : "neg"}">${pctTxt(t.fcPct)}</b></span><span><small>Còn thiếu</small><b>${t.gap ? money(t.gap) : "✅"}</b></span><span><small>Cần / ngày (${t.left ?? "?"} ngày)</small><b class="star">${t.gap ? money(t.perDay) : "—"}</b></span></div>
+      <div class="td-kv"><span><small>Dự kiến</small><b class="${(t.fcPct ?? 0) >= 100 ? "pos" : "neg"}">${pctTxt(t.fcPct)}</b></span><span><small>Còn thiếu</small><b>${t.gap ? money(t.gap) : "✅"}</b></span><span><small>Cần/ngày · ${t.left ?? "?"}n</small><b class="star">${t.gap ? money(t.perDay) : "—"}</b></span></div>
     </div>
     <div class="td-mini2">${mini("TGDĐ", BI.rev.TGD)}${mini("Topzone", BI.rev.AAR)}</div>
     ${biHtml}`;
