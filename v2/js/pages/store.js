@@ -3,6 +3,7 @@ import { $, $$, esc, fmt, toast, copyText, sortTh, sorter, applySort, dmy } from
 import { sb, S, rpc, onChange, isManager, setting, errMsg, staffById } from "../store.js";
 import * as BI from "../bi.js";
 const { loadBi, biRevenueHtml, biStaffHtml, biToolsHtml, bindBiTools } = BI;
+import { loadProposals, proposalsHtml, bindProposals } from "../bi-approve.js";
 
 // Bóc tách văn bản báo cáo nội bộ (giữ đúng cách làm của bản cũ)
 export function parseStoreText(text) {
@@ -58,6 +59,7 @@ export async function render(view) {
       <span class="muted small" id="sUpdated"></span>
     </div>
     <div id="sTable"></div>
+    ${isManager() ? `<div id="sBiApprove"></div>` : ""}
     <div id="sBiStaff"></div>`;
   $("#sBranch").onclick = (e) => { const b = e.target.closest("[data-b]"); if (!b) return; $$("#sBranch button").forEach((x) => x.classList.toggle("on", x === b)); st.branch = b.dataset.b; draw(); };
   $("#sFilter").onclick = (e) => { const b = e.target.closest("[data-f]"); if (!b) return; $$("#sFilter button").forEach((x) => x.classList.toggle("on", x === b)); st.filter = b.dataset.f; draw(); };
@@ -84,7 +86,8 @@ export async function render(view) {
 
 async function load() {
   if (!$("#sTable")) return;
-  const [{ data, error }, bi] = await Promise.all([sb.from("store_contest").select("*").order("sort"), loadBi().catch(() => null)]);
+  const [{ data, error }, bi, props] = await Promise.all([sb.from("store_contest").select("*").order("sort"), loadBi().catch(() => null),
+    isManager() ? loadProposals().catch(() => null) : null]);
   if (error) { $("#sTable").innerHTML = `<div class="banner bad"><div>${esc(errMsg(error))}</div></div>`; return; }
   if (!$("#sTable")) return;
   st.rows = data; st.updated = data.reduce((m, r) => (r.updated_at > m ? r.updated_at : m), "");
@@ -93,6 +96,9 @@ async function load() {
     $("#sBi").innerHTML = biRevenueHtml(bi);
     $("#sBiStaff").innerHTML = biStaffHtml(bi, (id) => staffById(id)?.name);
     const tools = $("#sBiTools");
+    const ap = $("#sBiApprove");
+    if (ap && props) { const sel = new Set([...ap.querySelectorAll(".bi-prop")].filter((c) => !c.querySelector(".bp-sel")?.checked).map((c) => c.dataset.pid));
+      ap.innerHTML = proposalsHtml(props); sel.forEach((id) => { const c = ap.querySelector(`.bi-prop[data-pid="${id}"] .bp-sel`); if (c) c.checked = false; }); bindProposals(ap, load); }
     if (tools && !BI.biBusy?.on) { const open = tools.querySelector("details")?.open; tools.innerHTML = biToolsHtml(bi); if (open) tools.querySelector("details").open = true; bindBiTools(tools, load); }
   }
   draw();

@@ -3,6 +3,7 @@
 // Dùng ở Edge Function "bi" (QL bấm đọc / chọn ảnh) và "notify" (tự đọc 30 phút / lần).
 import { rest, rpc, gemini } from "./common.ts";
 import { drive, driveVersion } from "./drive.ts";
+import { pushMany } from "./webpush.ts";
 
 const N = (desc: string) => ({ type: "NUMBER", nullable: true, description: desc });
 const I = (desc: string) => ({ type: "INTEGER", nullable: true, description: desc });
@@ -156,6 +157,56 @@ export async function applyContest(actor: string) {
   return out.length;
 }
 
+// ---------- B16b: thẻ NV → đề xuất chờ QL duyệt (bi_proposals) ----------
+const ikey = (s: string) => norm(String(s || "").replace(/(\.\.\.|…)\s*$/, "")).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+// Ghép tên chương trình trên BI với môn thi đua tháng của NV trong tool: trùng tên, hoặc 1 bên là phần đầu của bên kia (chỉ khi duy nhất)
+export function matchItem(biName: string, tool: { name: string; target: number }[], used: Set<string>, exact = false) {
+  const b = ikey(biName); if (!b) return null;
+  const free = tool.filter((t) => !used.has(t.name));
+  let c = free.filter((t) => ikey(t.name) === b);
+  if (c.length !== 1 && !exact) c = free.filter((t) => { const k = ikey(t.name); return k && (b.startsWith(k + " ") || k.startsWith(b + " ")); });
+  return c.length === 1 ? c[0] : null;
+}
+// Ghép cả danh sách: lượt 1 trùng tên, lượt 2 theo phần đầu tên (để "Sim" không tranh với "Sim ĐMX")
+export function matchAll(names: string[], tool: { name: string; target: number }[]) {
+  const used = new Set<string>(), out = new Array(names.length).fill(null);
+  for (const exact of [true, false]) names.forEach((nm, i) => { if (out[i]) return; const m = matchItem(nm, tool, used, exact); if (m) { used.add(m.name); out[i] = m; } });
+  return out as ({ name: string; target: number } | null)[];
+}
+// Tạo đề xuất cho các thẻ NV chưa có đề xuất; trả số đề xuất mới (và báo QL qua thông báo đẩy)
+export async function proposeFromCards(actor: string) {
+  const cards: any[] = await rest("bi_files?select=file_id,staff_id,data_through,data&kind=eq.staff_card&status=eq.ok&staff_id=not.is.null&data_through=not.is.null&order=data_through&limit=500");
+  if (!cards.length) return 0;
+  const have = new Set(((await rest("bi_proposals?select=file_id&limit=5000")) as any[]).map((x) => x.file_id));
+  const todo = cards.filter((c) => !have.has(c.file_id));
+  if (!todo.length) return 0;
+  const measures = new Map(((await rest("item_measures?select=name,measure")) as any[]).map((x) => [x.name, x.measure]));
+  let made = 0; const who: string[] = [];
+  for (const c of todo) {
+    const month = c.data_through.slice(0, 7) + "-01";
+    const t = (await rest(`monthly_targets?select=items&staff_id=eq.${encodeURIComponent(c.staff_id)}&month=eq.${month}`))[0];
+    const tool = ((t?.items || []) as any[]).map((x) => ({ name: String(x.name), target: Number(x.target) || 0 }));
+    const progs = ((c.data?.programs || []) as any[]).filter((p) => num(p.pct) !== null);
+    const hit = matchAll(progs.map((p) => p.name), tool), items: any[] = [];
+    for (const [i, p] of progs.entries()) {
+      const pct = num(p.pct)!, it = hit[i];
+      if (!it) { items.push({ name: null, bi_name: p.name, pct }); continue; }
+      const sl = (measures.get(it.name) || (it.target === Math.trunc(it.target) && it.target <= 200 ? "sl" : "dtqd")) === "sl";
+      const v = (pct * it.target) / 100;
+      items.push({ name: it.name, bi_name: p.name, pct, target: it.target, value: it.target ? (sl ? Math.round(v) : Math.round(v * 100) / 100) : null, sl });
+    }
+    const r = await rpc("_bi_propose", { p: { file_id: c.file_id, staff_id: c.staff_id, as_of: c.data_through, revenue: num(c.data?.staff?.revenue_qd), items }, p_actor: actor });
+    if (r?.status === "success") { made++; who.push(c.staff_id); }
+  }
+  if (made) {
+    try {
+      const mgr: any[] = await rest("memberships?select=staff_id&active=eq.true&role=in.(owner,manager)&staff_id=not.is.null");
+      await pushMany(mgr.map((x) => ({ staff_id: x.staff_id, data: { title: `🟡 ${made} số BI của NV chờ duyệt`, body: "Duyệt để nối DT QĐ + môn thi đua vào bảng điểm / lũy kế", url: "https://dohung712.github.io/baocao/v2/#store", tag: "bi-approve" } })));
+    } catch { /* không có máy nào bật thông báo */ }
+  }
+  return made;
+}
+
 // Đọc các ảnh mới / đã sửa trong thư mục BI (mỗi lần tối đa `limit` ảnh để không quá giờ chạy)
 export async function biSync(actor: string, limit = 4) {
   if ((await driveVersion()) < 3) throw new Error("Apps Script trên Google Drive cần bản 3 (supabase/apps-script/drive-upload.gs).");
@@ -175,7 +226,8 @@ export async function biSync(actor: string, limit = 4) {
     } catch (e) { errors++; await saveError({ id: f.id, name: f.name, updated: f.updated, url: f.url }, String((e as Error).message), actor).catch(() => {}); }
   }
   const applied = ok ? await applyContest(actor).catch(() => null) : null;
-  return { total: files.length, read: ok, errors, remaining: Math.max(0, todo.length - limit), contestRows: applied, folder: l.folder?.url || "" };
+  const proposals = ok ? await proposeFromCards(actor).catch(() => 0) : 0;
+  return { total: files.length, read: ok, errors, remaining: Math.max(0, todo.length - limit), contestRows: applied, proposals, folder: l.folder?.url || "" };
 }
 
 // QL chọn ảnh từ máy: lưu vào thư mục BI trên Drive rồi đọc luôn
@@ -190,5 +242,6 @@ export async function biUpload(actor: string, items: { name: string; mime: strin
     catch (e) { await saveError({ id: f.id, name: f.name, updated: "upload", url: f.url }, String((e as Error).message), actor).catch(() => {}); res.push({ name: f.name, error: String((e as Error).message) }); }
   }
   const applied = res.some((r) => r.kind === "store_contest") ? await applyContest(actor).catch(() => null) : null;
-  return { files: res, contestRows: applied };
+  const proposals = res.some((r) => r.kind === "staff_card") ? await proposeFromCards(actor).catch(() => 0) : 0;
+  return { files: res, contestRows: applied, proposals };
 }

@@ -757,3 +757,8 @@ tr.sel td{background:var(--brand-soft)}
 .bi-kv span{display:flex;flex-direction:column}
 .bi-kv small{color:var(--muted);font-size:12px}
 .bi-kv b{font-variant-numeric:tabular-nums}
+.bi-props{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px;margin-bottom:14px}
+.bi-prop{display:flex;flex-direction:column;gap:6px;padding:12px}
+.bp-line{font-size:14px}
+.bp-items{display:flex;flex-wrap:wrap;gap:4px}
+.bp-chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;display:inline-flex;gap:4px;align-items:center;cursor:pointer}

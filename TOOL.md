@@ -60,6 +60,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | B9 | Lịch sử báo cáo | Lịch sử | `pages/history.js` | `daily_results` |
 | B10 | Thi đua siêu thị (chỉ tiêu chung) + cột **Còn thiếu / Cần mỗi ngày** (số ngày còn lại lấy theo ảnh BI, không có thì theo lịch) | Siêu thị | `pages/store.js` | `store_contest`, `save_store_contest` |
 | B16 | **Số liệu BI từ ảnh chụp**: QL bỏ ảnh chụp app BI công ty (Doanh thu hợp nhất, BC Thi đua lũy kế, thẻ NV) vào Drive `Tool Báo Cáo/00 - Nhập doanh thu và thi đua` (đường dẫn = cài đặt `BI_DRIVE_PATH`) → AI (Gemini) đọc → doanh thu QĐ / target / dự kiến / còn thiếu / cần bán mỗi ngày từng kênh + toàn siêu thị; ảnh BC Thi đua mới nhất mỗi kênh **thay bảng B10** (TGD, AAR + dòng TỔNG cộng 2 kênh); bảng NV theo BI; NV thấy thẻ chỉ tiêu của mình ở 🏠 Hôm nay. Tự đọc 30 phút / lần (phút 10–14, 40–44, ≤ 2 ảnh), QL bấm "Đọc ảnh mới" hoặc chọn ảnh từ máy; ảnh lỗi → "Đọc lại". Mã siêu thị → kênh: cài đặt `BI_STORES`. Cần Apps Script **bản 3** (`list`, `get`) | Siêu thị (khối 📥 Số liệu BI, 📊 Doanh thu, 👥 NV theo BI); Hôm nay (🎯 Chỉ tiêu) | `js/bi.js`, `pages/store.js`, `pages/today.js`; Edge `bi` (sync / upload / apply), `_shared/bi.ts`, `notify/jobs.ts` (biAuto) | `bi_files`, `_store_contest_set`, `bi_forget` |
+| B16b | **Duyệt số BI của NV trước khi nối vào bảng điểm**: mỗi thẻ NV đọc được → 1 đề xuất (DT QĐ lũy kế + môn thi đua ghép tên với môn tháng của NV, giá trị = % trên thẻ × target tháng trong tool; môn số lượng làm tròn). Đề xuất cũ chưa duyệt của cùng NV / tháng → "có ảnh mới hơn". QL tick dòng cần lấy → **Duyệt** = ghi phần chênh lệch đến **ngày số liệu BI** (DT → `revenue_entries` adjust, môn → `item_adjustments`, ghi `score_log` kind cumulative / action bi_approve) như C12 → C10, Của tôi dùng số mới; **Từ chối** = không ghi. QL bộ phận chỉ duyệt NV bộ phận mình, ngày đã khoá sổ không duyệt được. Có đề xuất mới → thông báo đẩy cho QL | Siêu thị → 🟡 Số BI của NV chờ duyệt (chỉ QL) | `js/bi-approve.js`, `pages/store.js`; `_shared/bi.ts` (proposeFromCards, matchAll) | `bi_proposals`, `_bi_propose`, `bi_review` |
 
 ### C. Target tháng và xếp hạng điểm
 | Mã | Chức năng | Trên web | File giao diện | Hàm / bảng SQL |
@@ -215,6 +216,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 
 | Tên | Loại | File:dòng (bản mới nhất) |
 |---|---|---|
+| `_bi_propose` | function | 000960_bi_approve.sql:27 |
 | `_compute_report` | function | 000730_x3_scoreboard.sql:71 |
 | `_cum_tool` | function | 000820_cumulative.sql:62 |
 | `_cum_window` | function | 000820_cumulative.sql:46 |
@@ -246,6 +248,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `app_member` | function | 000100_core.sql:139 |
 | `apply_star_suggestions` | function | 000740_star_suggest_hot.sql:57 |
 | `bi_forget` | function | 000950_bi.sql:61 |
+| `bi_review` | function | 000960_bi_approve.sql:41 |
 | `busy_deadline` | function | 000840_report_todo_media.sql:41 |
 | `busy_delete` | function | 000600_modules.sql:262 |
 | `busy_register` | function | 000840_report_todo_media.sql:47 |
@@ -354,6 +357,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `zone_delete` | function | 000800_clean_zones_notify.sql:67 |
 | `zone_save` | function | 000800_clean_zones_notify.sql:45 |
 | `bi_files` | table | 000950_bi.sql:10 |
+| `bi_proposals` | table | 000960_bi_approve.sql:4 |
 | `busy` | table | 000600_modules.sql:47 |
 | `clean_zone_checks` | table | 000800_clean_zones_notify.sql:16 |
 | `clean_zones` | table | 000800_clean_zones_notify.sql:5 |
