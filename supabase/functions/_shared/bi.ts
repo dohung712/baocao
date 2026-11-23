@@ -90,9 +90,17 @@ export async function extract(mime: string, b64: string) {
   if (!k) throw new Error("Chưa có khoá AI (GEMINI_API_KEY).");
   const out = await gemini(k, {
     contents: [{ role: "user", parts: [{ text: BI_PROMPT }, { inline_data: { mime_type: mime || "image/jpeg", data: b64 } }] }],
-    generationConfig: { temperature: 0, maxOutputTokens: 8000, responseMimeType: "application/json", responseSchema: BI_SCHEMA },
+    generationConfig: { temperature: 0, maxOutputTokens: 24000, responseMimeType: "application/json", responseSchema: BI_SCHEMA },
   });
-  try { return JSON.parse(out); } catch { throw new Error("AI trả về không đúng khuôn."); }
+  return parseJson(out);
+}
+// Model mới đôi khi bọc JSON trong ```json … ``` hoặc thêm chữ trước / sau → lấy đoạn { … } ngoài cùng
+export function parseJson(out: string) {
+  const t = String(out || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  try { return JSON.parse(t); } catch { /* thử cắt */ }
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch { /* bỏ */ } }
+  throw new Error(t.length > 200 && b < t.length - 5 ? "AI trả về bị cắt ngang (sẽ tự đọc lại)." : "AI trả về không đúng khuôn (sẽ tự đọc lại).");
 }
 
 type FileMeta = { id: string; name: string; updated?: string; url?: string };
