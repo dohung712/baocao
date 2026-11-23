@@ -127,7 +127,7 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
     const items: Item[] = [], tomorrow = addDays(vn.date, 1);
     if (vn.hm >= String(cfg.AGENT_SHIFT_CHECK || "20:00")) {
       const [sh, tpl]: any[][] = await Promise.all([rest(`shifts?select=staff_id&d=eq.${tomorrow}&limit=1`), rest("job_templates?select=id&active=eq.true&limit=1")]);
-      if (!sh.length && tpl.length) items.push({ key: "no_shift:" + tomorrow, kind: "no_shift", urgent: true, needs_decision: false, title: `Chưa có lịch ca ngày mai (${tomorrow.slice(8)}/${tomorrow.slice(5, 7)})`, detail: "Chưa có lịch ca thì ngày mai tool không giao được việc lặp lại theo ca. Bỏ file lịch ca vào thư mục 02 trên Drive (hoặc Giao việc → 🗓️ Lịch ca)." });
+      if (!sh.length && tpl.length) items.push({ key: "no_shift:" + tomorrow, kind: "no_shift", urgent: true, needs_decision: false, title: `Chưa có lịch ca ngày mai (${tomorrow.slice(8)}/${tomorrow.slice(5, 7)})`, detail: "Chưa có lịch ca thì ngày mai tool không giao được việc lặp lại theo ca. Lịch phân ca theo tuần: bỏ file tuần sau vào Drive thư mục 02 trước 20:00 Chủ nhật (hoặc Giao việc → 🗓️ Lịch ca)." });
     }
     // lịch ca đã có → đóng cảnh báo cũ
     const ns: any[] = await rest("agent_items?select=id,key&status=eq.open&kind=eq.no_shift");

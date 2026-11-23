@@ -20,11 +20,11 @@ async function leaders() {
 }
 const chats = (v: unknown) => (Array.isArray(v) ? v.map(String).filter(Boolean) : []);
 
-async function deliver(kind: "biz" | "people", text: string, c: Record<string, any>) {
-  const title = kind === "biz" ? "📊 Cố vấn thi đua" : "💚 Sức khoẻ nhân sự";
+async function deliver(kind: "biz" | "people" | "day", text: string, c: Record<string, any>) {
+  const title = kind === "biz" ? "📊 Cố vấn thi đua" : kind === "day" ? "📋 Công việc trong ngày" : "💚 Sức khoẻ nhân sự";
   const first = text.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 3).join("\n");
   await pushMany((await leaders()).map((staff_id) => ({ staff_id, data: { title, body: first.slice(0, 220), url: APP + "#advisor", tag: "adv-" + kind, kind: "advisor" } }))).catch(() => {});
-  const to = kind === "biz" ? (chats(c.AGENT_CHAT_IDS).length ? chats(c.AGENT_CHAT_IDS) : chats(c.NOTIFY_CHAT_IDS)) : chats(c.ADV_PRIVATE_CHAT_IDS);
+  const to = kind !== "people" ? (chats(c.AGENT_CHAT_IDS).length ? chats(c.AGENT_CHAT_IDS) : chats(c.NOTIFY_CHAT_IDS)) : chats(c.ADV_PRIVATE_CHAT_IDS);
   if (c.NOTIFY_ENABLED === true || kind === "people") await tgPlain(to, `${title.toUpperCase()} · ${String(c.STORE_NAME || "")}\n\n${text}\n\nChi tiết: ${APP}#advisor`).catch(() => {});
 }
 
@@ -33,11 +33,23 @@ async function cron() {
   if (c.ADV_ON === false) return { skipped: "off" };
   const vn = vnParts(), n = toMin(vn.hm), done: string[] = [];
   const due = (t: string) => n >= toMin(t) && n < toMin(t) + 30;
-  for (const t of (Array.isArray(c.ADV_BIZ_TIMES) ? c.ADV_BIZ_TIMES : ["10:00", "21:00"]).map(String)) {
-    if (!due(t) || !(await once(vn.date, "biz-" + t))) continue;
+  // 📊 thi đua (07:30): ảnh BI úp 06:30–07:00 → chờ đọc xong (chưa có ảnh nào hôm nay hoặc vừa đọc < 6 phút trước) tối đa 25 phút
+  const biBusy = async () => {
+    const r: any[] = await rest(`bi_files?select=processed_at&processed_at=gte.${encodeURIComponent(vn.date + "T00:00:00+07:00")}&order=processed_at.desc&limit=1`);
+    return !r.length || Date.now() - Date.parse(r[0].processed_at) < 6 * 60000;
+  };
+  for (const t of (Array.isArray(c.ADV_BIZ_TIMES) ? c.ADV_BIZ_TIMES : ["07:30"]).map(String)) {
+    if (!due(t)) continue;
+    if (n < toMin(t) + 25 && (await biBusy())) { done.push("biz-wait-bi " + t); continue; }
+    if (!(await once(vn.date, "biz-" + t))) continue;
     try { const r = await runReport("biz", "tu-dong"); await deliver("biz", r.text, c); done.push("biz " + t); } catch (e) { done.push("biz-error " + String((e as Error).message).slice(0, 120)); }
   }
-  const pt = String(c.ADV_PEOPLE_TIME || "09:00"), pd = Number(c.ADV_PEOPLE_DOW ?? 1);
+  // 📋 công việc trong ngày (21:00): việc còn sót / thiếu, tình hình hoàn thành
+  const dt = String(c.ADV_DAY_TIME || "21:00");
+  if (c.ADV_DAY_TIME !== "" && due(dt) && (await once(vn.date, "day"))) {
+    try { const r = await runReport("day", "tu-dong"); await deliver("day", r.text, c); done.push("day"); } catch (e) { done.push("day-error " + String((e as Error).message).slice(0, 120)); }
+  }
+  const pt = String(c.ADV_PEOPLE_TIME || "08:00"), pd = Number(c.ADV_PEOPLE_DOW ?? 1);
   if (vn.dow === pd && due(pt) && (await once(vn.date, "people"))) {
     try { const r = await runReport("people", "tu-dong"); await deliver("people", r.text, c); done.push("people"); } catch (e) { done.push("people-error " + String((e as Error).message).slice(0, 120)); }
   }
@@ -80,7 +92,7 @@ Deno.serve(async (req) => {
     }
     if (!["owner", "manager"].includes(m.role)) throw new Error("Cố vấn AI chỉ dành cho quản lý.");
     if (body.mode === "run") {
-      const kind = body.kind === "people" ? "people" : "biz";
+      const kind = body.kind === "people" ? "people" : body.kind === "day" ? "day" : "biz";
       const r = await runReport(kind, m.email);
       return json({ status: "success", ...r });
     }

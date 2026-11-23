@@ -5,7 +5,7 @@
 import { $, esc, toast } from "../ui.js";
 import { sb, callFn, errMsg, setting, isOwner, S, loadSettings } from "../store.js";
 
-const TABS = [["biz", "📊 Thi đua"], ["people", "💚 Nhân sự"], ["ask", "💬 Hỏi đáp"]];
+const TABS = [["biz", "📊 Thi đua"], ["day", "📋 Công việc"], ["people", "💚 Nhân sự"], ["ask", "💬 Hỏi đáp"]];
 const SUGGEST = ["Hôm nay siêu thị cần đẩy gì nhất?", "Chương trình thi đua nào có nguy cơ trượt?", "Ai đang sa sút so với tháng trước?", "Tuần này ai trễ việc nhiều nhất?", "Nên khen ai tuần này?", "Ai đang làm quá tải?"];
 let tab = "biz", chat = [];
 const fmtVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23", weekday: "short" });
@@ -27,9 +27,10 @@ async function draw() {
   const { data, error } = await sb.from("advisor_reports").select("*").eq("kind", tab).order("created_at", { ascending: false }).limit(10);
   if (error) { body.innerHTML = `<div class="banner bad"><div>${esc(errMsg(error))}</div></div>`; return; }
   const [last, ...old] = data || [];
-  const when = tab === "biz" ? `Tự viết lúc ${(setting("ADV_BIZ_TIMES", ["10:00", "21:00"]) || []).join(" · ")} hằng ngày`
-    : `Tự viết ${["CN", "thứ 2", "thứ 3", "thứ 4", "thứ 5", "thứ 6", "thứ 7"][Number(setting("ADV_PEOPLE_DOW", 1))]} lúc ${setting("ADV_PEOPLE_TIME", "09:00")} hằng tuần`;
-  body.innerHTML = `<div class="row" style="margin-bottom:8px"><span class="small muted grow">${esc(when)} · gửi thông báo cho Giám đốc / QL${tab === "biz" ? " + Telegram" : (setting("ADV_PRIVATE_CHAT_IDS", []) || []).length ? " + Telegram riêng" : ""}</span>
+  const when = tab === "biz" ? `Tự viết lúc ${(setting("ADV_BIZ_TIMES", ["07:30"]) || []).join(" · ")} hằng ngày (chờ đọc xong ảnh BI)`
+    : tab === "day" ? `Tự viết lúc ${setting("ADV_DAY_TIME", "21:00")} hằng ngày: việc còn sót / thiếu, tình hình hoàn thành`
+    : `Tự viết ${["CN", "thứ 2", "thứ 3", "thứ 4", "thứ 5", "thứ 6", "thứ 7"][Number(setting("ADV_PEOPLE_DOW", 1))]} lúc ${setting("ADV_PEOPLE_TIME", "08:00")} hằng tuần`;
+  body.innerHTML = `<div class="row" style="margin-bottom:8px"><span class="small muted grow">${esc(when)} · gửi thông báo cho Giám đốc / QL${tab !== "people" ? " + Telegram" : (setting("ADV_PRIVATE_CHAT_IDS", []) || []).length ? " + Telegram riêng" : ""}</span>
       <button class="btn small primary" type="button" id="avRun">🔄 Phân tích ngay</button></div>
     ${last ? `<div class="av-card"><div class="tiny muted">${esc(at(last.created_at))}${last.by && last.by !== "tu-dong" ? " · " + esc(last.by) : " · tự động"}</div><div class="av-text">${esc(last.text)}</div></div>`
       : `<div class="empty">Chưa có báo cáo. Bấm <b>🔄 Phân tích ngay</b> để AI viết bản đầu tiên (mất khoảng 10–40 giây).</div>`}
@@ -72,7 +73,8 @@ function cfgHtml() {
   return `<details class="ag-cfg" style="margin-top:14px"><summary class="linkish">⚙️ Cài đặt Cố vấn AI</summary>
     <div class="fields" style="margin-top:8px">
       <label>Bật Cố vấn tự động<select id="vOn"><option value="1" ${setting("ADV_ON", true) !== false ? "selected" : ""}>Bật</option><option value="0" ${setting("ADV_ON", true) === false ? "selected" : ""}>Tắt</option></select></label>
-      <label>Giờ báo cáo thi đua<input id="vBiz" value="${esc((setting("ADV_BIZ_TIMES", ["10:00", "21:00"]) || []).join(", "))}"></label>
+      <label>Giờ báo cáo thi đua<input id="vBiz" value="${esc((setting("ADV_BIZ_TIMES", ["07:30"]) || []).join(", "))}"></label>
+      <label>Giờ báo cáo công việc trong ngày<input type="time" id="vDay" value="${esc(setting("ADV_DAY_TIME", "21:00"))}"></label>
       <label>Ngày báo cáo nhân sự<select id="vDow">${["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"].map((d, i) => `<option value="${i}" ${Number(setting("ADV_PEOPLE_DOW", 1)) === i ? "selected" : ""}>${d}</option>`).join("")}</select></label>
       <label>Giờ báo cáo nhân sự<input type="time" id="vPt" value="${esc(setting("ADV_PEOPLE_TIME", "09:00"))}"></label>
       <label>Telegram riêng cho báo cáo nhân sự (mã chat, cách nhau dấu phẩy; trống = không gửi Telegram)<input id="vChat" value="${esc((setting("ADV_PRIVATE_CHAT_IDS", []) || []).join(", "))}" placeholder="vd 123456789"></label>
@@ -83,7 +85,7 @@ function cfgHtml() {
 async function saveCfg() {
   const times = $("#vBiz").value.split(/[,;\s]+/).map((x) => x.trim()).filter((x) => /^([01]\d|2[0-3]):[0-5]\d$/.test(x)).sort();
   if (!times.length) return toast("Giờ dạng 10:00, 21:00");
-  const rows = [["ADV_ON", $("#vOn").value === "1"], ["ADV_BIZ_TIMES", times], ["ADV_PEOPLE_DOW", Number($("#vDow").value)], ["ADV_PEOPLE_TIME", $("#vPt").value || "09:00"],
+  const rows = [["ADV_ON", $("#vOn").value === "1"], ["ADV_BIZ_TIMES", times], ["ADV_PEOPLE_DOW", Number($("#vDow").value)], ["ADV_PEOPLE_TIME", $("#vPt").value || "08:00"], ["ADV_DAY_TIME", $("#vDay").value || "21:00"],
     ["ADV_PRIVATE_CHAT_IDS", $("#vChat").value.split(/[,;\s]+/).map((x) => x.trim()).filter((x) => /^-?\d{3,20}$/.test(x))]];
   const { error } = await sb.from("settings").upsert(rows.map(([key, value]) => ({ key, value, updated_by: S.me.email, updated_at: new Date().toISOString() })));
   if (error) return toast(errMsg(error), 5000);

@@ -92,6 +92,39 @@ export async function peopleSnapshot() {
   return { hom_nay: vn.date, khoang: `${from} → ${vn.date}`, ghi_chu: "ca tối = ca 5 (18–21h) hoặc ca 6 (21–22h)", nhan_vien: out };
 }
 
+// ---------- Số liệu công việc trong ngày (D15b, báo cáo 21:00) ----------
+export async function daySnapshot() {
+  const vn = vnParts(), nowIso = new Date().toISOString();
+  const [staff, jobs, box, pl, subs] = await Promise.all([
+    rest("staff?select=id,name,dept") as Promise<any[]>,
+    rest(`jobs?select=id,staff_id,title,due_at,status,late_min,seen_at,group_key,done_staff,excused,note&due_at=gte.${dayStart(vn.date)}&due_at=lt.${dayStart(addDays(vn.date, 1))}&order=due_at&limit=3000`) as Promise<any[]>,
+    rest("agent_items?select=kind,title,detail&status=eq.open&needs_decision=eq.true&limit=80") as Promise<any[]>,
+    rest(`push_log?select=staff_id,sent,clicked_at&kind=in.(new,soon,near,over,nag,shift,manual,escalate)&at=gte.${dayStart(vn.date)}&limit=8000`) as Promise<any[]>,
+    rest("push_subs?select=staff_id") as Promise<any[]>,
+  ]);
+  const nm = new Map(staff.map((s) => [s.id, short(s.name)]));
+  const n = (id: string) => nm.get(id) || id;
+  const st = (j: any) => j.excused ? "được miễn / dời hạn" : j.status === "done" ? (Number(j.late_min) > 0 ? `nộp trễ ${j.late_min} phút` : "đúng hạn") : j.status === "missed" ? "bỏ lỡ" : j.due_at < nowIso ? "quá hạn chưa nộp" : "chưa tới hạn";
+  // việc cả ca gộp 1 dòng
+  const seen = new Set<string>(), viec: any[] = [];
+  for (const j of jobs) {
+    const k = j.group_key || "j" + j.id; if (seen.has(k)) continue; seen.add(k);
+    const g = jobs.filter((x) => (x.group_key || "j" + x.id) === k), rep = g.find((x) => x.status === "done" && x.done_staff === x.staff_id) || j;
+    viec.push({ viec: j.title, han: vnParts(new Date(j.due_at)).hm, nguoi: g.length > 1 ? `Ca (${g.map((x) => n(x.staff_id)).join(", ")})` : n(j.staff_id), trang_thai: st(rep), nguoi_nop: rep.status === "done" && rep.done_staff ? n(rep.done_staff) : undefined, chua_xem: g.filter((x) => x.status === "todo" && !x.seen_at).map((x) => n(x.staff_id)) });
+  }
+  const sub = new Set(subs.map((x) => x.staff_id));
+  const per = [...new Set(jobs.map((j) => j.staff_id))].map((id) => {
+    const js = jobs.filter((j) => j.staff_id === id && !j.excused && !(j.group_key && j.status === "done" && j.done_staff && j.done_staff !== id));
+    const p = pl.filter((x) => x.staff_id === id && x.sent > 0);
+    return { nv: n(id), tong: js.length, dung_han: js.filter((j) => j.status === "done" && !Number(j.late_min)).length, tre: js.filter((j) => j.status === "done" && Number(j.late_min) > 0).length,
+      chua_nop_qua_han: js.filter((j) => j.status === "missed" || (j.status === "todo" && j.due_at < nowIso)).length, nhac: p.length, bam_mo: p.filter((x) => x.clicked_at).length, da_bat_thong_bao: sub.has(id) };
+  });
+  const all = viec.filter((v) => v.trang_thai !== "được miễn / dời hạn");
+  return { hom_nay: vn.date, gio: vn.hm, tong_viec: all.length, dung_han: all.filter((v) => v.trang_thai === "đúng hạn").length, tre: all.filter((v) => v.trang_thai.startsWith("nộp trễ")).length,
+    con_sot: all.filter((v) => ["quá hạn chưa nộp", "bỏ lỡ"].includes(v.trang_thai)).length, chua_toi_han: all.filter((v) => v.trang_thai === "chưa tới hạn").length,
+    viec, theo_nguoi: per, hop_duyet_cho_quyet: box };
+}
+
 const SYS = "Bạn là cố vấn vận hành cho Giám đốc một siêu thị Thế Giới Di Động / Topzone. Viết tiếng Việt, ngắn gọn, dễ đọc trên điện thoại. " +
   "CHỈ dùng số trong dữ liệu JSON; thiếu số thì nói 'chưa có số', tuyệt đối không bịa. Tiền tính bằng triệu đồng (tr). " +
   "Định dạng văn bản thường (KHÔNG dùng markdown, không dùng dấu * hay #); mỗi mục bắt đầu bằng emoji tiêu đề; gạch đầu dòng bằng '•'.";
@@ -108,12 +141,20 @@ const P_PEOPLE = "Viết BÁO CÁO SỨC KHOẺ NHÂN SỰ (tinh thần & hiệu
   "🔴 Rủi ro cao: chỉ ghi nếu có người dính ≥ 2 nhóm dấu hiệu cùng lúc; không có thì ghi 'Không có'.\n" +
   "✅ Việc Giám đốc nên làm tuần này: 2–3 việc.";
 
-export async function runReport(kind: "biz" | "people", by: string) {
+const P_DAY = "Viết BÁO CÁO CÔNG VIỆC TRONG NGÀY cho Giám đốc lúc cuối ngày (tối đa ~230 chữ), đúng khung:\n" +
+  "📋 Tổng quan: x/y việc đã xong, bao nhiêu đúng hạn / trễ / còn sót / chưa tới hạn.\n" +
+  "❌ Còn sót, thiếu: liệt kê việc quá hạn chưa nộp hoặc bỏ lỡ — tên việc, ai (cả ca thì ghi ca), hạn; ai chưa mở xem việc.\n" +
+  "⏰ Nộp trễ: tối đa 4 dòng, ai trễ bao lâu.\n" +
+  "👥 Theo người: 🌟 làm tốt (đúng hạn hết) · ⚠️ cần nhắc (trễ / sót nhiều, nhận nhắc mà không mở, chưa bật thông báo).\n" +
+  "📥 Còn chờ duyệt: số mục + loại (nếu có).\n" +
+  "✅ Việc cần xử lý trước khi hết ngày: tối đa 3 việc cụ thể (nhắc ai, cho nộp bù việc gì…).";
+
+export async function runReport(kind: "biz" | "people" | "day", by: string) {
   const key = await aiKey();
-  const snap = kind === "biz" ? await bizSnapshot() : await peopleSnapshot();
+  const snap = kind === "biz" ? await bizSnapshot() : kind === "day" ? await daySnapshot() : await peopleSnapshot();
   const text = await gemini(key, {
     systemInstruction: { parts: [{ text: SYS }] },
-    contents: [{ role: "user", parts: [{ text: (kind === "biz" ? P_BIZ : P_PEOPLE) + "\n\nDỮ LIỆU:\n" + JSON.stringify(snap) }] }],
+    contents: [{ role: "user", parts: [{ text: (kind === "biz" ? P_BIZ : kind === "day" ? P_DAY : P_PEOPLE) + "\n\nDỮ LIỆU:\n" + JSON.stringify(snap) }] }],
     generationConfig: { temperature: 0.3, maxOutputTokens: 3000, thinkingConfig: { thinkingLevel: "low" } },
   });
   if (!text) throw new Error("AI không trả lời.");
