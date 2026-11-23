@@ -178,13 +178,41 @@ async function biAuto() {
 async function shiftAuto(cfg: Record<string, any>, force = false) {
   const p = vnParts();
   if (!force && Number(p.hm.slice(3)) % 30 >= 5) return null;
-  if (!(await driveReady()) || (await driveVersion()) < 2) return null;   // Apps Script bản 1 chưa có "latest"
+  if (!(await driveReady())) return null;
+  const ver = await driveVersion();
+  if (ver < 2) return null;   // Apps Script bản 1 chưa có "latest"
   const last = cfg.SHIFT_LAST && typeof cfg.SHIFT_LAST === "object" ? cfg.SHIFT_LAST : {};
   const path = Array.isArray(cfg.SHIFT_DRIVE_PATH) ? cfg.SHIFT_DRIVE_PATH.map(String) : ["Tool Báo Cáo", "02 - Lịch ca làm việc"];
+  if (ver >= 3) return await shiftAll(cfg, path);   // bản 3: đọc MỌI file mới / vừa sửa (TGDĐ, Topzone… mỗi bên 1 file)
   const r = await drive({ action: "latest", path, since: last.updated || "", since_id: last.file_id || "" });
   if (!r.version || !r.file || !r.data) return null;
   return await importShiftFile(r.file, r.data, "tu-dong");
 }
+// Mọi file Excel / CSV trong thư mục lịch ca sửa trong 21 ngày gần đây mà chưa đọc (hoặc đã sửa từ lần đọc trước) → đọc lần lượt (≤ 3 file / lượt).
+// Nhớ file đã đọc ở cài đặt SHIFT_SEEN {file_id: updated}. Mỗi file chỉ thay lịch của NV có trong file đó.
+async function shiftAll(cfg: Record<string, any>, path: string[]) {
+  const l = await drive({ action: "list", path });
+  const since = new Date(Date.now() - 21 * 864e5).toISOString();
+  const seen: Record<string, string> = cfg.SHIFT_SEEN && typeof cfg.SHIFT_SEEN === "object" ? { ...cfg.SHIFT_SEEN } : {};
+  const todo = ((l.files || []) as any[]).filter((f) => /\.(xlsx|xls|csv)$/i.test(f.name) && f.updated >= since && seen[f.id] !== f.updated)
+    .sort((a, b) => (a.updated < b.updated ? -1 : 1)).slice(0, 3);
+  if (!todo.length) return null;
+  const done: any[] = [], list: any[] = [];
+  for (const f of todo) {
+    try {
+      const g = await drive({ action: "get", id: f.id, path });
+      const r: any = await importShiftFile({ id: f.id, name: f.name, updated: f.updated }, g.data, "tu-dong");
+      done.push({ file: r.file, n: r.n, unmatched: r.unmatched, conflicts: r.conflicts }); list.push(...(r.list || []));
+    } catch (e) { done.push({ file: f.name, error: String((e as Error).message).slice(0, 200) }); }
+    seen[f.id] = f.updated;   // lỗi cũng đánh dấu để không đọc lại mãi — sửa file thì đọc lại
+  }
+  for (const k of Object.keys(seen)) if (!((l.files || []) as any[]).some((f) => f.id === k)) delete seen[k];   // file đã xoá
+  await rest("settings?on_conflict=key", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ key: "SHIFT_SEEN", value: seen, updated_by: "tu-dong" }) });
+  const out = { files: done, conflicts: list.length, file: done.map((x) => x.file).join(", ") };
+  Object.defineProperty(out, "list", { value: list, enumerable: false });
+  return out;
+}
+
 export async function importShiftFile(file: { id: string; name: string; updated: string }, b64: string, actor: string) {
   const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   const wb = XLSX.read(bytes, { type: "array" });
