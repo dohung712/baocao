@@ -4,6 +4,7 @@
 //  • delete:       chuyển file Drive vào thùng rác khi xoá việc                                      (quản lý)
 //  • job_upload:   NV nộp ảnh việc → <thư mục ảnh>/<Mã - Tên NV>/<Hạng mục>/<ngày giờ>_<việc>_n.jpg  (NV của việc / quản lý)
 //  • shift_latest: lấy file lịch ca mới nhất trong thư mục Drive của tool sắp ca                      (quản lý)
+//  • shift_put:    D17 lưu file lịch ca .xlsx đã duyệt (🤖 Xếp ca) vào thư mục lịch ca                 (quản lý)
 import { json, CORS, rest, member, gemini, vnParts } from "../_shared/common.ts";
 import { SCHEMA, systemPrompt, toFields } from "./prompt.ts";
 import { driveVersion } from "../_shared/drive.ts";
@@ -89,6 +90,16 @@ Deno.serve(async (req) => {
       const r = await drive({ action: "latest", path: Array.isArray(p) ? p.map(String) : ["Tool Báo Cáo", "02 - Lịch ca làm việc"] });
       if (!r.version) throw new Error(OLD_SCRIPT);
       return json({ status: "success", file: r.file || null, data: r.data || "", folder: r.folder || null });
+    }
+    if (body.mode === "shift_put") {   // D17 🤖 Xếp ca: lưu file .xlsx đã duyệt vào thư mục lịch ca (cùng chỗ tool tự đọc)
+      const data = String(body.data || ""), name = cleanName(String(body.name || "")).slice(0, 150);
+      if (!data || data.length > 5_000_000 || !/\.xlsx$/i.test(name)) throw new Error("File lịch ca không hợp lệ.");
+      if ((await driveVersion()) < 2) throw new Error(OLD_SCRIPT);
+      const p = await setting("SHIFT_DRIVE_PATH");
+      const f = await drive({ action: "upload", path: Array.isArray(p) ? p.map(String) : ["Tool Báo Cáo", "02 - Lịch ca làm việc"], name,
+        mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", data });
+      if (!f.version || !Array.isArray(f.folders)) { if (f.id) await drive({ action: "delete", ids: [f.id] }).catch(() => {}); throw new Error(OLD_SCRIPT); }
+      return json({ status: "success", file: { id: f.id, name: f.name, url: f.url, updated: f.updated || "" } });
     }
     if (body.mode === "status") return json({ status: "success", drive: !!(await secret("DRIVE_UPLOAD_URL")), ai: !!(await secret("GEMINI_API_KEY")) });
     // D13 việc lặp lại: lưu link trang tính (QL dán link) · đọc trang tính + giao việc hôm nay ngay

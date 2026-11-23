@@ -1,11 +1,12 @@
-// 📋 Giao việc (D12, quản lý): 📊 Hôm nay · ➕ Giao việc · 📈 Thống kê (NV × ngày × hạng mục, số ảnh) · 🗂️ Hạng mục · 🗓️ Lịch ca · ⚙️ Cài đặt
+// 📋 Giao việc (D12, quản lý): 📊 Hôm nay · ➕ Giao việc · 📈 Thống kê (NV × ngày × hạng mục, số ảnh) · 🗂️ Hạng mục · 🗓️ Lịch ca · 🤖 Xếp ca (D17, jobs-xepca.js) · ⚙️ Cài đặt
 import { $, $$, esc, toast, modal, confirmBox, vnToday, addDays, dm, dow, dmy, shortName, csv, download, weekStart, monthStart } from "../ui.js";
 import { sb, S, rpc, callFn, onChange, setting, staffById, visibleStaff, errMsg, depts, loadSettings } from "../store.js";
 import { loadTypes, typeOf, typeLabel, stateOf, STATE, vnAt, whenTxt, nPhotos, thumb, openManage, minsTxt } from "../jobs-common.js";
 import { rtTab } from "./jobs-rt.js";
+import { xepTab } from "./jobs-xepca.js";
 import { parseShiftAoa, matchStaff, readSheet, slotText } from "../lib-shift.js";
 
-const TABS = [["board", "📊 Hôm nay"], ["assign", "➕ Giao việc"], ["rt", "🔁 Lặp lại"], ["stats", "📈 Thống kê"], ["types", "🗂️ Hạng mục"], ["shift", "🗓️ Lịch ca"], ["cfg", "⚙️ Cài đặt"]];
+const TABS = [["board", "📊 Hôm nay"], ["assign", "➕ Giao việc"], ["rt", "🔁 Lặp lại"], ["stats", "📈 Thống kê"], ["types", "🗂️ Hạng mục"], ["shift", "🗓️ Lịch ca"], ["xep", "🤖 Xếp ca"], ["cfg", "⚙️ Cài đặt"]];
 let tab = "board", root, folders = {}, busyDraw = 0;
 const V = { day: vnToday(), dept: "", from: weekStart(vnToday()), to: vnToday(), type: "", who: "", sweek: weekStart(vnToday()) };
 const err = (e) => toast(errMsg(e), 5000);
@@ -37,7 +38,7 @@ async function draw(quiet = false) {
   const body = $("#jBody"), t = ++busyDraw;
   if (!quiet) body.innerHTML = `<div class="empty">Đang tải…</div>`;
   body.onclick = null; body.onchange = null; body.oninput = null;
-  try { await ({ board, assign, rt: rtTab, stats, types, shift, cfg })[tab](body, () => t === busyDraw && $("#jBody") === body); }
+  try { await ({ board, assign, rt: rtTab, stats, types, shift, xep: xepTab, cfg })[tab](body, () => t === busyDraw && $("#jBody") === body); }
   catch (e) { if ($("#jBody")) body.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const deptChips = () => `<div class="chips">${["", ...depts()].map((d) => `<button type="button" class="chip ${V.dept === d ? "on" : ""}" data-dept="${esc(d)}">${d ? esc(d) : "Tất cả bộ phận"}</button>`).join("")}</div>`;

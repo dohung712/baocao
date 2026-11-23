@@ -8,6 +8,7 @@ const H = [
 [".td-hero", "🏠 Hôm nay", "Vòng tròn = số việc đã nộp / việc hôm nay. Ca làm lấy từ lịch ca của tool sắp ca. Chạm vào từng thẻ việc để chụp / chọn ảnh rồi nộp — ảnh lưu vào thư mục của bạn trên Google Drive."],
 [".td-push", "🔔 Thông báo trên điện thoại", "Bật để nhận việc mới, nhắc trước hạn và báo quá hạn ngay trên màn hình khoá. iPhone: thêm tool ra màn hình chính trước (Chia sẻ → Thêm vào MH chính)."],
 ["#jTabs [data-t=assign]", "➕ Giao việc", "Chọn hạng mục, tên việc, người làm (theo ca, chọn người hoặc cả bộ phận), giờ hạn, kiểu minh chứng và số sao trừ khi trễ / bỏ lỡ. Có thể lặp mỗi ngày đến một ngày."],
+["#jTabs [data-t=xep]", "🤖 Xếp ca tự động", "Chọn siêu thị + tuần, bấm 🤖 Xếp tự động: tôn trọng OFF → lịch bận NV đăng ký → rule QL (số người mỗi ca, cặp trái ca, giờ tối đa). Bấm ô để sửa, ✅ Duyệt để lưu file vào Drive và cập nhật lịch ca.", true],
 ["#jTabs [data-t=stats]", "📈 Thống kê công việc", "Theo NV, theo ngày, theo hạng mục: số việc, đã nộp, đúng hạn, trễ, bỏ lỡ, số ảnh. Bấm tên NV để xem từng việc và ảnh, 📁 mở thư mục ảnh của NV trên Drive."],
   // Menu trang
   ['[data-page="report"]', "📝 Báo cáo", "Nhập thực đạt từng môn và doanh thu QĐ mỗi ngày trước giờ chốt. Gửi xong có thể lưu ảnh để gửi Zalo/Line."],

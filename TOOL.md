@@ -108,6 +108,7 @@ Tên file viết tắt: `js/` = `v2/js/`, `pages/` = `v2/js/pages/`. Hàm SQL tr
 | D15 | **🧠 Cố vấn AI cho Giám đốc** (23/11/2026): Edge Function `advisor` + `_shared/advisor.ts`, 3 Agent dùng AI chữ (Gemini, không ảnh): **📊 Thi đua** (số BI doanh thu kênh, `store_contest`, thẻ BI từng NV → tổng quan, rủi ro + cần bù bao nhiêu/ngày, điểm sáng, NV kéo / cần hỗ trợ, 3 việc làm ngay; tự viết `ADV_BIZ_TIMES` 10:00 · 21:00, thông báo đẩy Giám đốc / QL + Telegram như Trợ lý); **💚 Sức khoẻ nhân sự** (14 ngày: việc đúng hạn / trễ / bỏ lỡ, đã xem việc, thông báo nhận / mở / gạt, ca làm: ngày, giờ, ngày liền, ca tối, 7 ngày tới, đăng ký bận; BI tháng này vs tháng trước; sao → phong độ tốt / cần quan tâm / rủi ro + gợi ý 1-1; `ADV_PEOPLE_DOW` thứ 2 `ADV_PEOPLE_TIME` 09:00; Telegram chỉ `ADV_PRIVATE_CHAT_IDS`); **💬 Hỏi đáp** (câu hỏi bằng lời, dữ liệu: thi đua + nhân sự + việc hôm nay + hộp duyệt + 2 báo cáo gần nhất). Số tính sẵn bằng code, AI chỉ viết nhận định. pg_cron `thidua-advisor` 10 phút (chạy nền `EdgeRuntime.waitUntil`). Trang **🧠 Cố vấn** (QL, thanh dưới điện thoại thay "Báo cáo" cho QL): đọc bản mới nhất, "🔄 Phân tích ngay", các bản trước, cài đặt (chủ quản) | 🧠 Cố vấn | `advisor/index.ts`, `_shared/advisor.ts`, `pages/advisor.js` | `advisor_reports`, cài đặt `ADV_*`, cron `thidua-advisor` |
 | D16 | **📖 Hướng dẫn sống** (24/11/2026): nguồn duy nhất `v2/guide.json` (thẻ chức năng theo vai trò nv / ql / gd, `news` Có gì mới, `onboard` bài nhập môn, `qlday` lịch làm việc mẫu QL) — **mỗi lần đổi chức năng phải sửa file này** (CLAUDE.md bước 6). Trang **📖 Hướng dẫn** (☰ Thêm, mọi vai trò): 📖 thẻ + tìm · 🆕 Có gì mới · ✅ Nhập môn (tự tick: bật thông báo `pushState`, mở trang, nộp việc `jobs.done_by`, duyệt `agent_items.decided_by` / `hot_bonuses.reviewed_by`, hỏi AI; còn lại "Tôi đã làm") · 💬 Hỏi (Edge Function `advisor` mode `howto`, mọi thành viên, AI trả lời theo guide.json đúng vai trò) · QL: 📋 Lịch QL, 👥 Theo dõi (`guide_overview`). Mở tool → hộp 🆕 Có gì mới (mục 21 ngày, đúng vai trò) hiện lại tới khi bấm Đã hiểu; Hôm nay có dòng "✅ Nhập môn x/6". Trợ lý (09:00+): quá 2 ngày chưa đọc / 3 ngày chưa xong nhập môn → mục Cần biết 📖 trong 📥 Duyệt. Trang công khai `v2/huongdan.html` (không cần đăng nhập, gửi link Zalo) đọc cùng guide.json | 📖 Hướng dẫn · huongdan.html | `guide.json`, `js/guide-track.js`, `pages/guide.js`, `huongdan.html`, `advisor` (howto), `notify/agent.ts` | `guide_progress`, `guide_ack`, `guide_overview` |
 | D16b | **🔒 Hướng dẫn chỉ xem khi đăng nhập, theo vai trò** (24/11/2026, chủ quản yêu cầu): bỏ `v2/guide.json` và `v2/huongdan.html` khỏi kho mã công khai. Nội dung ở bảng `guide_content` (không policy đọc), chủ quản nạp bằng `guide_set` (📖 Hướng dẫn → ⚙️ Nội dung, chọn file guide.json — bản gốc giữ ngoài kho mã, Dropbox `Topzone 2027\huong-dan`); mọi người đọc qua `guide_get` = chỉ thẻ / tin của vai trò mình và vai trò thấp hơn (hạng nv 1 < ql 2 < gd 3, `_guide_rank`), bài nhập môn QL + lịch QL chỉ từ hạng QL. Trang Hướng dẫn: chip chọn vai trò ≤ của mình. AI `howto` và Trợ lý đọc `guide_content` | 📖 Hướng dẫn | `pages/guide.js`, `js/guide-track.js`, `advisor` (howto), `notify/agent.ts` | `guide_content`, `guide_get`, `guide_set`, `_guide_rank` |
+| D17 | **🤖 Xếp ca tự động** (23/11/2026, chủ quản chốt): Giao việc → 🤖 Xếp ca (`v2/js/pages/jobs-xepca.js`, bộ xếp thuần JS `v2/js/lib-xepca.js`, test `node supabase/tests/xepca_test.mjs`). Ưu tiên **1 OFF > 2 lịch bận** (bảng `busy`, cứng; bận chưa ghi ca = cả ngày) **> 3 rule QL** (`XEPCA_CFG`: `max_day_h`, `min_off`, `count_pos` = bộ phận được đếm số người — mặc định chỉ "All In One", `pairs` cặp trái ca = hạn chế làm chung giờ, `stores[]` {code, name, dept, `need` {isodow: [6 số người Ca 1–6]}}, `pos` chỉnh bộ phận NV), trọng số `W` trong lib (OFF tối thiểu > thiếu người > cặp > chia đều giờ). Mỗi ngày 1 khối ca liền ≤ max_day_h; nhiều lần thử + leo đồi + đổi chéo. Bảng `shift_plans` (store, week, draft/approved, grid, rows, stats, file, hrm_at) qua `xepca_save` / `xepca_approve` / `xepca_hrm_done` / `xepca_cfg_save` (QL). Duyệt: SheetJS dựng .xlsx cùng dạng "CA LÀM VIỆC.xlsx" → `tasks` mode `shift_put` lưu vào `SHIFT_DRIVE_PATH` → `shift_import` (NV thấy ngay, đối chiếu bận). Sau duyệt trợ lý Claude (máy chủ quản, Chrome) nhập ca vào HRM "Phân ca ngày" rồi gọi `xepca_hrm_done`. |
 | D15b | **Lịch QL chốt 24/11 → giờ Cố vấn** : 📊 thi đua `ADV_BIZ_TIMES` 07:30 (chờ ảnh BI đọc xong: chưa có ảnh hôm nay / vừa đọc < 6 phút → đợi, tối đa 25 phút) · 📋 **công việc trong ngày** `ADV_DAY_TIME` 21:00 (`daySnapshot`: việc còn sót / thiếu, nộp trễ, theo người, hộp duyệt; Telegram như thi đua) · 💚 nhân sự thứ 2 08:00. Lịch phân ca theo tuần (cập nhật trước 20:00 CN) | 🧠 Cố vấn | `_shared/advisor.ts`, `advisor/index.ts`, `pages/advisor.js` | `advisor_reports.kind` thêm `day`, cài đặt `ADV_DAY_TIME` |
 
 ### E. Telegram
@@ -230,6 +231,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 
 | Tên | Loại | File:dòng (bản mới nhất) |
 |---|---|---|
+| `_agent_clone` | function | 001030_agent.sql:97 |
 | `_bi_apply` | function | 000990_bi_auto_apply.sql:9 |
 | `_bi_propose` | function | 000990_bi_auto_apply.sql:46 |
 | `_compute_report` | function | 000730_x3_scoreboard.sql:71 |
@@ -238,6 +240,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_daily_target` | function | 000750_daily_target_x2.sql:8 |
 | `_ensure_contest_items` | function | 000720_report_items_from_contest.sql:59 |
 | `_flyer_mgr` | function | 000880_flyer.sql:87 |
+| `_guide_rank` | function | 001070_guide_private.sql:15 |
 | `_is_pg` | function | 000910_pg_reports.sql:35 |
 | `_item_measure` | function | 000820_cumulative.sql:38 |
 | `_item_no_pen` | function | 000890_items_quick_violation_docs.sql:51 |
@@ -262,10 +265,13 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `_task_hide_after` | function | 000790_tasks_notes_autohide.sql:12 |
 | `_task_period` | function | 000780_tasks.sql:35 |
 | `_vn_ts` | function | 000940_jobs.sql:127 |
+| `_watchdog` | function | 001040_watchdog.sql:20 |
 | `_work_days` | function | 000720_report_items_from_contest.sql:9 |
 | `add_violation` | function | 000890_items_quick_violation_docs.sql:140 |
 | `adjust_revenue` | function | 000700_scoring.sql:229 |
 | `adjust_stars` | function | 000700_scoring.sql:157 |
+| `agent_decide` | function | 001030_agent.sql:113 |
+| `agent_request` | function | 001030_agent.sql:69 |
 | `app_member` | function | 000100_core.sql:139 |
 | `apply_star_suggestions` | function | 000740_star_suggest_hot.sql:57 |
 | `bi_forget` | function | 000950_bi.sql:61 |
@@ -304,6 +310,10 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `fund_log` | function | 000770_fund.sql:79 |
 | `fund_save` | function | 000770_fund.sql:32 |
 | `fund_summary` | function | 000920_fund_notify.sql:3 |
+| `guide_ack` | function | 001060_guide.sql:20 |
+| `guide_get` | function | 001070_guide_private.sql:18 |
+| `guide_overview` | function | 001060_guide.sql:35 |
+| `guide_set` | function | 001070_guide_private.sql:37 |
 | `hook_before_user_created` | function | 000880_security_hardening.sql:7 |
 | `import_month_targets` | function | 000720_report_items_from_contest.sql:274 |
 | `is_after_cutoff` | function | 000100_core.sql:175 |
@@ -314,8 +324,9 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `job_assign` | function | 000940_jobs.sql:185 |
 | `job_delete` | function | 000940_jobs.sql:264 |
 | `job_reopen` | function | 000940_jobs.sql:285 |
+| `job_seen` | function | 001020_push_track.sql:35 |
 | `job_submit` | function | 001010_recurring.sql:221 |
-| `job_tick` | function | 000940_jobs.sql:340 |
+| `job_tick` | function | 001030_agent.sql:54 |
 | `job_type_delete` | function | 000940_jobs.sql:170 |
 | `job_type_save` | function | 000940_jobs.sql:150 |
 | `job_update` | function | 000940_jobs.sql:226 |
@@ -377,9 +388,15 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `vn_hm` | function | 000600_modules.sql:122 |
 | `vn_now` | function | 000100_core.sql:7 |
 | `vn_today` | function | 000100_core.sql:9 |
+| `xepca_approve` | function | 001090_xepca.sql:72 |
+| `xepca_cfg_save` | function | 001090_xepca.sql:42 |
+| `xepca_hrm_done` | function | 001090_xepca.sql:85 |
+| `xepca_save` | function | 001090_xepca.sql:56 |
 | `zone_check` | function | 000800_clean_zones_notify.sql:78 |
 | `zone_delete` | function | 000800_clean_zones_notify.sql:67 |
 | `zone_save` | function | 000800_clean_zones_notify.sql:45 |
+| `advisor_reports` | table | 001050_advisor.sql:4 |
+| `agent_items` | table | 001030_agent.sql:11 |
 | `bi_files` | table | 000950_bi.sql:10 |
 | `bi_proposals` | table | 000960_bi_approve.sql:4 |
 | `busy` | table | 000600_modules.sql:47 |
@@ -393,6 +410,8 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `flyer_routes` | table | 000880_flyer.sql:4 |
 | `flyer_tasks` | table | 000880_flyer.sql:26 |
 | `fund_tx` | table | 000770_fund.sql:5 |
+| `guide_content` | table | 001070_guide_private.sql:5 |
+| `guide_progress` | table | 001060_guide.sql:4 |
 | `hot_bonuses` | table | 000740_star_suggest_hot.sql:91 |
 | `item_adjustments` | table | 000820_cumulative.sql:19 |
 | `item_measures` | table | 000820_cumulative.sql:7 |
@@ -408,6 +427,7 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `notify_log` | table | 000100_core.sql:114 |
 | `pg_reports` | table | 000910_pg_reports.sql:13 |
 | `private_settings` | table | 000100_core.sql:80 |
+| `push_log` | table | 001020_push_track.sql:8 |
 | `push_subs` | table | 000940_jobs.sql:86 |
 | `rank_rewards` | table | 000870_rank_reward.sql:8 |
 | `ratings` | table | 000700_scoring.sql:42 |
@@ -415,12 +435,14 @@ Tạo lại bằng `node supabase/scripts/fn-index.mjs` (tên file rút gọn: `
 | `roadshow` | table | 000600_modules.sql:59 |
 | `score_log` | table | 000700_scoring.sql:70 |
 | `settings` | table | 000100_core.sql:72 |
+| `shift_plans` | table | 001090_xepca.sql:6 |
 | `shifts` | table | 000940_jobs.sql:75 |
 | `staff` | table | 000100_core.sql:13 |
 | `staff_targets` | table | 000600_modules.sql:6 |
 | `star_adjustments` | table | 000700_scoring.sql:7 |
 | `store_contest` | table | 000100_core.sql:92 |
 | `store_contest_snapshots` | table | 000100_core.sql:107 |
+| `system_health` | table | 001040_watchdog.sql:5 |
 | `task_acks` | table | 000780_tasks.sql:25 |
 | `tasks` | table | 000780_tasks.sql:6 |
 | `tiktok_submissions` | table | 000600_modules.sql:17 |
