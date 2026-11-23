@@ -762,3 +762,8 @@ tr.sel td{background:var(--brand-soft)}
 .bp-line{font-size:14px}
 .bp-items{display:flex;flex-wrap:wrap;gap:4px}
 .bp-chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;display:inline-flex;gap:4px;align-items:center;cursor:pointer}
+
+.bi-prop{text-align:left}
+.bi-prop label{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 6px;color:var(--ink);font-weight:400;font-size:14px}
+.bi-prop input[type=checkbox]{width:auto;margin:0;flex:none}
+.bi-prop .bp-chip{display:inline-flex;font-size:12px;border-radius:10px;padding:3px 8px}
