@@ -28,6 +28,28 @@ Deno.serve(async (req) => {
       if (!r.sent) throw new Error("Không gửi được thông báo thử. Tắt rồi bật lại thông báo trên máy này.");
       return json({ status: "success", message: `Đã gửi thử tới ${r.sent} máy` });
     }
+    // D22: vừa giao việc → báo ngay từng NV được giao (không chờ lượt 5 phút); đánh dấu pushed_at để lượt tự động không báo lại
+    if (body.mode === "job_new") {
+      if (!["owner", "manager"].includes(m.role)) throw new Error("Chỉ quản lý được giao việc.");
+      const batch = String(body.batch || "");
+      if (!/^[0-9a-f-]{36}$/i.test(batch)) throw new Error("Thiếu mã lần giao.");
+      const jobs: any[] = await rest(`jobs?select=id,staff_id,title,due_at&batch=eq.${batch}&status=eq.todo&pushed_at=is.null&order=due_at&limit=1000`);
+      if (!jobs.length) return json({ status: "success", staff: 0, sent: 0, message: "Không có việc mới cần báo." });
+      const vnFmt = (iso: string) => { const d = new Date(Date.parse(iso) + 7 * 3600e3).toISOString(); return { hm: d.slice(11, 16), dm: `${d.slice(8, 10)}/${d.slice(5, 7)}`, day: d.slice(0, 10) }; };
+      const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+      const when = (iso: string) => { const x = vnFmt(iso); return x.day === today ? `${x.hm} hôm nay` : `${x.hm} ${x.dm}`; };
+      const by = new Map<string, any[]>(); for (const j of jobs) by.set(j.staff_id, [...(by.get(j.staff_id) || []), j]);
+      const r = await pushMany([...by.entries()].map(([staff_id, l]) => {
+        const titles = [...new Set(l.map((j) => j.title))];
+        const data = titles.length === 1
+          ? { title: "📌 Việc mới: " + titles[0], body: l.length === 1 ? `Hạn ${when(l[0].due_at)} · bấm để xem và sắp xếp thời gian làm` : `Lặp ${l.length} ngày · hạn đầu ${when(l[0].due_at)} · cuối ${vnFmt(l[l.length - 1].due_at).dm}` }
+          : { title: `📌 Bạn có ${l.length} việc mới`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n") };
+        return { staff_id, data: { ...data, url: APP_URL + "#today", tag: "jobs-new-" + batch.slice(0, 8), kind: "new", jobs: l.map((j) => j.id) } };
+      }));
+      for (let i = 0; i < jobs.length; i += 150) await rest(`jobs?id=in.(${jobs.slice(i, i + 150).map((j) => j.id).join(",")})`, { method: "PATCH", body: JSON.stringify({ pushed_at: new Date().toISOString() }) });
+      const off = [...by.keys()].length - r.staff;
+      return json({ status: "success", ...r, message: `Đã báo ngay ${r.staff} NV${off > 0 ? ` · ${off} NV chưa bật thông báo (sẽ thấy khi mở tool)` : ""}` });
+    }
     if (body.mode === "send") {
       if (!["owner", "manager"].includes(m.role)) throw new Error("Chỉ quản lý được gửi nhắc.");
       const title = String(body.title || "").slice(0, 80), text = String(body.body || "").slice(0, 300);

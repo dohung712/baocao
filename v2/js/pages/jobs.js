@@ -179,6 +179,8 @@ async function assign(body, alive) {
     try {
       const r = await rpc("job_assign", { p });
       toast(r.message, 4500);
+      // D22: báo ngay cho NV được giao để sắp xếp thời gian làm
+      if (r.batch) callFn("push", { mode: "job_new", batch: r.batch }).then((x) => toast(`${r.message} · 🔔 ${x.message}`, 5000)).catch(() => {});
       V.day = fd.due_date; tab = "board"; draw();
     } catch (x) { err(x); btn.disabled = false; }
   };
