@@ -518,11 +518,9 @@ async function settings(body) {
       <div class="fields" style="margin-top:10px"><label>📦 Bộ phận báo cáo kiểu PG (không tính sao; cách nhau dấu phẩy)<input id="st_PG_DEPTS" value="${esc((setting("PG_DEPTS", ["PG"]) || []).join(", "))}"></label>
         <label>📦 Món bán kèm của PG (mỗi dòng 1 món)<textarea id="st_PG_ADDONS" rows="5">${esc((setting("PG_ADDONS", ["VAS", "Bảo hiểm", "PSDP", "Tai nghe", "Sim"]) || []).join("\n"))}</textarea></label></div>
       <p class="small muted" style="margin-top:10px">Số sao trừ = sao phạt của môn × hệ số theo chuỗi (chuỗi tính các ngày trước ngày báo cáo). Chuỗi nhỏ hơn cả hai ngưỡng: chỉ ghi nhận chuỗi.</p></div>
-    ${isAdmin() ? `<div class="card" style="margin-bottom:14px" id="hideCard"><div class="card-h"><h2>🙈 Ẩn trang / chức năng</h2><button class="btn small primary" id="hdSave" type="button">💾 Lưu</button></div>
-      <p class="small muted">Chỉ Admin. Tick để ẩn với nhân viên. Admin và Quản lý luôn thấy đủ chức năng.</p>
-      <div class="tbl-wrap"><table><thead><tr><th>Trang / chức năng</th><th class="num">Ẩn với nhân viên</th></tr></thead><tbody>
-      ${FEATURES.map(([k, l]) => { const h = setting("HIDE", {}) || {}; return `<tr><td>${esc(l)}</td><td class="num">${k === "admin" ? "—" : `<input type="checkbox" class="hd" data-r="employee" value="${k}" ${(h.employee || []).includes(k) ? "checked" : ""}>`}</td></tr>`; }).join("")}
-      </tbody></table></div></div>` : ""}
+    ${isAdmin() ? `<div class="card" style="margin-bottom:14px" id="hideCard"><div class="card-h"><h2>🙈 Ẩn trang / chức năng</h2><button class="btn small primary" id="hdOpen" type="button">🙈 Bật chế độ ẩn</button></div>
+      <p class="small muted">Chỉ Admin. Bấm nút 🙈 trên đầu trang (hoặc nút bên) → mọi menu, tab, mục hiện biểu tượng 👁️ / ◐ / 🙈; bấm vào để chọn bộ phận NV nào được thấy (tự lưu). Có ô tìm theo tên và danh sách đang ẩn. Admin và Quản lý luôn thấy đủ chức năng.</p>
+      <p class="small">Đang ẩn: <b>${Object.keys(setting("HIDE2", {}) || {}).length}</b> mục${Object.values(setting("HIDE2", {}) || {}).length ? " — " + Object.values(setting("HIDE2", {})).slice(0, 6).map((e) => esc(e.label || "")).join(", ") : ""}</p></div>` : ""}
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🤖 Trợ lý AI (tuỳ chọn)</h2><span class="pill ${aiStatus.GEMINI_API_KEY ? "ok" : "mute"}">${aiStatus.GEMINI_API_KEY ? "Đã bật" : "Chưa bật"}</span></div>
       <p class="small muted">Trợ lý luôn trả lời được các câu thống kê thường gặp. Muốn hỏi tự do (AI), lấy khoá miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> rồi dán vào đây. Khoá chỉ lưu ở máy chủ.</p>
       <div class="row"><input id="aiKey" type="password" class="grow" style="width:auto" placeholder="${aiStatus.GEMINI_API_KEY ? "•••••• (đã lưu — dán khoá mới để thay)" : "AIza…"}" autocomplete="off"><button class="btn" id="aiSave" type="button">Lưu khoá</button>${aiStatus.GEMINI_API_KEY ? `<button class="btn ghost danger" id="aiDel" type="button">Gỡ</button>` : ""}</div></div>
@@ -538,6 +536,7 @@ async function settings(body) {
       <td><input type="checkbox" name="noPen" ${r.noPen ? "checked" : ""}></td><td><button class="btn small ghost danger" data-delrule type="button">🗑️</button></td></tr>`;
   }
   $("#ruAdd").onclick = () => $("#ruRows").insertAdjacentHTML("beforeend", ruleRow({ item: "*" }));
+  $("#hdOpen")?.addEventListener("click", () => import("../hidemode.js").then((m) => m.openHideMode()));
   if ($("#hdSave")) $("#hdSave").onclick = async () => {
     const v = { employee: $$(".hd[data-r=employee]:checked").map((c) => c.value), manager: [] };
     try { await save([["HIDE", v]]); toast("Đã lưu cài đặt ẩn"); } catch (x) { err(x); }

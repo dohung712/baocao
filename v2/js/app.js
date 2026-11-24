@@ -21,6 +21,7 @@ import { roleName } from "./roles.js";
 import { initGuard } from "./guard.js";
 import { initSnap } from "./snap.js";
 import { applyLayout, initLayoutBtn } from "./layout.js";
+import { initHide } from "./hidemode.js";
 applyLayout();   // D18: giao diện laptop trên điện thoại (nếu đã chọn)
 import { registerSW } from "./push.js";
 import { setViewAs } from "./viewas.js";
@@ -121,6 +122,7 @@ async function enterApp() {
   show("app");
   renderViewAs();
   initGuard(); initSnap(); initLayoutBtn();   // D18: bảo mật NV · 📸 chụp trang (QL/Admin) · 📱/💻
+  initHide(PAGES.map((p) => ({ id: p.id, label: p.label })));   // D20: 🙈 chế độ ẩn (Admin) · NV: tab / mục bị ẩn biến mất
   startRealtime();
   registerSW();   // nhận thông báo đẩy (sw.js) — không lưu đệm trang
   if (S.user?.user_metadata?.must_change) setTimeout(() => setPassword(false, true), 300);

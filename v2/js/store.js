@@ -80,10 +80,16 @@ export const visibleStaff = () => S.staff.filter((s) => !s.hidden);
 export const staffById = (id) => S.staff.find((s) => s.id === id) || S.allStaff?.find((s) => s.id === id);
 export const staffEmail = (id) => `nv${String(id).trim().toLowerCase()}@thidua351.vn`;
 // Ẩn trang / chức năng theo vai trò (chủ quản luôn thấy tất cả)
+// D20: HIDE2 = { "<khoá>": { label, hide: ["*"] | ["PG", "Topzone", …] } } — "*" = mọi NV, còn lại = NV thuộc các bộ phận đó.
+// Khoá theo cấp: trang ("cv") › tab ("cv.tiktok") › mục ("today.s.doanh-thu-sieu-thi"); ẩn cấp cha là ẩn luôn cấp con.
 export function isHidden(id) {
   if (S.me?.role === "owner" || S.me?.role === "manager") return false;   // D18: Admin / Quản lý luôn thấy đủ chức năng
-  const h = S.settings.HIDE || {}, list = S.me?.role === "manager" ? h.manager : h.employee;
-  return Array.isArray(list) && list.includes(id);
+  const h2 = S.settings.HIDE2 || {}, dept = staffById(S.me?.staff_id)?.dept || "";
+  const hit = (k) => { const e = h2[k]; return !!e && Array.isArray(e.hide) && (e.hide.includes("*") || (dept && e.hide.includes(dept))); };
+  const parts = String(id).split(".");
+  for (let i = parts.length; i > 0; i--) if (hit(parts.slice(0, i).join("."))) return true;
+  const old = (S.settings.HIDE || {}).employee;   // cách cũ (trước D20)
+  return Array.isArray(old) && old.includes(id);
 }
 export const hiddenPages = () => [];
 export const depts = () => [...new Set(S.staff.map((s) => s.dept).filter(Boolean))].sort();

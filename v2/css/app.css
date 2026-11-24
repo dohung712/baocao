@@ -998,3 +998,23 @@ tr.click{cursor:pointer}
 .pgw-r{display:flex;align-items:center;gap:6px;margin-top:6px}
 .pgw-r input[type=time]{width:auto;min-width:110px}
 .pgw-q{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+
+/* D20 che do an */
+.hm-chip{display:inline-grid;place-items:center;min-width:24px;height:24px;margin-left:6px;padding:0 4px;border-radius:12px;border:1.5px solid var(--brand,#2563eb);background:var(--card,#fff);font-size:13px;line-height:1;cursor:pointer;vertical-align:middle}
+.hm-chip.hm-sec{position:absolute;top:6px;right:40px;z-index:6}
+.td-h2>.hm-chip.hm-sec{position:static;flex:none}
+html.hide-mode .hm-none{opacity:.38;outline:2px dashed var(--bad,#c62828);outline-offset:-2px}
+html.hide-mode .hm-some{outline:2px dashed var(--warn,#d89614);outline-offset:-2px}
+#hmBar{position:fixed;left:50%;transform:translateX(-50%);top:6px;z-index:9500;display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:min(760px,calc(100vw - 16px));padding:8px 12px;border-radius:14px;background:var(--card,#fff);border:2px solid var(--brand,#2563eb);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+#hmBar .hm-search{position:relative;flex:1;min-width:180px}
+#hmBar #hmQ{width:100%}
+#hmRes{position:absolute;left:0;right:0;top:100%;background:var(--card,#fff);border:1px solid var(--line);border-radius:10px;max-height:50vh;overflow:auto;z-index:2}
+#hmRes:empty{display:none}
+#hmRes button{display:block;width:100%;text-align:left;padding:8px 10px;border:0;border-bottom:1px solid var(--line);background:transparent;color:inherit;cursor:pointer}
+.hm-who{display:grid;gap:4px}
+.hm-row{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;margin:0}
+.hm-row input{width:20px!important;height:20px;flex:none}
+.hm-row.sub{margin-left:22px}
+.hm-row.lock{opacity:.7}
+.hm-li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+#btnHide.on{background:var(--brand,#2563eb);color:#fff}
