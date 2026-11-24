@@ -140,8 +140,8 @@ export async function openSubmit(j) {
         <label class="btn ${shot ? "btn-shot" : ""}">🖼️ ${shot ? "Chọn ảnh chụp màn hình" : "Chọn ảnh"}<input type="file" accept="image/*" multiple id="jbPick" hidden></label>
         <span class="small muted">${j.proof === "none" ? "Ảnh không bắt buộc" : `Cần ít nhất ${j.photo_min} ảnh, tối đa ${j.photo_max}`}</span></div>` : ""}
     ${shot ? `<div class="jb-commit" id="jbCommit" hidden><b>⚠️ Tool thấy <span id="jbSusN">1</span> ảnh có vẻ KHÔNG phải ảnh chụp màn hình</b> <span class="small" id="jbSusWhy"></span>
-      <label><input type="checkbox" id="jbC1"> Tôi <b>ĐÃ BÁO CÁO TRÊN LINE</b></label>
-      <label><input type="checkbox" id="jbC2"> Tôi <b>CAM KẾT ĐÚNG</b>: đây là ảnh chụp màn hình báo cáo thật</label>
+      <label class="jb-ck"><input type="checkbox" id="jbC1"><span>Tôi <b>ĐÃ BÁO CÁO TRÊN LINE</b></span></label>
+      <label class="jb-ck"><input type="checkbox" id="jbC2"><span>Tôi <b>CAM KẾT ĐÚNG</b>: đây là ảnh chụp màn hình báo cáo thật</span></label>
       <span class="tiny">Quản lý sẽ kiểm tra lại ảnh này. Không đúng → phải nộp lại. Hoặc bấm ✕ trên ảnh để chọn ảnh khác.</span></div>` : ""}
     <label style="margin-top:10px;display:block">Ghi chú (không bắt buộc)<textarea id="jbNote" rows="2">${esc(j.note || "")}</textarea></label>
     ${!done && Date.parse(j.due_at) < Date.now() && j.pen_late ? `<p class="small" style="color:var(--bad)">⏰ Đã quá hạn: nộp bây giờ bị trừ ${j.pen_late}⭐.</p>` : ""}
