@@ -111,7 +111,7 @@ async function editor(key, label) {
     <div class="hm-who">
       <label class="hm-row lock"><input type="checkbox" checked disabled> 🧑‍💼 Admin &amp; Quản lý <span class="tiny muted">luôn thấy</span></label>
       <label class="hm-row"><input type="checkbox" id="hmAll" ${all ? "" : "checked"}> 👥 <b>Mọi nhân viên</b></label>
-      ${D.map((d) => `<label class="hm-row sub"><input type="checkbox" data-d="${esc(d)}" ${all || hide.has(d) ? "" : "checked"} ${all ? "disabled" : ""}> NV bộ phận <b>${esc(d)}</b></label>`).join("")}
+      ${D.map((d) => `<label class="hm-row sub"><input type="checkbox" data-d="${esc(d)}" ${all || hide.has(d) ? "" : "checked"} ${all ? "disabled" : ""}> NV bộ phận <b>${esc(d)}</b>${/^[#\-–.\s]*$/.test(d) ? ' <span class="tiny muted">(chưa ghi bộ phận)</span>' : ""}</label>`).join("")}
     </div>
     <p class="small" id="hmMsg" style="min-height:1.2em"></p>
     <div class="modal-actions"><button class="btn" type="button" data-v="cancel">Xong</button></div>`, {
