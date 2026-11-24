@@ -1021,3 +1021,22 @@ html.hide-mode .hm-some{outline:2px dashed var(--warn,#d89614);outline-offset:-2
 #hmBar{top:auto;bottom:78px}
 @media (min-width:900px){#hmBar{bottom:14px}}
 #hmRes{top:auto;bottom:100%;margin-bottom:4px}
+
+/* D21 làm đẹp: tiêu đề mục đậm + vạch nhấn, avatar NV */
+.page-h h1{font-size:24px;font-weight:800;letter-spacing:-.015em}
+.card-h h2,.card-h h3{font-weight:800;letter-spacing:-.01em;position:relative;padding-left:12px}
+.card-h h2{font-size:18px}.card-h h3{font-size:16px}
+.card-h h2::before,.card-h h3::before{content:"";position:absolute;left:0;top:.18em;bottom:.18em;width:4px;border-radius:3px;background:linear-gradient(var(--brand2),var(--accent))}
+.td-h2{margin:26px 0 10px;padding:10px 12px;border-radius:14px;background:linear-gradient(90deg,var(--brand-soft),transparent 85%);border-left:5px solid var(--brand2)}
+.td-h2 h2{font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--brand)}
+.td-n{width:26px;height:26px;font-size:13px;font-weight:800;background:var(--brand2);box-shadow:0 2px 6px rgba(15,61,46,.25)}
+.card{border-radius:16px}
+.td-who{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:12px;row-gap:2px;align-items:center}
+.td-who>*:not(.av-slot){grid-column:2}
+.td-who b{font-size:17px;font-weight:800}
+.av-slot{display:inline-flex;position:relative;flex:none;margin-right:8px;vertical-align:middle}
+.av-slot.big{grid-column:1;grid-row:1/span 4;margin:0}
+.av{border-radius:50%;object-fit:cover;display:inline-grid;place-items:center;color:#fff;font-weight:800;line-height:1;box-shadow:0 0 0 2px var(--card),0 0 0 3.5px color-mix(in srgb,var(--brand2) 45%,transparent)}
+.av-cam{position:absolute;right:-4px;bottom:-4px;font-style:normal;font-size:13px;background:var(--card);border-radius:50%;width:22px;height:22px;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.td-rk .av-slot,.jb-who .av-slot{margin-right:8px}
+.jb-who{display:block}

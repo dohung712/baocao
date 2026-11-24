@@ -102,7 +102,7 @@ function draw() {
     <div id="tdPush"></div>
     ${me ? `<div class="card td-hero">
       <div class="td-ring" style="--p:${pct}"><b>${doneN}/${todayAll.length}</b><small>hôm nay</small></div>
-      <div class="td-who"><b>${esc(staff?.name || "")}</b><span class="small muted">${esc(staff?.dept || "")} · mã ${esc(me)}</span>
+      <div class="td-who" data-sid="${esc(me)}"><b>${esc(staff?.name || "")}</b><span class="small muted">${esc(staff?.dept || "")} · mã ${esc(me)}</span>
         <span class="td-shift ${sh && !sh.slots?.length ? "off" : ""}">🕑 ${sh ? (sh.slots?.length ? esc(slotText(sh.slots, slots)) : "OFF hôm nay") : "Chưa có lịch ca"}</span></div>
       <div class="td-nums"><span><b>${todayAll.filter((j) => j.status === "todo").length}</b>cần nộp</span><span class="bad"><b>${over.length + legBad.length}</b>quá hạn</span><span><b>${todayAll.reduce((a, j) => a + nPhotos(j), 0)}</b>ảnh đã nộp</span></div>
     </div>` : `<div class="banner info"><div>Tài khoản chưa gắn mã nhân viên nên không có việc cá nhân.</div></div>`}
