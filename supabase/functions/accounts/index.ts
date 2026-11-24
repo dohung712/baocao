@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
     const m = await member(req);
-    if (m.role !== "owner") throw new Error("Chỉ chủ quản được quản lý tài khoản.");
+    if (m.role !== "owner") throw new Error("Chỉ Admin / Quản lý được xem tài khoản.");
     const body = await req.json().catch(() => ({}));
     const staffAll = await rest("staff?select=id,name,dept,hidden&order=sort,id");
     if (body.mode === "list") {
@@ -47,6 +47,9 @@ Deno.serve(async (req) => {
           has_login: !!u, by_code: mem?.email === `nv${s.id.toLowerCase()}@thidua351.vn`, last_sign_in: u?.last_sign_in_at || null };
       }) });
     }
+    // D18: đặt mật khẩu / tạo đăng nhập — chỉ Admin
+    const adm = (await rest("memberships?select=is_admin&email=eq." + encodeURIComponent(m.email)))[0]?.is_admin === true;
+    if (!adm) throw new Error("Chỉ Admin được đặt mật khẩu.");
     const pw = String(body.password || "");
     if (pw.length < 6) throw new Error("Mật khẩu ít nhất 6 ký tự.");
     const users = await allUsers();

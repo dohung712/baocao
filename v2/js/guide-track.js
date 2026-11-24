@@ -11,7 +11,7 @@ export function loadGuide() {
   return guideP;
 }
 // Vai trò hướng dẫn: nhân viên = nv · quản lý = ql · chủ quản = gd (xem cả phần quản lý)
-export const roleKey = () => (S.me?.role === "owner" ? "gd" : S.me?.role === "manager" ? "ql" : "nv");
+export const roleKey = () => (S.me?.role === "owner" && S.me?.is_admin ? "gd" : S.me?.role === "owner" || S.me?.role === "manager" ? "ql" : "nv");   // D18: Admin = gd, Quản lý = ql
 export const forMe = (roles = []) => roles.includes(roleKey());   // tin "Có gì mới" / nhập môn: đúng vai trò của mình
 export const RANK = { nv: 1, ql: 2, gd: 3 };
 export const resetGuide = () => { guideP = null; };

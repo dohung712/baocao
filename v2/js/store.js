@@ -20,7 +20,7 @@ const emit = (what) => listeners.forEach((fn) => { try { fn(what); } catch (e) {
 
 export const isOwner = () => S.me?.role === "owner";
 export const isManager = () => ["owner", "manager"].includes(S.me?.role);
-export const roleLabel = (r) => ({ owner: "Chủ quản", manager: "Quản lý", employee: "Nhân viên" }[r] || r);
+export const roleLabel = (r) => ({ owner: "Quản lý", manager: "Quản lý", employee: "Nhân viên" }[r] || r);   // D18: Admin = owner + is_admin (js/roles.js)
 
 export function errMsg(e) {
   const m = e?.message || e?.error_description || String(e || "Lỗi");
@@ -81,7 +81,7 @@ export const staffById = (id) => S.staff.find((s) => s.id === id) || S.allStaff?
 export const staffEmail = (id) => `nv${String(id).trim().toLowerCase()}@thidua351.vn`;
 // Ẩn trang / chức năng theo vai trò (chủ quản luôn thấy tất cả)
 export function isHidden(id) {
-  if (S.me?.role === "owner") return false;
+  if (S.me?.role === "owner" || S.me?.role === "manager") return false;   // D18: Admin / Quản lý luôn thấy đủ chức năng
   const h = S.settings.HIDE || {}, list = S.me?.role === "manager" ? h.manager : h.employee;
   return Array.isArray(list) && list.includes(id);
 }

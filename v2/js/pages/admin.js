@@ -4,6 +4,7 @@ import { scoreAdmin, setScoreSub } from "./admin-score.js";
 import { home } from "./admin-home.js";
 import { starCardHtml, bindStarCard, dailyTarget, dailyPct, dailyMin } from "../star-rules.js";
 import { suggestHtml, bindSuggest } from "./admin-suggest.js";
+import { isAdmin, roleName } from "../roles.js";
 import { sb, S, rpc, notify, callFn, onChange, isOwner, isManager, loadStaff, loadItems, loadSettings, loadLocked, loadPending, depts, staffById, setting, errMsg, roleLabel, visibleStaff } from "../store.js";
 
 const TABS = [
@@ -457,12 +458,12 @@ async function accounts(body) {
       <li>Nhân viên mở link tool → ô <b>Email hoặc Mã nhân viên</b> nhập <b>mã NV</b> (VD 18450) + mật khẩu ban đầu.</li>
       <li>Lần đầu đăng nhập, tool bắt đổi mật khẩu riêng. Quên mật khẩu → chủ quản đặt lại ở đây.</li></ol>
       <p class="small muted" style="margin:8px 0 0">Nhân viên chỉ thấy và báo cáo cho chính mình. Quản lý / chủ quản vẫn đăng nhập bằng email.</p></div>
-    <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Tạo tài khoản cho tất cả nhân viên chưa có (${missing})</h3></div>
+    ${!isAdmin() ? `<div class="banner info" style="margin-bottom:14px"><div>🔐 Chỉ Admin tạo tài khoản / đặt mật khẩu.</div></div>` : ""}<div class="card" style="margin-bottom:14px" ${isAdmin() ? "" : "hidden"}><div class="card-h"><h3>Tạo tài khoản cho tất cả nhân viên chưa có (${missing})</h3></div>
       <div class="row"><input id="acPw" type="text" placeholder="Mật khẩu ban đầu (ít nhất 6 ký tự)" style="width:auto" class="grow" autocomplete="off"><button class="btn primary" id="acBulk" type="button" ${missing ? "" : "disabled"}>Tạo tài khoản</button></div></div>
     <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Mã NV</th><th>Họ tên</th><th>Đăng nhập bằng</th><th>Vai trò</th><th>Lần đăng nhập gần nhất</th><th></th></tr></thead><tbody>
     ${list.map((a) => `<tr><td>${esc(a.staff_id)}</td><td><b>${esc(a.name)}</b></td><td>${a.has_login ? (a.by_code ? `<span class="pill ok">Mã NV ${esc(a.staff_id)}</span>` : `<span class="pill info">${esc(a.email)}</span>`) : '<span class="pill mute">Chưa có tài khoản</span>'}</td>
       <td class="small">${a.role ? roleLabel(a.role) : ""}${a.active === false ? " (khoá)" : ""}</td><td class="small muted">${a.last_sign_in ? new Date(a.last_sign_in).toLocaleString("vi-VN") : "—"}</td>
-      <td class="num"><button class="btn small" data-ac="${esc(a.staff_id)}" type="button">${a.has_login ? "Đặt lại mật khẩu" : "Tạo tài khoản"}</button></td></tr>`).join("")}
+      <td class="num">${isAdmin() ? `<button class="btn small" data-ac="${esc(a.staff_id)}" type="button">${a.has_login ? "Đặt lại mật khẩu" : "Tạo tài khoản"}</button>` : ""}</td></tr>`).join("")}
     </tbody></table></div></div>`;
   $("#acBulk").onclick = async (e) => {
     const pw = $("#acPw").value.trim(); if (pw.length < 6) return toast("Mật khẩu ít nhất 6 ký tự");
@@ -517,11 +518,11 @@ async function settings(body) {
       <div class="fields" style="margin-top:10px"><label>📦 Bộ phận báo cáo kiểu PG (không tính sao; cách nhau dấu phẩy)<input id="st_PG_DEPTS" value="${esc((setting("PG_DEPTS", ["PG"]) || []).join(", "))}"></label>
         <label>📦 Món bán kèm của PG (mỗi dòng 1 món)<textarea id="st_PG_ADDONS" rows="5">${esc((setting("PG_ADDONS", ["VAS", "Bảo hiểm", "PSDP", "Tai nghe", "Sim"]) || []).join("\n"))}</textarea></label></div>
       <p class="small muted" style="margin-top:10px">Số sao trừ = sao phạt của môn × hệ số theo chuỗi (chuỗi tính các ngày trước ngày báo cáo). Chuỗi nhỏ hơn cả hai ngưỡng: chỉ ghi nhận chuỗi.</p></div>
-    <div class="card" style="margin-bottom:14px" id="hideCard"><div class="card-h"><h2>🙈 Ẩn trang / chức năng</h2><button class="btn small primary" id="hdSave" type="button">💾 Lưu</button></div>
-      <p class="small muted">Tick để ẩn với từng vai trò. Chủ quản luôn thấy tất cả.</p>
-      <div class="tbl-wrap"><table><thead><tr><th>Trang / chức năng</th><th class="num">Ẩn với nhân viên</th><th class="num">Ẩn với quản lý</th></tr></thead><tbody>
-      ${FEATURES.map(([k, l]) => { const h = setting("HIDE", {}) || {}; return `<tr><td>${esc(l)}</td><td class="num">${k === "admin" ? "—" : `<input type="checkbox" class="hd" data-r="employee" value="${k}" ${(h.employee || []).includes(k) ? "checked" : ""}>`}</td><td class="num"><input type="checkbox" class="hd" data-r="manager" value="${k}" ${(h.manager || []).includes(k) ? "checked" : ""}></td></tr>`; }).join("")}
-      </tbody></table></div></div>
+    ${isAdmin() ? `<div class="card" style="margin-bottom:14px" id="hideCard"><div class="card-h"><h2>🙈 Ẩn trang / chức năng</h2><button class="btn small primary" id="hdSave" type="button">💾 Lưu</button></div>
+      <p class="small muted">Chỉ Admin. Tick để ẩn với nhân viên. Admin và Quản lý luôn thấy đủ chức năng.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Trang / chức năng</th><th class="num">Ẩn với nhân viên</th></tr></thead><tbody>
+      ${FEATURES.map(([k, l]) => { const h = setting("HIDE", {}) || {}; return `<tr><td>${esc(l)}</td><td class="num">${k === "admin" ? "—" : `<input type="checkbox" class="hd" data-r="employee" value="${k}" ${(h.employee || []).includes(k) ? "checked" : ""}>`}</td></tr>`; }).join("")}
+      </tbody></table></div></div>` : ""}
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🤖 Trợ lý AI (tuỳ chọn)</h2><span class="pill ${aiStatus.GEMINI_API_KEY ? "ok" : "mute"}">${aiStatus.GEMINI_API_KEY ? "Đã bật" : "Chưa bật"}</span></div>
       <p class="small muted">Trợ lý luôn trả lời được các câu thống kê thường gặp. Muốn hỏi tự do (AI), lấy khoá miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> rồi dán vào đây. Khoá chỉ lưu ở máy chủ.</p>
       <div class="row"><input id="aiKey" type="password" class="grow" style="width:auto" placeholder="${aiStatus.GEMINI_API_KEY ? "•••••• (đã lưu — dán khoá mới để thay)" : "AIza…"}" autocomplete="off"><button class="btn" id="aiSave" type="button">Lưu khoá</button>${aiStatus.GEMINI_API_KEY ? `<button class="btn ghost danger" id="aiDel" type="button">Gỡ</button>` : ""}</div></div>
@@ -537,8 +538,8 @@ async function settings(body) {
       <td><input type="checkbox" name="noPen" ${r.noPen ? "checked" : ""}></td><td><button class="btn small ghost danger" data-delrule type="button">🗑️</button></td></tr>`;
   }
   $("#ruAdd").onclick = () => $("#ruRows").insertAdjacentHTML("beforeend", ruleRow({ item: "*" }));
-  $("#hdSave").onclick = async () => {
-    const v = { employee: $$(".hd[data-r=employee]:checked").map((c) => c.value), manager: $$(".hd[data-r=manager]:checked").map((c) => c.value) };
+  if ($("#hdSave")) $("#hdSave").onclick = async () => {
+    const v = { employee: $$(".hd[data-r=employee]:checked").map((c) => c.value), manager: [] };
     try { await save([["HIDE", v]]); toast("Đã lưu cài đặt ẩn"); } catch (x) { err(x); }
   };
   $("#aiSave").onclick = async () => { const k = $("#aiKey").value.trim(); if (k.length < 20) return toast("Khoá chưa đúng"); try { await rpc("set_private_setting", { p_key: "GEMINI_API_KEY", p_value: k }); toast("Đã lưu khoá AI"); settings(body); } catch (x) { err(x); } };
@@ -650,16 +651,16 @@ async function members(body) {
   const { data, error } = await sb.from("memberships").select("*").order("role").order("email");
   if (error) throw error;
   body.innerHTML = `<div class="card"><div class="card-h"><h2>🔐 Phân quyền</h2><button class="btn small primary" id="mbAdd" type="button">+ Thêm tài khoản</button></div>
-    <p class="small muted">Người được thêm đăng nhập bằng email: bấm <b>🔑 Đặt mật khẩu</b> để cấp mật khẩu (vào ngay bằng email + mật khẩu), hoặc để họ dùng mục “Quên mật khẩu / đăng nhập bằng email” ở màn hình đăng nhập. Vai trò <b>Chủ quản — toàn quyền</b>: đủ mọi quyền như chủ sở hữu (Cài đặt, Môn, Tài khoản, Phân quyền, Nhật ký…). <b>Quản lý (theo bộ phận)</b> chỉ thấy nhân viên thuộc bộ phận được giao; nhân viên chỉ thấy số liệu của mình. Luôn phải còn ít nhất 1 chủ quản.</p>
+    <p class="small muted">Người được thêm đăng nhập bằng email: bấm <b>🔑 Đặt mật khẩu</b> để cấp mật khẩu (vào ngay bằng email + mật khẩu), hoặc để họ dùng mục “Quên mật khẩu / đăng nhập bằng email” ở màn hình đăng nhập. <b>Admin</b> (1 tài khoản) độc quyền: cấp quyền Quản lý, ẩn chức năng, đặt mật khẩu. <b>Quản lý</b>: đủ quyền như Admin trừ 3 việc đó, xem toàn bộ nhân viên. <b>Nhân viên</b> chỉ thấy số liệu của mình.${isAdmin() ? "" : " Bạn chỉ thêm / sửa được tài khoản Nhân viên."}</p>
     <div class="tbl-wrap"><table><thead><tr><th>Email</th><th>Vai trò</th><th>Mã NV</th><th>Bộ phận</th><th>Trạng thái</th><th></th></tr></thead><tbody>
-    ${data.map((m) => `<tr><td>${esc(m.email)}</td><td>${roleLabel(m.role)}</td><td>${esc(m.staff_id || "")} <span class="tiny muted">${esc(staffById(m.staff_id)?.name || "")}</span></td><td class="small">${esc((m.stores || []).join(", "))}</td>
-      <td>${m.active ? '<span class="pill ok">Hoạt động</span>' : '<span class="pill mute">Khoá</span>'}</td><td class="num">${m.email === S.me.email ? "" : `${m.email.endsWith("@thidua351.vn") ? "" : `<button class="btn small" data-pw="${esc(m.email)}" type="button">🔑 Đặt mật khẩu</button> `}<button class="btn small" data-mb="${esc(m.email)}" type="button">Sửa</button>`}</td></tr>`).join("")}
+    ${data.map((m) => `<tr><td>${esc(m.email)}</td><td>${roleName(m)}</td><td>${esc(m.staff_id || "")} <span class="tiny muted">${esc(staffById(m.staff_id)?.name || "")}</span></td><td class="small">${esc((m.stores || []).join(", "))}</td>
+      <td>${m.active ? '<span class="pill ok">Hoạt động</span>' : '<span class="pill mute">Khoá</span>'}</td><td class="num">${m.email === S.me.email || m.is_admin || (!isAdmin() && m.role !== "employee") ? "" : `${m.email.endsWith("@thidua351.vn") || !isAdmin() ? "" : `<button class="btn small" data-pw="${esc(m.email)}" type="button">🔑 Đặt mật khẩu</button> `}<button class="btn small" data-mb="${esc(m.email)}" type="button">Sửa</button>`}</td></tr>`).join("")}
     </tbody></table></div></div>`;
   const edit = async (m) => {
     const isNew = !m; m = m || { email: "", role: "employee", staff_id: "", stores: [], active: true };
     const v = await modal(`<h3>${isNew ? "Thêm tài khoản" : esc(m.email)}</h3><form class="stack">
       ${isNew ? `<label>Email<input name="email" type="email" required></label>` : ""}
-      <label>Vai trò<select name="role"><option value="employee" ${m.role === "employee" ? "selected" : ""}>Nhân viên</option><option value="manager" ${m.role === "manager" ? "selected" : ""}>Quản lý (theo bộ phận)</option><option value="owner" ${m.role === "owner" ? "selected" : ""}>Chủ quản — toàn quyền</option></select></label>
+      <label>Vai trò<select name="role"><option value="employee" ${m.role === "employee" ? "selected" : ""}>Nhân viên</option>${isAdmin() ? `<option value="owner" ${m.role === "owner" || m.role === "manager" ? "selected" : ""}>Quản lý (đủ quyền, trừ cấp quyền QL / ẩn chức năng / đặt mật khẩu)</option>` : ""}</select></label>
       <label>Mã nhân viên (bắt buộc với nhân viên)<select name="staff_id"><option value="">—</option>${S.staff.filter((s) => !s.hidden || s.id === m.staff_id).map((s) => `<option value="${esc(s.id)}" ${s.id === m.staff_id ? "selected" : ""}>${esc(s.id)} · ${esc(s.name)}</option>`).join("")}</select></label>
       <fieldset style="border:1px solid var(--line);border-radius:9px;padding:8px 10px"><legend class="small muted">Bộ phận được xem</legend>${depts().map((d) => `<label class="inline"><input type="checkbox" name="store_${esc(d)}" ${m.stores?.includes(d) ? "checked" : ""}> ${esc(d)}</label>`).join("")}</fieldset>
       <label class="inline"><input type="checkbox" name="active" ${m.active ? "checked" : ""}> Đang hoạt động</label></form>
@@ -670,7 +671,7 @@ async function members(body) {
       let stores = depts().filter((d) => v["store_" + d] === "on");
       if (v.role === "employee") { if (!v.staff_id) throw new Error("Nhân viên phải gắn mã NV"); if (!stores.length) stores = [staffById(v.staff_id)?.dept].filter(Boolean); }
       if (!stores.length && v.role !== "owner") throw new Error("Chọn ít nhất 1 bộ phận");
-      if (v.role === "owner" && m.role !== "owner" && !(await confirmBox("Cấp toàn quyền chủ quản?", `${esc(m.email || v.email)} sẽ có đủ quyền như chủ quản: Cài đặt, Môn, Tài khoản NV, Phân quyền, Nhật ký, token Telegram…`, "Cấp quyền"))) return;
+      if (v.role === "owner" && m.role !== "owner" && !(await confirmBox("Cấp quyền Quản lý?", `${esc(m.email || v.email)} sẽ có đủ quyền như Admin (Cài đặt, Môn, Tài khoản NV, Nhật ký, Telegram…) trừ cấp quyền Quản lý, ẩn chức năng, đặt mật khẩu.`, "Cấp quyền"))) return;
       const row = { role: v.role, staff_id: v.staff_id || null, stores, active: v.active === "on" };
       const { error: e } = isNew ? await sb.from("memberships").insert({ email: v.email.trim().toLowerCase(), ...row }) : await sb.from("memberships").update(row).eq("email", m.email);
       if (e) throw e; toast("Đã lưu"); members(body);

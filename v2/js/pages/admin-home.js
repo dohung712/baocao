@@ -1,6 +1,7 @@
 // Quản lý → 🏠 Tổng quan: việc cần làm ngay, lịch quản lý (ngày / tuần / tháng), tìm chức năng, tuỳ chỉnh nhanh
 import { $, esc, fmt, vnToday, addDays, weekStart, dmy, dm } from "../ui.js";
 import { sb, S, rpc, isOwner, visibleStaff, setting } from "../store.js";
+import { isAdmin } from "../roles.js";
 
 // go: { tab, sub, focus } = tab trong Quản lý · { page } = trang khác
 export const FEATURES = [
@@ -32,11 +33,11 @@ export const FEATURES = [
   { c: "F2", t: "Danh mục môn, target, X2/X3 (thêm/xoá môn)", w: "Quản lý → Môn & sao → 📋 Bảng chi tiết", k: "môn sao thưởng phạt x2 x3 thêm xoá target", go: { tab: "items" }, owner: true },
   { c: "F2b", t: "Luật trừ sao (ngày bắt đầu trừ, tăng ca, hệ số)", w: "Cài đặt → Thưởng & trừ sao", k: "trừ sao chuỗi tăng ca hệ số lũy tiến", go: { tab: "settings", focus: "#starCard" }, owner: true },
   { c: "C3", t: "Target báo cáo ngày (200%, tối thiểu 0,5)", w: "Cài đặt → Cài đặt chung", k: "target ngày 200% tối thiểu", go: { tab: "settings", focus: "#genCard" }, owner: true },
-  { c: "F4", t: "Ẩn trang / chức năng với nhân viên", w: "Cài đặt → Ẩn trang", k: "ẩn trang chức năng nhân viên", go: { tab: "settings", focus: "#hideCard" }, owner: true },
+  { c: "F4", admin: true, t: "Ẩn trang / chức năng với nhân viên", w: "Cài đặt → Ẩn trang", k: "ẩn trang chức năng nhân viên", go: { tab: "settings", focus: "#hideCard" }, owner: true },
   { c: "F5", t: "Trọng số điểm, giờ chốt, phạt trễ, TikTok…", w: "Cài đặt → Cài đặt chung", k: "trọng số giờ chốt trễ tiktok roadshow", go: { tab: "settings", focus: "#genCard" }, owner: true },
   { c: "F1", t: "Thêm / ẩn nhân viên, đổi bộ phận", w: "Quản lý → Nhân sự", k: "nhân viên thêm ẩn bộ phận", go: { tab: "staff" } },
   { c: "A2", t: "Cấp / đặt lại mật khẩu nhân viên", w: "Quản lý → Tài khoản NV", k: "mật khẩu tài khoản đăng nhập", go: { tab: "accounts" }, owner: true },
-  { c: "A3", t: "Phân quyền quản lý, đặt mật khẩu cho quản lý", w: "Quản lý → Phân quyền", k: "phân quyền quản lý email mật khẩu trưởng ca", go: { tab: "members" }, owner: true },
+  { c: "A3", admin: true, t: "Phân quyền quản lý, đặt mật khẩu cho quản lý", w: "Quản lý → Phân quyền", k: "phân quyền quản lý email mật khẩu trưởng ca", go: { tab: "members" }, owner: true },
   { c: "E1", t: "Telegram: bật/tắt, giờ + ngày gửi từng mục (hằng ngày / tuần / chọn thứ)", w: "Quản lý → Telegram", k: "telegram tin nhắn tóm tắt lịch gửi giờ gửi thứ", go: { tab: "telegram" } },
   { c: "D1", t: "TikTok, vệ sinh, lịch bận, roadshow", w: "CV", k: "tiktok vệ sinh lịch bận roadshow cv", go: { page: "cv" } },
   { c: "D10", t: "Úp biên bản vi phạm (ảnh lưu Drive), xem số lần vi phạm", w: "CV → 📄 Biên bản", k: "biên bản vi phạm lỗi ảnh drive số lần kỷ luật", go: { page: "cv", cv: "vio" } },
@@ -73,7 +74,7 @@ const LS = "thidua-v2-plan";
 const readTicks = () => { try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } };
 const saveTicks = (o) => { try { localStorage.setItem(LS, JSON.stringify(o)); } catch { /* bỏ qua */ } };
 const feat = (c) => FEATURES.find((f) => f.c === c);
-const allowed = (f) => f && (!f.owner || isOwner());
+const allowed = (f) => f && (!f.owner || isOwner()) && (!f.admin || isAdmin());
 
 // 📊 Tổng quan tháng (H1b): hàng chỉ số + doanh thu từng bộ phận so target (vạch = tiến độ chuẩn hôm nay) + dẫn đầu / cần hỗ trợ.
 // Số liệu lấy từ score_board (đã lọc phạm vi xem ở máy chủ: quản lý chỉ thấy doanh thu bộ phận mình).

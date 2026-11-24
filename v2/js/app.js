@@ -17,6 +17,11 @@ import * as duyet from "./pages/duyet.js";
 import * as advisor from "./pages/advisor.js";
 import * as guide from "./pages/guide.js";
 import * as guideTrack from "./guide-track.js";
+import { roleName } from "./roles.js";
+import { initGuard } from "./guard.js";
+import { initSnap } from "./snap.js";
+import { applyLayout, initLayoutBtn } from "./layout.js";
+applyLayout();   // D18: giao diện laptop trên điện thoại (nếu đã chọn)
 import { registerSW } from "./push.js";
 import { setViewAs } from "./viewas.js";
 
@@ -112,9 +117,10 @@ async function enterApp() {
     await loadAll();
   } catch (e) { show("login"); $("#loginMsg").className = "msg err"; $("#loginMsg").textContent = errMsg(e); return; }
   $("#storeName").textContent = setting("STORE_NAME", "");
-  $("#btnMe").textContent = S.me.viewAs ? `👁️ ${roleLabel(S.me.role)} · ${S.me.role === "employee" ? (S.allStaff || []).find((s) => s.id === S.me.staff_id)?.name || S.me.staff_id : (S.me.stores || []).join(", ")}` : `👤 ${S.me.email.split("@")[0]} · ${roleLabel(S.me.role)}`;
+  $("#btnMe").textContent = S.me.viewAs ? `👁️ ${roleLabel(S.me.role)} · ${S.me.role === "employee" ? (S.allStaff || []).find((s) => s.id === S.me.staff_id)?.name || S.me.staff_id : (S.me.stores || []).join(", ")}` : `👤 ${S.me.email.split("@")[0]} · ${roleName(S.me)}`;
   show("app");
   renderViewAs();
+  initGuard(); initSnap(); initLayoutBtn();   // D18: bảo mật NV · 📸 chụp trang (QL/Admin) · 📱/💻
   startRealtime();
   registerSW();   // nhận thông báo đẩy (sw.js) — không lưu đệm trang
   if (S.user?.user_metadata?.must_change) setTimeout(() => setPassword(false, true), 300);
