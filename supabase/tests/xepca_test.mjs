@@ -28,6 +28,22 @@ for (const [name, staff, store, pairs, maxH] of [["933 9h", A, S933, [["a1", "a2
   console.log(`${name}: ${ms}ms · thiếu ${r.missingHours}h (${r.short.length} ô) · cặp trùng ${r.pairHits.length} · giờ ${r.per.map((p) => p.name + " " + p.hours).join(", ")}`);
 }
 
+// Rule 24/11: ưu tiên khối 1-3 / 4-6, tuyệt đối không ngày 1 ca, xếp lại (seed khác) ra lịch khác
+import { parsePat } from "../../v2/js/lib-xepca.js";
+assert.deepEqual(parsePat("1-3"), [1, 2, 3]); assert.deepEqual(parsePat("456"), [4, 5, 6]); assert.equal(parsePat("1,3"), null); assert.equal(parsePat("13"), null);
+{
+  const cfg = { max_day_h: 14, min_day_h: 3, min_off: 0, min_slots: 2, prefer: ["1-3", "4-6"], pairs: [["a1", "a2"]] };
+  const r1 = solve({ days, staff: A, busy: [], cfg, store: S933, slots: SLOTS, seed: 11 });
+  const r2 = solve({ days, staff: A, busy: [], cfg, store: S933, slots: SLOTS, seed: 97 });
+  assert.equal(r1.fewSlots.length, 0, "có ngày 1 ca"); assert.equal(r1.gaps.length, 0);
+  const work = Object.values(r1.grid).filter((g) => g.length).length;
+  console.log(`933 ưu tiên 123/456: thiếu ${r1.missingHours}h · ${work - r1.nonPref.length}/${work} ngày đúng khối ưu tiên · giờ ${r1.per.map((p) => p.hours).join(", ")}`);
+  assert.ok(r1.nonPref.length <= work / 2, "quá ít ngày theo khối ưu tiên");
+  assert.notDeepEqual(r1.grid, r2.grid, "xếp lại phải ra lịch khác");
+  const r3 = solve({ days, staff: A, busy: [], cfg: { ...cfg, forbid: ["1-2"] }, store: S933, slots: SLOTS });
+  assert.ok(!Object.values(r3.grid).some((g) => g.join() === "1,2"), "khối cấm vẫn bị xếp");
+}
+
 // Ô chốt tay được giữ nguyên, báo cáo lịch sửa tay bắt được trùng bận
 const r2 = solve({ days, staff: A, busy: [], cfg: { max_day_h: 9, min_off: 1, pairs: [] }, store: S933, slots: SLOTS, fixed: { "a1|2026-11-30": [5, 6] } });
 assert.deepEqual(r2.grid["a1|2026-11-30"], [5, 6]);

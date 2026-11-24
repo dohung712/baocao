@@ -5,10 +5,12 @@
 //  • job_upload:   NV nộp ảnh việc → <thư mục ảnh>/<Mã - Tên NV>/<Hạng mục>/<ngày giờ>_<việc>_n.jpg  (NV của việc / quản lý)
 //  • shift_latest: lấy file lịch ca mới nhất trong thư mục Drive của tool sắp ca                      (quản lý)
 //  • shift_put:    D17 lưu file lịch ca .xlsx đã duyệt (🤖 Xếp ca) vào thư mục lịch ca                 (quản lý)
+//  • xepca_rules:  D17c rule xếp ca bằng chữ → AI → bản xem trước cấu hình (chưa lưu)                  (quản lý)
 import { json, CORS, rest, member, gemini, vnParts } from "../_shared/common.ts";
 import { SCHEMA, systemPrompt, toFields } from "./prompt.ts";
 import { driveVersion } from "../_shared/drive.ts";
 import { rtSync } from "../_shared/rtask.ts";
+import { xepcaRules } from "./xepca-rules.ts";
 
 const secret = async (k: string) => (await rest("private_settings?select=value&key=eq." + k))[0]?.value as string | undefined;
 const setting = async (k: string) => (await rest("settings?select=value&key=eq." + k))[0]?.value;
@@ -100,6 +102,15 @@ Deno.serve(async (req) => {
         mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", data });
       if (!f.version || !Array.isArray(f.folders)) { if (f.id) await drive({ action: "delete", ids: [f.id] }).catch(() => {}); throw new Error(OLD_SCRIPT); }
       return json({ status: "success", file: { id: f.id, name: f.name, url: f.url, updated: f.updated || "" } });
+    }
+    if (body.mode === "xepca_rules") {   // D17c: rule xếp ca bằng chữ → AI → bản xem trước cấu hình (chưa lưu)
+      const key = await secret("GEMINI_API_KEY");
+      if (!key) throw new Error("Chưa cài khoá AI (Quản lý → Cài đặt → Trợ lý AI).");
+      const text = String(body.text || "").trim().slice(0, 4000);
+      if (!text) throw new Error("Chưa nhập rule.");
+      const cfg = (await setting("XEPCA_CFG")) || {}, slots = (await setting("SHIFT_SLOTS")) || [];
+      const staff = await rest("staff?select=id,name&hidden=eq.false");
+      return json({ status: "success", ...(await xepcaRules(key, text, cfg, staff, Array.isArray(slots) ? slots : [])) });
     }
     if (body.mode === "status") return json({ status: "success", drive: !!(await secret("DRIVE_UPLOAD_URL")), ai: !!(await secret("GEMINI_API_KEY")) });
     // D13 việc lặp lại: lưu link trang tính (QL dán link) · đọc trang tính + giao việc hôm nay ngay

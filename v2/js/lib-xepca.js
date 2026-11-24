@@ -6,7 +6,17 @@
 //                  > cặp NV "trái ca" (không làm chung giờ nếu có thể) > chia đều giờ công > ít ca thừa
 // Mỗi ngày NV làm 1 khối ca liền mạch (VD Ca 1–3), min_day_h (mặc định 4) ≤ tổng giờ ≤ max_day_h.
 
-export const W = { short: 1000, off: 50000, pair: 80, over: 30, day: 15, bal: 25 };   // off > thiếu cả ngày → luôn đủ ngày nghỉ tối thiểu
+export const W = { short: 1000, off: 50000, pair: 80, over: 30, day: 15, bal: 25, pref: 300 };
+
+// Khối ca "1-3" / "123" / [1,2,3] → [1,2,3] (liền mạch, 1..6); sai → null
+export function parsePat(x) {
+  let a = [];
+  if (Array.isArray(x)) a = x.map(Number);
+  else { const s = String(x || "").replace(/\s+/g, ""), m = s.match(/^(\d)[-–](\d)$/); a = m ? Array.from({ length: Number(m[2]) - Number(m[1]) + 1 }, (_, i) => Number(m[1]) + i) : s.split("").map(Number); }
+  a = [...new Set(a)].filter((v) => v >= 1 && v <= 6).sort((p, q) => p - q);
+  return a.length && a.every((v, i) => !i || v === a[i - 1] + 1) ? a : null;
+}
+const patKey = (p) => p.join("");   // off > thiếu cả ngày → luôn đủ ngày nghỉ tối thiểu
 
 // Giờ từng ca từ cài đặt SHIFT_SLOTS ["07:30-09:00", …] → [1.5, 3, 3, 3, 3, 1]
 export function slotHours(slots) {
@@ -19,13 +29,13 @@ export function slotHours(slots) {
   });
 }
 
-// Các khối ca liền mạch [a..b] có minH ≤ tổng giờ ≤ maxH (kèm khối rỗng = nghỉ) — không cho đi làm 1 tiếng rồi về
-export function patterns(hours, maxH, minH = 0) {
-  const out = [[]];
+// Các khối ca liền mạch [a..b] có minH ≤ tổng giờ ≤ maxH, ≥ minSlots ca, không thuộc khối cấm (kèm khối rỗng = nghỉ)
+export function patterns(hours, maxH, minH = 0, minSlots = 1, forbid = []) {
+  const out = [[]], ban = new Set(forbid.map(parsePat).filter(Boolean).map(patKey));
   for (let a = 1; a <= 6; a++) for (let b = a; b <= 6; b++) {
     const p = []; let h = 0;
     for (let x = a; x <= b; x++) { p.push(x); h += hours[x - 1]; }
-    if (h <= maxH + 1e-9 && h >= minH - 1e-9) out.push(p);
+    if (h <= maxH + 1e-9 && h >= minH - 1e-9 && p.length >= minSlots && !ban.has(patKey(p))) out.push(p);
   }
   return out;
 }
@@ -46,8 +56,12 @@ const isoDow = (d) => { const x = new Date(d + "T00:00:00Z").getUTCDay(); return
 //   fixed:  { "<id>|<d>": [ca…] } — ô QL đã chốt tay, giữ nguyên
 export function solve({ days, staff, busy, cfg, store, slots, fixed = {}, seed = 1, restarts = 24 }) {
   const hours = slotHours(slots), maxH = Number(cfg?.max_day_h) || 9, minOff = Math.max(0, Math.min(7, Number(cfg?.min_off ?? 1)));
-  const minH = Math.min(maxH, Math.max(0, Number(cfg?.min_day_h ?? 4)));
-  const P = patterns(hours, maxH, minH), PH = P.map((p) => p.reduce((s, x) => s + hours[x - 1], 0));
+  const minH = Math.min(maxH, Math.max(0, Number(cfg?.min_day_h ?? 4))), minSlots = Math.max(1, Math.min(6, Number(cfg?.min_slots ?? 2)));
+  const P = patterns(hours, maxH, minH, minSlots, cfg?.forbid || []), PH = P.map((p) => p.reduce((s, x) => s + hours[x - 1], 0));
+  // Khối ưu tiên (VD 1-3 / 4-6): ngày làm khối khác bị trừ điểm W.pref (vẫn dùng khi cần cho đủ người)
+  const prefSet = new Set((cfg?.prefer || []).map(parsePat).filter(Boolean).map(patKey));
+  const PP = () => P.map((p) => (p.length && prefSet.size && !prefSet.has(patKey(p)) ? W.pref : 0));
+  let PPen = PP();
   const need = days.map((d) => needOf(store, isoDow(d)));
   const S = staff.length, D = days.length;
   const idx = new Map(staff.map((s, i) => [String(s.id), i]));
@@ -63,7 +77,7 @@ export function solve({ days, staff, busy, cfg, store, slots, fixed = {}, seed =
       if (fixed[key]) {
         const f = [...fixed[key]].sort((a, b) => a - b);
         let k = P.findIndex((p) => p.length === f.length && p.every((x, t) => x === f[t]));
-        if (k < 0) { P.push(f); PH.push(f.reduce((s, x) => s + hours[x - 1], 0)); k = P.length - 1; }
+        if (k < 0) { P.push(f); PH.push(f.reduce((s, x) => s + hours[x - 1], 0)); PPen = PP(); k = P.length - 1; }
         allowed[i].push([k]); locked[i].push(true); continue;
       }
       const b = bmap.get(key);
@@ -82,7 +96,7 @@ export function solve({ days, staff, busy, cfg, store, slots, fixed = {}, seed =
     const tot = new Array(S).fill(0);
     for (let j = 0; j < D; j++) {
       const cnt = [0, 0, 0, 0, 0, 0];
-      for (let i = 0; i < S; i++) { const k = g[i][j]; for (const x of P[k]) cnt[x - 1]++; tot[i] += PH[k]; if (k) c += W.day; }
+      for (let i = 0; i < S; i++) { const k = g[i][j]; for (const x of P[k]) cnt[x - 1]++; tot[i] += PH[k]; if (k) c += W.day + PPen[k]; }
       for (let x = 0; x < 6; x++) { const d = need[j][x] - cnt[x]; c += d > 0 ? d * W.short * hours[x] : -d * W.over * hours[x]; }
       for (const [a, b] of pairs) { const pa = P[g[a][j]]; for (const x of P[g[b][j]]) if (pa.includes(x)) c += W.pair * hours[x - 1]; }
     }
@@ -129,7 +143,8 @@ export function solve({ days, staff, busy, cfg, store, slots, fixed = {}, seed =
 export function report({ days, staff, grid, cfg, store, slots, busy }) {
   const hours = slotHours(slots), maxH = Number(cfg?.max_day_h) || 9, minOff = Number(cfg?.min_off ?? 1), minH = Math.min(maxH, Number(cfg?.min_day_h ?? 4));
   const ids = new Set(staff.map((s) => String(s.id)));
-  const short = [], over = [], pairHits = [], busyHits = [], longDays = [], shortDays = [], noOff = [], gaps = [];
+  const short = [], over = [], pairHits = [], busyHits = [], longDays = [], shortDays = [], noOff = [], gaps = [], fewSlots = [], nonPref = [];
+  const minSlots = Math.max(1, Number(cfg?.min_slots ?? 2)), prefSet = new Set((cfg?.prefer || []).map(parsePat).filter(Boolean).map(patKey));
   const cover = {};
   days.forEach((d) => {
     const need = needOf(store, isoDow(d)), cnt = [0, 0, 0, 0, 0, 0];
@@ -149,6 +164,8 @@ export function report({ days, staff, grid, cfg, store, slots, busy }) {
       const hh = g.reduce((t, x) => t + hours[x - 1], 0); h += hh; if (g.length) w++;
       if (hh > maxH + 1e-9) longDays.push({ id: String(s.id), d, h: hh });
       if (hh > 0 && hh < minH - 1e-9) shortDays.push({ id: String(s.id), d, h: hh });
+      if (g.length && g.length < minSlots) fewSlots.push({ id: String(s.id), d, n: g.length });
+      if (g.length && prefSet.size && !prefSet.has(patKey([...g].sort((a, b) => a - b)))) nonPref.push({ id: String(s.id), d, slots: [...g].sort((a, b) => a - b) });
       const so = [...g].sort((a, b) => a - b); if (so.some((x, t) => t && x !== so[t - 1] + 1)) gaps.push({ id: String(s.id), d });
       const b = (busy || []).find((x) => String(x.staff_id) === String(s.id) && x.busy_date === d);
       if (b && g.length) {
@@ -161,7 +178,7 @@ export function report({ days, staff, grid, cfg, store, slots, busy }) {
     return { id: String(s.id), name: s.name, hours: Math.round(h * 10) / 10, days: w };
   });
   const missing = short.reduce((t, x) => t + (x.need - x.have) * hours[x.slot - 1], 0);
-  return { cover, short, over, pairHits, busyHits, longDays, shortDays, noOff, gaps, per, missingHours: Math.round(missing * 10) / 10 };
+  return { cover, short, over, pairHits, busyHits, longDays, shortDays, fewSlots, nonPref, noOff, gaps, per, missingHours: Math.round(missing * 10) / 10 };
 }
 
 // Bảng Excel cùng dạng "CA LÀM VIỆC.xlsx" (tool khác & baocao v2 đều đọc được):

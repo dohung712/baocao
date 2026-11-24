@@ -4,7 +4,7 @@
 //   Sau duyệt: trợ lý Claude (máy chủ quản) nhập ca vào HRM "Phân ca ngày", xong thì đánh dấu 🏢 Đã nhập HRM.
 import { $, $$, esc, toast, modal, confirmBox, vnToday, addDays, dm, dow, dmy, shortName, weekStart } from "../ui.js";
 import { sb, S, rpc, callFn, setting, visibleStaff, errMsg, depts, loadSettings } from "../store.js";
-import { solve, report, sheetAoa, importRows, slotHours } from "../lib-xepca.js";
+import { solve, report, sheetAoa, importRows, slotHours, parsePat } from "../lib-xepca.js";
 
 const err = (e) => toast(errMsg(e), 5000);
 const X = { store: "", week: addDays(weekStart(vnToday()), 7), plan: null, grid: {}, rows: [], dirty: false, showCfg: false };
@@ -65,7 +65,7 @@ export async function xepTab(body, alive) {
     <p class="small muted">Ưu tiên: <b>1 OFF</b> → <b>2 lịch bận</b> NV đăng ký (CV → Lịch bận) → <b>3 rule quản lý</b> (⚙️ bên dưới). Chỉ đếm người bộ phận <b>${esc((cfg.count_pos || []).join(", "))}</b> vào số người mỗi ca; mỗi ngày 1 khối ca liền ${esc(cfg.min_day_h ?? 4)}–${esc(cfg.max_day_h)}h, ít nhất ${esc(cfg.min_off)} ngày OFF / tuần, chia đều giờ. Bấm ô để sửa tay.</p>
     ${!store ? `<div class="banner warn"><div>Chưa cấu hình siêu thị — mở ⚙️ Rule xếp ca bên dưới.</div></div>` : !staffAll.length ? `<div class="banner warn"><div>Không có NV nào thuộc bộ phận <b>${esc(store.dept || "(trống)")}</b> — chọn đúng bộ phận cho siêu thị trong ⚙️ Rule xếp ca.</div></div>` : `
     <div class="row" style="margin-bottom:8px">
-      <button class="btn primary" type="button" id="xpRun">🤖 Xếp tự động</button>
+      <button class="btn primary" type="button" id="xpRun">${hasGrid ? "🔁 Xếp lại (lịch khác)" : "🤖 Xếp tự động"}</button>
       ${hasGrid ? `<button class="btn" type="button" id="xpApprove" ${st === "approved" ? "disabled" : ""}>✅ Duyệt & lưu vào Drive</button><button class="btn" type="button" id="xpDl">⬇️ Tải file</button><button class="btn" type="button" id="xpClear">🧹 Xoá ca NV All In One</button>` : ""}
       <span class="small">${st === "approved" ? `✅ Đã duyệt ${esc(dmy((X.plan.approved_at || "").slice(0, 10)))} · ${X.plan.file_url ? `<a href="${esc(X.plan.file_url)}" target="_blank" rel="noopener">file Drive</a>` : ""} · ${X.plan.hrm_at ? "🏢 Đã nhập HRM" : `🏢 Chưa nhập HRM — nhờ trợ lý Claude: <i>“nhập ca tuần ${dm(days[0])} siêu thị ${esc(X.store)} vào HRM”</i> <button class="btn small" type="button" id="xpHrm">🏢 Đánh dấu đã nhập HRM</button>`}` : st === "draft" ? `📝 Bản nháp${X.dirty ? " (đang lưu…)" : ""} — chưa duyệt` : ""}</span></div>
     ${rep && hasGrid ? `<div class="banner ${rep.short.length || rep.busyHits.length ? "warn" : "ok"}"><div>
@@ -73,6 +73,8 @@ export async function xepTab(body, alive) {
       ${rep.short.length ? `<b>⚠️ Thiếu ${rep.missingHours} giờ-người</b> (${rep.short.length} ô đỏ dưới bảng) — không đủ NV cho rule; có thể tăng giờ tối đa / ngày, giảm ngày OFF tối thiểu hoặc giảm số người ca.` : "✅ Đủ người mọi ca."}
       ${rep.pairHits.length ? `<br>👥 ${rep.pairHits.length} ngày cặp “trái ca” vẫn làm chung: ${rep.pairHits.map((h) => `${dow(h.d)} ${esc(nm(h.a))} + ${esc(nm(h.b))} (ca ${h.slots.join(",")})`).join(", ")}` : ""}
       ${rep.longDays.length ? `<br>⏱️ Quá ${esc(cfg.max_day_h)}h/ngày: ${rep.longDays.map((x) => `${dow(x.d)} ${esc(nm(x.id))} ${x.h}h`).join(", ")}` : ""}
+      ${rep.fewSlots.length ? `<br>⛔ Ngày làm ít hơn ${esc(cfg.min_slots ?? 2)} ca:${rep.fewSlots.map((x) => `${dow(x.d)} ${esc(nm(x.id))}`).join(", ")}` : ""}
+      ${(cfg.prefer || []).length ? `<br>🧩 ${rep.nonPref.length ? `${rep.nonPref.length} ngày-người không theo khối ưu tiên ${esc((cfg.prefer || []).join(" / "))} (để đủ người) — chưa ưng thì bấm 🔁 Xếp lại` : `Mọi ngày đều theo khối ưu tiên ${esc((cfg.prefer || []).join(" / "))}`}` : ""}
       ${rep.shortDays.length ? `<br>⏳ Dưới ${esc(cfg.min_day_h ?? 4)}h/ngày: ${rep.shortDays.map((x) => `${dow(x.d)} ${esc(nm(x.id))} ${x.h}h`).join(", ")}` : ""}
       ${rep.noOff.length ? `<br>😴 Thiếu ngày OFF: ${rep.noOff.map((x) => esc(nm(x.id))).join(", ")}` : ""}
       ${rep.gaps.length ? `<br>✂️ Ca không liền: ${rep.gaps.map((x) => `${dow(x.d)} ${esc(nm(x.id))}`).join(", ")}` : ""}</div></div>` : ""}
@@ -87,7 +89,7 @@ export async function xepTab(body, alive) {
     <p class="tiny muted">Dòng cuối: số người All In One đã xếp / cần. 🛌 OFF · ⏳ bận ca · 👥 cặp trái ca đang trùng giờ · ô đỏ = trùng lịch bận.</p>`}
   </div>
   <div class="card"><div class="card-h"><h3>⚙️ Rule xếp ca</h3><button class="btn small" type="button" id="xpCfgT">${X.showCfg ? "Thu gọn" : "Mở"}</button></div>
-    ${X.showCfg ? cfgForm(cfg, slots) : `<p class="small muted">Giờ tối đa ${esc(cfg.max_day_h)}h/ngày · OFF ≥ ${esc(cfg.min_off)} ngày/tuần · ${(cfg.pairs || []).length} cặp trái ca · ${stores.length} siêu thị. Sửa xong lưu là lần xếp sau dùng ngay.</p>`}
+    ${X.showCfg ? cfgForm(cfg, slots) : `<p class="small muted">Giờ ${esc(cfg.min_day_h ?? 4)}–${esc(cfg.max_day_h)}h/ngày · ≥ ${esc(cfg.min_slots ?? 2)} ca/ngày làm · ưu tiên ${esc(patTxt(cfg.prefer) || "—")} · OFF ≥ ${esc(cfg.min_off)} ngày/tuần · ${(cfg.pairs || []).length} cặp trái ca · ${stores.length} siêu thị. Bấm Mở để gõ rule bằng chữ (AI tự hiểu) hoặc sửa thông số.</p>${(cfg.rule_notes || []).length ? `<p class="small" style="margin-bottom:0"><b>📝 Rule đang dùng:</b></p>${ruleNotes(cfg)}` : ""}`}
   </div>`;
 
   const save = async () => {
@@ -104,13 +106,27 @@ export async function xepTab(body, alive) {
     if (e.target.closest("#xpHrm")) { try { const r = await rpc("xepca_hrm_done", { p_id: X.plan.id }); toast(r.message); X.loaded = ""; } catch (x) { err(x); } return redraw(); }
     if (e.target.closest("#xpCfgT")) { X.showCfg = !X.showCfg; return redraw(); }
     if (e.target.closest("#xpCfgSave")) return saveCfg(cfg, redraw);
+    if (e.target.closest("#xpRuleAI")) {
+      const b = e.target.closest("#xpRuleAI"), text = $("#xcText").value.trim();
+      if (!text) return toast("Gõ rule trước đã");
+      b.disabled = true; b.textContent = "🤖 AI đang đọc…";
+      try { const r = await callFn("tasks", { mode: "xepca_rules", text }); X.preview = { cfg: r.cfg, unsupported: r.unsupported || [] }; if ($("#xpRulePrev")) $("#xpRulePrev").innerHTML = previewBox(X.preview, cfg); }
+      catch (x) { err(x); }
+      if ($("#xpRuleAI")) { b.disabled = false; b.textContent = "🤖 AI đọc rule"; }
+      return;
+    }
+    if (e.target.closest("#xpRuleCancel")) { X.preview = null; $("#xpRulePrev").innerHTML = ""; return; }
+    if (e.target.closest("#xpRuleApply") && X.preview) {
+      try { const r = await rpc("xepca_cfg_save", { p_cfg: X.preview.cfg }); X.preview = null; await loadSettings(); toast(r.message + " — bấm 🤖 Xếp tự động để xếp theo rule mới", 4000); } catch (x) { err(x); }
+      return redraw();
+    }
     if (e.target.closest("#xpPairAdd")) { const c = readCfg(cfg); c.pairs.push(["", ""]); await rpc("xepca_cfg_save", { p_cfg: c }).catch(err); await loadSettings(); return redraw(); }
     const pd = e.target.closest("[data-pdel]"); if (pd) { const c = readCfg(cfg); c.pairs.splice(Number(pd.dataset.pdel), 1); await rpc("xepca_cfg_save", { p_cfg: c }).catch(err); await loadSettings(); return redraw(); }
     if (e.target.closest("#xpRun")) {
       if (X.plan?.status === "approved" && !(await confirmBox("Xếp lại tuần đã duyệt?", "Bản đã duyệt sẽ quay về nháp, phải duyệt lại (và nhập lại HRM).", "Xếp lại"))) return;
       const b = e.target.closest("#xpRun"); b.disabled = true; b.textContent = "Đang xếp…";
       await new Promise((r) => setTimeout(r, 30));
-      const res = solve({ days, staff: team, busy, cfg, store, slots, seed: Date.parse(X.week) / 864e5 });
+      const res = solve({ days, staff: team, busy, cfg, store, slots, seed: (Date.now() % 2147483647) || 1 });   // mỗi lần bấm 1 lịch khác (rule 24/11: chưa đạt thì bấm sắp lại)
       for (const s of team) for (const d of days) X.grid[s.id + "|" + d] = res.grid[s.id + "|" + d];
       X.dirty = true;
       try { await save(); toast(res.short.length ? `Đã xếp — còn thiếu ${res.missingHours} giờ-người (xem ô đỏ)` : "Đã xếp đủ người mọi ca", 4000); } catch (x) { err(x); }
@@ -154,11 +170,37 @@ export async function xepTab(body, alive) {
 
 // ---------- ⚙️ Rule xếp ca ----------
 const DN = ["", "T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+const patTxt = (a) => (Array.isArray(a) ? a : []).join(", ");
+function ruleNotes(cfg) {
+  const n = Array.isArray(cfg.rule_notes) ? cfg.rule_notes : [];
+  return n.length ? `<ul class="small" style="margin:4px 0 0 18px">${n.map((x) => `<li><b>${esc(x.rule)}</b> → ${esc(x.meaning)}</li>`).join("")}</ul>` : "";
+}
+function previewBox(p, cfg) {
+  if (!p) return "";
+  const keys = [["max_day_h", "Giờ tối đa / ngày"], ["min_day_h", "Giờ tối thiểu / ngày làm"], ["min_slots", "Số ca tối thiểu / ngày làm"], ["min_off", "Ngày OFF tối thiểu"], ["prefer", "Khối ưu tiên"], ["forbid", "Khối cấm"], ["count_pos", "Bộ phận được đếm"], ["pairs", "Cặp trái ca"]];
+  const show = (v) => (Array.isArray(v) ? v.map((x) => (Array.isArray(x) ? x.join(" ↔ ") : x)).join(", ") || "(không)" : v ?? "(mặc định)");
+  const ch = keys.filter(([k]) => JSON.stringify(p.cfg[k] ?? null) !== JSON.stringify(cfg[k] ?? null)).map(([k, l]) => `<li>${esc(l)}: ${esc(show(cfg[k]))} → <b>${esc(show(p.cfg[k]))}</b></li>`);
+  const needCh = (p.cfg.stores || []).some((s, i) => JSON.stringify(s.need) !== JSON.stringify(cfg.stores?.[i]?.need)) ? `<li>Số người cần mỗi ca: <b>có thay đổi</b> (xem bảng sau khi áp dụng)</li>` : "";
+  return `<div class="banner ${p.unsupported.length ? "warn" : "ok"}" style="margin-top:8px"><div>
+    <b>🤖 AI hiểu rule như sau:</b>${ruleNotes(p.cfg) || " (không có)"}
+    <b>Thay đổi cấu hình:</b>${ch.length || needCh ? `<ul class="small" style="margin:4px 0 0 18px">${ch.join("")}${needCh}</ul>` : " không đổi gì."}
+    ${p.unsupported.length ? `<b>⚠️ Chưa làm được / cần xem lại:</b><ul class="small" style="margin:4px 0 0 18px">${p.unsupported.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    <div class="row" style="margin-top:6px"><button class="btn primary small" type="button" id="xpRuleApply">✅ Áp dụng</button><button class="btn small" type="button" id="xpRuleCancel">Bỏ</button></div></div></div>`;
+}
 function cfgForm(cfg, slots) {
   const staff = visibleStaff(), opt = (v) => `<option value="">— chọn NV —</option>${staff.map((s) => `<option value="${esc(s.id)}" ${String(v) === s.id ? "selected" : ""}>${esc(s.name)} (${esc(s.id)})</option>`).join("")}`;
-  return `<div class="fields">
+  return `<h4 style="margin:0 0 4px">📝 Rule bằng chữ</h4>
+    <p class="small muted">Gõ rule bằng tiếng Việt, mỗi dòng 1 rule (VD: “ưu tiên sắp ca 123 / 456”, “không xếp 1 ngày chỉ 1 ca”, “T7 CN ca 5 cần 3 người”, “Thy và Nhân trái ca”). Bấm 🤖 AI đọc rule → xem AI hiểu đúng chưa → ✅ Áp dụng. Rule AI chưa làm được sẽ được liệt kê riêng.</p>
+    <textarea id="xcText" rows="6" style="width:100%">${esc(cfg.text_rules || "")}</textarea>
+    <div class="row" style="margin-top:6px"><button class="btn primary small" type="button" id="xpRuleAI">🤖 AI đọc rule</button></div>
+    <div id="xpRulePrev">${previewBox(X.preview, cfg)}</div>
+    <h4 style="margin:14px 0 4px">🔧 Thông số (AI điền, hoặc sửa tay)</h4>
+    <div class="fields">
       <label>Giờ tối đa / ngày<input id="xcMax" type="number" min="1" max="15" step="0.5" value="${esc(cfg.max_day_h)}"></label>
       <label>Giờ tối thiểu / ngày làm<input id="xcMin" type="number" min="0" max="15" step="0.5" value="${esc(cfg.min_day_h ?? 4)}"></label>
+      <label>Số ca tối thiểu / ngày làm<input id="xcSlots" type="number" min="1" max="6" value="${esc(cfg.min_slots ?? 2)}"></label>
+      <label>Khối ca ưu tiên (VD 1-3, 4-6)<input id="xcPref" value="${esc(patTxt(cfg.prefer))}"></label>
+      <label>Khối ca cấm (VD 1-2)<input id="xcForbid" value="${esc(patTxt(cfg.forbid))}"></label>
       <label>Ngày OFF tối thiểu / tuần<input id="xcOff" type="number" min="0" max="6" value="${esc(cfg.min_off)}"></label>
       <label>Bộ phận được đếm số người (cách nhau dấu phẩy)<input id="xcPos" value="${esc((cfg.count_pos || []).join(", "))}"></label></div>
     <h4 style="margin:12px 0 4px">👥 Cặp “trái ca” (không làm chung giờ nếu có thể)</h4>
@@ -174,7 +216,12 @@ function cfgForm(cfg, slots) {
 function readCfg(cfg) {
   const c = JSON.parse(JSON.stringify(cfg));
   if (!$("#xcMax")) return c;
-  c.max_day_h = Number($("#xcMax").value) || 9; c.min_day_h = Math.max(0, Number($("#xcMin").value) || 0); c.min_off = Number($("#xcOff").value) || 0;
+  c.max_day_h = Number($("#xcMax").value) || 9; c.min_day_h = Math.max(0, Number($("#xcMin").value) || 0);
+  c.min_slots = Math.max(1, Math.min(6, Number($("#xcSlots").value) || 1));
+  const pats = (s) => s.split(/[,;\s]+/).map((x) => parsePat(x)).filter(Boolean).map((p) => `${p[0]}-${p[p.length - 1]}`);
+  c.prefer = pats($("#xcPref").value); c.forbid = pats($("#xcForbid").value);
+  c.text_rules = $("#xcText").value;
+  c.min_off = Number($("#xcOff").value) || 0;
   c.count_pos = $("#xcPos").value.split(",").map((x) => x.trim()).filter(Boolean);
   c.pairs = $$(".xc-pair").map((r) => [r.querySelector(".xpA").value, r.querySelector(".xpB").value]);
   for (const box of $$(".xc-store")) { const s = c.stores[Number(box.dataset.k)]; s.name = box.querySelector(".xsName").value.trim(); s.dept = box.querySelector(".xsDept").value; }
