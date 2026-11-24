@@ -25,6 +25,8 @@ function decorate() {
   for (const el of view.querySelectorAll("[data-sid], [data-sd]")) {
     const id = el.dataset.sid || el.dataset.sd; if (!id || !staffById(id)) continue;
     if (el.querySelector(":scope .av-slot")) continue;
+    const ex = el.querySelector(":scope .avatar");   // chỗ đã có vòng chữ cái sẵn (thẻ top 3) → thay bằng ảnh
+    if (ex) { if (!ex.dataset.av) { ex.dataset.av = "1"; ex.classList.add("av-host"); ex.innerHTML = avatarHtml(id, ex.offsetWidth || 44); } continue; }
     const name = el.querySelector("b"); if (!name) continue;
     const big = el.classList.contains("td-who");
     const slot = document.createElement("span");
@@ -38,7 +40,7 @@ function decorate() {
     (stacked ? p.parentElement : p).insertBefore(slot, stacked ? p : name);
   }
 }
-function refresh() { document.querySelectorAll(".av-slot").forEach((x) => x.remove()); decorate(); }
+function refresh() { document.querySelectorAll(".av-slot").forEach((x) => x.remove()); document.querySelectorAll("[data-av]").forEach((x) => delete x.dataset.av); decorate(); }
 
 // Chọn ảnh → cắt vuông giữa ảnh → 160×160 JPEG
 async function squash(file) {
