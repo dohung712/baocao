@@ -72,7 +72,7 @@ function annotate() {
     for (const n of t.nodes.slice(1)) { n.classList.toggle("hm-none", st === "none"); n.classList.toggle("hm-some", st === "some"); }
     let c = [...t.el.children].find((x) => x.classList?.contains("hm-chip"));
     if (!c) {
-      c = document.createElement("span"); c.className = "hm-chip hm-" + t.kind; c.setAttribute("role", "button"); c.tabIndex = 0;
+      c = document.createElement("hm-chip"); c.className = "hm-chip hm-" + t.kind;   // thẻ riêng: không bị kiểu "span" của menu ẩn đi c.setAttribute("role", "button"); c.tabIndex = 0;
       c.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); editor(t.key, t.label); }, true);
       if (t.kind === "sec" && getComputedStyle(t.el).position === "static") t.el.style.position = "relative";
       t.el.appendChild(c);
