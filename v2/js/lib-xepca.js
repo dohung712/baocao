@@ -4,9 +4,9 @@
 //   2. Lịch bận  → cứng: không xếp ca trùng ca bận (bận chưa ghi ca = bận cả ngày)
 //   3. Rule QL   → mềm theo trọng số: tối thiểu ngày OFF / tuần > đủ người mỗi ca (chỉ đếm bộ phận trong count_pos)
 //                  > cặp NV "trái ca" (không làm chung giờ nếu có thể) > chia đều giờ công > ít ca thừa
-// Mỗi ngày NV làm 1 khối ca liền mạch (VD Ca 1–3), tổng giờ ≤ max_day_h.
+// Mỗi ngày NV làm 1 khối ca liền mạch (VD Ca 1–3), min_day_h (mặc định 4) ≤ tổng giờ ≤ max_day_h.
 
-export const W = { short: 1000, off: 50000, pair: 80, over: 30, day: 15, bal: 1 };   // off > thiếu cả ngày → luôn đủ ngày nghỉ tối thiểu
+export const W = { short: 1000, off: 50000, pair: 80, over: 30, day: 15, bal: 25 };   // off > thiếu cả ngày → luôn đủ ngày nghỉ tối thiểu
 
 // Giờ từng ca từ cài đặt SHIFT_SLOTS ["07:30-09:00", …] → [1.5, 3, 3, 3, 3, 1]
 export function slotHours(slots) {
@@ -19,13 +19,13 @@ export function slotHours(slots) {
   });
 }
 
-// Các khối ca liền mạch [a..b] có tổng giờ ≤ maxH (kèm khối rỗng = nghỉ)
-export function patterns(hours, maxH) {
+// Các khối ca liền mạch [a..b] có minH ≤ tổng giờ ≤ maxH (kèm khối rỗng = nghỉ) — không cho đi làm 1 tiếng rồi về
+export function patterns(hours, maxH, minH = 0) {
   const out = [[]];
   for (let a = 1; a <= 6; a++) for (let b = a; b <= 6; b++) {
     const p = []; let h = 0;
     for (let x = a; x <= b; x++) { p.push(x); h += hours[x - 1]; }
-    if (h <= maxH + 1e-9) out.push(p);
+    if (h <= maxH + 1e-9 && h >= minH - 1e-9) out.push(p);
   }
   return out;
 }
@@ -46,7 +46,8 @@ const isoDow = (d) => { const x = new Date(d + "T00:00:00Z").getUTCDay(); return
 //   fixed:  { "<id>|<d>": [ca…] } — ô QL đã chốt tay, giữ nguyên
 export function solve({ days, staff, busy, cfg, store, slots, fixed = {}, seed = 1, restarts = 24 }) {
   const hours = slotHours(slots), maxH = Number(cfg?.max_day_h) || 9, minOff = Math.max(0, Math.min(7, Number(cfg?.min_off ?? 1)));
-  const P = patterns(hours, maxH), PH = P.map((p) => p.reduce((s, x) => s + hours[x - 1], 0));
+  const minH = Math.min(maxH, Math.max(0, Number(cfg?.min_day_h ?? 4)));
+  const P = patterns(hours, maxH, minH), PH = P.map((p) => p.reduce((s, x) => s + hours[x - 1], 0));
   const need = days.map((d) => needOf(store, isoDow(d)));
   const S = staff.length, D = days.length;
   const idx = new Map(staff.map((s, i) => [String(s.id), i]));
@@ -126,9 +127,9 @@ export function solve({ days, staff, busy, cfg, store, slots, fixed = {}, seed =
 
 // Báo cáo 1 lịch (kể cả lịch QL đã sửa tay): thiếu / thừa người từng ca, giờ từng NV, cặp trùng giờ, trùng lịch bận
 export function report({ days, staff, grid, cfg, store, slots, busy }) {
-  const hours = slotHours(slots), maxH = Number(cfg?.max_day_h) || 9, minOff = Number(cfg?.min_off ?? 1);
+  const hours = slotHours(slots), maxH = Number(cfg?.max_day_h) || 9, minOff = Number(cfg?.min_off ?? 1), minH = Math.min(maxH, Number(cfg?.min_day_h ?? 4));
   const ids = new Set(staff.map((s) => String(s.id)));
-  const short = [], over = [], pairHits = [], busyHits = [], longDays = [], noOff = [], gaps = [];
+  const short = [], over = [], pairHits = [], busyHits = [], longDays = [], shortDays = [], noOff = [], gaps = [];
   const cover = {};
   days.forEach((d) => {
     const need = needOf(store, isoDow(d)), cnt = [0, 0, 0, 0, 0, 0];
@@ -147,6 +148,7 @@ export function report({ days, staff, grid, cfg, store, slots, busy }) {
       const g = grid[s.id + "|" + d] || [];
       const hh = g.reduce((t, x) => t + hours[x - 1], 0); h += hh; if (g.length) w++;
       if (hh > maxH + 1e-9) longDays.push({ id: String(s.id), d, h: hh });
+      if (hh > 0 && hh < minH - 1e-9) shortDays.push({ id: String(s.id), d, h: hh });
       const so = [...g].sort((a, b) => a - b); if (so.some((x, t) => t && x !== so[t - 1] + 1)) gaps.push({ id: String(s.id), d });
       const b = (busy || []).find((x) => String(x.staff_id) === String(s.id) && x.busy_date === d);
       if (b && g.length) {
@@ -159,7 +161,7 @@ export function report({ days, staff, grid, cfg, store, slots, busy }) {
     return { id: String(s.id), name: s.name, hours: Math.round(h * 10) / 10, days: w };
   });
   const missing = short.reduce((t, x) => t + (x.need - x.have) * hours[x.slot - 1], 0);
-  return { cover, short, over, pairHits, busyHits, longDays, noOff, gaps, per, missingHours: Math.round(missing * 10) / 10 };
+  return { cover, short, over, pairHits, busyHits, longDays, shortDays, noOff, gaps, per, missingHours: Math.round(missing * 10) / 10 };
 }
 
 // Bảng Excel cùng dạng "CA LÀM VIỆC.xlsx" (tool khác & baocao v2 đều đọc được):

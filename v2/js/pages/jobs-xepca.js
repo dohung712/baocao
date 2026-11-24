@@ -62,7 +62,7 @@ export async function xepTab(body, alive) {
   body.innerHTML = `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>🤖 Xếp ca tự động</h3>
       <button class="btn small" type="button" data-wk="-7">‹</button><b>Tuần ${dm(days[0])} – ${dm(days[6])}</b><button class="btn small" type="button" data-wk="7">›</button>
       <div class="chips">${stores.map((s) => `<button type="button" class="chip ${s.code === X.store ? "on" : ""}" data-store="${esc(s.code)}">${esc(s.code)} · ${esc(s.name || "")}</button>`).join("")}</div></div>
-    <p class="small muted">Ưu tiên: <b>1 OFF</b> → <b>2 lịch bận</b> NV đăng ký (CV → Lịch bận) → <b>3 rule quản lý</b> (⚙️ bên dưới). Chỉ đếm người bộ phận <b>${esc((cfg.count_pos || []).join(", "))}</b> vào số người mỗi ca; mỗi ngày 1 khối ca liền, tối đa ${esc(cfg.max_day_h)}h, ít nhất ${esc(cfg.min_off)} ngày OFF / tuần, chia đều giờ. Bấm ô để sửa tay.</p>
+    <p class="small muted">Ưu tiên: <b>1 OFF</b> → <b>2 lịch bận</b> NV đăng ký (CV → Lịch bận) → <b>3 rule quản lý</b> (⚙️ bên dưới). Chỉ đếm người bộ phận <b>${esc((cfg.count_pos || []).join(", "))}</b> vào số người mỗi ca; mỗi ngày 1 khối ca liền ${esc(cfg.min_day_h ?? 4)}–${esc(cfg.max_day_h)}h, ít nhất ${esc(cfg.min_off)} ngày OFF / tuần, chia đều giờ. Bấm ô để sửa tay.</p>
     ${!store ? `<div class="banner warn"><div>Chưa cấu hình siêu thị — mở ⚙️ Rule xếp ca bên dưới.</div></div>` : !staffAll.length ? `<div class="banner warn"><div>Không có NV nào thuộc bộ phận <b>${esc(store.dept || "(trống)")}</b> — chọn đúng bộ phận cho siêu thị trong ⚙️ Rule xếp ca.</div></div>` : `
     <div class="row" style="margin-bottom:8px">
       <button class="btn primary" type="button" id="xpRun">🤖 Xếp tự động</button>
@@ -73,6 +73,7 @@ export async function xepTab(body, alive) {
       ${rep.short.length ? `<b>⚠️ Thiếu ${rep.missingHours} giờ-người</b> (${rep.short.length} ô đỏ dưới bảng) — không đủ NV cho rule; có thể tăng giờ tối đa / ngày, giảm ngày OFF tối thiểu hoặc giảm số người ca.` : "✅ Đủ người mọi ca."}
       ${rep.pairHits.length ? `<br>👥 ${rep.pairHits.length} ngày cặp “trái ca” vẫn làm chung: ${rep.pairHits.map((h) => `${dow(h.d)} ${esc(nm(h.a))} + ${esc(nm(h.b))} (ca ${h.slots.join(",")})`).join(", ")}` : ""}
       ${rep.longDays.length ? `<br>⏱️ Quá ${esc(cfg.max_day_h)}h/ngày: ${rep.longDays.map((x) => `${dow(x.d)} ${esc(nm(x.id))} ${x.h}h`).join(", ")}` : ""}
+      ${rep.shortDays.length ? `<br>⏳ Dưới ${esc(cfg.min_day_h ?? 4)}h/ngày: ${rep.shortDays.map((x) => `${dow(x.d)} ${esc(nm(x.id))} ${x.h}h`).join(", ")}` : ""}
       ${rep.noOff.length ? `<br>😴 Thiếu ngày OFF: ${rep.noOff.map((x) => esc(nm(x.id))).join(", ")}` : ""}
       ${rep.gaps.length ? `<br>✂️ Ca không liền: ${rep.gaps.map((x) => `${dow(x.d)} ${esc(nm(x.id))}`).join(", ")}` : ""}</div></div>` : ""}
     <div class="tbl-wrap"><table class="nosort jb-grid"><thead><tr><th>NV</th><th class="num">Giờ</th>${days.map((d) => `<th class="num">${dow(d)}<br>${dm(d)}</th>`).join("")}</tr></thead><tbody>
@@ -157,6 +158,7 @@ function cfgForm(cfg, slots) {
   const staff = visibleStaff(), opt = (v) => `<option value="">— chọn NV —</option>${staff.map((s) => `<option value="${esc(s.id)}" ${String(v) === s.id ? "selected" : ""}>${esc(s.name)} (${esc(s.id)})</option>`).join("")}`;
   return `<div class="fields">
       <label>Giờ tối đa / ngày<input id="xcMax" type="number" min="1" max="15" step="0.5" value="${esc(cfg.max_day_h)}"></label>
+      <label>Giờ tối thiểu / ngày làm<input id="xcMin" type="number" min="0" max="15" step="0.5" value="${esc(cfg.min_day_h ?? 4)}"></label>
       <label>Ngày OFF tối thiểu / tuần<input id="xcOff" type="number" min="0" max="6" value="${esc(cfg.min_off)}"></label>
       <label>Bộ phận được đếm số người (cách nhau dấu phẩy)<input id="xcPos" value="${esc((cfg.count_pos || []).join(", "))}"></label></div>
     <h4 style="margin:12px 0 4px">👥 Cặp “trái ca” (không làm chung giờ nếu có thể)</h4>
@@ -172,7 +174,7 @@ function cfgForm(cfg, slots) {
 function readCfg(cfg) {
   const c = JSON.parse(JSON.stringify(cfg));
   if (!$("#xcMax")) return c;
-  c.max_day_h = Number($("#xcMax").value) || 9; c.min_off = Number($("#xcOff").value) || 0;
+  c.max_day_h = Number($("#xcMax").value) || 9; c.min_day_h = Math.max(0, Number($("#xcMin").value) || 0); c.min_off = Number($("#xcOff").value) || 0;
   c.count_pos = $("#xcPos").value.split(",").map((x) => x.trim()).filter(Boolean);
   c.pairs = $$(".xc-pair").map((r) => [r.querySelector(".xpA").value, r.querySelector(".xpB").value]);
   for (const box of $$(".xc-store")) { const s = c.stores[Number(box.dataset.k)]; s.name = box.querySelector(".xsName").value.trim(); s.dept = box.querySelector(".xsDept").value; }

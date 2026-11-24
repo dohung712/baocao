@@ -13,7 +13,7 @@ const B = [{ id: "b1", name: "Linh" }, { id: "b2", name: "Trinh" }, { id: "b3", 
 assert.deepEqual(slotHours(SLOTS), [1.5, 3, 3, 3, 3, 1]);
 assert.ok(patterns(slotHours(SLOTS), 9).every((p) => p.reduce((s, x) => s + [1.5, 3, 3, 3, 3, 1][x - 1], 0) <= 9));
 
-for (const [name, staff, store, pairs, maxH] of [["933 9h", A, S933, [["a1", "a2"]], 9], ["933 12h", A, S933, [["a1", "a2"]], 12], ["10341 9h", B, S10341, [["b3", "b5"]], 9], ["10341 12h", B, S10341, [["b3", "b5"]], 12]]) {
+for (const [name, staff, store, pairs, maxH] of [["933 9h", A, S933, [["a1", "a2"]], 9], ["933 12h", A, S933, [["a1", "a2"]], 12], ["10341 9h", B, S10341, [["b3", "b5"]], 9], ["10341 12h", B, S10341, [["b3", "b5"]], 12], ["933 14h", A, S933, [["a1", "a2"]], 14]]) {
   const busy = [{ staff_id: staff[0].id, busy_date: days[2], type: "OFF", shifts: [] }, { staff_id: staff[1].id, busy_date: days[4], type: "BAN", shifts: [1, 2] }];
   const cfg = { max_day_h: maxH, min_off: 1, pairs };
   const t = Date.now();
@@ -23,7 +23,8 @@ for (const [name, staff, store, pairs, maxH] of [["933 9h", A, S933, [["a1", "a2
   assert.equal(r.busyHits.length, 0, name + " trùng lịch bận");
   assert.deepEqual(r.grid[staff[0].id + "|" + days[2]], []);
   assert.ok(!r.grid[staff[1].id + "|" + days[4]].some((x) => x <= 2));
-  assert.equal(r.gaps.length, 0); assert.equal(r.longDays.length, 0); assert.equal(r.noOff.length, 0, name + " thiếu ngày OFF");
+  assert.equal(r.gaps.length, 0); assert.equal(r.longDays.length, 0); assert.equal(r.shortDays.length, 0, name + " có ngày < 4h");
+  const hs = r.per.map((p) => p.hours); assert.ok(Math.max(...hs) - Math.min(...hs) <= 12, name + " lệch giờ " + hs); assert.equal(r.noOff.length, 0, name + " thiếu ngày OFF");
   console.log(`${name}: ${ms}ms · thiếu ${r.missingHours}h (${r.short.length} ô) · cặp trùng ${r.pairHits.length} · giờ ${r.per.map((p) => p.name + " " + p.hours).join(", ")}`);
 }
 
