@@ -49,9 +49,11 @@ async function proxyImages(scope, restore) {
     try {
       const r = await fetch(SUPABASE_URL + "/functions/v1/imgproxy", { method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + (session?.access_token || "") }, body: JSON.stringify({ id, sz: 800 }) });
       if (!r.ok) return;
-      const url = URL.createObjectURL(await r.blob()), old = img.src;
-      img.src = url; await img.decode().catch(() => {});
-      restore.push(() => { img.src = old; URL.revokeObjectURL(url); });
+      // nhúng thẳng dữ liệu ảnh (data:) — đường dẫn blob: bị công cụ chụp gắn thêm tham số nên hỏng
+      const blob = await r.blob(), url = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(blob); });
+      const old = img.src, oldLazy = img.loading;
+      img.loading = "eager"; img.src = url; await img.decode().catch(() => {});
+      restore.push(() => { img.src = old; img.loading = oldLazy; });
     } catch { /* ảnh này để trống */ }
   }));
 }
