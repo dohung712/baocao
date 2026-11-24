@@ -8,11 +8,12 @@ import { sb, S, rpc, callFn, onChange, setting, errMsg, staffById, loadSettings,
 const LABEL = {
   late: ["⏰", "Việc trễ chưa nộp", "Cho nộp bù (Trợ lý tạo việc mới, việc cũ vẫn ghi trễ) hoặc chỉ ghi trễ"],
   req_delay: ["🙋", "NV xin dời hạn", ""], req_excuse: ["🙋", "NV xin miễn việc", ""],
+  shot_check: ["📱", "Ảnh báo cáo cần kiểm tra", "Tool nghi không phải ảnh chụp màn hình, NV đã cam kết ĐÃ BÁO CÁO LINE + ĐÚNG. Bấm ảnh để xem, rồi chọn ✅ Ảnh đúng hoặc ↩️ Bắt nộp lại"],
   no_shift: ["🗓️", "Lịch ca", ""], rt: ["📄", "Trang tính việc lặp lại", ""], bi: ["📊", "Ảnh BI", ""], bi_stuck: ["📊", "Số BI kẹt", ""],
   no_push: ["🔕", "Chưa bật thông báo", ""], guide: ["📖", "Hướng dẫn & nhập môn", ""], shift_conflict: ["⚠️", "Lịch ca trùng lịch bận", ""], sys: ["🛠️", "Lỗi chạy tự động", ""], weekly: ["📈", "Phân tích tuần", ""],
 };
 const LINK = { guide: ["guide", "👥 Mở Theo dõi"], no_shift: ["jobs", "🗓️ Mở Lịch ca"], shift_conflict: ["jobs", "🗓️ Mở Lịch ca"], bi: ["store", "📊 Mở Siêu thị"], bi_stuck: ["admin", "📊 Mở Quản lý"], rt: ["jobs", "🔁 Mở Lặp lại"] };
-const ORDER = ["req_delay", "req_excuse", "late", "no_shift", "rt", "sys", "shift_conflict", "bi", "bi_stuck", "no_push", "weekly"];
+const ORDER = ["shot_check", "req_delay", "req_excuse", "late", "no_shift", "rt", "sys", "shift_conflict", "bi", "bi_stuck", "no_push", "weekly"];
 let F = "need", goFn;
 const fmtVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 const at = (iso) => { const p = Object.fromEntries(fmtVN.formatToParts(new Date(iso)).map((x) => [x.type, x.value])); return `${p.hour}:${p.minute} ${p.day}/${p.month}`; };
@@ -77,12 +78,14 @@ function healthBar(h) {
 }
 
 function card(x) {
-  const who = x.kind.startsWith("req_") ? nm(x.staff_id, x.data?.name) : "";
+  const who = x.kind.startsWith("req_") || x.kind === "shot_check" ? nm(x.staff_id, x.data?.name) : "";
+  const pics = x.kind === "shot_check" && Array.isArray(x.data?.photos) ? `<div class="jb-photos" style="margin-top:6px">${x.data.photos.map((f, i) => `<span class="jb-th"><a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="https://drive.google.com/thumbnail?id=${encodeURIComponent(f.id)}&sz=w400" alt="Ảnh ${i + 1}" loading="lazy"></a></span>`).join("")}</div>` : "";
   const due = x.kind === "req_delay" && x.data?.due_new ? ` · xin dời đến <b>${esc(at(x.data.due_new))}</b> (hạn cũ ${esc(at(x.data.due_old))})` : "";
   const st = x.status === "open" ? "" : `<span class="pill ${x.status === "rejected" ? "bad" : "ok"}">${{ approved: "✅ Đã duyệt", rejected: "❌ Từ chối", done: "✔️ Xong" }[x.status]}</span> <span class="tiny muted">${esc(x.note || "")}${x.decided_by ? " · " + esc(x.decided_by === "tro-ly" ? "Trợ lý tự đóng" : x.decided_by) : ""}${x.decided_at ? " · " + esc(at(x.decided_at)) : ""}</span>`;
   let btn = "";
   if (x.status === "open") {
-    if (x.kind === "late") btn = `<button class="btn small primary" data-act="approve" data-id="${x.id}" data-ask="due">↩️ Cho nộp bù</button><button class="btn small" data-act="close" data-id="${x.id}">📝 Ghi trễ</button>`;
+    if (x.kind === "shot_check") btn = `<button class="btn small primary" data-act="approve" data-id="${x.id}">✅ Ảnh đúng</button><button class="btn small" data-act="reject" data-id="${x.id}" data-ask="redo">↩️ Bắt nộp lại</button>`;
+    else if (x.kind === "late") btn = `<button class="btn small primary" data-act="approve" data-id="${x.id}" data-ask="due">↩️ Cho nộp bù</button><button class="btn small" data-act="close" data-id="${x.id}">📝 Ghi trễ</button>`;
     else if (x.kind === "req_delay") btn = `<button class="btn small primary" data-act="approve" data-id="${x.id}">✅ Đồng ý dời</button><button class="btn small" data-act="reject" data-id="${x.id}" data-ask="note">❌ Từ chối</button>`;
     else if (x.kind === "req_excuse") btn = `<button class="btn small primary" data-act="approve" data-id="${x.id}">✅ Cho miễn</button><button class="btn small" data-act="reject" data-id="${x.id}" data-ask="note">❌ Từ chối</button>`;
     else btn = `${LINK[x.kind] ? `<button class="btn small ghost" data-go="${LINK[x.kind][0]}">${LINK[x.kind][1]}</button>` : ""}<button class="btn small" data-act="close" data-id="${x.id}">✔️ Đã biết</button>`;
@@ -90,6 +93,7 @@ function card(x) {
   return `<div class="ag-card ${x.urgent ? "urgent" : ""}">
     <div class="ag-t">${x.urgent ? "❗ " : ""}${who ? `<b>${who}</b>: ` : ""}${esc(x.title)}</div>
     ${x.detail ? `<div class="ag-d ${x.kind === "weekly" ? "pre" : ""}">${esc(x.detail)}${due}</div>` : due ? `<div class="ag-d">${due}</div>` : ""}
+    ${pics}
     <div class="ag-f"><span class="tiny muted">${esc(at(x.created_at))}</span>${st}<span class="grow"></span>${btn}</div></div>`;
 }
 
@@ -141,6 +145,15 @@ function onClick(list) {
           <label>Hạn nộp bù<input type="datetime-local" id="agDue" value="${localInput(Date.now() + 2 * 3600e3)}"></label>
           <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn primary" data-v="ok" id="agOk">Cho nộp bù</button></div>`,
           { onOpen(bd) { $("#agOk", bd).addEventListener("click", () => { due = $("#agDue", bd).value; }, { capture: true }); } });
+        if (v !== "ok" || !due) return;
+        due = fromInput(due);
+      }
+      if (b.dataset.ask === "redo") {
+        const v = await modal(`<h3>↩️ Bắt nộp lại</h3><p class="small muted">Việc mở lại cho NV nộp lại ảnh chụp màn hình đúng; NV nhận thông báo.</p>
+          <label>Hạn nộp lại<input type="datetime-local" id="agDue" value="${localInput(Date.now() + 2 * 3600e3)}"></label>
+          <label>Lý do (NV sẽ thấy)<input id="agNote" maxlength="200" placeholder="VD: ảnh chụp camera, không phải màn hình LINE"></label>
+          <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn danger" data-v="ok" id="agOk">Bắt nộp lại</button></div>`,
+          { onOpen(bd) { $("#agOk", bd).addEventListener("click", () => { due = $("#agDue", bd).value; note = $("#agNote", bd).value.trim(); }, { capture: true }); } });
         if (v !== "ok" || !due) return;
         due = fromInput(due);
       }

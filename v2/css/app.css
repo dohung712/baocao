@@ -965,3 +965,10 @@ tr.click{cursor:pointer}
 .jb-shot{color:var(--bad,#c62828);border:1.5px solid var(--bad,#c62828);border-radius:10px;padding:6px 10px;font-size:13px;margin:6px 0}
 .btn-shot{border-color:var(--bad,#c62828)!important;color:var(--bad,#c62828)!important;font-weight:700}
 .jb-note{font-size:12px;color:var(--muted,#667);margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+
+/* D13d cam ket anh chup man hinh */
+.jb-commit{border:2px solid var(--bad,#c62828);border-radius:12px;padding:10px 12px;margin:8px 0;display:grid;gap:6px;color:var(--bad,#c62828)}
+.jb-commit[hidden]{display:none}
+.jb-commit label{display:flex;gap:8px;align-items:center;color:var(--text,inherit);font-size:14px}
+.jb-commit input[type=checkbox]{width:20px;height:20px}
+.jb-th.sus{outline:3px solid var(--bad,#c62828);outline-offset:-3px;border-radius:8px}

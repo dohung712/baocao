@@ -139,6 +139,10 @@ export async function openSubmit(j) {
       <div class="row" style="margin-top:8px">${shot ? "" : `<label class="btn">📷 Chụp ảnh<input type="file" accept="image/*" capture="environment" id="jbCam" hidden></label>`}
         <label class="btn ${shot ? "btn-shot" : ""}">🖼️ ${shot ? "Chọn ảnh chụp màn hình" : "Chọn ảnh"}<input type="file" accept="image/*" multiple id="jbPick" hidden></label>
         <span class="small muted">${j.proof === "none" ? "Ảnh không bắt buộc" : `Cần ít nhất ${j.photo_min} ảnh, tối đa ${j.photo_max}`}</span></div>` : ""}
+    ${shot ? `<div class="jb-commit" id="jbCommit" hidden><b>⚠️ Tool thấy <span id="jbSusN">1</span> ảnh có vẻ KHÔNG phải ảnh chụp màn hình</b> <span class="small" id="jbSusWhy"></span>
+      <label><input type="checkbox" id="jbC1"> Tôi <b>ĐÃ BÁO CÁO TRÊN LINE</b></label>
+      <label><input type="checkbox" id="jbC2"> Tôi <b>CAM KẾT ĐÚNG</b>: đây là ảnh chụp màn hình báo cáo thật</label>
+      <span class="tiny">Quản lý sẽ kiểm tra lại ảnh này. Không đúng → phải nộp lại. Hoặc bấm ✕ trên ảnh để chọn ảnh khác.</span></div>` : ""}
     <label style="margin-top:10px;display:block">Ghi chú (không bắt buộc)<textarea id="jbNote" rows="2">${esc(j.note || "")}</textarea></label>
     ${!done && Date.parse(j.due_at) < Date.now() && j.pen_late ? `<p class="small" style="color:var(--bad)">⏰ Đã quá hạn: nộp bây giờ bị trừ ${j.pen_late}⭐.</p>` : ""}
     <p class="small muted" id="jbMsg" style="min-height:1.2em"></p>
@@ -156,14 +160,17 @@ export async function openSubmit(j) {
       const draw = () => {
         if (!ph) return;
         ph.innerHTML = old.map((f, i) => `<span class="jb-th"><a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${thumb(f)}" alt="Ảnh ${i + 1}" loading="lazy"></a><button type="button" data-rmo="${i}" title="Bỏ ảnh">✕</button></span>`).join("")
-          + fresh.map((b, i) => `<span class="jb-th new"><img src="${b._url}" alt="Ảnh mới ${i + 1}"><button type="button" data-rmn="${i}" title="Bỏ ảnh">✕</button></span>`).join("")
+          + fresh.map((b, i) => `<span class="jb-th new${b._sus ? " sus" : ""}"><img src="${b._url}" alt="Ảnh mới ${i + 1}"><button type="button" data-rmn="${i}" title="Bỏ ảnh">✕</button></span>`).join("")
           || `<span class="small muted">Chưa có ảnh</span>`;
+        const box = $("#jbCommit", body), sus = fresh.filter((b) => b._sus);
+        if (box) { box.hidden = !sus.length; $("#jbSusN", body).textContent = sus.length; $("#jbSusWhy", body).textContent = sus.length ? `(${[...new Set(sus.map((b) => b._sus))].join(", ")})` : ""; }
       };
       const add = async (files) => {
         for (const f of [...files]) {
           if (old.length + fresh.length >= j.photo_max) { toast(`Tối đa ${j.photo_max} ảnh`); break; }
-          if (shot) { const c = await looksLikeScreenshot(f); if (!c.ok) { toast(`⚠️ Ảnh "${f.name || "đã chọn"}" không phải ảnh chụp màn hình (${c.why}). Chụp màn hình rồi chọn lại.`, 6000); continue; } }
-          try { const b = await compress(f); b._url = URL.createObjectURL(b); fresh.push(b); } catch { toast("Có ảnh không đọc được, chụp / chọn lại", 4000); }
+          // D13d: ảnh nghi không phải ảnh chụp màn hình → không chặn, NV phải tick xác nhận + QL kiểm tra lại sau
+          const c = shot ? await looksLikeScreenshot(f) : { ok: true };
+          try { const b = await compress(f); b._url = URL.createObjectURL(b); if (!c.ok) b._sus = c.why; fresh.push(b); } catch { toast("Có ảnh không đọc được, chụp / chọn lại", 4000); }
         }
         draw();
       };
@@ -192,6 +199,8 @@ export async function openSubmit(j) {
         if (j.proof !== "none" && old.length + fresh.length < j.photo_min) return msg(`Cần ít nhất ${j.photo_min} ảnh.`);
         const links = ($("#jbLinks", body)?.value || "").split(/[\s,]+/).map((x) => x.trim()).filter((x) => /^https?:\/\/\S+$/i.test(x));
         if (j.links_min > 0 && links.length < j.links_min) return msg(`Cần ít nhất ${j.links_min} link (bắt đầu bằng https://).`);
+        const susWhy = [...new Set(fresh.filter((b) => b._sus).map((b) => b._sus))];
+        if (susWhy.length && !($("#jbC1", body)?.checked && $("#jbC2", body)?.checked)) return msg("Tick đủ 2 ô: ĐÃ BÁO CÁO TRÊN LINE và CAM KẾT ĐÚNG (hoặc bỏ ảnh đó, chọn ảnh chụp màn hình khác).");
         btn.disabled = true;
         try {
           const files = [...old];
@@ -202,6 +211,7 @@ export async function openSubmit(j) {
           }
           msg("Đang lưu…");
           const res = await rpc("job_submit", { p_id: j.id, p_photos: files, p_checks: checks, p_note: $("#jbNote", body).value.trim(), p_links: links });
+          if (susWhy.length) await rpc("job_shot_flag", { p_job: j.id, p_reasons: susWhy }).catch(() => {});   // D13d: QL kiểm tra lại ảnh
           toast(res.message || "Đã nộp", 4000);
           $("#jbClose", body).click();
         } catch (x) {

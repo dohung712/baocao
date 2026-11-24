@@ -103,6 +103,18 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
     }
   } catch (e) { out.lateError = String((e as Error).message).slice(0, 160); }
 
+  // ---------- 1b. D13d: ảnh NV cam kết là ảnh chụp màn hình (tool nghi) → báo ngay trưởng ca / QL bấm vào kiểm tra ----------
+  if (!quiet) try {
+    const sc: any[] = await rest("agent_items?select=id,staff_id,job_id,title,data&kind=eq.shot_check&status=eq.open&alerted_at=is.null&limit=50");
+    if (sc.length) {
+      const by = new Map<string, any[]>(), slot = curSlot(slots, vn.hm);
+      for (const x of sc) for (const b of await bosses(vn.date, [x.staff_id], slot)) by.set(b, [...(by.get(b) || []), x]);
+      await pushMany([...by.entries()].map(([staff_id, l]) => ({ staff_id, data: { title: `📱 ${l.length} ảnh báo cáo cần kiểm tra`, body: l.slice(0, 4).map((x) => `• ${name(x.staff_id)}: ${x.title}`).join("\n") + "\nNV cam kết đã báo cáo LINE — bấm để xem ảnh", url: APP + "#duyet", tag: "agent-shot", kind: "escalate", jobs: l.map((x) => x.job_id).filter(Boolean) } as PushData })));
+      await rest(`agent_items?id=in.(${sc.map((x) => x.id).join(",")})`, { method: "PATCH", body: JSON.stringify({ alerted_at: nowIso }) });
+      out.shotCheck = sc.length;
+    }
+  } catch (e) { out.shotError = String((e as Error).message).slice(0, 160); }
+
   // ---------- 2. Hết ca: đối soát việc của khung ca ----------
   if (!quiet) try {
     for (const [i, s] of slots.entries()) {
@@ -185,7 +197,7 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
     const t = times.find((x) => toMin(vn.hm) >= toMin(x) && toMin(vn.hm) < toMin(x) + 15);
     if (t && (await once(vn.date, "digest-" + t))) {
       const open: any[] = await rest("agent_items?select=id,kind,title,detail,urgent,needs_decision,digest_at,created_at&status=eq.open&order=urgent.desc,created_at&limit=300");
-      const LABEL: Record<string, string> = { guide: "📖 Hướng dẫn", sys: "🛠️ Lỗi chạy tự động", late: "⏰ Việc trễ — cho nộp bù / ghi trễ", req_delay: "🙋 NV xin dời hạn", req_excuse: "🙋 NV xin miễn việc", no_shift: "🗓️ Lịch ca", rt: "📄 Trang tính việc", bi: "📊 Ảnh BI", bi_stuck: "📊 Số BI kẹt", no_push: "🔕 Chưa bật thông báo", shift_conflict: "⚠️ Lịch ca trùng bận", weekly: "📈 Phân tích tuần" };
+      const LABEL: Record<string, string> = { shot_check: "📱 Ảnh báo cáo cần kiểm tra (NV cam kết)", guide: "📖 Hướng dẫn", sys: "🛠️ Lỗi chạy tự động", late: "⏰ Việc trễ — cho nộp bù / ghi trễ", req_delay: "🙋 NV xin dời hạn", req_excuse: "🙋 NV xin miễn việc", no_shift: "🗓️ Lịch ca", rt: "📄 Trang tính việc", bi: "📊 Ảnh BI", bi_stuck: "📊 Số BI kẹt", no_push: "🔕 Chưa bật thông báo", shift_conflict: "⚠️ Lịch ca trùng bận", weekly: "📈 Phân tích tuần" };
       // D14b: thưởng nóng / thưởng bán thêm / sửa báo cáo chờ duyệt (trước nằm riêng ở Quản lý) → cùng 1 hộp
       const [hb, xp, cr]: any[][] = await Promise.all([
         rest(`hot_bonuses?select=staff_id,item_name&status=eq.${encodeURIComponent("Chờ duyệt")}&limit=100`).catch(() => []),
