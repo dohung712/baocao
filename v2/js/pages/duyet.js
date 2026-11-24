@@ -10,9 +10,9 @@ const LABEL = {
   req_delay: ["🙋", "NV xin dời hạn", ""], req_excuse: ["🙋", "NV xin miễn việc", ""],
   shot_check: ["📱", "Ảnh báo cáo cần kiểm tra", "Tool nghi không phải ảnh chụp màn hình, NV đã cam kết ĐÃ BÁO CÁO LINE + ĐÚNG. Bấm ảnh để xem, rồi chọn ✅ Ảnh đúng hoặc ↩️ Bắt nộp lại"],
   no_shift: ["🗓️", "Lịch ca", ""], rt: ["📄", "Trang tính việc lặp lại", ""], bi: ["📊", "Ảnh BI", ""], bi_stuck: ["📊", "Số BI kẹt", ""],
-  no_push: ["🔕", "Chưa bật thông báo", ""], guide: ["📖", "Hướng dẫn & nhập môn", ""], shift_conflict: ["⚠️", "Lịch ca trùng lịch bận", ""], sys: ["🛠️", "Lỗi chạy tự động", ""], weekly: ["📈", "Phân tích tuần", ""],
+  no_push: ["🔕", "Chưa bật thông báo", ""], pg_week: ["🗓️", "Lịch làm việc PG", ""], guide: ["📖", "Hướng dẫn & nhập môn", ""], shift_conflict: ["⚠️", "Lịch ca trùng lịch bận", ""], sys: ["🛠️", "Lỗi chạy tự động", ""], weekly: ["📈", "Phân tích tuần", ""],
 };
-const LINK = { guide: ["guide", "👥 Mở Theo dõi"], no_shift: ["jobs", "🗓️ Mở Lịch ca"], shift_conflict: ["jobs", "🗓️ Mở Lịch ca"], bi: ["store", "📊 Mở Siêu thị"], bi_stuck: ["admin", "📊 Mở Quản lý"], rt: ["jobs", "🔁 Mở Lặp lại"] };
+const LINK = { pg_week: ["jobs", "🗓️ Mở Lịch ca"], guide: ["guide", "👥 Mở Theo dõi"], no_shift: ["jobs", "🗓️ Mở Lịch ca"], shift_conflict: ["jobs", "🗓️ Mở Lịch ca"], bi: ["store", "📊 Mở Siêu thị"], bi_stuck: ["admin", "📊 Mở Quản lý"], rt: ["jobs", "🔁 Mở Lặp lại"] };
 const ORDER = ["shot_check", "req_delay", "req_excuse", "late", "no_shift", "rt", "sys", "shift_conflict", "bi", "bi_stuck", "no_push", "weekly"];
 let F = "need", goFn;
 const fmtVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });

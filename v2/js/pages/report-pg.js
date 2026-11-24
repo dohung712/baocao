@@ -47,9 +47,11 @@ export async function pgReport(body, staffId, date) {
       <div class="tbl-wrap"><table class="nosort pg-days"><thead><tr><th>Ngày</th><th class="num">SL</th><th class="num">DT</th><th>Bán kèm</th></tr></thead><tbody>
       ${f.days.map((d) => `<tr><td>${dow(d.date)} ${dmy(d.date).slice(0, 5)}</td><td class="num">${fmt(d.qty, 2)}</td><td class="num">${fmt(d.revenue, 2)}</td><td class="small">${addText(d.addons) || '<span class="muted">—</span>'}</td></tr>`).join("")}
       </tbody></table></div></div>` : ""}
+    <div id="pgWeek" style="margin-top:12px"></div>
     <div class="sumbar pg-sum"><div class="kpis"><div><small>Hôm nay</small><b id="pgSumT">—</b></div></div>
       <button class="btn" id="pgCopy" type="button">📋 Copy tin</button>
       <button class="btn primary big" id="pgSend" type="button" ${f.locked ? "disabled" : ""}>🚀 Gửi báo cáo</button></div>`;
+  import("../pg-week.js").then((m) => m.pgWeekCard($("#pgWeek"), staffId)).catch(() => {});   // D19: lịch làm việc PG tuần sau
 
   const drawAdd = () => {
     $$("#pgChips [data-addon]").forEach((b) => { const on = st.add.has(b.dataset.addon); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });

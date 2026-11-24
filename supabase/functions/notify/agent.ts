@@ -164,6 +164,20 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
     } catch { /* bỏ qua */ }
     const st: any[] = await rest("bi_proposals?select=id&status=eq.pending&limit=50").catch(() => []);
     if (st.length) items.push({ key: `bi_stuck:${vn.date}`, kind: "bi_stuck", needs_decision: false, title: `${st.length} thẻ số BI của NV đang kẹt chưa áp dụng`, detail: "Mở Quản lý → Duyệt số NV." });
+    // D19: lịch làm việc PG tuần sau — T6, T7 từ 18:00 nhắc PG chưa điền (hạn 22:00 T7); quá hạn → Cần biết cho QL
+    try {
+      const pgDepts: string[] = (Array.isArray(cfg.PG_DEPTS) ? cfg.PG_DEPTS : ["PG"]).map(String);
+      const pgs = staffAll.filter((s) => pgDepts.includes(s.dept));
+      if (pgs.length && [5, 6, 0].includes(vn.dow)) {
+        const mon = addDays(vn.date, vn.dow === 0 ? 1 : 8 - vn.dow);
+        const have = new Set(((await rest(`pg_schedule?select=staff_id&d=gte.${mon}&d=lte.${addDays(mon, 6)}&limit=2000`)) as any[]).map((x) => x.staff_id));
+        const miss = pgs.filter((s) => !have.has(s.id));
+        if (miss.length && [5, 6].includes(vn.dow) && vn.hm >= "18:00" && vn.hm < "22:00" && (await once(vn.date, "pgweek-remind")))
+          await pushMany(miss.map((s) => ({ staff_id: s.id, data: { title: "🗓️ Điền lịch làm việc tuần sau", body: `Hạn trước 22:00 thứ 7 — Báo cáo → 🗓️ Lịch làm việc tuần sau (tuần ${mon.slice(8)}/${mon.slice(5, 7)})`, url: APP + "#report", tag: "pg-week", kind: "manual" } as PushData })));
+        if (miss.length && ((vn.dow === 6 && vn.hm >= "22:00") || vn.dow === 0))
+          items.push({ key: "pg_week:" + mon, kind: "pg_week", needs_decision: false, title: `${miss.length} PG chưa điền lịch làm việc tuần ${mon.slice(8)}/${mon.slice(5, 7)}`, detail: miss.map((s) => name(s.id)).join(", ") + " — quá hạn 22:00 thứ 7. Xem: Giao việc → 🗓️ Lịch ca → 🗓️ Lịch PG tuần." });
+      }
+    } catch { /* bỏ qua */ }
     // D16: ai chưa đọc "Có gì mới" quá 2 ngày / chưa xong Nhập môn sau 3 ngày kể từ lần đầu mở tool
     if (vn.hm >= "09:00") try {
       const g = (await rest("guide_content?select=data&id=eq.1"))[0]?.data;
