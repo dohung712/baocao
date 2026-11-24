@@ -31,7 +31,11 @@ function decorate() {
     slot.className = "av-slot" + (big ? " big" : "");
     slot.innerHTML = avatarHtml(id, big ? 52 : 30) + (big && id === S.me?.staff_id ? `<i class="av-cam" title="Đổi ảnh đại diện">📷</i>` : "");
     if (big && (id === S.me?.staff_id || isManager())) { slot.style.cursor = "pointer"; slot.title = "Đổi ảnh đại diện"; slot.addEventListener("click", (e) => { e.stopPropagation(); pickAvatar(id); }); }
-    if (big) el.insertBefore(slot, el.firstChild); else name.parentElement.insertBefore(slot, name);
+    if (big) { el.insertBefore(slot, el.firstChild); continue; }
+    // tên nằm trong khối xếp dọc (tên + dòng phụ) → đặt avatar trước cả khối để đứng ngang hàng
+    const p = name.parentElement, cs = getComputedStyle(p);
+    const stacked = p !== el && ((cs.display.includes("flex") && cs.flexDirection.startsWith("column")) || cs.display === "grid" || cs.display === "block");
+    (stacked ? p.parentElement : p).insertBefore(slot, stacked ? p : name);
   }
 }
 function refresh() { document.querySelectorAll(".av-slot").forEach((x) => x.remove()); decorate(); }
