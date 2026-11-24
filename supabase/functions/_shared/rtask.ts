@@ -11,6 +11,9 @@ export type Rule = {
   stores: string[]; days: "daily" | number[]; who: "slots" | "at" | "all" | "cleaning"; kind: "group" | "each"; need_shift: boolean; early_days: number;
   times: { hm?: string; slot?: number; start?: string }[]; shift_end?: { minus: number; fallback: string } | null;
   photo_min: number; photo_max: number; links_min: number; detail: string; tg: boolean; text: string;
+  // D13c: scope = ai phải làm (group: 1 người làm xong cho cả ca · shift_each: ai có ca cũng làm · always: có ca hay không đều làm · cleaning: theo lịch VS)
+  //       screenshot = chỉ nhận ảnh chụp màn hình · links_opt = có ô link bổ sung không bắt buộc
+  scope?: "group" | "shift_each" | "always" | "cleaning"; screenshot?: boolean; links_opt?: boolean;
 };
 
 // Hiểu 1 dòng trang tính
@@ -33,7 +36,7 @@ export function parseRow(cells: string[], row: number) {
   // Giao cho ai
   let who: Rule["who"] = "at", kind: Rule["kind"] = "group";
   if (cleaning) { who = "cleaning"; kind = "each"; }
-  else if (/all nhan su|tat ca nhan su/.test(F)) { who = "all"; kind = "each"; }
+  else if (/all nhan su|tat ca nhan su|co ca hay khong|khong ca deu lam|du co ca hay khong/.test(F)) { who = "all"; kind = "each"; }
   else if (slots.length) who = "slots";
   if (who === "slots") {
     // ghép ca ↔ giờ theo thứ tự ("Ca 3 và Ca 6" · "14h00 và 21h15"); 1 giờ cho nhiều ca → mỗi ca cùng giờ; không ghi giờ → hết ca
@@ -45,24 +48,30 @@ export function parseRow(cells: string[], row: number) {
   const photoN = linkN ? 0 : Number((G.match(/(\d+)\s*(?:hinh|anh)/) || [])[1] || 1);
   const labels = (how.split(":")[1] || "").trim();
   const rule: Rule = {
-    stores, days, who, kind, need_shift: who === "all" && !early && !shift_end, early_days: early ? 3 : 0, times, shift_end,
+    stores, days, who, kind, need_shift: who === "all" && !early && !shift_end && !/co ca hay khong|khong ca deu lam/.test(F), early_days: early ? 3 : 0, times, shift_end,
     photo_min: photoN, photo_max: Math.max(6, photoN), links_min: linkN, tg: /^co\b/.test(nv(tg)) || /^có/i.test(tg),
     detail: [how && `📷 Báo cáo: ${how}`, note && !/gui thong bao cho nhan su trong ca|all nhan su/.test(F) ? `📝 ${note}` : "", labels && photoN > 1 ? `Đủ ${photoN} ảnh: ${labels}` : ""].filter(Boolean).join("\n"),
     text: "",
   };
+  rule.scope = who === "cleaning" ? "cleaning" : kind === "group" ? "group" : rule.need_shift ? "shift_each" : "always";
+  rule.screenshot = /chup man hinh|anh man hinh|screenshot/.test(G) || SCREENSHOT_KEYS.some((k) => nv(title).includes(k));
+  rule.links_opt = !rule.screenshot && !linkN;
+  if (rule.screenshot) { rule.photo_min = Math.max(1, rule.photo_min); rule.links_min = 0; }
   rule.text = describe(rule);
   return { key: nv(title).replace(/[^a-z0-9]+/g, " ").trim().slice(0, 120), row, title, type: group || "Việc lặp lại", rule,
     raw: { stt: cells[0] || "", title, store, day, time, note, how, group, tg } };
 }
 
+// D13c (chủ quản chốt 24/11): các việc chỉ nhận ẢNH CHỤP MÀN HÌNH (ngoài các dòng có chữ "chụp màn hình" ở cột Báo cáo)
+const SCREENSHOT_KEYS = ["truyen thong hang ngay", "ve sinh ban tu van", "ve sinh hinh anh thu 2"];
 const DOW = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 // Mô tả cách tool hiểu dòng (hiện ở Giao việc → 🔁 Lặp lại để QL kiểm tra)
 export function describe(r: Rule) {
   const st = r.stores.map((x) => ({ TGDD: "TGDĐ", TOPZONE: "Topzone", PG: "PG" }[x] || x)).join(" + ") || "chưa rõ siêu thị";
   const day = r.days === "daily" ? "hằng ngày" : r.days.map((d) => DOW[d]).join(", ");
   const tm = r.shift_end ? `hết ca − ${r.shift_end.minus} phút (không có ca: ${r.shift_end.fallback})` : r.times.map((t) => `${t.slot ? `Ca ${t.slot} ` : ""}${t.start ? `${t.start}→` : ""}${t.hm || "?"}`).join(", ");
-  const who = r.who === "slots" ? "cả ca (1 người nộp là xong)" : r.who === "at" ? "cả ca đang làm lúc đó (1 người nộp là xong)" : r.who === "cleaning" ? "người đăng ký lịch vệ sinh" : r.need_shift ? "từng NV có ca hôm đó" : "từng NV";
-  return `${st} · ${day} · ${tm} · ${who} · ${r.links_min ? `≥ ${r.links_min} link` : `≥ ${r.photo_min} ảnh`}`;
+  const who = r.who === "slots" ? "cả ca (1 người nộp là xong)" : r.who === "at" ? "cả ca đang làm lúc đó (1 người nộp là xong)" : r.who === "cleaning" ? "người đăng ký lịch vệ sinh" : r.need_shift ? "từng NV có ca hôm đó" : "từng NV (có ca hay không đều làm)";
+  return `${st} · ${day} · ${tm} · ${who} · ${r.links_min ? `≥ ${r.links_min} link` : r.screenshot ? `≥ ${r.photo_min} ảnh CHỤP MÀN HÌNH` : `≥ ${r.photo_min} ảnh${r.links_opt ? " (+ link nếu cần)" : ""}`}`;
 }
 
 export function parseSheet(values: string[][]) {

@@ -25,8 +25,68 @@ export const STATE = {
 let typesP = null;
 export function loadTypes(force = false) {
   if (force) typesP = null;
-  typesP ||= sb.from("job_types").select("*").order("sort").order("id").then(({ data, error }) => { if (error) throw error; S.jobTypes = data || []; return S.jobTypes; });
+  typesP ||= Promise.all([
+    sb.from("job_types").select("*").order("sort").order("id"),
+    sb.from("job_templates").select("id,rule"),   // D13c: ai phải làm, chỉ nhận ảnh chụp màn hình…
+  ]).then(([{ data, error }, tp]) => {
+    if (error) throw error;
+    S.jobTypes = data || [];
+    S.jobTpl = Object.fromEntries((tp.data || []).map((t) => [t.id, t.rule || {}]));
+    return S.jobTypes;
+  });
   return typesP;
+}
+
+// D13c: ai phải làm việc này (theo cột Ghi chú của trang tính việc lặp lại)
+const SCOPE = {
+  group: ["👥", "Việc của ca", "1 người làm xong là xong cho cả ca"],
+  shift_each: ["👤", "Việc trong ca", "ai có ca cũng phải tự làm"],
+  always: ["📌", "Việc mặc định", "có ca hay không có ca đều phải làm"],
+  cleaning: ["🧹", "Theo lịch vệ sinh", "người đã đăng ký làm"],
+  own: ["👤", "Việc giao riêng", "bạn tự làm"],
+};
+function scopeOf(j) {
+  const r = j.template_id ? S.jobTpl?.[j.template_id] : null;
+  if (r) return r.scope || (r.who === "cleaning" ? "cleaning" : r.kind === "group" ? "group" : r.need_shift ? "shift_each" : "always");
+  return j.group_staff?.length > 1 ? "group" : "own";
+}
+const isShotJob = (j) => !!(j.template_id && S.jobTpl?.[j.template_id]?.screenshot);
+const scopeHtml = (j) => { const [ic, t, d] = SCOPE[scopeOf(j)]; return `<div class="jb-scope">${ic} <b>${t}</b> — ${d}</div>`; };
+// Chi tiết việc: dòng "📷 Báo cáo: …" chữ đỏ đậm ở trên; ghi chú (📝 …, Đủ n ảnh) chữ nhỏ ở cuối
+function splitDetail(detail) {
+  const lines = String(detail || "").split("\n").map((x) => x.trim()).filter(Boolean);
+  const isReq = (l) => /^📷\s*Báo cáo:/i.test(l), isNote = (l) => /^📝/.test(l) || /^Đủ \d+ ảnh/i.test(l);
+  let req = lines.filter(isReq).map((l) => l.replace(/^📷\s*Báo cáo:\s*/i, ""));
+  if (!req.length) req = lines.filter((l) => !isNote(l));   // việc giao tay: nội dung việc = phần báo cáo
+  const notes = lines.filter((l) => isNote(l) || (lines.some(isReq) && !isReq(l)));
+  return {
+    req: req.length ? `<div class="jb-req-red">📷 Báo cáo: ${esc(req.join(" "))}</div>` : "",
+    notes: notes.length ? `<div class="jb-note">${notes.map((l) => esc(l.replace(/^📝\s*/, "📝 Ghi chú: "))).join("<br>")}</div>` : "",
+  };
+}// Ảnh chụp màn hình? — ảnh từ camera có thông số chụp (tốc độ, khẩu độ, ISO…) trong EXIF hoặc khổ 4:3; màn hình điện thoại / máy tính dài ≥ 1,55 lần
+async function looksLikeScreenshot(file) {
+  try {
+    const buf = new DataView(await file.slice(0, 256 * 1024).arrayBuffer());
+    if (buf.getUint16(0) === 0xffd8) {   // JPEG: tìm khối EXIF, xem có thông số máy ảnh không
+      let p = 2;
+      while (p + 4 < buf.byteLength) {
+        const mk = buf.getUint16(p), len = buf.getUint16(p + 2);
+        if (mk === 0xffe1 && buf.getUint32(p + 4) === 0x45786966) {   // "Exif"
+          const t = p + 10, le = buf.getUint16(t) === 0x4949, u16 = (o) => buf.getUint16(t + o, le), u32 = (o) => buf.getUint32(t + o, le);
+          const tags = (ifd) => { const n = u16(ifd), out = {}; for (let i = 0; i < n; i++) { const e = ifd + 2 + i * 12; if (t + e + 12 > buf.byteLength) break; out[u16(e)] = u32(e + 8); } return out; };
+          const ifd0 = tags(u32(4));
+          if (ifd0[0x8769]) { const ex = tags(ifd0[0x8769]); if (ex[0x829a] || ex[0x829d] || ex[0x8827] || ex[0x920a]) return { ok: false, why: "ảnh chụp bằng camera" }; }
+          break;
+        }
+        if ((mk & 0xff00) !== 0xff00 || mk === 0xffda) break;
+        p += 2 + len;
+      }
+    }
+    const bmp = await createImageBitmap(file);
+    const ratio = Math.max(bmp.width, bmp.height) / Math.min(bmp.width, bmp.height); bmp.close?.();
+    if (ratio < 1.55) return { ok: false, why: "khổ ảnh không giống màn hình" };
+    return { ok: true };
+  } catch { return { ok: true }; }   // không đọc được thì không chặn
 }
 export const typeOf = (id) => (S.jobTypes || []).find((t) => t.id === id);
 export const typeLabel = (id) => { const t = typeOf(id); return t ? `${t.icon} ${t.name}` : "📌 Việc khác"; };
@@ -34,7 +94,8 @@ export const typeLabel = (id) => { const t = typeOf(id); return t ? `${t.icon} $
 const proofTxt = (j) => j.links_min > 0 ? `🔗 ≥ ${j.links_min} link${j.photo_min && j.proof !== "none" ? ` + ${j.photo_min} ảnh` : ""}` : j.proof === "none" ? "bấm hoàn thành" : j.proof === "check" ? `☑️ ${j.checklist.length} mục${j.photo_min ? ` + ${j.photo_min} ảnh` : ""}` : `📷 ${j.photo_min}${j.photo_max > j.photo_min ? "–" + j.photo_max : ""} ảnh`;
 // D13 việc của cả ca: 1 người nộp là xong cho cả ca
 const byOther = (j) => j.status === "done" && j.done_staff && j.done_staff !== j.staff_id;
-const groupTxt = (j) => (j.group_staff?.length > 1 ? `👥 Cả ca ${j.group_staff.length} người` : "");
+// thẻ việc: ai phải làm (ngắn) + việc chỉ nhận ảnh chụp màn hình
+const groupTxt = (j) => [{ group: "👥 1 người làm cho cả ca", shift_each: "👤 ai có ca cũng làm", always: "📌 ai cũng phải làm", cleaning: "🧹 theo lịch VS", own: "" }[scopeOf(j)], isShotJob(j) ? "📱 ảnh chụp màn hình" : ""].filter(Boolean).join(" · ");
 
 // Thẻ việc (danh sách của NV)
 export function jobCard(j, { who = false, today = vnToday() } = {}) {
@@ -61,18 +122,22 @@ export async function openSubmit(j) {
   const st = stateOf(j), [ic, lb, cls] = STATE[st];
   const done = j.status === "done", old = Array.isArray(j.photos) ? [...j.photos] : [];
   const fresh = [];   // ảnh mới chọn: Blob đã nén
+  const shot = isShotJob(j), D = splitDetail(j.detail), linksOpt = !shot && j.proof !== "none";
   const html = `<h3>${typeOf(j.type_id)?.icon || "📌"} ${esc(j.title)}</h3>
     <p class="small muted" style="margin:-4px 0 8px">${esc(typeLabel(j.type_id))} · hạn <b>${whenTxt(j.due_at)}</b> · <span class="pill ${cls}">${ic} ${lb}</span>${!own ? ` · NV: <b>${esc(staffById(j.staff_id)?.name || j.staff_id)}</b>` : ""}</p>
-    ${j.detail ? `<div class="jb-detail">${esc(j.detail)}</div>` : ""}
-    ${j.group_staff?.length > 1 ? `<p class="small" style="margin:6px 0">👥 Việc của cả ca: <b>${j.group_staff.map((id) => esc(shortName(staffById(id)?.name || id))).join(", ")}</b> — 1 người nộp là xong cho cả ca.</p>` : ""}
+    ${scopeHtml(j)}
+    ${j.group_staff?.length > 1 ? `<p class="small" style="margin:2px 0 6px">Cả ca: <b>${j.group_staff.map((id) => esc(shortName(staffById(id)?.name || id))).join(", ")}</b></p>` : ""}
+    ${D.req}
+    ${shot ? `<div class="jb-shot">⚠️ Chỉ nhận <b>ẢNH CHỤP MÀN HÌNH</b> (vd màn hình LINE đã báo cáo) — không chụp bằng camera.</div>` : ""}
     ${j.start_at && Date.parse(j.start_at) > Date.now() ? `<p class="small muted" style="margin:0 0 6px">⏱️ Làm từ ${whenTxt(j.start_at)} đến trước ${whenTxt(j.due_at)}.</p>` : ""}
     ${byOther(j) ? `<div class="banner ok"><div>✅ <b>${esc(staffById(j.done_staff)?.name || j.done_staff)}</b> đã nộp cho cả ca${j.done_at ? ` lúc ${whenTxt(j.done_at)}` : ""}. Bạn không cần nộp nữa.</div></div>`
     : j.status === "missed" ? `<div class="banner bad"><div>Việc đã bỏ lỡ${j.penalty ? ` (−${j.penalty}⭐)` : ""}. Nhờ quản lý mở lại nếu cần nộp.</div></div>` : `
-    ${j.links_min > 0 || j.links?.length ? `<label style="margin-top:8px;display:block">🔗 Link${j.links_min ? ` (ít nhất ${j.links_min}, mỗi dòng 1 link)` : ""}<textarea id="jbLinks" rows="3" placeholder="https://www.tiktok.com/@…/video/…">${esc((j.links || []).join("\n"))}</textarea></label>` : ""}
+    ${j.links_min > 0 || j.links?.length ? `<label style="margin-top:8px;display:block">🔗 Link${j.links_min ? ` (ít nhất ${j.links_min}, mỗi dòng 1 link)` : ""}<textarea id="jbLinks" rows="3" placeholder="https://www.tiktok.com/@…/video/…">${esc((j.links || []).join("\n"))}</textarea></label>`
+      : linksOpt ? `<details style="margin-top:8px"><summary class="linkish small">🔗 Cần bổ sung? Dán link (không bắt buộc)</summary><textarea id="jbLinks" rows="2" placeholder="https://… (mỗi dòng 1 link)"></textarea></details>` : ""}
     ${j.proof === "check" ? `<div class="jb-checks">${j.checklist.map((c, i) => `<label><input type="checkbox" data-ck="${i}" ${(j.checks || []).includes(i) ? "checked" : ""}> ${esc(c)}</label>`).join("")}</div>` : ""}
     ${j.proof !== "none" || old.length ? `<div class="jb-photos" id="jbPh"></div>
-      <div class="row" style="margin-top:8px"><label class="btn">📷 Chụp ảnh<input type="file" accept="image/*" capture="environment" id="jbCam" hidden></label>
-        <label class="btn">🖼️ Chọn ảnh<input type="file" accept="image/*" multiple id="jbPick" hidden></label>
+      <div class="row" style="margin-top:8px">${shot ? "" : `<label class="btn">📷 Chụp ảnh<input type="file" accept="image/*" capture="environment" id="jbCam" hidden></label>`}
+        <label class="btn ${shot ? "btn-shot" : ""}">🖼️ ${shot ? "Chọn ảnh chụp màn hình" : "Chọn ảnh"}<input type="file" accept="image/*" multiple id="jbPick" hidden></label>
         <span class="small muted">${j.proof === "none" ? "Ảnh không bắt buộc" : `Cần ít nhất ${j.photo_min} ảnh, tối đa ${j.photo_max}`}</span></div>` : ""}
     <label style="margin-top:10px;display:block">Ghi chú (không bắt buộc)<textarea id="jbNote" rows="2">${esc(j.note || "")}</textarea></label>
     ${!done && Date.parse(j.due_at) < Date.now() && j.pen_late ? `<p class="small" style="color:var(--bad)">⏰ Đã quá hạn: nộp bây giờ bị trừ ${j.pen_late}⭐.</p>` : ""}
@@ -82,6 +147,7 @@ export async function openSubmit(j) {
       <label id="rqDueL">Hạn mới<input type="datetime-local" id="rqDue" value="${new Date(Math.max(Date.parse(j.due_at), Date.now()) + 7 * 3600e3 + 3600e3).toISOString().slice(0, 16)}"></label></div>
       <label>Lý do<input id="rqWhy" maxlength="300" placeholder="VD: đang đông khách, máy hỏng, không có ca…"></label>
       <div class="row" style="margin-top:6px"><button class="btn small" type="button" id="rqSend">📨 Gửi quản lý duyệt</button><span class="small muted" id="rqMsg"></span></div></details>` : ""}`}
+    ${D.notes}
     <div class="modal-actions"><button class="btn" data-v="cancel">Đóng</button><button class="btn" data-v="ok" hidden id="jbClose">ok</button>
       ${j.status === "missed" || byOther(j) ? "" : `<button class="btn primary" type="button" id="jbSend">${done ? "💾 Cập nhật" : j.proof === "none" && !j.links_min ? "✅ Hoàn thành" : "📤 Nộp việc"}</button>`}</div>`;
   const v = await modal(html, {
@@ -96,6 +162,7 @@ export async function openSubmit(j) {
       const add = async (files) => {
         for (const f of [...files]) {
           if (old.length + fresh.length >= j.photo_max) { toast(`Tối đa ${j.photo_max} ảnh`); break; }
+          if (shot) { const c = await looksLikeScreenshot(f); if (!c.ok) { toast(`⚠️ Ảnh "${f.name || "đã chọn"}" không phải ảnh chụp màn hình (${c.why}). Chụp màn hình rồi chọn lại.`, 6000); continue; } }
           try { const b = await compress(f); b._url = URL.createObjectURL(b); fresh.push(b); } catch { toast("Có ảnh không đọc được, chụp / chọn lại", 4000); }
         }
         draw();
@@ -156,7 +223,7 @@ export async function openManage(j, folders = {}) {
   const photos = Array.isArray(j.photos) ? j.photos : [];
   const html = `<h3>${typeOf(j.type_id)?.icon || "📌"} ${esc(j.title)}</h3>
     <p class="small muted" style="margin:-4px 0 8px">${esc(s?.name || j.staff_id)} · ${esc(typeLabel(j.type_id))} · <span class="pill ${cls}">${ic} ${lb}</span></p>
-    ${j.detail ? `<div class="jb-detail">${esc(j.detail)}</div>` : ""}
+    ${scopeHtml(j)}${splitDetail(j.detail).req}${isShotJob(j) ? `<div class="jb-shot">⚠️ Chỉ nhận ẢNH CHỤP MÀN HÌNH</div>` : ""}
     <div class="small" style="display:grid;gap:4px;margin:8px 0">
       <span>⏰ Hạn: <b>${whenTxt(j.due_at)}</b>${j.done_at ? ` · nộp lúc <b>${whenTxt(j.done_at)}</b>${j.late_min ? ` (trễ ${minsTxt(j.late_min)})` : ""}` : ""}</span>
       <span>⭐ Trừ khi trễ: ${j.pen_late} · khi bỏ lỡ: ${j.pen_miss}${j.penalty ? ` · <b style="color:var(--bad)">đã trừ ${j.penalty}</b>` : ""}</span>
@@ -164,6 +231,8 @@ export async function openManage(j, folders = {}) {
       ${folders[j.staff_id] ? `<span>📁 <a href="${esc(folders[j.staff_id])}" target="_blank" rel="noopener">Thư mục ảnh của ${esc(shortName(s?.name || ""))} trên Drive</a></span>` : ""}
     </div>
     ${photos.length ? `<div class="jb-photos">${photos.map((f, i) => `<span class="jb-th"><a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${thumb(f)}" alt="Ảnh ${i + 1}" loading="lazy"></a></span>`).join("")}</div>` : ""}
+    ${j.links?.length ? `<div class="small" style="margin-top:6px">🔗 ${j.links.map((l) => `<a href="${esc(l)}" target="_blank" rel="noopener">${esc(l.length > 40 ? l.slice(0, 39) + "…" : l)}</a>`).join("<br>")}</div>` : ""}
+    ${splitDetail(j.detail).notes}
     <div id="mgPush" style="margin-top:10px"></div>
     ${j.status === "todo" ? `<details style="margin-top:10px"><summary class="linkish">✏️ Đổi hạn / người làm</summary>
       <div class="fields" style="margin-top:8px"><label>Ngày hạn<input type="date" id="mgD" value="${due.date}"></label><label>Giờ hạn<input type="time" id="mgH" value="${due.hm}"></label>

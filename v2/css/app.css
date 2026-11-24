@@ -958,3 +958,10 @@ tr.click{cursor:pointer}
 .gd-time{font-size:14px}
 .gd-banner{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;width:100%;text-align:left;border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin:0 0 10px;background:transparent;color:inherit;cursor:pointer;font:inherit}
 .gd-banner span:nth-child(2){flex:1;font-size:13px}
+
+/* D13c mau bao cao NV */
+.jb-scope{font-size:13px;padding:6px 10px;border-radius:10px;background:var(--chip,rgba(11,107,203,.08));margin:0 0 6px}
+.jb-req-red{color:var(--bad,#c62828);font-weight:700;font-size:15px;line-height:1.45;margin:6px 0}
+.jb-shot{color:var(--bad,#c62828);border:1.5px solid var(--bad,#c62828);border-radius:10px;padding:6px 10px;font-size:13px;margin:6px 0}
+.btn-shot{border-color:var(--bad,#c62828)!important;color:var(--bad,#c62828)!important;font-weight:700}
+.jb-note{font-size:12px;color:var(--muted,#667);margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
