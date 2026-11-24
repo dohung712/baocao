@@ -91,7 +91,7 @@ async function looksLikeScreenshot(file) {
 export const typeOf = (id) => (S.jobTypes || []).find((t) => t.id === id);
 export const typeLabel = (id) => { const t = typeOf(id); return t ? `${t.icon} ${t.name}` : "📌 Việc khác"; };
 
-const proofTxt = (j) => j.links_min > 0 ? `🔗 ≥ ${j.links_min} link${j.photo_min && j.proof !== "none" ? ` + ${j.photo_min} ảnh` : ""}` : j.proof === "none" ? "bấm hoàn thành" : j.proof === "check" ? `☑️ ${j.checklist.length} mục${j.photo_min ? ` + ${j.photo_min} ảnh` : ""}` : `📷 ${j.photo_min}${j.photo_max > j.photo_min ? "–" + j.photo_max : ""} ảnh`;
+const proofTxt = (j) => j.info ? "👍 bấm Đã nhận" : j.links_min > 0 ? `🔗 ≥ ${j.links_min} link${j.photo_min && j.proof !== "none" ? ` + ${j.photo_min} ảnh` : ""}` : j.proof === "none" ? "bấm hoàn thành" : j.proof === "check" ? `☑️ ${j.checklist.length} mục${j.photo_min ? ` + ${j.photo_min} ảnh` : ""}` : `📷 ${j.photo_min}${j.photo_max > j.photo_min ? "–" + j.photo_max : ""} ảnh`;
 // D13 việc của cả ca: 1 người nộp là xong cho cả ca
 const byOther = (j) => j.status === "done" && j.done_staff && j.done_staff !== j.staff_id;
 // thẻ việc: ai phải làm (ngắn) + việc chỉ nhận ảnh chụp màn hình
@@ -99,7 +99,7 @@ const groupTxt = (j) => [{ group: "👥 1 người làm cho cả ca", shift_each
 
 // Thẻ việc (danh sách của NV)
 export function jobCard(j, { who = false, today = vnToday() } = {}) {
-  const st = stateOf(j), [ic, lb, cls] = STATE[st];
+  const st = stateOf(j), [ic, lb, cls] = j.info && j.status === "done" ? ["👍", "Đã nhận", "ok"] : STATE[st];
   const n = nPhotos(j), t = typeOf(j.type_id);
   const extra = st === "late" ? `nộp trễ ${minsTxt(j.late_min)}${j.penalty ? ` · −${j.penalty}⭐` : ""}`
     : st === "missed" ? `bỏ lỡ${j.penalty ? ` · −${j.penalty}⭐` : ""}`
@@ -108,7 +108,7 @@ export function jobCard(j, { who = false, today = vnToday() } = {}) {
   return `<button type="button" class="jb-card st-${st}" data-job="${j.id}">
     <span class="jb-ic">${t?.icon || "📌"}</span>
     <span class="jb-main"><b>${esc(j.title)}</b>
-      <span class="jb-meta">${who ? esc(shortName(staffById(j.staff_id)?.name || j.staff_id)) + " · " : ""}${j.start_at && Date.parse(j.start_at) > Date.now() ? `từ ${whenTxt(j.start_at, today)} · ` : ""}hạn ${whenTxt(j.due_at, today)} · ${byOther(j) ? `✅ ${esc(shortName(staffById(j.done_staff)?.name || j.done_staff))} đã nộp cho cả ca` : j.status === "done" ? (j.excused ? `🙏 ${esc(j.note || "Được miễn")}` : j.links?.length ? `🔗 ${j.links.length} link` : `📷 ${n} ảnh`) : proofTxt(j)}${groupTxt(j) && j.status !== "done" ? ` · ${groupTxt(j)}` : ""}${extra ? ` · <span class="jb-x">${extra}</span>` : ""}</span></span>
+      <span class="jb-meta">${j.info ? `<b class="jb-info">📢 Thông báo</b> · ` : ""}${j.event_at ? `<b class="jb-ev">📅 Diễn ra ${whenTxt(j.event_at, today)}</b> · ` : ""}${who ? esc(shortName(staffById(j.staff_id)?.name || j.staff_id)) + " · " : ""}${j.start_at && Date.parse(j.start_at) > Date.now() ? `từ ${whenTxt(j.start_at, today)} · ` : ""}hạn ${whenTxt(j.due_at, today)} · ${byOther(j) ? `✅ ${esc(shortName(staffById(j.done_staff)?.name || j.done_staff))} đã nộp cho cả ca` : j.status === "done" ? (j.excused ? `🙏 ${esc(j.note || "Được miễn")}` : j.links?.length ? `🔗 ${j.links.length} link` : `📷 ${n} ảnh`) : proofTxt(j)}${groupTxt(j) && j.status !== "done" ? ` · ${groupTxt(j)}` : ""}${extra ? ` · <span class="jb-x">${extra}</span>` : ""}</span></span>
     <span class="pill ${cls}">${ic} ${lb}</span></button>`;
 }
 
@@ -126,6 +126,7 @@ export async function openSubmit(j) {
   const html = `<h3>${typeOf(j.type_id)?.icon || "📌"} ${esc(j.title)}</h3>
     <p class="small muted" style="margin:-4px 0 8px">${esc(typeLabel(j.type_id))} · hạn <b>${whenTxt(j.due_at)}</b> · <span class="pill ${cls}">${ic} ${lb}</span>${!own ? ` · NV: <b>${esc(staffById(j.staff_id)?.name || j.staff_id)}</b>` : ""}</p>
     ${scopeHtml(j)}
+    ${j.event_at ? `<div class="jb-evbox">📅 Diễn ra: <b>${whenTxt(j.event_at)}</b>${j.info ? " · chỉ cần bấm 👍 Đã nhận, tool sẽ nhắc trước giờ diễn ra" : ""}</div>` : j.info ? `<div class="jb-evbox">📢 Việc thông báo — đọc nội dung rồi bấm 👍 Đã nhận</div>` : ""}
     ${j.group_staff?.length > 1 ? `<p class="small" style="margin:2px 0 6px">Cả ca: <b>${j.group_staff.map((id) => esc(shortName(staffById(id)?.name || id))).join(", ")}</b></p>` : ""}
     ${D.req}
     ${shot ? `<div class="jb-shot">⚠️ Chỉ nhận <b>ẢNH CHỤP MÀN HÌNH</b> (vd màn hình LINE đã báo cáo) — không chụp bằng camera.</div>` : ""}
@@ -153,7 +154,7 @@ export async function openSubmit(j) {
       <div class="row" style="margin-top:6px"><button class="btn small" type="button" id="rqSend">📨 Gửi quản lý duyệt</button><span class="small muted" id="rqMsg"></span></div></details>` : ""}`}
     ${D.notes}
     <div class="modal-actions"><button class="btn" data-v="cancel">Đóng</button><button class="btn" data-v="ok" hidden id="jbClose">ok</button>
-      ${j.status === "missed" || byOther(j) ? "" : `<button class="btn primary" type="button" id="jbSend">${done ? "💾 Cập nhật" : j.proof === "none" && !j.links_min ? "✅ Hoàn thành" : "📤 Nộp việc"}</button>`}</div>`;
+      ${j.status === "missed" || byOther(j) || (j.info && done) ? "" : `<button class="btn primary" type="button" id="jbSend">${j.info ? "👍 Đã nhận thông tin" : done ? "💾 Cập nhật" : j.proof === "none" && !j.links_min ? "✅ Hoàn thành" : "📤 Nộp việc"}</button>`}</div>`;
   const v = await modal(html, {
     onOpen(body) {
       const ph = $("#jbPh", body), msg = (t) => { const m = $("#jbMsg", body); if (m) m.textContent = t; };

@@ -68,7 +68,7 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
   // ---------- 1. Việc quá hạn → báo lên trên + hộp duyệt ----------
   if (!quiet) try {
     const escMin = Math.max(5, Number(cfg.AGENT_ESC_MIN ?? 30) || 30), escNags = Math.max(1, Number(cfg.AGENT_ESC_NAGS ?? 3) || 3);
-    const over: any[] = await rest(`jobs?select=id,staff_id,title,due_at,group_key&status=eq.todo&excused=eq.false&escalated_at=is.null&due_at=gte.${dayStart(vn.date)}&due_at=lt.${encodeURIComponent(nowIso)}&order=due_at&limit=500`);
+    const over: any[] = await rest(`jobs?select=id,staff_id,title,due_at,group_key&status=eq.todo&excused=eq.false&info=eq.false&escalated_at=is.null&due_at=gte.${dayStart(vn.date)}&due_at=lt.${encodeURIComponent(nowIso)}&order=due_at&limit=500`);
     if (over.length) {
       const pl: any[] = await rest(`push_log?select=job_ids,clicked_at&kind=in.(over,nag)&sent=gt.0&at=gte.${dayStart(vn.date)}&limit=5000`);
       const nag = new Map<number, number>();
@@ -124,7 +124,7 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
       const hh = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
       if (toMin(a) < 0) continue;
       const from = `${vn.date}T${hh(toMin(a))}:00+07:00`, to = `${vn.date}T${hh(end)}:00+07:00`;
-      const left: any[] = await rest(`jobs?select=id,staff_id,title,due_at,group_key&status=eq.todo&excused=eq.false&due_at=gte.${encodeURIComponent(from)}&due_at=lte.${encodeURIComponent(to)}&limit=300`);
+      const left: any[] = await rest(`jobs?select=id,staff_id,title,due_at,group_key&status=eq.todo&excused=eq.false&info=eq.false&due_at=gte.${encodeURIComponent(from)}&due_at=lte.${encodeURIComponent(to)}&limit=300`);
       if (!left.length) continue;
       const seen = new Set<string>(), lines: string[] = [];
       for (const j of left) { const k = j.group_key || "j" + j.id; if (seen.has(k)) continue; seen.add(k); const who = left.filter((x) => (x.group_key || "j" + x.id) === k).map((x) => x.staff_id); lines.push(`• ${who.length > 1 ? "Ca (" + who.map(name).join(", ") + ")" : name(j.staff_id)}: ${j.title} (hạn ${hmOf(j.due_at)})`); }

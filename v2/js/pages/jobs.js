@@ -6,7 +6,7 @@ import { rtTab } from "./jobs-rt.js";
 import { xepTab } from "./jobs-xepca.js";
 import { parseShiftAoa, matchStaff, readSheet, slotText } from "../lib-shift.js";
 
-const TABS = [["board", "📊 Hôm nay"], ["assign", "➕ Giao việc"], ["rt", "🔁 Lặp lại"], ["stats", "📈 Thống kê"], ["types", "🗂️ Hạng mục"], ["shift", "🗓️ Lịch ca"], ["xep", "🤖 Xếp ca"], ["cfg", "⚙️ Cài đặt"]];
+const TABS = [["board", "📊 Hôm nay"], ["assign", "➕ Giao việc"], ["ticker", "📢 Chữ chạy"], ["rt", "🔁 Lặp lại"], ["stats", "📈 Thống kê"], ["types", "🗂️ Hạng mục"], ["shift", "🗓️ Lịch ca"], ["xep", "🤖 Xếp ca"], ["cfg", "⚙️ Cài đặt"]];
 let tab = "board", root, folders = {}, busyDraw = 0;
 const V = { day: vnToday(), dept: "", from: weekStart(vnToday()), to: vnToday(), type: "", who: "", sweek: weekStart(vnToday()) };
 const err = (e) => toast(errMsg(e), 5000);
@@ -38,7 +38,7 @@ async function draw(quiet = false) {
   const body = $("#jBody"), t = ++busyDraw;
   if (!quiet) body.innerHTML = `<div class="empty">Đang tải…</div>`;
   body.onclick = null; body.onchange = null; body.oninput = null;
-  try { await ({ board, assign, rt: rtTab, stats, types, shift, xep: xepTab, cfg })[tab](body, () => t === busyDraw && $("#jBody") === body); }
+  try { await ({ board, assign, ticker: (b, a) => import("../ticker.js").then((m) => m.tickerTab(b, a)), rt: rtTab, stats, types, shift, xep: xepTab, cfg })[tab](body, () => t === busyDraw && $("#jBody") === body); }
   catch (e) { if ($("#jBody")) body.innerHTML = `<div class="banner bad"><div>${esc(errMsg(e))}</div></div>`; }
 }
 const deptChips = () => `<div class="chips">${["", ...depts()].map((d) => `<button type="button" class="chip ${V.dept === d ? "on" : ""}" data-dept="${esc(d)}">${d ? esc(d) : "Tất cả bộ phận"}</button>`).join("")}</div>`;
@@ -111,7 +111,7 @@ async function assign(body, alive) {
     <div class="seg" id="asMode"><button type="button" data-m="shift" class="on">Theo ca làm</button><button type="button" data-m="pick">Chọn người</button><button type="button" data-m="dept">Cả bộ phận</button></div>
     <div id="asWho"></div>
     <div><b>Minh chứng</b></div>
-    <div class="seg" id="asProof"><button type="button" data-p="photo" class="on">📷 Ảnh</button><button type="button" data-p="check">☑️ Checklist + ảnh</button><button type="button" data-p="none">✅ Chỉ bấm hoàn thành</button></div>
+    <div class="seg" id="asProof"><button type="button" data-p="photo" class="on">📷 Ảnh</button><button type="button" data-p="check">☑️ Checklist + ảnh</button><button type="button" data-p="none">✅ Chỉ bấm hoàn thành</button><button type="button" data-p="info">📢 Thông báo (bấm Đã nhận)</button></div>
     <div id="asProofX"></div>
     <div class="fields"><label>⭐ Trừ khi nộp trễ<input type="number" name="pen_late" min="0" step="50" value="0"></label><label>⭐ Trừ khi bỏ lỡ<input type="number" name="pen_miss" min="0" step="50" value="0"></label></div>
     <p class="small muted">Bỏ lỡ = quá hạn ${esc(setting("JOB_MISS_HOURS", 24))} giờ mà chưa nộp. Giao xong NV thấy ngay ở trang 🏠 Hôm nay; máy đã bật thông báo nhận tin trong ≤ 5 phút, ${esc(setting("JOB_REMIND_BEFORE_MIN", 60))} phút trước hạn được nhắc lại.</p>
@@ -151,7 +151,9 @@ async function assign(body, alive) {
   const count = () => { const c = $("#asCount"); if (c) c.textContent = A.sel.size ? `· đã chọn ${A.sel.size} người` : "· chưa chọn ai"; };
   function proofX() {
     const x = $("#asProofX"); if (!x) return;
-    x.innerHTML = A.proof === "none" ? `<p class="small muted">NV chỉ bấm Hoàn thành (ảnh không bắt buộc).</p>`
+    x.innerHTML = A.proof === "info" ? `<p class="small muted">Việc thông báo (họp, học, triển khai…): NV đọc rồi bấm 👍 Đã nhận, không cần ảnh. Có giờ diễn ra thì tool nhắc trước 60 và 15 phút, thẻ việc hiện "📅 Diễn ra …".</p>
+        <div class="fields"><label>Ngày diễn ra (trống = ngày hạn)<input type="date" name="event_date"></label><label>Giờ diễn ra (tuỳ chọn)<input type="time" name="event_hm"></label></div>`
+      : A.proof === "none" ? `<p class="small muted">NV chỉ bấm Hoàn thành (ảnh không bắt buộc).</p>`
       : `${A.proof === "check" ? `<label>Các mục checklist (mỗi dòng 1 mục)<textarea name="checklist" rows="4" placeholder="Lau kính\nXếp máy demo thẳng hàng\nGom dây sạc"></textarea></label>` : ""}
         <div class="fields"><label>Số ảnh tối thiểu<input type="number" name="photo_min" min="${A.proof === "check" ? 0 : 1}" max="10" value="${A.proof === "check" ? 1 : 2}"></label><label>Số ảnh tối đa<input type="number" name="photo_max" min="1" max="10" value="6"></label></div>`;
   }
@@ -175,6 +177,7 @@ async function assign(body, alive) {
     if (!A.sel.size) return toast("Chọn ít nhất 1 nhân viên");
     const p = { ...fd, proof: A.proof, staff_ids: [...A.sel], checklist: String(fd.checklist || "").split("\n").map((x) => x.trim()).filter(Boolean) };
     if (A.proof === "none") { p.photo_min = 0; p.photo_max = 6; }
+    if (A.proof === "info") { p.proof = "none"; p.info = true; p.photo_min = 0; p.photo_max = 6; }   // D23 việc thông báo
     const btn = e.submitter; btn.disabled = true;
     try {
       const r = await rpc("job_assign", { p });

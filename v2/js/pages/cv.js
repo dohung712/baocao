@@ -312,9 +312,9 @@ async function rs(body) {
   async function openRsDay(d) {
     const l = on(d), canReg = d >= today;
     const v = await modal(`<h3>🏃 ${dow(d)} ${dmy(d)}</h3>
-      ${l.length ? `<div class="stack" style="gap:8px;margin-bottom:12px">${l.map((r) => { const done = r.photos.length >= 3, can = (isManager() || r.staff_id === me()) && !done && (d < today || (d === today && r.rs_time <= vnHM()));
+      ${l.length ? `<div class="stack" style="gap:8px;margin-bottom:12px">${l.map((r) => { const done = r.photos.length >= 3, can = (isManager() || r.staff_id === me()) && !done;   // D23: báo cáo trước giờ chạy được, dời được khi chưa báo cáo
         return `<div class="card" style="padding:10px;box-shadow:none"><div class="row"><b>${r.rs_time}</b><span class="grow">${esc(name(r.staff_id))}${r.source === "QL" ? ' <span class="pill info">QL xếp</span>' : ""}</span>${done ? `<span class="pill ok">✅ ${fmt(r.km, 1)} km · ${fmt(r.minutes)} phút</span>` : ""}
-          ${can ? `<button class="btn small primary" data-v="rep:${esc(r.staff_id)}|${r.rs_time}" type="button">Nộp báo cáo</button>` : ""}${isManager() ? `${done ? `<button class="btn small ghost" data-v="delph:${esc(r.staff_id)}|${r.rs_time}" type="button">Xoá ảnh</button>` : ""}<button class="btn small ghost danger" data-v="del:${esc(r.staff_id)}|${r.rs_time}" type="button">Xoá</button>` : ""}</div>
+          ${can ? `<button class="btn small primary" data-v="rep:${esc(r.staff_id)}|${r.rs_time}" type="button">Nộp báo cáo</button><button class="btn small" data-v="mv:${esc(r.staff_id)}|${r.rs_time}" type="button">↔ Dời lịch</button>` : ""}${isManager() ? `${done ? `<button class="btn small ghost" data-v="delph:${esc(r.staff_id)}|${r.rs_time}" type="button">Xoá ảnh</button>` : ""}<button class="btn small ghost danger" data-v="del:${esc(r.staff_id)}|${r.rs_time}" type="button">Xoá</button>` : ""}</div>
           ${done ? `<div class="photos" data-ph="${esc(r.staff_id)}|${r.rs_time}" style="margin-top:6px"></div>` : ""}</div>`; }).join("")}</div>` : `<p class="muted">Chưa có lượt nào.</p>`}
       ${canReg ? `<form class="stack"><div class="fields"><label>Nhân viên${staffPicker("rsStaff")}</label><label>Khung giờ<select id="rsTime">${RS_TIMES.filter((t) => d > today || t >= vnHM()).map((t) => `<option>${t}</option>`).join("")}</select></label></div>
         ${isManager() ? `<details><summary class="small">📌 Xếp lịch nhiều người cùng khung giờ</summary><div class="chips" style="margin-top:6px">${visibleStaff().map((s) => `<label class="chip inline"><input type="checkbox" class="rsMany" value="${esc(s.id)}"> ${esc(shortName(s.name))}</label>`).join("")}</div></details>` : ""}</form>` : ""}
@@ -330,9 +330,21 @@ async function rs(body) {
       }
       const [act, rest] = [v.split(":")[0], v.slice(v.indexOf(":") + 1)]; const [sid, t] = rest.split("|");
       if (act === "rep") return rsReport(d, sid, t);
+      if (act === "mv") return rsMove(d, sid, t);
       if (!(await confirmBox(act === "del" ? "Xoá lượt Roadshow?" : "Xoá ảnh báo cáo?", `${esc(name(sid))} · ${t} ${dmy(d)}`, "Xoá", true))) return;
       const r = await rpc("rs_delete", { p_staff: sid, p_date: d, p_time: t, p_only_photos: act === "delph" }); await removeAll(r.photos); toast("Đã xoá"); draw();
     } catch (x) { err(x); }
+  }
+  // D23: dời lượt chưa báo cáo sang ngày / khung giờ khác
+  async function rsMove(d, sid, t) {
+    let nd = d, nt = t;
+    const opts = (day) => RS_TIMES.filter((x) => day > today || x >= vnHM()).map((x) => `<option ${x === t ? "selected" : ""}>${x}</option>`).join("");
+    const v = await modal(`<h3>↔ Dời Roadshow</h3><p class="small muted">${esc(name(sid))} · đang ở ${t} ${dmy(d)}</p>
+      <div class="fields"><label>Ngày mới<input type="date" id="mvD" min="${today}" value="${d < today ? today : d}"></label><label>Khung giờ mới<select id="mvT">${opts(d < today ? today : d)}</select></label></div>
+      <div class="modal-actions"><button class="btn" data-v="cancel">Huỷ</button><button class="btn primary" data-v="ok" id="mvOk">Dời lịch</button></div>`,
+      { onOpen: (b) => { b.querySelector("#mvD").onchange = (e) => { b.querySelector("#mvT").innerHTML = opts(e.target.value); }; b.querySelector("#mvOk").addEventListener("click", () => { nd = b.querySelector("#mvD").value; nt = b.querySelector("#mvT").value; }, true); } });
+    if (v !== "ok" || !nt) return;
+    try { const r = await rpc("rs_move", { p_staff: sid, p_date: d, p_time: t, p_new_date: nd, p_new_time: nt }); toast("✅ " + r.message); draw(); } catch (x) { err(x); }
   }
   async function rsReport(d, sid, t) {
     const v = await modal(`<h3>Báo cáo Roadshow ${t} · ${dmy(d)}</h3><p class="small muted">${esc(name(sid))} · tối thiểu ${minKm} km và ${minMin} phút, 3–6 ảnh</p>

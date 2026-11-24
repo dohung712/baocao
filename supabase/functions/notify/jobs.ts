@@ -201,7 +201,7 @@ export async function jobMaintenance(cfg: Record<string, any>) {
     const soonAt = new Date(now + before * 60000).toISOString();
     const soon: any[] = (await rest(`${sel}&reminded_at=is.null&due_at=gt.${encodeURIComponent(nowIso)}&due_at=lte.${encodeURIComponent(soonAt)}&order=due_at&limit=300`))
       .filter((j: any) => !fresh.some((f) => f.id === j.id));
-    const over: any[] = await rest(`${sel}&overdue_at=is.null&due_at=lte.${encodeURIComponent(nowIso)}&due_at=gte.${encodeURIComponent(new Date(now - 864e5).toISOString())}&order=due_at&limit=300`);
+    const over: any[] = await rest(`${sel}&info=eq.false&overdue_at=is.null&due_at=lte.${encodeURIComponent(nowIso)}&due_at=gte.${encodeURIComponent(new Date(now - 864e5).toISOString())}&order=due_at&limit=300`);
     const msgs = [
       ...groupPush(fresh, (j) => ({ title: "📌 Việc mới: " + j.title, body: `Hạn ${when(j.due_at)} · bấm để xem và nộp ảnh`, url: APP + "#today", tag: "job-" + j.id }),
         (l) => ({ title: `📌 Bạn có ${l.length} việc mới`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-new" }), "new"),
@@ -213,7 +213,7 @@ export async function jobMaintenance(cfg: Record<string, any>) {
     // D13: còn 5 phút → nhắc lại; quá hạn → cứ 15 phút nhắc 1 lần (chỉ việc hạn trong hôm nay)
     const soonMin = Math.max(1, Number(cfg.RT_REMIND_SOON_MIN ?? 5) || 5), every = Math.max(5, Number(cfg.RT_NAG_EVERY_MIN ?? 15) || 15);
     const near: any[] = await rest(`${sel}&remind5_at=is.null&due_at=gt.${encodeURIComponent(nowIso)}&due_at=lte.${encodeURIComponent(new Date(now + soonMin * 60000).toISOString())}&order=due_at&limit=300`);
-    const nag = ((await rest(`${sel}&overdue_at=not.is.null&due_at=lt.${encodeURIComponent(nowIso)}&due_at=gte.${dayStart(vn.date)}&order=due_at&limit=500`)) as any[])
+    const nag = ((await rest(`${sel}&info=eq.false&overdue_at=not.is.null&due_at=lt.${encodeURIComponent(nowIso)}&due_at=gte.${dayStart(vn.date)}&order=due_at&limit=500`)) as any[])
       .filter((j) => !over.some((o) => o.id === j.id) && Date.parse(j.nag_at || j.overdue_at) <= now - every * 60000);
     msgs.push(
       ...groupPush(near, (j) => ({ title: `⏰ Còn ${soonMin} phút: ${j.title}`, body: `Hạn ${when(j.due_at)} · nộp ảnh ngay trên tool`, url: APP + "#today", tag: "job-" + j.id }),
@@ -222,6 +222,16 @@ export async function jobMaintenance(cfg: Record<string, any>) {
         (l) => ({ title: `⚠️ Còn ${l.length} việc quá hạn chưa nộp`, body: l.slice(0, 4).map((j) => `• ${j.title} (hạn ${when(j.due_at)})`).join("\n"), url: APP + "#today", tag: "jobs-nag" }), "nag"),
     );
     try { msgs.push(...(await shiftStartNudges(vn))); } catch (e) { out.nudgeError = String((e as Error).message).slice(0, 120); }
+    // D23 việc thông báo (họp, học…): nhắc trước giờ diễn ra 60 và 15 phút — cả người đã bấm Đã nhận
+    try {
+      const evSel = "jobs?select=id,staff_id,title,event_at&info=eq.true&event_at=not.is.null&status=neq.missed";
+      const ev60: any[] = await rest(`${evSel}&ev60_at=is.null&event_at=gt.${encodeURIComponent(new Date(now + 15 * 60000).toISOString())}&event_at=lte.${encodeURIComponent(new Date(now + 60 * 60000).toISOString())}&limit=300`);
+      const ev15: any[] = await rest(`${evSel}&ev15_at=is.null&event_at=gt.${encodeURIComponent(nowIso)}&event_at=lte.${encodeURIComponent(new Date(now + 15 * 60000).toISOString())}&limit=300`);
+      const evMsg = (j: any) => ({ staff_id: j.staff_id, data: { title: `📅 Còn ${Math.max(1, Math.round((Date.parse(j.event_at) - now) / 60000))} phút: ${j.title}`, body: `Diễn ra lúc ${when(j.event_at)} — chuẩn bị tham gia`, url: APP + "#today", tag: "ev-" + j.id, kind: "event", jobs: [Number(j.id)] } as PushData });
+      msgs.push(...ev60.map(evMsg), ...ev15.map(evMsg));
+      if (ev60.length) await mark(ev60.map((j) => j.id), "ev60_at");
+      if (ev15.length) await mark(ev15.map((j) => j.id), "ev15_at");
+    } catch (e) { out.eventError = String((e as Error).message).slice(0, 120); }
     if (msgs.length) out.push = await pushMany(msgs);
     const soonFresh = fresh.filter((j) => j.due_at <= soonAt).map((j) => j.id);
     if (fresh.length) await mark(fresh.map((j) => j.id), "pushed_at");

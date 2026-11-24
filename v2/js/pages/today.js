@@ -88,6 +88,11 @@ function draw() {
   const todayJ = mine.filter((j) => j._d === today && j._st !== "over");
   const doneOld = mine.filter((j) => j._d < today && ["done", "late", "missed"].includes(j._st) && j._d >= addDays(today, -1));
   const next = mine.filter((j) => j._d > today && j.status === "todo");
+  // D23: chưa xong lên trên theo giờ hạn (quá hạn trước) · đã xong gom xuống cuối, mới xong trước
+  const byDue = (a, b) => Date.parse(a.due_at) - Date.parse(b.due_at);
+  over.sort(byDue); next.sort(byDue);
+  const todayOpen = todayJ.filter((j) => j.status === "todo").sort(byDue);
+  const doneAll = [...todayJ.filter((j) => j.status !== "todo"), ...doneOld].sort((a, b) => Date.parse(b.done_at || b.due_at) - Date.parse(a.done_at || a.due_at));
   const todayAll = mine.filter((j) => j._d === today);
   const doneN = todayAll.filter((j) => j.status === "done").length;
   const sh = shifts.find((x) => x.d === today);
@@ -111,9 +116,10 @@ function draw() {
 
     ${secH(1, "td-jobs", "📌", "Công việc cần làm", isManager() ? `<button class="btn small primary" type="button" data-assign>➕ Giao việc</button>` : "")}
     ${over.length || legBad.length ? `<h3 class="td-sec bad">⚠️ Quá hạn · ${over.length + legBad.length}</h3><div class="jb-list">${over.map(card).join("")}${legBad.map(leg).join("")}</div>` : ""}
-    ${me ? `<h3 class="td-sec">Hôm nay · ${todayJ.length}</h3><div class="jb-list">${todayJ.length ? todayJ.map(card).join("") : `<div class="empty small">Hôm nay chưa có việc được giao.</div>`}${doneOld.map(card).join("")}</div>` : ""}
+    ${me ? `<h3 class="td-sec">Hôm nay · còn ${todayOpen.length}</h3><div class="jb-list">${todayOpen.length ? todayOpen.map(card).join("") : `<div class="empty small">${todayJ.length ? "✅ Đã xong hết việc hôm nay." : "Hôm nay chưa có việc được giao."}</div>`}</div>` : ""}
     ${legRest.length ? `<h3 class="td-sec">🔔 Nhắc từ các mục khác · ${legRest.length}</h3><div class="jb-list">${legRest.map(leg).join("")}</div>` : ""}
     ${next.length ? `<h3 class="td-sec">📅 Sắp tới · ${next.length}</h3><div class="jb-list">${next.map(card).join("")}</div>` : ""}
+    ${doneAll.length ? `<h3 class="td-sec ok">✅ Đã xong · ${doneAll.length}</h3><div class="jb-list td-done">${doneAll.map(card).join("")}</div>` : ""}
     <p class="tiny muted td-hint">Bấm vào thẻ việc → chụp / chọn ảnh → Nộp. Sắp tới hạn và quá hạn sẽ được nhắc qua thông báo + Telegram.</p>
 
     ${showStore() ? revHtml() + contestHtml() : ""}
