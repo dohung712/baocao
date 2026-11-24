@@ -1018,3 +1018,6 @@ html.hide-mode .hm-some{outline:2px dashed var(--warn,#d89614);outline-offset:-2
 .hm-row.lock{opacity:.7}
 .hm-li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
 #btnHide.on{background:var(--brand,#2563eb);color:#fff}
+#hmBar{top:auto;bottom:78px}
+@media (min-width:900px){#hmBar{bottom:14px}}
+#hmRes{top:auto;bottom:100%;margin-bottom:4px}
