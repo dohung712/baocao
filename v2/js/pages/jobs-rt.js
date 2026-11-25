@@ -28,7 +28,7 @@ export async function rtTab(body, alive) {
       <p class="small" id="rtMsg">${last ? `Lần đọc gần nhất: <b>${last.n}</b> việc${last.off ? ` · ${last.off} việc đã bỏ khỏi trang tính` : ""} · ${last.at ? whenTxt(last.at) : ""} · ${last.by === "tu-dong" ? "tự động" : esc(String(last.by || "").split("@")[0])}` : '<span class="muted">Chưa đọc trang tính.</span>'}</p></div>
     ${tpls.length ? `<div class="tbl-wrap"><table class="nosort"><thead><tr><th>#</th><th>Việc</th><th>Tool hiểu là</th><th>Báo cáo</th><th class="num">Hôm nay</th></tr></thead><tbody>
       ${tpls.map((t) => { const x = todayOf(t.id); return `<tr class="${t.active ? "" : "muted"}"><td class="muted">${esc(t.raw?.stt || t.row_no)}</td><td><b>${esc(t.title)}</b><div class="tiny muted">${esc(t.raw?.group || "")}${t.rule?.tg ? " · Telegram" : ""}${t.active ? "" : " · đã bỏ khỏi trang tính"}</div></td>
-        <td class="small">${esc(t.rule?.text || "")}${t.rule?.early_days ? " · nộp trước được" : ""}<div class="tiny muted">Trang tính: ${esc([t.raw?.day, t.raw?.time].filter(Boolean).join(" · "))}</div></td>
+        <td class="small">${esc(t.rule?.text || "")}${!t.rule?.v && t.rule?.early_days ? " · nộp trước được" : ""}<div class="tiny muted">Trang tính dòng ${t.row_no}${t.rule?.v ? "" : `: ${esc([t.raw?.day, t.raw?.time].filter(Boolean).join(" · "))}`}</div></td>
         <td class="small">${esc(t.raw?.how || "")}</td>
         <td class="num">${t.active ? (x.units ? `<b>${x.done}/${x.units}</b><div class="tiny muted">${x.people} người</div>` : '<span class="muted tiny">không có ca</span>') : "—"}</td></tr>`; }).join("")}
       </tbody></table></div>
@@ -39,7 +39,7 @@ export async function rtTab(body, alive) {
     b.disabled = true; body.querySelector("#rtMsg").textContent = "Đang đọc trang tính & giao việc hôm nay…";
     try {
       const r = await callFn("tasks", link.includes(sheet || "§") && sheet ? { mode: "rt_sync" } : { mode: "rt_link", sheet: link });
-      toast(`Đã đọc ${r.rows} việc · giao mới ${r.new} việc hôm nay${r.removed ? ` · bỏ ${r.removed}` : ""}`, 5000);
+      toast(`Đã đọc ${r.rows} việc${r.tab ? ` (tab ${r.tab})` : ""} · giao mới ${r.new} việc hôm nay${r.removed ? ` · bỏ ${r.removed}` : ""}${r.errors ? ` · ⚠️ ${r.errors} dòng lỗi chưa giao, xem cột Tool hiểu` : ""}`, 7000);
       await loadSettings(); rtTab(body, alive);
     } catch (x) { body.querySelector("#rtMsg").textContent = errMsg(x); b.disabled = false; }
   };

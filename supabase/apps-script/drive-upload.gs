@@ -2,6 +2,7 @@
 // BẢN 2 (D12 Bảng việc): lưu ảnh theo đường dẫn nhiều cấp, lấy file lịch ca mới nhất, ghi trang tính.
 // BẢN 3 (B16 Số liệu BI): liệt kê file trong thư mục (list), lấy nội dung 1 file nằm trong thư mục đó (get).
 // BẢN 4 (D13 Việc lặp lại): đọc trang tính công việc (sheet_read).
+// BẢN 5 (D24): ghi cột 'Tool hiểu' của tab việc lặp lại mẫu mới (sheet_col).
 //
 // Cài đặt / cập nhật:
 //   1. Mở dự án Apps Script đang dùng (địa chỉ = DRIVE_UPLOAD_URL), dán đè toàn bộ file này, bấm Lưu.
@@ -11,7 +12,7 @@
 //   Web app: Execute as: Me · Who has access: Anyone.
 const SECRET = 'ĐẶT_MÃ_BÍ_MẬT';
 const FOLDER_ID = '176C0AxvgopmScYWcD1s_byyCzEgu2ArV';
-const VERSION = 4;
+const VERSION = 5;
 
 function doPost(e) {
   try {
@@ -68,6 +69,15 @@ function doPost(e) {
       const rs = SpreadsheetApp.openById(d.sheet), rt = d.tab ? rs.getSheetByName(d.tab) : rs.getSheets()[0];
       if (!rt) return out({ ok: false, error: 'không thấy tab ' + d.tab });
       return out({ ok: true, version: VERSION, title: rs.getName(), tab: rt.getName(), values: rt.getDataRange().getDisplayValues().slice(0, 500) });
+    }
+
+    // Bản 5 (D24): ghi 1 cột (vd "Tool hiểu") từ dòng row xuống — chỉ ghi chữ, không đụng cột khác
+    if (d.action === 'sheet_col') {
+      const cs = SpreadsheetApp.openById(d.sheet).getSheetByName(d.tab);
+      if (!cs) return out({ ok: false, error: 'không thấy tab ' + d.tab });
+      const vals = (d.values || []).slice(0, 500).map(function (v) { return [String(v == null ? '' : v).slice(0, 500)]; });
+      if (vals.length) cs.getRange(Number(d.row) || 2, Number(d.col), vals.length, 1).setValues(vals);
+      return out({ ok: true, version: VERSION, n: vals.length });
     }
 
     // Ghi trang tính: tabs = [{name, rows: [[...], ...]}] — xoá nội dung cũ của tab rồi ghi lại

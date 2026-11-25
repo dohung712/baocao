@@ -1058,3 +1058,4 @@ td:has(>.av-slot){min-width:210px;white-space:nowrap}
 .jb-evbox{border-radius:10px;padding:8px 10px;margin:6px 0;background:var(--accent-soft);font-size:14px}
 .td-sec.ok{color:var(--ok)}
 .td-done .jb-card{opacity:.72}
+.jb-lock{background:#fff4d6;border:1.5px solid #e0a800;color:#6b4e00;border-radius:10px;padding:8px 10px;font-size:13px;margin:6px 0}

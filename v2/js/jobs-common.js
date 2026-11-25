@@ -43,11 +43,12 @@ const SCOPE = {
   shift_each: ["👤", "Việc trong ca", "ai có ca cũng phải tự làm"],
   always: ["📌", "Việc mặc định", "có ca hay không có ca đều phải làm"],
   cleaning: ["🧹", "Theo lịch vệ sinh", "người đã đăng ký làm"],
-  own: ["👤", "Việc giao riêng", "bạn tự làm"],
+  rotate: ["🔄", "Chia lượt trong ca", "lượt này đến bạn, mỗi mốc giờ 1 người"],
+  own:["👤", "Việc giao riêng", "bạn tự làm"],
 };
 function scopeOf(j) {
   const r = j.template_id ? S.jobTpl?.[j.template_id] : null;
-  if (r) return r.scope || (r.who === "cleaning" ? "cleaning" : r.kind === "group" ? "group" : r.need_shift ? "shift_each" : "always");
+  if (r) return (SCOPE[r.scope] && r.scope) || (r.who === "cleaning" ? "cleaning" : r.kind === "group" ? "group" : r.need_shift ? "shift_each" : "always");
   return j.group_staff?.length > 1 ? "group" : "own";
 }
 const isShotJob = (j) => !!(j.template_id && S.jobTpl?.[j.template_id]?.screenshot);
@@ -95,7 +96,7 @@ const proofTxt = (j) => j.info ? "👍 bấm Đã nhận" : j.links_min > 0 ? `�
 // D13 việc của cả ca: 1 người nộp là xong cho cả ca
 const byOther = (j) => j.status === "done" && j.done_staff && j.done_staff !== j.staff_id;
 // thẻ việc: ai phải làm (ngắn) + việc chỉ nhận ảnh chụp màn hình
-const groupTxt = (j) => [{ group: "👥 1 người làm cho cả ca", shift_each: "👤 ai có ca cũng làm", always: "📌 ai cũng phải làm", cleaning: "🧹 theo lịch VS", own: "" }[scopeOf(j)], isShotJob(j) ? "📱 ảnh chụp màn hình" : ""].filter(Boolean).join(" · ");
+const groupTxt = (j) => [{ group: "👥 1 người làm cho cả ca", shift_each: "👤 ai có ca cũng làm", always: "📌 ai cũng phải làm", cleaning: "🧹 theo lịch VS", rotate: "🔄 lượt của bạn", own: "" }[scopeOf(j)], isShotJob(j) ? "📱 ảnh chụp màn hình" : ""].filter(Boolean).join(" · ");
 
 // Thẻ việc (danh sách của NV)
 export function jobCard(j, { who = false, today = vnToday() } = {}) {
@@ -108,7 +109,7 @@ export function jobCard(j, { who = false, today = vnToday() } = {}) {
   return `<button type="button" class="jb-card st-${st}" data-job="${j.id}">
     <span class="jb-ic">${t?.icon || "📌"}</span>
     <span class="jb-main"><b>${esc(j.title)}</b>
-      <span class="jb-meta">${j.info ? `<b class="jb-info">📢 Thông báo</b> · ` : ""}${j.event_at ? `<b class="jb-ev">📅 Diễn ra ${whenTxt(j.event_at, today)}</b> · ` : ""}${who ? esc(shortName(staffById(j.staff_id)?.name || j.staff_id)) + " · " : ""}${j.start_at && Date.parse(j.start_at) > Date.now() ? `từ ${whenTxt(j.start_at, today)} · ` : ""}hạn ${whenTxt(j.due_at, today)} · ${byOther(j) ? `✅ ${esc(shortName(staffById(j.done_staff)?.name || j.done_staff))} đã nộp cho cả ca` : j.status === "done" ? (j.info ? `👍 đã nhận${j.done_at ? " lúc " + whenTxt(j.done_at, today) : ""}` : j.excused ? `🙏 ${esc(j.note || "Được miễn")}` : j.links?.length ? `🔗 ${j.links.length} link` : `📷 ${n} ảnh`) : proofTxt(j)}${groupTxt(j) && j.status !== "done" ? ` · ${groupTxt(j)}` : ""}${extra ? ` · <span class="jb-x">${extra}</span>` : ""}</span></span>
+      <span class="jb-meta">${j.info ? `<b class="jb-info">📢 Thông báo</b> · ` : ""}${j.event_at ? `<b class="jb-ev">📅 Diễn ra ${whenTxt(j.event_at, today)}</b> · ` : ""}${who ? esc(shortName(staffById(j.staff_id)?.name || j.staff_id)) + " · " : ""}${j.start_at && Date.parse(j.start_at) > Date.now() ? `🔒 mở nộp ${whenTxt(j.start_at, today)} · ` : ""}hạn ${whenTxt(j.due_at, today)} · ${byOther(j) ? `✅ ${esc(shortName(staffById(j.done_staff)?.name || j.done_staff))} đã nộp cho cả ca` : j.status === "done" ? (j.info ? `👍 đã nhận${j.done_at ? " lúc " + whenTxt(j.done_at, today) : ""}` : j.excused ? `🙏 ${esc(j.note || "Được miễn")}` : j.links?.length ? `🔗 ${j.links.length} link` : `📷 ${n} ảnh`) : proofTxt(j)}${groupTxt(j) && j.status !== "done" ? ` · ${groupTxt(j)}` : ""}${extra ? ` · <span class="jb-x">${extra}</span>` : ""}</span></span>
     <span class="pill ${cls}">${ic} ${lb}</span></button>`;
 }
 
@@ -123,6 +124,8 @@ export async function openSubmit(j) {
   const done = j.status === "done", old = Array.isArray(j.photos) ? [...j.photos] : [];
   const fresh = [];   // ảnh mới chọn: Blob đã nén
   const shot = isShotJob(j), D = splitDetail(j.detail), linksOpt = !shot && j.proof !== "none";
+  // D24: chưa tới giờ mở nộp → NV không nộp được (QL vẫn nộp thay được)
+  const notOpen = j.status === "todo" && j.start_at && Date.parse(j.start_at) > Date.now(), lockedNow = notOpen && !mgr;
   const html = `<h3>${typeOf(j.type_id)?.icon || "📌"} ${esc(j.title)}</h3>
     <p class="small muted" style="margin:-4px 0 8px">${esc(typeLabel(j.type_id))} · hạn <b>${whenTxt(j.due_at)}</b> · <span class="pill ${cls}">${ic} ${lb}</span>${!own ? ` · NV: <b>${esc(staffById(j.staff_id)?.name || j.staff_id)}</b>` : ""}</p>
     ${scopeHtml(j)}
@@ -130,7 +133,8 @@ export async function openSubmit(j) {
     ${j.group_staff?.length > 1 ? `<p class="small" style="margin:2px 0 6px">Cả ca: <b>${j.group_staff.map((id) => esc(shortName(staffById(id)?.name || id))).join(", ")}</b></p>` : ""}
     ${D.req}
     ${shot ? `<div class="jb-shot">⚠️ Chỉ nhận <b>ẢNH CHỤP MÀN HÌNH</b> (vd màn hình LINE đã báo cáo) — không chụp bằng camera.</div>` : ""}
-    ${j.start_at && Date.parse(j.start_at) > Date.now() ? `<p class="small muted" style="margin:0 0 6px">⏱️ Làm từ ${whenTxt(j.start_at)} đến trước ${whenTxt(j.due_at)}.</p>` : ""}
+    ${notOpen ? `<div class="jb-lock">🔒 Chưa mở nộp — mở lúc <b>${whenTxt(j.start_at)}</b>, hạn ${whenTxt(j.due_at)}. Chuẩn bị trước, tới giờ quay lại nộp.</div>` : ""}
+    ${j.lock_at && !done && j.status === "todo" ? `<p class="small" style="margin:0 0 6px;color:var(--bad)">⛔ Khoá nộp lúc <b>${whenTxt(j.lock_at)}</b> — sau giờ này thành bỏ lỡ${j.pen_miss ? ` (−${j.pen_miss}⭐)` : ""}.</p>` : ""}
     ${byOther(j) ? `<div class="banner ok"><div>✅ <b>${esc(staffById(j.done_staff)?.name || j.done_staff)}</b> đã nộp cho cả ca${j.done_at ? ` lúc ${whenTxt(j.done_at)}` : ""}. Bạn không cần nộp nữa.</div></div>`
     : j.status === "missed" ? `<div class="banner bad"><div>Việc đã bỏ lỡ${j.penalty ? ` (−${j.penalty}⭐)` : ""}. Nhờ quản lý mở lại nếu cần nộp.</div></div>` : `
     ${j.links_min > 0 || j.links?.length ? `<label style="margin-top:8px;display:block">🔗 Link${j.links_min ? ` (ít nhất ${j.links_min}, mỗi dòng 1 link)` : ""}<textarea id="jbLinks" rows="3" placeholder="https://www.tiktok.com/@…/video/…">${esc((j.links || []).join("\n"))}</textarea></label>`
@@ -154,7 +158,7 @@ export async function openSubmit(j) {
       <div class="row" style="margin-top:6px"><button class="btn small" type="button" id="rqSend">📨 Gửi quản lý duyệt</button><span class="small muted" id="rqMsg"></span></div></details>` : ""}`}
     ${D.notes}
     <div class="modal-actions"><button class="btn" data-v="cancel">Đóng</button><button class="btn" data-v="ok" hidden id="jbClose">ok</button>
-      ${j.status === "missed" || byOther(j) || (j.info && done) ? "" : `<button class="btn primary" type="button" id="jbSend">${j.info ? "👍 Đã nhận thông tin" : done ? "💾 Cập nhật" : j.proof === "none" && !j.links_min ? "✅ Hoàn thành" : "📤 Nộp việc"}</button>`}</div>`;
+      ${j.status === "missed" || byOther(j) || (j.info && done) || lockedNow ? "" : `<button class="btn primary" type="button" id="jbSend">${j.info ? "👍 Đã nhận thông tin" : done ? "💾 Cập nhật" : j.proof === "none" && !j.links_min ? "✅ Hoàn thành" : "📤 Nộp việc"}</button>`}</div>`;
   const v = await modal(html, {
     onOpen(body) {
       const ph = $("#jbPh", body), msg = (t) => { const m = $("#jbMsg", body); if (m) m.textContent = t; };

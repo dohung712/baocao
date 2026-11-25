@@ -2,6 +2,7 @@
 // → quy tắc giao việc (không dùng AI: quy tắc chữ cố định, sửa trang tính là tool hiểu lại). rt_generate (SQL) dùng quy tắc này để giao việc theo lịch ca.
 import { rest, rpc, vnParts } from "./common.ts";
 import { drive, driveVersion } from "./drive.ts";
+import { NEW_TAB, isNewLayout, parseSheet2 } from "./rtask2.ts";
 
 const s = (v: unknown) => String(v ?? "").replace(/\s+/g, " ").trim();
 const nv = (v: unknown) => s(v).replace(/Đ/g, "D").replace(/đ/g, "d").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -84,11 +85,25 @@ export function parseSheet(values: string[][]) {
 export async function rtSync(actor: string) {
   const sheet = (await rest("settings?select=value&key=eq.RT_SHEET_ID"))[0]?.value;
   if (!sheet) throw new Error("Chưa có link trang tính việc lặp lại (Giao việc → 🔁 Lặp lại).");
-  if ((await driveVersion()) < 4) throw new Error("Apps Script trên Google Drive cần bản 4 (đọc trang tính).");
-  const r = await drive({ action: "sheet_read", sheet: String(sheet) });
-  const rows = parseSheet((r.values || []) as string[][]);
-  if (!rows.length) throw new Error("Trang tính không có dòng công việc nào (cần cột 'Công Việc').");
+  const ver = await driveVersion();
+  if (ver < 4) throw new Error("Apps Script trên Google Drive cần bản 4 (đọc trang tính).");
+  // D24: ưu tiên tab mẫu mới (RT_SHEET_TAB), không có thì đọc tab đầu (mẫu cũ)
+  const tab = String((await rest("settings?select=value&key=eq.RT_SHEET_TAB"))[0]?.value || NEW_TAB);
+  let r = await drive({ action: "sheet_read", sheet: String(sheet), tab }).catch(() => null);
+  if (!r || !isNewLayout((r.values || []) as string[][])) r = await drive({ action: "sheet_read", sheet: String(sheet) });
+  const values = (r.values || []) as string[][];
+  let rows: any[], errors = 0;
+  if (isNewLayout(values)) {
+    const p = parseSheet2(values);
+    rows = p.rows; errors = p.understood.filter((u) => /^LỖI/.test(u.text)).length;
+    // ghi ngược cột "Tool hiểu" (Apps Script bản 5) — chỉ khi có ô đổi
+    if (ver >= 5 && p.col >= 0 && p.understood.length && p.understood.some((u) => s(values[u.row - 1]?.[p.col]) !== u.text)) {
+      await drive({ action: "sheet_col", sheet: String(sheet), tab: r.tab, col: p.col + 1, row: p.header + 2,
+        values: p.understood.map((u) => u.text) }).catch(() => {});
+    }
+  } else rows = parseSheet(values);
+  if (!rows.length) throw new Error("Trang tính không có dòng công việc nào dùng được (xem cột Tool hiểu).");
   const saved = await rpc("_rt_save_templates", { p_rows: rows, p_actor: actor });
   const gen = await rpc("rt_generate", { p_date: vnParts().date });
-  return { title: r.title || "", rows: rows.length, off: saved?.off ?? 0, new: gen?.new ?? 0, removed: gen?.removed ?? 0 };
+  return { title: r.title || "", tab: r.tab || "", rows: rows.length, errors, off: saved?.off ?? 0, new: gen?.new ?? 0, removed: gen?.removed ?? 0 };
 }
