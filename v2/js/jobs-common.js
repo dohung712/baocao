@@ -124,8 +124,8 @@ export async function openSubmit(j) {
   const done = j.status === "done", old = Array.isArray(j.photos) ? [...j.photos] : [];
   const fresh = [];   // ảnh mới chọn: Blob đã nén
   const shot = isShotJob(j), D = splitDetail(j.detail), linksOpt = !shot && j.proof !== "none";
-  // D24: chưa tới giờ mở nộp → NV không nộp được (QL vẫn nộp thay được)
-  const notOpen = j.status === "todo" && j.start_at && Date.parse(j.start_at) > Date.now(), lockedNow = notOpen && !mgr;
+  // D24: chưa tới giờ mở nộp → không ai nộp được (kể cả QL)
+  const notOpen = j.status === "todo" && j.start_at && Date.parse(j.start_at) > Date.now(), lockedNow = notOpen;
   const html = `<h3>${typeOf(j.type_id)?.icon || "📌"} ${esc(j.title)}</h3>
     <p class="small muted" style="margin:-4px 0 8px">${esc(typeLabel(j.type_id))} · hạn <b>${whenTxt(j.due_at)}</b> · <span class="pill ${cls}">${ic} ${lb}</span>${!own ? ` · NV: <b>${esc(staffById(j.staff_id)?.name || j.staff_id)}</b>` : ""}</p>
     ${scopeHtml(j)}
