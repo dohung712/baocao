@@ -4,11 +4,12 @@ import { sb, S, rpc, callFn, onChange, setting, staffById, visibleStaff, errMsg,
 import { loadTypes, typeOf, typeLabel, stateOf, STATE, vnAt, whenTxt, nPhotos, thumb, openManage, minsTxt } from "../jobs-common.js";
 import { rtTab } from "./jobs-rt.js";
 import { xepTab } from "./jobs-xepca.js";
+import { KIND, KW_CHIPS, byKind, kwFilter, drillPanel, drillAi } from "../jobs-drill.js";
 import { parseShiftAoa, matchStaff, readSheet, slotText } from "../lib-shift.js";
 
 const TABS = [["board", "📊 Hôm nay"], ["assign", "➕ Giao việc"], ["ticker", "📢 Chữ chạy"], ["rt", "🔁 Lặp lại"], ["stats", "📈 Thống kê"], ["types", "🗂️ Hạng mục"], ["shift", "🗓️ Lịch ca"], ["xep", "🤖 Xếp ca"], ["cfg", "⚙️ Cài đặt"]];
 let tab = "board", root, folders = {}, busyDraw = 0;
-const V = { day: vnToday(), dept: "", from: weekStart(vnToday()), to: vnToday(), type: "", who: "", sweek: weekStart(vnToday()) };
+const V = { day: vnToday(), dept: "", from: weekStart(vnToday()), to: vnToday(), type: "", who: "", dk: "", dw: "", dt: "", dd: "", q: "", sweek: weekStart(vnToday()) };
 const err = (e) => toast(errMsg(e), 5000);
 const vnStart = (d) => new Date(`${d}T00:00:00+07:00`).toISOString();
 const staffList = () => visibleStaff().filter((s) => !V.dept || s.dept === V.dept);
@@ -209,41 +210,60 @@ async function stats(body, alive) {
   const per = staff.map((s) => ({ s, l: jobs.filter((j) => j.staff_id === s.id) })).filter((x) => x.l.length).map((x) => ({ ...x, a: agg(x.l) }))
     .sort((a, b) => (b.a.ontime / b.a.n) - (a.a.ontime / a.a.n) || b.a.ph - a.a.ph);
   const types = [...new Set(jobs.map((j) => j.type_id || 0))].map((id) => ({ id, l: jobs.filter((j) => (j.type_id || 0) === id) }));
-  const cell = (l) => {
+  const cell = (l, sid, d) => {
     if (!l.length) return `<td class="num muted">·</td>`;
     const a = agg(l), cls = a.miss ? "c-miss" : a.open ? (l.some((j) => st(j) === "over") ? "c-over" : "c-open") : a.late ? "c-late" : "c-ok";
-    return `<td class="num ${cls}" title="${a.done}/${a.n} đã nộp · ${a.ph} ảnh${a.late ? ` · ${a.late} trễ` : ""}${a.miss ? ` · ${a.miss} bỏ lỡ` : ""}">${a.ph || (a.done ? "✓" : "–")}</td>`;
+    return `<td class="num ${cls} jd-cell" data-dk="all" data-dw="${esc(sid)}" data-dd="${d}" title="${a.done}/${a.n} đã nộp · ${a.ph} ảnh${a.late ? ` · ${a.late} trễ` : ""}${a.miss ? ` · ${a.miss} bỏ lỡ` : ""}">${a.ph || (a.done ? "✓" : "–")}</td>`;
   };
   const W = V.who && per.find((x) => x.s.id === V.who);
+  // D25: bấm số → danh sách việc · 🔎 từ khoá
+  const num = (n, k, o = {}) => n ? `<a href="#" class="jd-n" data-dk="${k}"${o.w ? ` data-dw="${esc(o.w)}"` : ""}${o.t != null ? ` data-dt="${o.t}"` : ""}${o.d ? ` data-dd="${o.d}"` : ""}>${n}</a>` : "";
+  let D = null;
+  if (V.q) { const r = kwFilter(jobs, V.q, { st, today: vnToday() }); D = { list: r.list, title: `🔎 ${esc(r.said)}` }; }
+  else if (V.dk) {
+    let l = jobs; const bits = [];
+    if (V.dw) { l = l.filter((j) => j.staff_id === V.dw); bits.push(esc(staffById(V.dw)?.name || V.dw)); }
+    if (V.dt !== "") { l = l.filter((j) => String(j.type_id || 0) === V.dt); bits.push(esc(typeLabel(Number(V.dt) || null))); }
+    if (V.dd) { l = l.filter((j) => vnAt(j.due_at).date === V.dd); bits.push(`${dow(V.dd)} ${dm(V.dd)}`); }
+    D = { list: byKind(l, V.dk, st), title: `${KIND[V.dk][0]} ${KIND[V.dk][1]}${bits.length ? " · " + bits.join(" · ") : ""} · ${dm(from)}–${dm(to)}` };
+  }
   body.innerHTML = `<div class="row" style="margin-bottom:10px;gap:6px">
       <button class="btn small" type="button" data-rg="today">Hôm nay</button><button class="btn small" type="button" data-rg="week">Tuần này</button><button class="btn small" type="button" data-rg="lastweek">Tuần trước</button><button class="btn small" type="button" data-rg="month">Tháng này</button>
       <input type="date" id="sFrom" value="${from}" style="width:auto"> – <input type="date" id="sTo" value="${to}" style="width:auto">
       <select id="sType" style="width:auto"><option value="">Mọi hạng mục</option>${(S.jobTypes || []).map((t) => `<option value="${t.id}" ${V.type === String(t.id) ? "selected" : ""}>${esc(t.icon)} ${esc(t.name)}</option>`).join("")}</select>
       <button class="btn small ghost" type="button" id="sCsv">⬇️ CSV</button></div>
+    <div class="jd-search"><input id="sQ" type="search" value="${esc(V.q)}" placeholder="🔎 Tìm nhanh: vd “trễ Topzone hôm qua”, “bỏ lỡ Quân”, “chưa nộp tiktok”, “trễ > 60p 24/11”"><button class="btn small primary" type="button" id="sQgo">Tìm</button>
+      <div class="jd-chips">${KW_CHIPS.map((c) => `<button type="button" class="chip" data-kw="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>
     ${deptChips()}
     <div class="stats" style="margin-top:10px">
-      <div class="stat"><small>Việc</small><b>${T.n}</b></div><div class="stat"><small>Đã nộp</small><b style="color:var(--ok)">${T.done}</b><span class="tiny muted">đúng hạn ${pct(T.ontime, T.n)}</span></div>
-      <div class="stat"><small>Nộp trễ</small><b style="color:var(--warn)">${T.late}</b></div><div class="stat"><small>Bỏ lỡ</small><b style="color:var(--bad)">${T.miss}</b><span class="tiny muted">${T.pen ? `đã trừ ${T.pen}⭐` : ""}</span></div>
-      <div class="stat"><small>Chưa nộp</small><b>${T.open}</b></div><div class="stat"><small>Ảnh</small><b>${T.ph}</b></div></div>
+      <div class="stat jd-stat" data-dk="all"><small>Việc</small><b>${T.n}</b></div><div class="stat jd-stat" data-dk="sub"><small>Đã nộp</small><b style="color:var(--ok)">${T.done}</b><span class="tiny muted">đúng hạn ${pct(T.ontime, T.n)}</span></div>
+      <div class="stat jd-stat" data-dk="late"><small>Nộp trễ</small><b style="color:var(--warn)">${T.late}</b></div><div class="stat jd-stat" data-dk="miss"><small>Bỏ lỡ</small><b style="color:var(--bad)">${T.miss}</b><span class="tiny muted">${T.pen ? `đã trừ ${T.pen}⭐` : ""}</span></div>
+      <div class="stat jd-stat" data-dk="open"><small>Chưa nộp</small><b>${T.open}</b></div><div class="stat jd-stat" data-dk="ph"><small>Ảnh</small><b>${T.ph}</b></div></div>
+    ${D ? drillPanel(D.list, D.title, st) : ""}
     ${!jobs.length ? `<div class="empty">Không có việc trong khoảng này.</div>` : `
     ${W ? whoPanel(W) : ""}
-    <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>👥 Theo nhân viên</h3><span class="small muted">bấm tên để xem từng việc và ảnh</span></div>
+    <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>👥 Theo nhân viên</h3><span class="small muted">bấm tên để xem từng việc và ảnh · bấm số để xem danh sách</span></div>
       <div class="tbl-wrap"><table><thead><tr><th>Nhân viên</th><th class="num">Việc</th><th class="num">Đã nộp</th><th class="num">Đúng hạn</th><th class="num">Trễ</th><th class="num">Bỏ lỡ</th><th class="num">Ảnh</th><th class="num">⭐ trừ</th><th class="nosort"></th></tr></thead><tbody>
-      ${per.map(({ s, a }) => `<tr class="${V.who === s.id ? "sel" : ""}"><td><a href="#" class="linkish" data-who="${esc(s.id)}">${esc(s.name)}</a> <span class="tiny muted">${esc(s.dept)}</span></td><td class="num">${a.n}</td><td class="num">${a.done}</td><td class="num"><b>${pct(a.ontime, a.n)}</b></td><td class="num">${a.late || ""}</td><td class="num" style="color:var(--bad)">${a.miss || ""}</td><td class="num">${a.ph}</td><td class="num">${a.pen ? "−" + a.pen : ""}</td><td>${folders[s.id] ? `<a href="${esc(folders[s.id])}" target="_blank" rel="noopener" title="Thư mục ảnh trên Drive">📁</a>` : ""}</td></tr>`).join("")}
+      ${per.map(({ s, a }) => `<tr class="${V.who === s.id ? "sel" : ""}"><td><a href="#" class="linkish" data-who="${esc(s.id)}">${esc(s.name)}</a> <span class="tiny muted">${esc(s.dept)}</span></td><td class="num">${num(a.n, "all", { w: s.id })}</td><td class="num">${num(a.done, "sub", { w: s.id })}</td><td class="num"><b>${pct(a.ontime, a.n)}</b></td><td class="num">${num(a.late, "late", { w: s.id })}</td><td class="num" style="color:var(--bad)">${num(a.miss, "miss", { w: s.id })}</td><td class="num">${num(a.ph, "ph", { w: s.id })}</td><td class="num">${a.pen ? num("−" + a.pen, "pen", { w: s.id }) : ""}</td><td>${folders[s.id] ? `<a href="${esc(folders[s.id])}" target="_blank" rel="noopener" title="Thư mục ảnh trên Drive">📁</a>` : ""}</td></tr>`).join("")}
       </tbody></table></div></div>
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>📅 Nhân viên × ngày</h3><span class="small muted">số ảnh đã nộp · <span class="c-ok">xanh</span> đúng hạn · <span class="c-late">vàng</span> trễ · <span class="c-over">cam</span> quá hạn · <span class="c-miss">đỏ</span> bỏ lỡ</span></div>
       <div class="tbl-wrap"><table class="jb-grid nosort"><thead><tr><th>NV</th>${days.map((d) => `<th class="num">${dow(d)}<br>${dm(d)}</th>`).join("")}</tr></thead><tbody>
-      ${per.map(({ s, l }) => `<tr><td style="white-space:nowrap">${esc(shortName(s.name))}</td>${days.map((d) => cell(l.filter((j) => vnAt(j.due_at).date === d))).join("")}</tr>`).join("")}
+      ${per.map(({ s, l }) => `<tr><td style="white-space:nowrap">${esc(shortName(s.name))}</td>${days.map((d) => cell(l.filter((j) => vnAt(j.due_at).date === d), s.id, d)).join("")}</tr>`).join("")}
       </tbody></table></div></div>
     <div class="card"><div class="card-h"><h3>🗂️ Theo hạng mục</h3></div>
       <div class="tbl-wrap"><table><thead><tr><th>Hạng mục</th><th class="num">Việc</th><th class="num">Đã nộp</th><th class="num">Đúng hạn</th><th class="num">Trễ</th><th class="num">Bỏ lỡ</th><th class="num">Ảnh</th></tr></thead><tbody>
-      ${types.map(({ id, l }) => { const a = agg(l); return `<tr><td>${esc(typeLabel(id || null))}</td><td class="num">${a.n}</td><td class="num">${a.done}</td><td class="num"><b>${pct(a.ontime, a.n)}</b></td><td class="num">${a.late || ""}</td><td class="num" style="color:var(--bad)">${a.miss || ""}</td><td class="num">${a.ph}</td></tr>`; }).join("")}
+      ${types.map(({ id, l }) => { const a = agg(l); return `<tr><td>${esc(typeLabel(id || null))}</td><td class="num">${num(a.n, "all", { t: id })}</td><td class="num">${num(a.done, "sub", { t: id })}</td><td class="num"><b>${pct(a.ontime, a.n)}</b></td><td class="num">${num(a.late, "late", { t: id })}</td><td class="num" style="color:var(--bad)">${num(a.miss, "miss", { t: id })}</td><td class="num">${num(a.ph, "ph", { t: id })}</td></tr>`; }).join("")}
       </tbody></table></div></div>`}`;
   const range = { today: [vnToday(), vnToday()], week: [weekStart(vnToday()), vnToday()], lastweek: [addDays(weekStart(vnToday()), -7), addDays(weekStart(vnToday()), -1)], month: [monthStart(vnToday()), vnToday()] };
   body.onclick = async (e) => {
     const rg = e.target.closest("[data-rg]"); if (rg) { [V.from, V.to] = range[rg.dataset.rg]; return draw(); }
     const dp = e.target.closest("[data-dept]"); if (dp) { V.dept = dp.dataset.dept; return draw(); }
     const w = e.target.closest("[data-who]"); if (w) { e.preventDefault(); V.who = V.who === w.dataset.who ? "" : w.dataset.who; return draw(); }
+    const dk = e.target.closest("[data-dk]"); if (dk) { e.preventDefault(); Object.assign(V, { q: "", dk: dk.dataset.dk, dw: dk.dataset.dw || "", dt: dk.dataset.dt ?? "", dd: dk.dataset.dd || "" }); await draw(true); $("#jdPanel")?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    if (e.target.closest("[data-jdclose]")) { Object.assign(V, { q: "", dk: "", dw: "", dt: "", dd: "" }); return draw(); }
+    const kw = e.target.closest("[data-kw]"); if (kw) { V.q = kw.dataset.kw; V.dk = ""; await draw(true); $("#jdPanel")?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    if (e.target.closest("#sQgo")) { V.q = $("#sQ").value.trim(); V.dk = ""; await draw(true); $("#jdPanel")?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    if (e.target.closest("#jdAi") && D) { e.target.closest("#jdAi").disabled = true; return drillAi($("#jdAiOut"), D.list, D.title, st); }
     const mj = e.target.closest("[data-mj]"); if (mj) { const { data } = await sb.from("jobs").select("*").eq("id", mj.dataset.mj).single(); if (data && (await openManage(data, folders))) draw(true); return; }
     if (e.target.closest("#sCsv")) {
       const rows = [["Ngày", "Giờ hạn", "Hạng mục", "Việc", "Mã NV", "Nhân viên", "Bộ phận", "Trạng thái", "Nộp lúc", "Trễ (phút)", "Số ảnh", "Sao trừ", "Ghi chú", "Link ảnh"]];
@@ -254,6 +274,7 @@ async function stats(body, alive) {
   body.onchange = (e) => {
     if (e.target.id === "sFrom" || e.target.id === "sTo") { V.from = $("#sFrom").value || V.from; V.to = $("#sTo").value || V.to; if (V.to < V.from) V.to = V.from; draw(); }
     if (e.target.id === "sType") { V.type = e.target.value; draw(); }
+    if (e.target.id === "sQ") { V.q = e.target.value.trim(); V.dk = ""; draw(); }
   };
 }
 function whoPanel({ s, l }) {
