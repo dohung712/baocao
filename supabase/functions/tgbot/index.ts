@@ -64,7 +64,9 @@ const S_ = (d: string) => ({ type: "STRING", description: d });
 const SCHEMA = {
   type: "OBJECT", required: ["action", "summary"],
   properties: {
-    action: { type: "STRING", enum: ["rt_add", "rt_edit", "rt_off", "rt_on", "job_once", "notice", "ticker", "list", "help", "unclear"] },
+    action: { type: "STRING", enum: ["rt_add", "rt_edit", "rt_off", "rt_on", "job_once", "notice", "ticker", "list", "help", "remember", "forget", "memory", "unclear"] },
+    memo: S_("remember: luật cần nhớ, viết gọn thành 1 câu quy tắc"), forget_no: { type: "INTEGER", description: "forget: số thứ tự luật cần quên" },
+    lesson: S_("khi tin nhắn là SỬA LỖI bản nháp / việc bot vừa làm sai: rút ra 1 câu quy tắc để lần sau không sai nữa (để trống nếu không phải sửa lỗi)"),
     summary: S_("1 câu tiếng Việt: sẽ làm gì"), question: S_("khi unclear hoặc thiếu thông tin bắt buộc: hỏi lại ngắn gọn"),
     row: { type: "INTEGER", description: "số dòng trang tính (rt_edit / rt_off / rt_on)" },
     fields: { type: "ARRAY", description: "rt_add / rt_edit: các cột cần ghi", items: { type: "OBJECT", required: ["col", "value"], properties: { col: S_("tên cột đúng như danh sách"), value: S_("giá trị đúng ô chọn") } } },
@@ -76,7 +78,7 @@ const SCHEMA = {
     ticker: { type: "OBJECT", properties: { text: S_("nội dung"), link: S_("link nếu có"), to_date: S_("YYYY-MM-DD hiện tới ngày"), to_hm: S_("HH:MM"), depts: { type: "ARRAY", items: { type: "STRING" } } } },
   },
 };
-async function plan(text: string, ctx: { sheet: Awaited<ReturnType<typeof readSheet>> | null; staff: any[]; groups: string[]; draft: any }) {
+async function plan(text: string, ctx: { sheet: Awaited<ReturnType<typeof readSheet>> | null; staff: any[]; groups: string[]; draft: any; rules: string[]; examples: string[]; habits: string[]; last: string }) {
   const vn = vnParts(), dow = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"][vn.dow];
   const sys = `Bạn là trợ lý nhắc việc của giám đốc siêu thị (TGDĐ, Topzone, PG). Hiểu tin nhắn tiếng Việt (có thể viết tắt, không dấu) và trả JSON đúng khuôn.
 Hôm nay ${dow} ${vn.date}, ${vn.hm} (giờ Việt Nam). "mai" = ${addDays(vn.date, 1)}.
@@ -85,6 +87,10 @@ Loại việc:
 - job_once: giao việc 1 LẦN (có hạn cụ thể) cho NV / bộ phận / mọi người, cần nộp ảnh / tick / bấm xong
 - notice: THÔNG BÁO cho mọi người hoặc bộ phận (họp, học, triển khai, quy định): NV chỉ bấm Đã nhận; có giờ diễn ra thì điền event_*
 - ticker: chữ chạy đầu trang tool tới 1 thời điểm · list: xem danh sách việc lặp lại · help: hỏi cách dùng · unclear: không rõ → question
+- remember: Admin dạy luật ("nhớ:", "lần sau", "từ giờ", "luôn luôn") → memo · forget: "quên luật số N" → forget_no · memory: xem các luật đã nhớ
+TRƯỚC KHI rt_add: nếu đã có việc cùng tên / gần giống trong "Việc lặp lại đang có" → dùng rt_edit dòng đó (không thêm trùng).
+Cột "Mã NV": ghi MÃ số trong danh sách NV (khớp tên), không ghi tên. "Báo cáo gì": câu rõ ràng NV phải nộp gì (không chỉ 1 chữ "Ảnh").
+Tin nhắn chê "sai", "không phải", "ý anh là…" sau việc bot vừa làm → sửa lại (thường rt_edit đúng dòng vừa ghi) + điền lesson.
 Quy tắc rt_add / rt_edit: chỉ dùng tên cột trong danh sách, giá trị đúng ô chọn. rt_add tối thiểu: Tên việc, Báo cáo gì, Siêu thị, Ai nhận, Lặp lại (+ Thứ / ngày), Giờ hạn, Cách xác nhận, Nhóm việc.
 Thiếu thông tin quan trọng (giờ hạn, ai làm) thì vẫn trả action đúng loại kèm question để hỏi thêm.
 Có "Bản nháp trước" mà tin mới là bổ sung / sửa nháp → trả lại TOÀN BỘ nháp đã cập nhật (cùng action).
@@ -95,6 +101,10 @@ ${CHOICES}
 Nhóm việc: ${ctx.groups.join(" / ")}`;
   const user = [ctx.sheet ? `Việc lặp lại đang có:\n${ctx.sheet.rows.map((x) => rowLine(x, ctx.sheet!.col)).join("\n")}` : "",
     `Nhân viên (mã | tên | bộ phận):\n${ctx.staff.map((x) => `${x.id} | ${x.name} | ${x.dept}`).join("\n")}`,
+    ctx.rules.length ? `LUẬT ANH ĐÃ DẠY (luôn làm theo, ưu tiên hơn mọi mặc định):\n${ctx.rules.map((r, i) => `${i + 1}. ${r}`).join("\n")}` : "",
+    ctx.examples.length ? `Ví dụ anh đã duyệt (học cách anh muốn, cách đặt tên, số ảnh, giờ, ai làm):\n${ctx.examples.join("\n")}` : "",
+    ctx.habits.length ? `Thói quen giao việc gần đây của anh trong app (tên việc | cho ai | giờ hạn | nộp gì):\n${ctx.habits.join("\n")}` : "",
+    ctx.last ? `Việc bot vừa làm gần nhất: ${ctx.last}` : "",
     ctx.draft ? `Bản nháp trước (chưa lưu): ${JSON.stringify(ctx.draft)}` : "", `TIN NHẮN: ${text}`].filter(Boolean).join("\n\n");
   const out = await gemini(await aiKey(), { systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: "user", parts: [{ text: user }] }],
     generationConfig: { temperature: 0.1, maxOutputTokens: 3000, responseMimeType: "application/json", responseSchema: SCHEMA } });
@@ -110,8 +120,26 @@ function pickStaff(job: any, staff: any[]) {
   const ids = new Set((job.staff_ids || []).map(String));
   return staff.filter((x) => ids.has(String(x.id)));
 }
-async function preview(p: any, sh: Awaited<ReturnType<typeof readSheet>> | null, staff: any[]) {
-  const A = p.action;
+const tkey = (x: string) => nv(x).replace(/[^a-z0-9]+/g, " ").trim();
+// Mã NV: nhận mã hoặc tên (khớp gần đúng) → mã; trả về [mã đã khớp, chữ không khớp]
+function resolveIds(v: string, staff: any[]): [string[], string[]] {
+  const ids: string[] = [], bad: string[] = [];
+  for (const tok of String(v).split(/[,;\n]+/).map((x) => x.trim()).filter(Boolean)) {
+    const byId = staff.find((x) => String(x.id) === tok);
+    if (byId) { ids.push(String(byId.id)); continue; }
+    const k = tkey(tok), hit = staff.filter((x) => tkey(x.name).includes(k) || k.includes(tkey(x.name).split(" ").slice(-2).join(" ")));
+    if (k && hit.length === 1) ids.push(String(hit[0].id)); else bad.push(tok);
+  }
+  return [[...new Set(ids)], bad];
+}
+async function preview(p: any, sh: Awaited<ReturnType<typeof readSheet>> | null, staff: any[], groups: string[] = []) {
+  let A = p.action, note = "";
+  // rt_add trùng tên việc đã có → sửa dòng đó (không thêm trùng)
+  if (A === "rt_add" && sh) {
+    const nt = tkey(s((p.fields || []).find((f: any) => nv(f.col) === "ten viec")?.value));
+    const dup = nt && sh.rows.find((x) => tkey(s(x.c[sh.col["ten viec"]])) === nt);
+    if (dup) { A = "rt_edit"; p.row = dup.row; note = `ℹ️ Đã có việc này ở dòng ${dup.row} → mình sửa dòng đó, không thêm trùng.\n`; }
+  }
   if (["rt_add", "rt_edit", "rt_off", "rt_on"].includes(A)) {
     if (!sh) throw new Error("Không đọc được trang tính.");
     const cur = A === "rt_add" ? null : sh.rows.find((x) => x.row === Number(p.row));
@@ -130,6 +158,16 @@ async function preview(p: any, sh: Awaited<ReturnType<typeof readSheet>> | null,
     for (const f of p.fields || []) {
       const k = nv(f.col).replace(/\s*\(.*\)\s*$/, "").trim();
       if (k === "tool hieu" || k === "stt" || !(k in sh.col)) continue;
+      if (k === "ma nv" && s(f.value)) {
+        const [ids, bad] = resolveIds(f.value, staff);
+        if (bad.length) return { ok: false, text: `Không tìm thấy nhân viên: ${bad.join(", ")}. Anh ghi rõ tên hoặc mã NV giúp mình.`, draft: true };
+        put(k, ids.join(", "), "Mã NV"); continue;
+      }
+      if (k === "nhom viec" && s(f.value) && groups.length) {
+        const g = groups.find((x) => nv(x) === nv(f.value)) || groups.find((x) => nv(x).includes(nv(f.value)) || nv(f.value).includes(nv(x)));
+        if (!g) return { ok: false, text: `Nhóm việc "${s(f.value)}" chưa có trong tab Hạng mục (${groups.join(" / ")}). Anh chọn 1 nhóm giúp mình.`, draft: true };
+        put(k, g, "Nhóm việc"); continue;
+      }
       put(k, k === "dang dung" ? /^(true|co|bat|x|1)$/i.test(nv(f.value)) : s(f.value), COLS.find((c) => nv(c) === k) || f.col);
     }
     if (!set.length) return { ok: false, text: "Không có gì thay đổi." };
@@ -137,7 +175,7 @@ async function preview(p: any, sh: Awaited<ReturnType<typeof readSheet>> | null,
     const pr = parseRow2(cells.map((x) => String(x ?? "")), rowNo, sh.col);
     const title = s(cells[sh.col["ten viec"]]);
     const head = { rt_add: "➕ THÊM VIỆC LẶP LẠI", rt_edit: `✏️ SỬA DÒNG ${rowNo}`, rt_off: `⏸️ TẮT DÒNG ${rowNo}`, rt_on: `▶️ BẬT LẠI DÒNG ${rowNo}` }[A as "rt_add"];
-    const body = `${head}: ${title}\n` + (A === "rt_add" ? COLS.slice(1).map((c) => { const v = s(cells[sh.col[nv(c)]]); return v ? `• ${c}: ${v}` : ""; }).filter(Boolean).join("\n") : diff.map((d) => "• " + d).join("\n"));
+    const body = note + `${head}: ${title}\n` + (A === "rt_add" ? COLS.slice(1).map((c) => { const v = s(cells[sh.col[nv(c)]]); return v ? `• ${c}: ${v}` : ""; }).filter(Boolean).join("\n") : diff.map((d) => "• " + d).join("\n"));
     if (pr.errs.length && pr.active) return { ok: false, text: `${body}\n\n⚠️ Chưa lưu được: ${pr.errs.join("; ")}\nAnh nhắn bổ sung (vd "giờ hạn 17:00, 2 ảnh") — mình sửa tiếp bản nháp này.`, draft: true };
     return { ok: true, text: `${body}\n\n🤖 Tool sẽ hiểu: ${pr.active ? pr.rule.text : "đang tắt, không giao"}`, exec: { kind: "row", row: cur ? cur.row : 0, cells: set, title } };
   }
@@ -211,7 +249,35 @@ const HELP = `🤖 Bot nhắc việc — nhắn bằng lời, mình soạn bản
 • Việc 1 lần: "giao Trâm kiểm kho trước 17h mai, 3 ảnh"
 • Thông báo: "thông báo cả siêu thị họp 8h sáng mai, nhớ có mặt đúng giờ"
 • Chữ chạy: "chữ chạy: tuần này đẩy mạnh trả góp 0%, hiện tới chủ nhật"
-• "danh sách" — xem việc lặp lại và số dòng · /huy — bỏ bản nháp`;
+• "danh sách" — xem việc lặp lại và số dòng · /huy — bỏ bản nháp
+🧠 Dạy bot: "nhớ: việc hình ảnh luôn 2 ảnh", "nhớ: Trâm phụ trách kho" · "các luật đã nhớ" · "quên luật số 2"
+Bot tự học từ những bản anh bấm ✅ Lưu và những lần anh sửa ("sai rồi, ý anh là…").`;
+
+// ---------- Trí nhớ: luật anh dạy · ví dụ anh đã duyệt · thói quen giao việc trong app ----------
+async function loadMemory(chat: string) {
+  const [ruleRows, ex, last, email] = await Promise.all([
+    rest("tg_memory?select=id,text&kind=eq.rule&active=eq.true&order=id&limit=60"),
+    rest("tg_memory?select=text&kind=eq.example&active=eq.true&order=id.desc&limit=15"),
+    rest(`tg_pending?select=payload,result,done_at&chat_id=eq.${chat}&status=eq.done&order=id.desc&limit=1`),
+    priv("TGBOT_EMAIL")]);
+  let habits: string[] = [];
+  try {
+    const jobs: any[] = email ? await rest(`jobs?select=batch,title,staff_id,due_at,proof,photo_min,info&created_by=eq.${encodeURIComponent(String(email))}&order=created_at.desc&limit=300`) : [];
+    const staff: any[] = await rest("staff?select=id,name");
+    const nm = (id: string) => staff.find((x) => x.id === id)?.name || id;
+    const by = new Map<string, any[]>(); for (const j of jobs) if (j.batch) by.set(j.batch, [...(by.get(j.batch) || []), j]);
+    habits = [...by.values()].slice(0, 25).map((l) => { const j = l[0], ids = [...new Set(l.map((x) => x.staff_id))];
+      return `${j.title} | ${ids.length > 3 ? `${ids.length} NV` : ids.map(nm).join(", ")} | ${new Date(Date.parse(j.due_at) + 7 * 3600e3).toISOString().slice(11, 16)} | ${j.info ? "đã nhận" : j.proof === "none" ? "bấm xong" : j.proof === "check" ? "tick" : `${j.photo_min} ảnh`}`; });
+  } catch { /* bỏ qua */ }
+  const l = last[0], recent = l && Date.now() - Date.parse(l.done_at) < 60 * 60e3 ? `${String(l.payload?.text || "").split("\n")[0]} → ${String(l.result || "").split("\n")[0]}` : "";
+  return { rules: ruleRows.map((r: any) => r.text), ruleRows, examples: ex.reverse().map((e: any) => e.text), habits, last: recent };
+}
+async function learn(row: any) {   // anh bấm ✅ → nhớ "tin nhắn → việc đã làm"; tin sửa lỗi → nhớ luật rút ra
+  const p = row.payload?.plan || {}, msgs: string[] = row.msgs || [];
+  const did = String(row.payload?.text || "").split("\n").filter((x: string) => x && !/^🤖|^ℹ️/.test(x)).slice(0, 8).join(" ¦ ");
+  if (msgs.length && did) await rest("tg_memory", { method: "POST", body: JSON.stringify({ kind: "example", text: `Anh nhắn: "${msgs.join(" → ")}" ⇒ ${did}`.slice(0, 1500) }) });
+  if (s(p.lesson)) await rest("tg_memory", { method: "POST", body: JSON.stringify({ kind: "rule", text: s(p.lesson).slice(0, 500) }) });
+}
 
 async function onMessage(m: any) {
   const chat = String(m.chat.id), from = String(m.from?.id || ""), text = s(m.text || m.caption || "");
@@ -228,23 +294,38 @@ async function onMessage(m: any) {
   }
   if (!(await admins()).includes(from)) return;   // người lạ: im lặng
   if (/^\/(start|help|huongdan)\b/i.test(text)) return void (await say(chat, HELP));
-  const draftRow = (await rest(`tg_pending?select=id,payload,created_at&chat_id=eq.${chat}&status=eq.wait&order=id.desc&limit=1`))[0];
+  const draftRow = (await rest(`tg_pending?select=id,payload,created_at,msgs&chat_id=eq.${chat}&status=eq.wait&order=id.desc&limit=1`))[0];
   if (/^\/huy\b|^huỷ$|^hủy$/i.test(text)) { if (draftRow) await rest(`tg_pending?id=eq.${draftRow.id}`, { method: "PATCH", body: JSON.stringify({ status: "cancel" }) }); return void (await say(chat, "Đã bỏ bản nháp.")); }
   await tg("sendChatAction", { chat_id: chat, action: "typing" }).catch(() => {});
   const [sh, staff, groupsTab] = await Promise.all([readSheet().catch(() => null), rest("staff?select=id,name,dept&hidden=eq.false&order=name"),
     (async () => { const sheet = await setting("RT_SHEET_ID"); return sheet ? drive({ action: "sheet_read", sheet: String(sheet), tab: "Hạng mục" }).catch(() => null) : null; })()]);
   const groups = ((groupsTab?.values || []) as string[][]).slice(1).map((x) => s(x[0])).filter((x) => x && x.length <= 40);
   const fresh = draftRow && Date.now() - Date.parse(draftRow.created_at) < 20 * 60e3 ? draftRow.payload?.plan : null;
-  const p = await plan(text, { sheet: sh, staff, groups, draft: fresh });
+  const mem = await loadMemory(chat);
+  const p = await plan(text, { sheet: sh, staff, groups, draft: fresh, ...mem });
   if (p.action === "help") return void (await say(chat, HELP));
+  if (p.action === "remember" && s(p.memo)) {
+    await rest("tg_memory", { method: "POST", body: JSON.stringify({ kind: "rule", text: s(p.memo).slice(0, 500) }) });
+    return void (await say(chat, `🧠 Đã nhớ: ${s(p.memo)}\nNhắn "các luật đã nhớ" để xem, "quên luật số N" để bỏ.`));
+  }
+  if (p.action === "memory" || (p.action === "forget" && !p.forget_no)) {
+    return void (await say(chat, mem.rules.length ? `🧠 Luật đã nhớ:\n${mem.rules.map((r, i) => `${i + 1}. ${r}`).join("\n")}\n\nNhắn "quên luật số N" để bỏ.` : "Chưa có luật nào. Dạy mình bằng: nhớ: <luật>"));
+  }
+  if (p.action === "forget") {
+    const r = mem.ruleRows[Number(p.forget_no) - 1];
+    if (!r) return void (await say(chat, `Không có luật số ${p.forget_no}.`));
+    await rest(`tg_memory?id=eq.${r.id}`, { method: "PATCH", body: JSON.stringify({ active: false }) });
+    return void (await say(chat, `🗑️ Đã quên: ${r.text}`));
+  }
   if (p.action === "list") {
     if (!sh) return void (await say(chat, "Không đọc được trang tính."));
     return void (await say(chat, `📋 Việc lặp lại (${sh.rows.length}):\n` + sh.rows.map((x) => `${x.row}. ${s(x.c[sh.col["ten viec"]])} — ${s(x.c[sh.col["lap lai"]])} ${s(x.c[sh.col["thu / ngay"]])} ${s(x.c[sh.col["gio han"]])}${/^false$/i.test(s(x.c[sh.col["dang dung"]])) ? " (đang tắt)" : ""}`).join("\n")));
   }
   if (p.action === "unclear") return void (await say(chat, p.question || "Mình chưa hiểu, anh nói rõ hơn giúp mình nhé. Nhắn /help để xem ví dụ."));
-  const pv = await preview(p, sh, staff);
+  const pv = await preview(p, sh, staff, groups);
   if (draftRow) await rest(`tg_pending?id=eq.${draftRow.id}&status=eq.wait`, { method: "PATCH", body: JSON.stringify({ status: "cancel" }) });
-  const row = (await rest("tg_pending", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ chat_id: chat, payload: { plan: p, exec: pv.exec || null } }) }))[0];
+  const msgs = [...(fresh && draftRow?.msgs ? draftRow.msgs : []), text].slice(-6);
+  const row = (await rest("tg_pending", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ chat_id: chat, msgs, payload: { plan: p, exec: pv.exec || null, text: pv.text.slice(0, 1500) } }) }))[0];
   if (!pv.ok) return void (await say(chat, pv.text));
   await say(chat, pv.text + (p.question ? `\n\n❓ ${p.question}` : ""), { reply_markup: { inline_keyboard: [[{ text: "✅ Lưu", callback_data: `ok:${row.id}` }, { text: "❌ Huỷ", callback_data: `no:${row.id}` }]] } });
 }
@@ -263,7 +344,10 @@ async function onCallback(q: any) {
     return void (await tg("editMessageText", { chat_id: chat, message_id: msgId, text: old + "\n\n⌛ Bản xem trước quá 30 phút, anh nhắn lại giúp mình." }).catch(() => {}));
   }
   let res: string;
-  try { res = await execute(claimed[0].payload.exec, String(await priv("TGBOT_EMAIL"))); }
+  try {
+    res = await execute(claimed[0].payload.exec, String(await priv("TGBOT_EMAIL")));
+    await learn(claimed[0]).catch(() => {});
+  }
   catch (x) { res = "⚠️ Lỗi, chưa lưu: " + (x as Error).message; await rest(`tg_pending?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ status: "error" }) }); }
   await rest(`tg_pending?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ result: res.slice(0, 1000) }) }).catch(() => {});
   await tg("editMessageText", { chat_id: chat, message_id: msgId, text: (old + "\n\n" + res).slice(0, 4000) }).catch(() => say(chat, res));
@@ -308,6 +392,21 @@ Deno.serve(async (req) => {
       await tg("setMyCommands", { commands: [{ command: "help", description: "Cách nhắn bot" }, { command: "huy", description: "Bỏ bản nháp" }] }).catch(() => {});
       const bot = await tg("getMe", {});
       return json({ status: "success", bot: bot.username, code, linked: (await admins()).length });
+    }
+    if (body.mode === "memory") {   // luật đã nhớ + 15 lần nhắn gần nhất
+      const [rules, hist, nex] = await Promise.all([rest("tg_memory?select=id,text,created_at&kind=eq.rule&active=eq.true&order=id&limit=100"),
+        rest("tg_pending?select=id,msgs,status,result,created_at,payload->>text&order=id.desc&limit=15"),
+        rest("tg_memory?select=id&kind=eq.example&active=eq.true&limit=1000")]);
+      return json({ status: "success", rules, examples: nex.length, history: hist.map((h: any) => ({ id: h.id, msgs: h.msgs, status: h.status, at: h.created_at, preview: String(h.text || "").slice(0, 300), result: String(h.result || "").slice(0, 300) })) });
+    }
+    if (body.mode === "rule_add") {
+      const t = s(body.text).slice(0, 500); if (t.length < 3) throw new Error("Luật quá ngắn.");
+      await rest("tg_memory", { method: "POST", body: JSON.stringify({ kind: "rule", text: t }) });
+      return json({ status: "success" });
+    }
+    if (body.mode === "rule_del") {
+      await rest(`tg_memory?id=eq.${Number(body.id) || 0}`, { method: "PATCH", body: JSON.stringify({ active: false }) });
+      return json({ status: "success" });
     }
     if (body.mode === "off") {
       await tg("deleteWebhook", {}).catch(() => {});
