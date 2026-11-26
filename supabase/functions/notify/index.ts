@@ -380,8 +380,10 @@ Deno.serve(async (req) => {
       const token = await privateSetting("TELEGRAM_BOT_TOKEN");
       if (!token) throw new Error("Chưa nhập token bot Telegram.");
       const me = await telegram(token, "getMe", {});
-      const updates = await telegram(token, "getUpdates", { limit: 100, allowed_updates: ["message", "my_chat_member", "channel_post"] });
+      // D27: bot nhắc việc dùng webhook → getUpdates bị Telegram chặn; lấy các nơi bot đã thấy (bảng tg_chats)
+      const updates = await telegram(token, "getUpdates", { limit: 100, allowed_updates: ["message", "my_chat_member", "channel_post"] }).catch(() => [] as any[]);
       const chats = new Map<string, { id: string; title: string; type: string }>();
+      for (const c of (await rest("tg_chats?select=id,title,type&order=last_at.desc&limit=50").catch(() => [])) as any[]) chats.set(String(c.id), { id: String(c.id), title: c.title || String(c.id), type: c.type || "" });
       for (const u of updates) {
         const c = u.message?.chat || u.my_chat_member?.chat || u.channel_post?.chat;
         if (c) chats.set(String(c.id), { id: String(c.id), title: c.title || [c.first_name, c.last_name].filter(Boolean).join(" ") || c.username || String(c.id), type: c.type });

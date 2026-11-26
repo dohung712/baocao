@@ -583,6 +583,7 @@ async function telegram(body) {
       <ol class="small muted" style="margin:0 0 10px;padding-left:18px"><li>Telegram → <b>@BotFather</b> → <code>/newbot</code> → copy token.</li><li>Thêm bot vào nhóm quản lý, nhắn 1 câu bất kỳ trong nhóm.</li><li>Dán token → Lưu → bấm <b>Tìm nhóm</b> → tick nhóm nhận tin → Lưu cài đặt gửi.</li></ol>
       <div class="row"><input id="tgToken" type="password" placeholder="${status.TELEGRAM_BOT_TOKEN ? "•••••••• (đã lưu — dán token mới để thay)" : "123456789:ABC…"}" class="grow" style="width:auto" autocomplete="off"><button class="btn" id="tgSaveToken" type="button">Lưu token</button><button class="btn" id="tgDetect" type="button">🔎 Tìm nhóm</button></div>
       <div id="tgChats" style="margin-top:10px"></div></div>` : ""}
+    ${isAdmin() ? `<div id="tgBotBox"></div>` : ""}
     <div class="card" style="margin-bottom:14px"><div class="card-h"><h2>🗓️ Gửi tự động theo từng đầu mục</h2>${mgr ? `<button class="btn small primary" id="tgSave" type="button">💾 Lưu lịch gửi</button>` : ""}</div>
       <div class="fields" style="margin-bottom:10px"><label>Trạng thái chung<select id="tgOn" ${own ? "" : "disabled"}><option value="false">Tắt tất cả</option><option value="true" ${setting("NOTIFY_ENABLED", false) === true ? "selected" : ""}>Bật</option></select></label>
         <label style="grid-column:span 2">Nơi nhận (chat ID, cách nhau dấu phẩy)<input id="tgIds" value="${esc(chats.join(", "))}" ${own ? "" : "disabled"} placeholder="Bấm Tìm nhóm để điền tự động"></label></div>
@@ -602,6 +603,7 @@ async function telegram(body) {
         <button class="btn" id="tgPreview" type="button">Xem trước</button><button class="btn primary" id="tgSend" type="button">📤 Gửi ngay</button>${own ? `<button class="btn" id="tgTest" type="button">Gửi tin thử</button>` : ""}</div>
       <div id="tgOut" style="margin-top:10px"></div></div>
     <div class="card"><div class="card-h"><h3>Nhật ký gửi</h3></div>${logs?.length ? `<div class="tbl-wrap"><table><tbody>${logs.map((l) => `<tr><td class="small">${new Date(l.sent_at).toLocaleString("vi-VN")}</td><td>${esc(l.kind)}</td><td>${esc(l.period)}</td><td>${l.ok ? '<span class="pill ok">OK</span>' : '<span class="pill bad">Lỗi</span>'}</td><td class="small muted">${esc(l.detail || "")}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Chưa gửi lần nào.</p>`}</div>`;
+  if ($("#tgBotBox")) import("../tgbot-ui.js").then((m) => m.tgBotBox($("#tgBotBox"))).catch(() => {});
   const run = async (btn, fn) => { btn.disabled = true; try { await fn(); } catch (x) { err(x); } finally { btn.disabled = false; } };
   $("#tgSaveToken")?.addEventListener("click", (e) => run(e.target, async () => {
     const v = $("#tgToken").value.trim(); if (!/^\d+:[\w-]{20,}$/.test(v)) throw new Error("Token không đúng dạng (VD 123456789:ABC…)");

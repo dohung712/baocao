@@ -3,6 +3,7 @@
 // BẢN 3 (B16 Số liệu BI): liệt kê file trong thư mục (list), lấy nội dung 1 file nằm trong thư mục đó (get).
 // BẢN 4 (D13 Việc lặp lại): đọc trang tính công việc (sheet_read).
 // BẢN 5 (D24): ghi cột 'Tool hiểu' của tab việc lặp lại mẫu mới (sheet_col).
+// BẢN 6 (D27): bot Telegram ghi / sửa 1 dòng việc lặp lại (sheet_row).
 //
 // Cài đặt / cập nhật:
 //   1. Mở dự án Apps Script đang dùng (địa chỉ = DRIVE_UPLOAD_URL), dán đè toàn bộ file này, bấm Lưu.
@@ -12,7 +13,7 @@
 //   Web app: Execute as: Me · Who has access: Anyone.
 const SECRET = 'ĐẶT_MÃ_BÍ_MẬT';
 const FOLDER_ID = '176C0AxvgopmScYWcD1s_byyCzEgu2ArV';
-const VERSION = 5;
+const VERSION = 6;
 
 function doPost(e) {
   try {
@@ -78,6 +79,21 @@ function doPost(e) {
       const vals = (d.values || []).slice(0, 500).map(function (v) { return [String(v == null ? '' : v).slice(0, 500)]; });
       if (vals.length) cs.getRange(Number(d.row) || 2, Number(d.col), vals.length, 1).setValues(vals);
       return out({ ok: true, version: VERSION, n: vals.length });
+    }
+
+    // Bản 6 (D27 bot Telegram): ghi vài ô của 1 dòng — row = 0 → dòng mới sau dòng cuối có chữ ở cột key (mặc định cột B)
+    // cells = [[cột (1 = A), giá trị], ...]; trả về số dòng đã ghi
+    if (d.action === 'sheet_row') {
+      const rs2 = SpreadsheetApp.openById(d.sheet).getSheetByName(d.tab);
+      if (!rs2) return out({ ok: false, error: 'không thấy tab ' + d.tab });
+      let row = Number(d.row) || 0;
+      if (!row) {
+        const key = rs2.getRange(1, Number(d.key) || 2, Math.max(1, rs2.getMaxRows()), 1).getDisplayValues();
+        let last = 1; for (let i = 0; i < key.length; i++) if (String(key[i][0]).trim()) last = i + 1;
+        row = last + 1;
+      }
+      (d.cells || []).slice(0, 40).forEach(function (c) { rs2.getRange(row, Number(c[0])).setValue(c[1]); });
+      return out({ ok: true, version: VERSION, row: row });
     }
 
     // Ghi trang tính: tabs = [{name, rows: [[...], ...]}] — xoá nội dung cũ của tab rồi ghi lại
