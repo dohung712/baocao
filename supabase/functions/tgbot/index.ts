@@ -2,6 +2,7 @@
 //   • thêm / sửa / tắt / bật việc lặp lại → ghi tab "Việc lặp lại (mẫu mới)" (Apps Script bản 6 sheet_row) → tool đọc lại + giao việc ngay
 //   • giao việc 1 lần cho NV / bộ phận · 📢 thông báo cho mọi người (NV bấm Đã nhận, nhắc trước giờ diễn ra) · chữ chạy đầu trang
 // Gọi từ Telegram (webhook, kèm X-Telegram-Bot-Api-Secret-Token) hoặc từ tool (Admin: setup / status / off).
+// Nối: tool → Cài đặt → Telegram → 💬 Bot nhắc việc → Bật bot → nhắn /noi <mã> cho bot.
 import { json, CORS, rest, rpc, member, gemini, vnParts, addDays, URL_BASE } from "../_shared/common.ts";
 import { aiKey } from "../_shared/advisor.ts";
 import { drive, driveVersion } from "../_shared/drive.ts";
