@@ -2,7 +2,7 @@
 // → quy tắc giao việc (không dùng AI: quy tắc chữ cố định, sửa trang tính là tool hiểu lại). rt_generate (SQL) dùng quy tắc này để giao việc theo lịch ca.
 import { rest, rpc, vnParts } from "./common.ts";
 import { drive, driveVersion } from "./drive.ts";
-import { NEW_TAB, isNewLayout, parseSheet2 } from "./rtask2.ts";
+import { NEW_TAB, isNewLayout, parseSheet2, staffTabRows, STAFF_TAB, GROUP_TAB } from "./rtask2.ts";
 
 const s = (v: unknown) => String(v ?? "").replace(/\s+/g, " ").trim();
 const nv = (v: unknown) => s(v).replace(/Đ/g, "D").replace(/đ/g, "d").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -101,6 +101,20 @@ export async function rtSync(actor: string) {
       await drive({ action: "sheet_col", sheet: String(sheet), tab: r.tab, col: p.col + 1, row: p.header + 2,
         values: p.understood.map((u) => u.text) }).catch(() => {});
     }
+    // D26: tab "Việc theo nhân viên" — chỉ ghi lại khi nội dung đổi (đổi bảng việc / danh sách NV)
+    try {
+      const g = await drive({ action: "sheet_read", sheet: String(sheet), tab: GROUP_TAB }).catch(() => null);
+      const order = ((g?.values || []) as string[][]).slice(1).map((x) => s(x[0])).filter((x) => x && x.length <= 40);
+      const staff = await rest("staff?select=id,name,dept&hidden=eq.false&order=name");
+      const tab = staffTabRows(p.rows, staff, order);
+      const sig = String(tab.length) + ":" + [...JSON.stringify(tab)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7);
+      const old = (await rest("settings?select=value&key=eq.RT_STAFF_TAB_SIG"))[0]?.value;
+      if (old !== sig) {
+        await drive({ action: "sheet", sheet: String(sheet), tabs: [{ name: STAFF_TAB, rows: tab }] });
+        await rest("settings?on_conflict=key", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+          body: JSON.stringify({ key: "RT_STAFF_TAB_SIG", value: sig, updated_by: actor, updated_at: new Date().toISOString() }) });
+      }
+    } catch (_) { /* tab phụ: lỗi không chặn giao việc */ }
   } else rows = parseSheet(values);
   if (!rows.length) throw new Error("Trang tính không có dòng công việc nào dùng được (xem cột Tool hiểu).");
   const saved = await rpc("_rt_save_templates", { p_rows: rows, p_actor: actor });

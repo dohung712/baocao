@@ -180,3 +180,46 @@ export function parseSheet2(values: string[][]) {
   });
   return { rows, understood, col: col["tool hieu"] ?? -1, header: hi };
 }
+
+// D26: tab "Việc theo nhân viên" — mỗi NV: các việc của mình, xếp theo nhóm việc (thứ tự tab "Hạng mục") → hằng ngày / tuần / tháng / 1 lần → giờ
+export const STAFF_TAB = "Việc theo nhân viên";
+export const GROUP_TAB = "Hạng mục";
+const storeOf = (dept: string) => { const x = nv(dept).toUpperCase().replace(/\s/g, ""); return x.includes("TGD") ? "TGDD" : x.includes("TOPZONE") || x.includes("AAR") ? "TOPZONE" : x.startsWith("PG") ? "PG" : x; };
+const FREQ = ["Hằng ngày", "Hằng tuần", "Hằng tháng", "1 lần"];
+function freqOf(r: Record<string, any>): [string, string] {
+  if (r.once) return ["1 lần", r.once.split("-").reverse().join("/")];
+  if (r.dom) return ["Hằng tháng", r.dom.map((d: number) => (d === -1 ? "Cuối tháng" : `Ngày ${d}`)).join(", ")];
+  if (Array.isArray(r.days)) return ["Hằng tuần", r.days.map((d: number) => DOWTXT[d]).join(", ")];
+  return ["Hằng ngày", "Mỗi ngày"];
+}
+function dueOf(r: Record<string, any>) {
+  if (r.shift_end) return `Hết ca${r.shift_end.minus ? ` −${r.shift_end.minus}p` : ""} (không ca: ${r.shift_end.fallback})`;
+  const t = (r.times || []) as { hm?: string; slot?: number }[];
+  if (t.length > 4 && !t.some((x) => x.slot)) return `${t[0].hm} → ${t[t.length - 1].hm} (${t.length} mốc)`;
+  return t.map((x) => `${x.slot ? `Ca ${x.slot} ` : ""}${x.hm || "hết ca"}`).join(", ");
+}
+const HOW: Record<string, string> = { group: "Cả ca, 1 người làm là xong", shift_each: "Ai có ca cũng làm", always: "Tự làm, có ca hay không", rotate: "Chia lượt trong ca", cleaning: "Khi đến lượt vệ sinh", own: "Giao riêng" };
+function proofOf(r: Record<string, any>) {
+  if (r.info) return "Bấm Đã nhận";
+  if (r.proof === "none") return r.links_min ? `${r.links_min} link` : "Bấm hoàn tất";
+  if (r.proof === "check") return `Tick ${r.checklist.length} mục${r.photo_min ? ` + ${r.photo_min} ảnh${r.screenshot ? " chụp màn hình" : ""}` : ""}`;
+  return `${r.photo_min} ảnh${r.screenshot ? " chụp màn hình" : ""}`;
+}
+export function staffTabRows(rows: any[], staff: { id: string; name: string; dept: string }[], groupOrder: string[]) {
+  const gi = (g: string) => { const i = groupOrder.findIndex((x) => nv(x) === nv(g)); return i < 0 ? 999 : i; };
+  const so = ["TGDD", "TOPZONE", "PG"];
+  const people = staff.map((s) => ({ ...s, st: storeOf(s.dept) })).sort((a, b) => (so.indexOf(a.st) + 1 || 9) - (so.indexOf(b.st) + 1 || 9) || a.name.localeCompare(b.name, "vi"));
+  const out: string[][] = [["Nhân viên", "Bộ phận", "Nhóm việc", "Tần suất", "Việc", "Ngày làm", "Giờ hạn", "Cách giao", "Báo cáo bằng", "Mở nộp / quá hạn"]];
+  for (const p of people) {
+    const mine = rows.filter((x) => { const r = x.rule; return r.who === "staff" ? (r.staff_ids || []).includes(p.id) : (r.stores || []).includes(p.st); })
+      .map((x) => { const r = x.rule, [fq, days] = freqOf(r); return { x, r, fq, days, g: x.type || "Việc lặp lại", hm: (r.times?.[0]?.hm || "99:99") }; })
+      .sort((a, b) => gi(a.g) - gi(b.g) || a.g.localeCompare(b.g, "vi") || FREQ.indexOf(a.fq) - FREQ.indexOf(b.fq) || a.hm.localeCompare(b.hm));
+    for (const m of mine) {
+      const r = m.r;
+      const op = r.open?.before ? `Mở trước hạn ${r.open.before}p` : r.open?.fixed ? `Mở từ ${r.open.fixed}` : r.open?.days ? `Nộp trước ${r.open.days} ngày` : "Nộp ngay khi giao";
+      const lt = r.late ? (r.late.eod ? "khoá cuối ngày" : r.late.after ? `khoá sau ${r.late.after}p` : "khoá khi hết hạn") : "trễ vẫn nộp";
+      out.push([p.name, p.dept, m.g, m.fq, m.x.title, m.days + (r.skip?.length ? ` (trừ ${r.skip.length} ngày nghỉ)` : ""), dueOf(r) + (r.event ? ` · diễn ra ${r.event.hm}` : ""), HOW[r.scope] || "", proofOf(r), `${op} · ${lt}${r.pen_late ? ` −${r.pen_late}⭐` : ""}`]);
+    }
+  }
+  return out;
+}
