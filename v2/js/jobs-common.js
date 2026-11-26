@@ -68,6 +68,8 @@ function splitDetail(detail) {
 async function looksLikeScreenshot(file) {
   try {
     const buf = new DataView(await file.slice(0, 256 * 1024).arrayBuffer());
+    // D28: PNG = định dạng ảnh chụp màn hình của iPhone / Android (máy ảnh không lưu PNG) → nhận luôn
+    if (buf.byteLength > 8 && buf.getUint32(0) === 0x89504e47) return { ok: true };
     if (buf.getUint16(0) === 0xffd8) {   // JPEG: tìm khối EXIF, xem có thông số máy ảnh không
       let p = 2;
       while (p + 4 < buf.byteLength) {
@@ -85,7 +87,8 @@ async function looksLikeScreenshot(file) {
     }
     const bmp = await createImageBitmap(file);
     const ratio = Math.max(bmp.width, bmp.height) / Math.min(bmp.width, bmp.height); bmp.close?.();
-    if (ratio < 1.55) return { ok: false, why: "khổ ảnh không giống màn hình" };
+    // D28: ảnh chụp màn hình iPhone có viền / thanh trạng thái cạnh, máy gập ~1,4–1,55 vẫn nhận; dưới 1,4 (gần 4:3 máy ảnh) mới nghi — AI xem lại sau
+    if (ratio < 1.4) return { ok: false, why: "khổ ảnh không giống màn hình" };
     return { ok: true };
   } catch { return { ok: true }; }   // không đọc được thì không chặn
 }

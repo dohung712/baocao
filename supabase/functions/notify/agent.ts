@@ -8,6 +8,7 @@
 // Mọi danh sách tên NV chỉ nằm trong thuộc tính không liệt kê (không in ra log công khai).
 import { rest, rpc, vnParts, addDays } from "../_shared/common.ts";
 import { pushMany, type PushData } from "../_shared/webpush.ts";
+import { shotAiCheck } from "../_shared/shotai.ts";
 
 const APP = "https://dohung712.github.io/baocao/v2/";
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -105,7 +106,23 @@ export async function agentTick(cfg: Record<string, any>, ctx: { rtError?: strin
 
   // ---------- 1b. D13d: ảnh NV cam kết là ảnh chụp màn hình (tool nghi) → báo ngay trưởng ca / QL bấm vào kiểm tra ----------
   if (!quiet) try {
-    const sc: any[] = await rest("agent_items?select=id,staff_id,job_id,title,data&kind=eq.shot_check&status=eq.open&alerted_at=is.null&limit=50");
+    // D28: AI xem ảnh trước (cả mục đang mở đã báo mà chưa qua AI) — đúng ảnh chụp màn hình thì tự duyệt (tối đa 4 mục / lượt), còn lại mới báo QL kèm nhận xét của AI
+    let sc: any[] = await rest("agent_items?select=id,staff_id,job_id,title,data,detail,alerted_at&kind=eq.shot_check&status=eq.open&order=id&limit=80");
+    const keep: any[] = []; let aiOk = 0, aiN = 0;
+    for (const x of sc) {
+      if (aiN >= 4 || String(x.detail || "").includes("🤖 AI")) { if (!x.alerted_at) keep.push(x); continue; }
+      aiN++;
+      const r = await shotAiCheck(x.data?.photos || []).catch((e) => ({ ok: false, why: "AI lỗi: " + String((e as Error).message).slice(0, 80) }));
+      if (r.ok) {
+        await rest(`agent_items?id=eq.${x.id}`, { method: "PATCH", body: JSON.stringify({ status: "done", note: "🤖 AI xem ảnh: đúng ảnh chụp màn hình — tự duyệt. " + r.why.slice(0, 300), decided_at: nowIso, decided_by: "tro-ly", alerted_at: nowIso, updated_at: nowIso }) });
+        aiOk++;
+      } else {
+        await rest(`agent_items?id=eq.${x.id}`, { method: "PATCH", body: JSON.stringify({ detail: `${x.detail || ""} · 🤖 AI: ${r.why}`.slice(0, 900) }) });
+        if (!x.alerted_at) keep.push(x);
+      }
+    }
+    if (aiOk) out.shotAiOk = aiOk;
+    sc = keep;
     if (sc.length) {
       const by = new Map<string, any[]>(), slot = curSlot(slots, vn.hm);
       for (const x of sc) for (const b of await bosses(vn.date, [x.staff_id], slot)) by.set(b, [...(by.get(b) || []), x]);
